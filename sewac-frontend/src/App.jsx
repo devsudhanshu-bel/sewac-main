@@ -14,6 +14,7 @@ import CollectionTrend from "./components/dashboard/CollectionTrend";
 import WasteComposition from "./components/dashboard/WasteComposition";
 import RecentAlerts from "./components/dashboard/RecentAlerts";
 import TopWorkers from "./components/dashboard/TopWorkers";
+import Settings from "./pages/Settings";
 
 export default function App() {
   const location = useLocation();
@@ -111,6 +112,22 @@ export default function App() {
       </div>
     );
   }
+
+  // ================= SETTINGS =================
+if (location.pathname === "/admin-settings") {
+  return (
+    <div className="flex h-screen bg-[#fafafa] overflow-hidden">
+
+      <Sidebar />
+
+      <div className="flex-1 overflow-y-auto">
+        <Header />
+        <Settings />
+      </div>
+
+    </div>
+  );
+}
 
   // ================= FALLBACK =================
   return (
