@@ -1,0 +1,17 @@
+# Environment
+.env
+.env.*
+backend/.env
+backend/.env.*
+
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Logs
+*.log
+
+# Build
+dist/
+build/
+coverage/
