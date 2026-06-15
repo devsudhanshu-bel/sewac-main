@@ -73,8 +73,16 @@ const OperationalTrendChart = () => {
 
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={activityTrendData}>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+  data={activityTrendData}
+  margin={{
+    top: 10,
+    right: 20,
+    left: 0,
+    bottom: 0,
+  }}
+>
           <CartesianGrid strokeDasharray="3 3" />
 
           <XAxis dataKey="day" />
@@ -84,20 +92,22 @@ const OperationalTrendChart = () => {
           <Tooltip />
 
           <Line
-            type="monotone"
-            dataKey="collections"
-            stroke="#8b5cf6"
-            strokeWidth={3}
-          />
+  type="monotone"
+  dataKey="collections"
+  stroke="#8b5cf6"
+  strokeWidth={3}
+  dot={{ r: 4 }}
+/>
 
           <Line
-            type="monotone"
-            dataKey="issues"
-            stroke="#ff4da6"
-            strokeWidth={3}
+  type="monotone"
+  dataKey="issues"
+  stroke="#ff4da6"
+  strokeWidth={3}
+  dot={{ r: 4 }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      </ResponsiveContainer>  
 
     </div>
   );
