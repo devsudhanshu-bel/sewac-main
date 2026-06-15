@@ -17,6 +17,7 @@ import SewacLogo from "../../assets/sewac_logo.svg";
 import CardImage from "../../assets/card_main.png";
 import CitizensCard from "../../assets/citizens_card.png";
 import WorkersCard from "../../assets/worker_card.png";
+import SettingsCard from "../../assets/settings_card.jpeg";
 
 const menuItems = [
   {
@@ -54,6 +55,8 @@ export default function Sidebar() {
       ? CitizensCard
       : location.pathname === "/admin-workers"
       ? WorkersCard
+      : location.pathname === "/admin-settings"
+      ? SettingsCard
       : CardImage;
 
   return (
@@ -116,7 +119,11 @@ export default function Sidebar() {
           <img
             src={sidebarImage}
             alt="Sidebar Card"
-            className="w-full"
+            className="
+              w-full
+              h-[220px]
+              object-cover
+            "
           />
 
           <div className="p-4 text-sm">
@@ -136,10 +143,12 @@ export default function Sidebar() {
             items-center
             gap-2
             px-4
-            py-2
+            py-3
             bg-white/10
             text-white
             rounded-xl
+            hover:bg-white/15
+            transition
           "
         >
           <LogOut size={18} />

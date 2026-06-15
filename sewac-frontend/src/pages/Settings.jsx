@@ -25,9 +25,11 @@ export default function Settings() {
       <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
 
         {/* TOP ROW */}
-        <div className="grid grid-cols-[260px_1fr_320px] gap-6 items-start">
+        <div className="grid grid-cols-[260px_1.1fr_320px] gap-6 items-start">
           <ProfileCard />
-          <PersonalInfoForm />
+          <div className="ml-5">
+            <PersonalInfoForm />
+          </div>
           <ChangePasswordCard />
         </div>
 
