@@ -18,7 +18,7 @@ export default function ProfileCard() {
         <div className="absolute bottom-0 left-0 right-0 h-12 bg-white rounded-t-[100%]" />
       </div>
 
-      <div className="relative px-5 pb-5 flex flex-col items-center">
+      <div className="relative px-5 pb-8 flex flex-col items-center">
 
         {/* Avatar */}
         <div className="-mt-12 relative">
@@ -79,25 +79,6 @@ export default function ProfileCard() {
           </div>
 
         </div>
-
-        {/* Button */}
-        <button
-          className="
-            mt-6
-            w-full
-            h-[40px]
-            rounded-[8px]
-            border
-            border-[#ffb7d9]
-            text-[#ff4fa3]
-            text-[12px]
-            font-medium
-            hover:bg-pink-50
-            transition
-          "
-        >
-          View Profile
-        </button>
 
       </div>
     </div>

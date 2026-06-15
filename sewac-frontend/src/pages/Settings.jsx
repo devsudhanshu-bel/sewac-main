@@ -21,33 +21,33 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* Main Container */}
-      <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
-
-        {/* TOP ROW */}
-        <div className="grid grid-cols-[260px_1.1fr_320px] gap-6 items-start">
-          <ProfileCard />
-          <div className="ml-5">
-            <PersonalInfoForm />
+      {/* Main Grid Container - Splitting the dashboard into Left/Center content and Right sidebar cleanly */}
+      <div className="max-w-[1400px] mx-auto grid grid-cols-[1fr_320px] gap-6 items-start">
+        
+        {/* LEFT & CENTER CONTENT COLUMN */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Upper Info Row */}
+          <div className="grid grid-cols-[260px_1fr] gap-6 items-start">
+            <ProfileCard />
+            <div className="pl-4">
+              <PersonalInfoForm />
+            </div>
           </div>
-          <ChangePasswordCard />
-        </div>
 
-        {/* BOTTOM ROW */}
-        <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
-
-          {/* Activity + Sessions */}
+          {/* Lower Analytics/Sessions Row */}
           <div className="grid grid-cols-2 gap-6">
             <RecentActivity />
             <ActiveSessions />
           </div>
 
-          {/* Right Column */}
-          <div className="flex flex-col gap-6 -mt-24">
-            <PreferencesCard />
-            <QuickActions />
-          </div>
+        </div>
 
+        {/* RIGHT SIDEBAR COLUMN - Keeps password and preferences stacked perfectly flush */}
+        <div className="flex flex-col gap-6">
+          <ChangePasswordCard />
+          <PreferencesCard />
+          <QuickActions />
         </div>
 
       </div>
