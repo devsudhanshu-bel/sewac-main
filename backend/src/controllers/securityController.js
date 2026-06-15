@@ -7,7 +7,7 @@ const getProfile = async (
   try {
 
     const adminId =
-      req.user.adminId;
+      req.admin.adminId;
 
     const result =
       await pool.query(

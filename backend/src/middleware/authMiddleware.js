@@ -18,7 +18,7 @@ const authenticate = (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    req.user = decoded;
+    req.admin = decoded;
 
     next();
 
