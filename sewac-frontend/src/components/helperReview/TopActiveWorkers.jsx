@@ -55,7 +55,7 @@ export default function TopActiveWorkers() {
         flex-col
       "
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
 
         <h3 className="text-[15px] font-semibold text-gray-900">
           Top Active Workers
@@ -67,7 +67,7 @@ export default function TopActiveWorkers() {
 
       </div>
 
-      <div className="flex-1 flex flex-col justify-between">
+      <div className="flex-1 flex flex-col gap-5">
 
         {workers.map((worker) => {
           const RankIcon = worker.icon;
@@ -77,7 +77,7 @@ export default function TopActiveWorkers() {
               key={worker.rank}
               className="flex items-center gap-2.5"
             >
-              <div className="w-5 flex justify-center items-center shrink-0">
+              <div className="w-6 flex justify-center items-center shrink-0">
 
                 {RankIcon ? (
                   <RankIcon
@@ -100,7 +100,7 @@ export default function TopActiveWorkers() {
               <div className="flex-1">
 
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[12px] font-medium text-gray-800">
+                  <span className="text-[12px] font-medium text-gray-900">
                     {worker.name}
                   </span>
 
@@ -137,8 +137,8 @@ export default function TopActiveWorkers() {
 
       <button
         className="
-          mt-4
-          mb-1
+          mt-6
+          
           h-[40px]
           rounded-xl
           border

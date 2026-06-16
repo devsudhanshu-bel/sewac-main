@@ -36,7 +36,6 @@ const data = [
 const ActivityContribution = () => {
   return (
     <div className="dashboard-card chart-card">
-
       <h3 style={{ marginBottom: "20px" }}>
         Activity Contribution
       </h3>
@@ -48,23 +47,20 @@ const ActivityContribution = () => {
           height: "260px",
         }}
       >
-
         <div
           style={{
-            width: "45%",
+            width: "42%",
             position: "relative",
+            height: "100%",
           }}
         >
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 dataKey="value"
-                innerRadius={45}
-                outerRadius={70}
+                innerRadius={40}
+                outerRadius={60}
                 stroke="none"
               >
                 {data.map((item) => (
@@ -85,12 +81,14 @@ const ActivityContribution = () => {
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
+              pointerEvents: "none",
             }}
           >
             <h2
               style={{
                 margin: 0,
                 fontSize: "24px",
+                fontWeight: 700,
               }}
             >
               100%
@@ -109,7 +107,7 @@ const ActivityContribution = () => {
 
         <div
           style={{
-            width: "55%",
+            width: "58%",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
@@ -137,6 +135,7 @@ const ActivityContribution = () => {
                     height: "10px",
                     borderRadius: "50%",
                     background: item.color,
+                    flexShrink: 0,
                   }}
                 />
 
@@ -147,11 +146,9 @@ const ActivityContribution = () => {
             </div>
           ))}
         </div>
-
       </div>
-
     </div>
   );
 };
 
-export default ActivityContribution;
+export default ActivityContribution;  

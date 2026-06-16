@@ -25,7 +25,7 @@ export default function HelperAppReview() {
         <ActivityContribution />
       </div>
 
-      <div className="grid grid-cols-[2.4fr_1fr] gap-5 mt-6 mb-8">
+      <div className="grid grid-cols-[2.4fr_1.1fr] gap-5 mt-6 mb-8 items-stretch">
         <ActivityFeed />
         <TopActiveWorkers />
       </div>
