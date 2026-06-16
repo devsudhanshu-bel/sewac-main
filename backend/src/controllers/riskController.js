@@ -5,6 +5,8 @@ const {
   determineDecision,
 } = require("../services/riskService");
 
+const { createAlert } = require("../services/alertService");
+
 const evaluateRisk = async (req, res) => {
   try {
     const adminId = req.admin.adminId;
@@ -60,6 +62,35 @@ const evaluateRisk = async (req, res) => {
     );
 
     const decision = determineDecision(overallRiskScore);
+    if (decision === "RESTRICT") {
+      await createAlert({
+        adminId,
+
+        layer: "RISK",
+
+        severity: "HIGH",
+
+        type: "RISK_RESTRICT",
+
+        description: `Risk engine restricted access. Overall score: ${overallRiskScore.toFixed(2)}`,
+
+        ipAddress: req.ip,
+      });
+    } else if (decision === "DENY") {
+      await createAlert({
+        adminId,
+
+        layer: "RISK",
+
+        severity: "CRITICAL",
+
+        type: "RISK_DENY",
+
+        description: `Risk engine denied access. Overall score: ${overallRiskScore.toFixed(2)}`,
+
+        ipAddress: req.ip,
+      });
+    }
 
     await pool.query(
       `

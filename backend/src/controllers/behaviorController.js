@@ -1,5 +1,7 @@
 const pool = require("../config/db");
 
+const { createAlert } = require("../services/alertService");
+
 const { logEvent } = require("../services/auditService");
 
 const enrollBehavior = async (req, res) => {
@@ -212,8 +214,36 @@ const verifyBehavior = async (req, res) => {
 
     if (behaviorScore < 60) {
       result = "DENY";
+
+      await createAlert({
+        adminId,
+
+        layer: "BEHAVIOR",
+
+        severity: "HIGH",
+
+        type: "BEHAVIOR_DENY",
+
+        description: `Behavior verification denied. Score: ${behaviorScore.toFixed(2)}`,
+
+        ipAddress: req.ip,
+      });
     } else if (behaviorScore < 80) {
       result = "RESTRICT";
+
+      await createAlert({
+        adminId,
+
+        layer: "BEHAVIOR",
+
+        severity: "MEDIUM",
+
+        type: "BEHAVIOR_RESTRICT",
+
+        description: `Behavior verification restricted. Score: ${behaviorScore.toFixed(2)}`,
+
+        ipAddress: req.ip,
+      });
     }
 
     await logEvent({
@@ -265,9 +295,13 @@ const verifyBehavior = async (req, res) => {
       verification: result,
 
       metrics: {
-        euclideanDistance: isNaN(euclidean) ? null : Number(euclidean.toFixed(2)),
+        euclideanDistance: isNaN(euclidean)
+          ? null
+          : Number(euclidean.toFixed(2)),
 
-        manhattanDistance: isNaN(manhattan) ? null : Number(manhattan.toFixed(2)),
+        manhattanDistance: isNaN(manhattan)
+          ? null
+          : Number(manhattan.toFixed(2)),
 
         cosineSimilarity: isNaN(cosine) ? null : Number(cosine.toFixed(4)),
       },

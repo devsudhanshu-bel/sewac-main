@@ -3,6 +3,10 @@ const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const { logEvent } = require("../services/auditService");
+const { createAlert } = require("../services/alertService");
+const {
+  checkFailedLoginThreshold,
+} = require("../services/threatDetectionService");
 
 const register = async (req, res) => {
   try {
@@ -95,6 +99,7 @@ const login = async (req, res) => {
         description: `Unknown admin login attempt: ${email}`,
         ipAddress: req.ip,
       });
+      await checkFailedLoginThreshold(email, null, req.ip);
 
       return res.status(401).json({
         success: false,
@@ -113,6 +118,8 @@ const login = async (req, res) => {
         description: `Incorrect password for ${email}`,
         ipAddress: req.ip,
       });
+
+      await checkFailedLoginThreshold(email, admin.id, req.ip);
 
       return res.status(401).json({
         success: false,
