@@ -6,7 +6,7 @@ const { logEvent } = require("../services/auditService");
 
 const registerDevice = async (req, res) => {
   try {
-    const adminId = req.user.adminId;
+    const adminId = req.admin.adminId;
 
     const { device_name } = req.body;
 
@@ -143,7 +143,7 @@ const verifyDevice = async (req, res) => {
 
 const listDevices = async (req, res) => {
   try {
-    const adminId = req.user.adminId;
+    const adminId = req.admin.adminId;
 
     const devices = await pool.query(
       `
@@ -172,7 +172,7 @@ const listDevices = async (req, res) => {
 
 const revokeDevice = async (req, res) => {
   try {
-    const adminId = req.user.adminId;
+    const adminId = req.admin.adminId;
 
     const { deviceId } = req.params;
 
