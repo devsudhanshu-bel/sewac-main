@@ -2,6 +2,8 @@ const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { logEvent } = require("../services/auditService");
 const { createAlert } = require("../services/alertService");
 const {
@@ -164,7 +166,142 @@ const login = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const adminResult = await pool.query(
+      "SELECT * FROM admins WHERE email = $1",
+      [email],
+    );
+
+    if (adminResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+    }
+
+    const admin = adminResult.rows[0];
+
+    const resetToken = jwt.sign(
+      {
+        adminId: admin.id,
+        email: admin.email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      },
+    );
+
+    const resetLink =
+      `http://localhost:5173/reset-password/${resetToken}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+
+      auth: {
+        user: process.env.ALERT_EMAIL,
+        pass: process.env.ALERT_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.ALERTEMAIL,
+
+      to: admin.email,
+
+      subject: "CMADS Password Reset",
+
+      html: `
+        <h2>Password Reset Request</h2>
+
+        <p>Click the link below to reset your password:</p>
+
+        <a href="${resetLink}">
+          Reset Password
+        </a>
+
+        <p>This link expires in 15 minutes.</p>
+      `,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Reset link sent successfully",
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Token and password required",
+      });
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET,
+    );
+
+    const password_hash =
+      await bcrypt.hash(password, 10);
+
+    await pool.query(
+      `
+      UPDATE admins
+      SET password_hash = $1
+      WHERE id = $2
+      `,
+      [
+        password_hash,
+        decoded.adminId,
+      ],
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired token",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
+  forgotPassword,
+  resetPassword,
 };

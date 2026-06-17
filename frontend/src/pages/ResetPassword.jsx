@@ -1,27 +1,45 @@
 import API_BASE_URL from "../services/api";
-import { User, ShieldCheck, Loader2 } from "lucide-react";
+import { Lock, ShieldCheck, Loader2 } from "lucide-react";
 
 import { useState, useEffect, useRef } from "react";
+
+import { useParams, useNavigate } from "react-router-dom";
+
 import gsap from "gsap";
 
 import "@fontsource/oswald";
 import "@fontsource-variable/finlandica";
 
-const ForgotPassword = () => {
+const ResetPassword = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
+
+  const [password, setPassword] = useState("");
+
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
+
   const [success, setSuccess] = useState("");
-  const [email, setEmail] = useState("");
 
   const cardRef = useRef(null);
+
   const logoRef = useRef(null);
+
   const titleRef = useRef(null);
+
   const subtitleRef = useRef(null);
+
   const formRef = useRef(null);
+
   const buttonRef = useRef(null);
 
   const bgGlow1 = useRef(null);
+
   const bgGlow2 = useRef(null);
+
   const bgGlow3 = useRef(null);
 
   useEffect(() => {
@@ -38,7 +56,7 @@ const ForgotPassword = () => {
         y: 0,
         duration: 1,
         ease: "power4.out",
-      }
+      },
     );
 
     gsap.fromTo(
@@ -55,53 +73,7 @@ const ForgotPassword = () => {
         duration: 1.2,
         delay: 0.2,
         ease: "back.out(1.7)",
-      }
-    );
-
-    gsap.fromTo(
-      titleRef.current,
-      {
-        opacity: 0,
-        y: 30,
       },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: 0.4,
-        ease: "power3.out",
-      }
-    );
-
-    gsap.fromTo(
-      subtitleRef.current,
-      {
-        opacity: 0,
-        y: 20,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: 0.55,
-        ease: "power3.out",
-      }
-    );
-
-    gsap.fromTo(
-      formRef.current.children,
-      {
-        opacity: 0,
-        y: 25,
-      },
-      {
-        opacity: 1,
-        y: 0,
-        stagger: 0.12,
-        duration: 0.8,
-        delay: 0.7,
-        ease: "power3.out",
-      }
     );
 
     gsap.to(buttonRef.current, {
@@ -139,38 +111,48 @@ const ForgotPassword = () => {
     });
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleReset = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
     setError("");
     setSuccess("");
+    setLoading(true);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+
+      setLoading(false);
+
+      return;
+    }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/auth/forgot-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          token,
+          password,
+        }),
+      });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(
-          "Reset link sent successfully. Please check your email."
-        );
+        setSuccess("Password reset successful. Redirecting to login...");
+
+        setTimeout(() => {
+          navigate("/");
+        }, 3000);
       } else {
-        setError(data.message || "Failed to send reset link");
+        setError(data.message);
       }
     } catch (error) {
-      setError("Server connection failed");
+      setError("Reset failed");
     } finally {
       setLoading(false);
     }
@@ -197,7 +179,7 @@ const ForgotPassword = () => {
 
       <form
         ref={cardRef}
-        onSubmit={handleSubmit}
+        onSubmit={handleReset}
         className="relative z-10 w-full max-w-[400px] rounded-[30px] border border-white/15 bg-white/10 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.22)] px-8 py-9"
       >
         <div className="flex justify-center">
@@ -217,7 +199,7 @@ const ForgotPassword = () => {
             }}
             className="text-white text-[52px] leading-[0.9] tracking-tight uppercase"
           >
-            FORGOT
+            RESET
             <br />
             PASSWORD
           </h1>
@@ -229,22 +211,32 @@ const ForgotPassword = () => {
             }}
             className="text-white/70 text-[15px] mt-4 leading-relaxed"
           >
-            Enter your administrator email address to
-            receive a password reset link
+            Create a new secure administrator password
           </p>
         </div>
 
         <div ref={formRef} className="mt-10 space-y-6">
-          <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
-            <User size={20} className="text-white/70" />
+          <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5">
+            <Lock size={20} className="text-white/70" />
 
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email Address"
-              required
-              className="flex-1 h-full bg-transparent outline-none px-4 text-white text-[15px] placeholder:text-white/50"
+              type="password"
+              placeholder="New Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="flex-1 h-full bg-transparent outline-none px-4 text-white placeholder:text-white/50"
+            />
+          </div>
+
+          <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5">
+            <Lock size={20} className="text-white/70" />
+
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="flex-1 h-full bg-transparent outline-none px-4 text-white placeholder:text-white/50"
             />
           </div>
 
@@ -255,18 +247,15 @@ const ForgotPassword = () => {
             style={{
               fontFamily: "Oswald, sans-serif",
             }}
-            className="w-full h-[58px] rounded-[18px] bg-white text-[#7c3aed] text-[22px] tracking-wide shadow-2xl hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70"
+            className="w-full h-[58px] rounded-[18px] bg-white text-[#7c3aed] text-[22px] tracking-wide shadow-2xl flex items-center justify-center gap-3"
           >
             {loading ? (
               <>
-                <Loader2
-                  size={22}
-                  className="animate-spin"
-                />
-                SENDING...
+                <Loader2 size={22} className="animate-spin" />
+                RESETTING...
               </>
             ) : (
-              "SEND RESET LINK"
+              "RESET PASSWORD"
             )}
           </button>
 
@@ -298,4 +287,4 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export default ResetPassword;

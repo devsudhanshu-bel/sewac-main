@@ -350,9 +350,7 @@ const Login = () => {
             }}
             className="text-white/70 text-[15px] mt-2 leading-relaxed"
           >
-            Login to continue into the
-            <br />
-            SEWAC Admin Portal
+            Login to the SEWAC Admin Portal
           </p>
         </div>
 
