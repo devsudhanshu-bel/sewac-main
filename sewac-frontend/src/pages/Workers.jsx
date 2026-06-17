@@ -4,8 +4,6 @@ import WorkerPerformanceChart from "../components/workers/WorkerPerformanceChart
 import WasteCollectedByType from "../components/workers/WasteCollectedByType";
 import WorkerRouteOverview from "../components/workers/WorkerRouteOverview";
 import WorkersTable from "../components/workers/WorkersTable";
-import WorkerEfficiencyRanking from "../components/workers/WorkerEfficiencyRanking";
-import WorkerAlerts from "../components/workers/WorkerAlerts";
 
 export default function Workers() {
   return (
@@ -36,23 +34,9 @@ export default function Workers() {
 
       </div>
 
-      {/* Bottom */}
-      <div className="grid grid-cols-12 gap-5 mt-6 items-start">
-
-        {/* LEFT */}
-        <div className="col-span-8">
-          <WorkersTable />
-        </div>
-
-        {/* RIGHT */}
-        <div className="col-span-4 flex flex-col gap-5">
-
-          <WorkerEfficiencyRanking />
-
-          <WorkerAlerts />
-
-        </div>
-
+      {/* Bottom Layout - Cleaned up to show only the Workers Table at full width */}
+      <div className="w-full mt-6">
+        <WorkersTable />
       </div>
 
     </div>
