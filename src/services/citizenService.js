@@ -30,21 +30,6 @@ const searchCitizen = async (query) => {
       ],
     },
 
-    select: {
-      id: true,
-      personName: true,
-      phoneNumber: true,
-      city: true,
-      ward: true,
-      area: true,
-      houseNumber: true,
-      floorNumber: true,
-      wetSlno: true,
-      drySlno: true,
-      wetRFID: true,
-      dryRFID: true,
-    },
-
     orderBy: {
       id: "desc",
     },
@@ -53,6 +38,8 @@ const searchCitizen = async (query) => {
   console.log("=================================");
   console.log("RESULT COUNT:", result.length);
   console.log("RESULT:", JSON.stringify(result, null, 2));
+  console.log("FIRST RECORD FULL:");
+console.log(result[0]);
   console.log("=================================");
 
   return result;
