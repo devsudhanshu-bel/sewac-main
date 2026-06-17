@@ -33,6 +33,26 @@ const searchCitizen = async (req, res) => {
   }
 };
 
+const getAllCitizens = async (req, res) => {
+  try {
+    const citizens = await citizenService.getAllCitizens();
+
+    return res.status(200).json({
+      success: true,
+      count: citizens.length,
+      data: citizens,
+    });
+  } catch (error) {
+    console.error("Get All Citizens Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   searchCitizen,
+  getAllCitizens,
 };

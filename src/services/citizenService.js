@@ -44,7 +44,17 @@ console.log(result[0]);
 
   return result;
 };
+const getAllCitizens = async () => {
+  const result = await prisma.master_citizen_data.findMany({
+    orderBy: {
+      id: "desc",
+    },
+  });
+
+  return result;
+};
 
 module.exports = {
   searchCitizen,
+  getAllCitizens,
 };
