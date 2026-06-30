@@ -1,0 +1,38 @@
+EC2 Instance
+│
+├── sewac-helper-admin-portal
+│   └── Port 5000
+│
+├── sewac-helper-app
+│   └── Port 5001
+│
+└── sewac-main
+    └── Port 5002
+
+RFID Reader
+   ↓
+GET Request Stream
+   ↓
+HashMap Lookup (O1)
+   ↓
+Lock Check (O1)
+   ↓
+Queue Push (O1)
+   ↓
+Immediate ACK
+   ↓
+Background Insert
+
+
+Total waste collected today
+Wet waste collected today
+Dry waste collected today
+Most active citizens
+Citizens eligible for rewards
+Vehicle-wise collection performance
+Ward-wise collection performance
+Route heatmaps
+Disposal locations on map
+Daily participation %
+Monthly participation %
+Carbon reduction metrics
