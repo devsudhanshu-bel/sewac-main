@@ -271,6 +271,20 @@ const Login = () => {
       if (response.ok) {
         const tempToken = data.token;
         const tempAdmin = data.admin;
+        // -------------------------------------------------
+        // Worker Login
+        // Workers bypass CMADS and directly access SEWAC
+        // -------------------------------------------------
+
+        if (tempAdmin.role === "WORKER") {
+          sessionStorage.setItem("token", tempToken);
+
+          sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
+
+          window.location.href = "http://localhost:5173/overview";
+
+          return;
+        }
 
         if (data.enrollmentRequired) {
           navigate("/behavior-enrollment");
