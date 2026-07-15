@@ -6,19 +6,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import gsap from "gsap";
-
-// =========================================
-// GOOGLE FONTS
-// =========================================
 import "@fontsource/oswald";
 import "@fontsource-variable/finlandica";
 
 const Login = () => {
   const navigate = useNavigate();
-
-  // =========================================
-  // STATES
-  // =========================================
   const [showPassword, setShowPassword] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -29,9 +21,11 @@ const Login = () => {
 
   const [error, setError] = useState("");
 
-  // =========================================
-  // REFS
-  // =========================================
+  const [typingStart, setTypingStart] = useState(null);
+
+  const [typingEnd, setTypingEnd] = useState(null);
+
+  const [backspaces, setBackspaces] = useState(0);
   const cardRef = useRef(null);
 
   const logoRef = useRef(null);
@@ -50,11 +44,7 @@ const Login = () => {
 
   const bgGlow3 = useRef(null);
 
-  // =========================================
-  // GSAP ANIMATION
-  // =========================================
   useEffect(() => {
-    // CARD
     gsap.fromTo(
       cardRef.current,
 
@@ -75,7 +65,6 @@ const Login = () => {
       },
     );
 
-    // LOGO
     gsap.fromTo(
       logoRef.current,
 
@@ -98,7 +87,6 @@ const Login = () => {
       },
     );
 
-    // TITLE
     gsap.fromTo(
       titleRef.current,
 
@@ -119,7 +107,6 @@ const Login = () => {
       },
     );
 
-    // SUBTITLE
     gsap.fromTo(
       subtitleRef.current,
 
@@ -140,7 +127,6 @@ const Login = () => {
       },
     );
 
-    // FORM ITEMS
     gsap.fromTo(
       formRef.current.children,
 
@@ -163,7 +149,6 @@ const Login = () => {
       },
     );
 
-    // BUTTON GLOW
     gsap.to(buttonRef.current, {
       boxShadow: "0px 0px 35px rgba(255,255,255,0.30)",
 
@@ -176,7 +161,6 @@ const Login = () => {
       ease: "power1.inOut",
     });
 
-    // GLOW FLOAT
     gsap.to(bgGlow1.current, {
       x: 50,
       y: 30,
@@ -216,11 +200,42 @@ const Login = () => {
     });
   }, []);
 
-  // =========================================
-  // LOGIN
-  // =========================================
+  const loginMetrics = useRef(null);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    const typingDuration =
+      typingStart && typingEnd ? typingEnd - typingStart : 0;
+
+    const typingSpeed =
+      password.length > 0
+        ? Number((password.length / (typingDuration / 1000)).toFixed(2))
+        : 0;
+
+    const dwellTime = Number(
+      (typingDuration / Math.max(password.length, 1)).toFixed(2),
+    );
+
+    const flightTime = Number(
+      (typingDuration / Math.max(password.length - 1, 1)).toFixed(2),
+    );
+
+    const errorRate = Number(
+      ((backspaces / Math.max(password.length, 1)) * 100).toFixed(2),
+    );
+    loginMetrics.current = {
+      typing_speed: typingSpeed,
+      dwell_time: dwellTime,
+      flight_time: flightTime,
+      backspace_usage: backspaces,
+      error_rate: errorRate,
+    };
+
+    console.log({
+      typingSpeed,
+      typingDuration,
+      backspaces,
+    });
 
     setLoading(true);
 
@@ -236,49 +251,166 @@ const Login = () => {
 
         body: JSON.stringify({
           email,
+
           password,
+
+          typing_speed: typingSpeed,
+
+          dwell_time: dwellTime,
+
+          flight_time: flightTime,
+
+          backspace_usage: backspaces,
+
+          error_rate: errorRate,
         }),
       });
 
       const data = await response.json();
 
-      console.log(data);
-
-      // =========================================
-      // SUCCESS
-      // =========================================
       if (response.ok) {
-        // =========================================
-        // SESSION TOKEN
-        // =========================================
-        sessionStorage.setItem("token", data.token);
+        const tempToken = data.token;
+        const tempAdmin = data.admin;
 
-        sessionStorage.setItem("admin", JSON.stringify(data.admin));
+        if (data.enrollmentRequired) {
+          navigate("/behavior-enrollment");
 
-        // SUCCESS ANIMATION
-        gsap.to(
-          cardRef.current,
+          return;
+        }
 
+        const deviceResponse = await fetch(
+          `${API_BASE_URL}/api/devices/verify`,
           {
-            scale: 0.95,
-            opacity: 0,
-
-            duration: 0.5,
-
-            ease: "power3.inOut",
-
-            onComplete: () => {
-              navigate("/dashboard");
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${tempToken}`,
+              "Content-Type": "application/json",
             },
           },
         );
+
+        const device = await deviceResponse.json();
+
+        if (!device.success) {
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("admin");
+
+          setError("Authentication Failed");
+
+          return;
+        }
+
+        if (!device.known) {
+          const browser = navigator.userAgent.includes("Edg")
+            ? "Microsoft Edge"
+            : navigator.userAgent.includes("Chrome")
+              ? "Google Chrome"
+              : navigator.userAgent.includes("Firefox")
+                ? "Mozilla Firefox"
+                : navigator.userAgent.includes("Safari")
+                  ? "Safari"
+                  : "Unknown Browser";
+
+          const os = navigator.userAgent.includes("Windows")
+            ? "Windows"
+            : navigator.userAgent.includes("Mac")
+              ? "macOS"
+              : navigator.userAgent.includes("Linux")
+                ? "Linux"
+                : "Unknown OS";
+
+          const deviceName = `${browser} (${os})`;
+          const registerResponse = await fetch(
+            `${API_BASE_URL}/api/devices/register`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${tempToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                device_name: deviceName,
+              }),
+            },
+          );
+
+          const registered = await registerResponse.json();
+
+          const verifyAgain = await fetch(
+            `${API_BASE_URL}/api/devices/verify`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${tempToken}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          const verifiedDevice = await verifyAgain.json();
+        }
+
+        const behaviorResponse = await fetch(
+          `${API_BASE_URL}/api/behavior/verify`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${tempToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(loginMetrics.current),
+          },
+        );
+
+        const behavior = await behaviorResponse.json();
+
+        if (!behavior.success) {
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("admin");
+
+          setError("Authentication Failed");
+
+          return;
+        }
+
+        const riskResponse = await fetch(`${API_BASE_URL}/api/risk/evaluate`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tempToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const risk = await riskResponse.json();
+
+        console.log("RISK:", risk);
+
+        if (!risk.success) {
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("admin");
+
+          setError("Authentication Failed");
+
+          return;
+        }
+        if (risk.decision !== "ALLOW") {
+          setError("Authentication Failed");
+
+          return;
+        }
+
+        sessionStorage.setItem("token", tempToken);
+
+        sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
+
+        navigate("/dashboard");
       } else {
         setError(data.message || "Invalid credentials");
       }
     } catch (err) {
       console.error(err);
 
-      setError("Server connection failed");
+      setError("Authentication Failed");
     } finally {
       setLoading(false);
     }
@@ -388,7 +520,20 @@ const Login = () => {
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                if (!typingStart) {
+                  setTypingStart(Date.now());
+                }
+
+                setTypingEnd(Date.now());
+
+                setPassword(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Backspace") {
+                  setBackspaces((prev) => prev + 1);
+                }
+              }}
               placeholder="Password"
               required
               className="flex-1 h-full bg-transparent outline-none px-4 text-white text-[15px] placeholder:text-white/50"

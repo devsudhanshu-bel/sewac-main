@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
 const behaviorRoutes = require("./routes/behaviorRoutes");
 const riskRoutes = require("./routes/riskRoutes");
+const emailRoutes = require("./routes/emailRoutes");
 
 const app = express();
 
@@ -23,4 +24,5 @@ app.use("/api/security", securityRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/behavior", behaviorRoutes);
 app.use("/api/risk", riskRoutes);
+app.use("/api/email", emailRoutes);
 module.exports = app;

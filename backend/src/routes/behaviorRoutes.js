@@ -17,7 +17,6 @@ express.Router();
 
 router.post(
   "/enroll",
-  authenticate,
   enrollBehavior
 );
 

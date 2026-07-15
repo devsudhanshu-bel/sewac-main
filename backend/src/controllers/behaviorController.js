@@ -6,16 +6,7 @@ const { logEvent } = require("../services/auditService");
 
 const enrollBehavior = async (req, res) => {
   try {
-    const adminId = req.admin.adminId;
-
-    const { enrollment_phrase, samples } = req.body;
-
-    if (!enrollment_phrase) {
-      return res.status(400).json({
-        success: false,
-        message: "Enrollment phrase required",
-      });
-    }
+    const { adminId, samples } = req.body;
 
     if (!samples || !Array.isArray(samples)) {
       return res.status(400).json({
@@ -54,6 +45,18 @@ const enrollBehavior = async (req, res) => {
     let totalError = 0;
 
     for (const sample of samples) {
+      if (
+        sample.dwell_time == null ||
+        sample.flight_time == null ||
+        sample.typing_speed == null ||
+        sample.backspace_usage == null ||
+        sample.error_rate == null
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid enrollment sample",
+        });
+      }
       totalDwell += Number(sample.dwell_time);
 
       totalFlight += Number(sample.flight_time);
@@ -125,7 +128,7 @@ const enrollBehavior = async (req, res) => {
         `,
       [
         adminId,
-        enrollment_phrase,
+        "LOGIN_CREDENTIALS",
         avgDwell,
         avgFlight,
         avgTyping,
@@ -192,7 +195,16 @@ const verifyBehavior = async (req, res) => {
       backspace_usage: Number(backspace_usage),
       error_rate: Number(error_rate),
     };
-
+    if (
+      Object.values(sample).some(
+        (value) => value === null || Number.isNaN(value),
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid behavioral metrics",
+      });
+    }
     const euclidean = calculateEuclideanDistance(profile, sample);
 
     const manhattan = calculateManhattanDistance(profile, sample);
@@ -287,25 +299,10 @@ const verifyBehavior = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
-      trustScore: isNaN(behaviorScore)
-        ? null
-        : Number(behaviorScore.toFixed(2)),
-
+      trustScore: Number(behaviorScore.toFixed(2)),
       verification: result,
-
-      metrics: {
-        euclideanDistance: isNaN(euclidean)
-          ? null
-          : Number(euclidean.toFixed(2)),
-
-        manhattanDistance: isNaN(manhattan)
-          ? null
-          : Number(manhattan.toFixed(2)),
-
-        cosineSimilarity: isNaN(cosine) ? null : Number(cosine.toFixed(4)),
-      },
     });
+  
   } catch (error) {
     console.error(error);
 

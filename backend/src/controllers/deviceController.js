@@ -16,18 +16,37 @@ const registerDevice = async (req, res) => {
 
     const existingDevice = await pool.query(
       `
-      SELECT *
-      FROM devices
-      WHERE device_fingerprint = $1
-      `,
-      [fingerprint]
+SELECT *
+FROM devices
+WHERE admin_id = $1
+`,
+      [adminId],
     );
 
     if (existingDevice.rows.length > 0) {
+      const updated = await pool.query(
+        `
+    UPDATE devices
+    SET
+      device_fingerprint = $1,
+      device_name = $2,
+      status = 'ACTIVE'
+    WHERE admin_id = $3
+    RETURNING *
+    `,
+        [fingerprint, device_name, adminId],
+      );
+      await logEvent({
+        adminId,
+        eventType: "DEVICE_UPDATED",
+        description: `Device fingerprint updated: ${device_name}`,
+        ipAddress: req.ip,
+      });
+
       return res.status(200).json({
         success: true,
-        message: "Device already registered",
-        device: existingDevice.rows[0],
+        message: "Device fingerprint updated",
+        device: updated.rows[0],
       });
     }
 
@@ -46,7 +65,7 @@ const registerDevice = async (req, res) => {
       )
       RETURNING *
       `,
-      [adminId, fingerprint, device_name, 50]
+      [adminId, fingerprint, device_name, 50],
     );
 
     await logEvent({
@@ -61,133 +80,93 @@ const registerDevice = async (req, res) => {
       message: "Device registered successfully",
       device: result.rows[0],
     });
-
   } catch (error) {
-
     console.error(error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
 
 const verifyDevice = async (req, res) => {
   try {
+    const fingerprint = generateFingerprint(req);
 
-    const fingerprint =
-      generateFingerprint(req);
-
-    const revokedDevice =
-      await pool.query(
-        `
+    const revokedDevice = await pool.query(
+      `
         SELECT *
         FROM devices
         WHERE device_fingerprint = $1
         AND status = 'REVOKED'
         `,
-        [fingerprint]
-      );
+      [fingerprint],
+    );
 
     if (revokedDevice.rows.length > 0) {
-
       await logEvent({
-        adminId:
-          revokedDevice.rows[0].admin_id,
+        adminId: revokedDevice.rows[0].admin_id,
 
-        eventType:
-          "REVOKED_DEVICE_ATTEMPT",
+        eventType: "REVOKED_DEVICE_ATTEMPT",
 
-        description:
-          "Revoked device attempted access",
+        description: "Revoked device attempted access",
 
-        ipAddress:
-          req.ip,
+        ipAddress: req.ip,
       });
 
       await createAlert({
-        adminId:
-          revokedDevice.rows[0].admin_id,
+        adminId: revokedDevice.rows[0].admin_id,
 
-        layer:
-          "DEVICE",
+        layer: "DEVICE",
 
-        severity:
-          "CRITICAL",
+        severity: "CRITICAL",
 
-        type:
-          "REVOKED_DEVICE",
+        type: "REVOKED_DEVICE",
 
-        description:
-          "Revoked device attempted access",
+        description: "Revoked device attempted access",
 
-        ipAddress:
-          req.ip,
+        ipAddress: req.ip,
       });
 
       return res.status(403).json({
         success: false,
-        message:
-          "Revoked device detected",
+        message: "Revoked device detected",
       });
-
     }
 
-    const device =
-      await pool.query(
-        `
+    const device = await pool.query(
+      `
         SELECT *
         FROM devices
         WHERE device_fingerprint = $1
         AND status = 'ACTIVE'
         `,
-        [fingerprint]
-      );
+      [fingerprint],
+    );
 
     if (device.rows.length > 0) {
+      const updatedTrustScore = Math.min(device.rows[0].trust_score + 2, 100);
 
       await pool.query(
         `
-        UPDATE devices
-        SET last_seen =
-          CURRENT_TIMESTAMP
-        WHERE id = $1
-        `,
-        [device.rows[0].id]
-      );
-
-      const updatedTrustScore =
-        Math.min(
-          device.rows[0].trust_score + 2,
-          100
-        );
-
-      await pool.query(
-        `
-        UPDATE devices
-        SET trust_score = $1
-        WHERE id = $2
-        `,
-        [
-          updatedTrustScore,
-          device.rows[0].id,
-        ]
+UPDATE devices
+SET
+    last_seen = CURRENT_TIMESTAMP,
+    trust_score = $1
+WHERE id = $2
+`,
+        [updatedTrustScore, device.rows[0].id],
       );
 
       await logEvent({
-        adminId:
-          device.rows[0].admin_id,
+        adminId: device.rows[0].admin_id,
 
-        eventType:
-          "KNOWN_DEVICE_DETECTED",
+        eventType: "KNOWN_DEVICE_DETECTED",
 
-        description:
-          "Known device verified",
+        description: "Known device verified",
 
-        ipAddress:
-          req.ip,
+        ipAddress: req.ip,
       });
 
       return res.status(200).json({
@@ -196,20 +175,16 @@ const verifyDevice = async (req, res) => {
         trust_score: updatedTrustScore,
         device: device.rows[0],
       });
-
     }
 
     await logEvent({
       adminId: null,
 
-      eventType:
-        "UNKNOWN_DEVICE_DETECTED",
+      eventType: "UNKNOWN_DEVICE_DETECTED",
 
-      description:
-        "Unknown device attempted access",
+      description: "Unknown device attempted access",
 
-      ipAddress:
-        req.ip,
+      ipAddress: req.ip,
     });
 
     await createAlert({
@@ -221,8 +196,7 @@ const verifyDevice = async (req, res) => {
 
       type: "UNKNOWN_DEVICE",
 
-      description:
-        "Unknown device attempted access",
+      description: "Unknown device attempted access",
 
       ipAddress: req.ip,
     });
@@ -232,73 +206,60 @@ const verifyDevice = async (req, res) => {
       known: false,
       trust_score: 0,
     });
-
   } catch (error) {
-
     console.error(error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
 
 const listDevices = async (req, res) => {
   try {
+    const adminId = req.admin.adminId;
 
-    const adminId =
-      req.admin.adminId;
-
-    const devices =
-      await pool.query(
-        `
+    const devices = await pool.query(
+      `
         SELECT *
         FROM devices
         WHERE admin_id = $1
         ORDER BY last_seen DESC
         `,
-        [adminId]
-      );
+      [adminId],
+    );
 
     return res.status(200).json({
       success: true,
       count: devices.rows.length,
       devices: devices.rows,
     });
-
   } catch (error) {
-
     console.error(error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
 
 const revokeDevice = async (req, res) => {
   try {
+    const adminId = req.admin.adminId;
 
-    const adminId =
-      req.admin.adminId;
+    const { deviceId } = req.params;
 
-    const { deviceId } =
-      req.params;
-
-    const device =
-      await pool.query(
-        `
+    const device = await pool.query(
+      `
         SELECT *
         FROM devices
         WHERE id = $1
         AND admin_id = $2
         `,
-        [deviceId, adminId]
-      );
+      [deviceId, adminId],
+    );
 
     if (device.rows.length === 0) {
       return res.status(404).json({
@@ -313,37 +274,30 @@ const revokeDevice = async (req, res) => {
       SET status = 'REVOKED'
       WHERE id = $1
       `,
-      [deviceId]
+      [deviceId],
     );
 
     await logEvent({
       adminId,
 
-      eventType:
-        "DEVICE_REVOKED",
+      eventType: "DEVICE_REVOKED",
 
-      description:
-        `Device revoked: ${device.rows[0].device_name}`,
+      description: `Device revoked: ${device.rows[0].device_name}`,
 
-      ipAddress:
-        req.ip,
+      ipAddress: req.ip,
     });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Device revoked successfully",
+      message: "Device revoked successfully",
     });
-
   } catch (error) {
-
     console.error(error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
 

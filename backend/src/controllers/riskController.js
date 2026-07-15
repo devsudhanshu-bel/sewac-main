@@ -120,17 +120,9 @@ const evaluateRisk = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
-      scores: {
-        identityScore,
-        deviceScore,
-        behaviorScore,
-      },
-
-      overallRiskScore,
-
       decision,
     });
+    
   } catch (error) {
     console.error(error);
 
