@@ -1,93 +1,224 @@
 import {
   LayoutDashboard,
   Users,
-  UserCog,
-  ClipboardCheck,
+  Truck,
+  Factory,
+  FileText,
+  Bot,
   Settings,
   LogOut,
 } from "lucide-react";
 
-import {
-  NavLink,
-  useLocation,
-} from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { useLayoutEffect, useRef } from "react";
+import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
-
-import CardImage from "../../assets/card_main.png";
-import CitizensCard from "../../assets/citizens_card.png";
-import WorkersCard from "../../assets/worker_card.png";
-import SettingsCard from "../../assets/settings_card.jpeg";
 
 const menuItems = [
   {
     name: "Overview",
-    path: "/admin-overview",
+    path: "/admin/overview",
     icon: LayoutDashboard,
   },
   {
-    name: "Citizens",
-    path: "/admin-citizens",
+    name: "Waste Generators",
+    path: "/admin/waste-generators",
     icon: Users,
   },
   {
-    name: "Workers",
-    path: "/admin-workers",
-    icon: UserCog,
+    name: "Vehicles",
+    path: "/admin/vehicles",
+    icon: Truck,
   },
   {
-    name: "Helper App Review",
-    path: "/admin-helper-review",
-    icon: ClipboardCheck,
+    name: "Plant",
+    path: "/admin/plants",
+    icon: Factory,
+  },
+  {
+    name: "Logs",
+    path: "/admin/logs",
+    icon: FileText,
+  },
+  {
+    name: "AI Agent",
+    path: "/admin/ai",
+    icon: Bot,
+  },
+  {
+    name: "Users",
+    path: "/admin/users",
+    icon: Users,
   },
   {
     name: "Settings",
-    path: "/admin-settings",
+    path: "/admin/settings",
     icon: Settings,
   },
 ];
 
 export default function Sidebar() {
-  const location = useLocation();
+  const sidebarRef = useRef(null);
+  const logoRef = useRef(null);
+  const navRef = useRef(null);
+  const logoutRef = useRef(null);
 
-  const sidebarImage =
-    location.pathname === "/admin-citizens"
-      ? CitizensCard
-      : location.pathname === "/admin-workers"
-      ? WorkersCard
-      : location.pathname === "/admin-settings"
-      ? SettingsCard
-      : CardImage;
+  useLayoutEffect(() => {
+    const ctx = gsap.context(() => {
+      const navItems = Array.from(navRef.current.children);
+
+      const tl = gsap.timeline({
+        defaults: {
+          ease: "power4.out",
+        },
+      });
+
+      tl.fromTo(
+        sidebarRef.current,
+        {
+          opacity: 0,
+          x: -16,
+        },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.28,
+        }
+      )
+
+        .fromTo(
+          logoRef.current,
+          {
+            opacity: 0,
+            y: 22,
+            filter: "blur(8px)",
+          },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.45,
+          },
+          "-=0.12"
+        )
+
+        .fromTo(
+          navItems,
+          {
+            opacity: 0,
+            y: 22,
+            filter: "blur(6px)",
+          },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.42,
+            stagger: 0.045,
+          },
+          "-=0.18"
+        )
+
+        .fromTo(
+          logoutRef.current,
+          {
+            opacity: 0,
+            y: 18,
+            filter: "blur(6px)",
+          },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.4,
+          },
+          "-=0.18"
+        );
+    });
+
+    return () => ctx.revert();
+  }, []);
 
   return (
     <aside
+      ref={sidebarRef}
       className="
-        w-[250px]
+        relative
+        w-[240px]
         min-h-screen
+        overflow-hidden
+        border-r
+        border-fuchsia-400/20
+        bg-gradient-to-b
+        from-[#4C1D95]
+        via-[#6D28D9]
+        to-[#DB2777]
         flex
         flex-col
-        justify-between
-        bg-gradient-to-b
-        from-[#7b1fa2]
-        via-[#5e35b1]
-        to-[#311b92]
-        shadow-2xl
+        opacity-0
       "
     >
-      {/* TOP */}
-      <div>
-        <div className="flex justify-center -mt-2 -mb-2">
+      {/* Decorative Background */}
+
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+        <div
+          className="
+            absolute
+            -top-24
+            -left-24
+            w-64
+            h-64
+            rounded-full
+            bg-violet-500/30
+            blur-[120px]
+          "
+        />
+
+        <div
+          className="
+            absolute
+            bottom-0
+            -right-20
+            w-72
+            h-72
+            rounded-full
+            bg-pink-500/30
+            blur-[140px]
+          "
+        />
+
+      </div>
+
+      <div className="relative z-10 flex flex-col h-full">
+
+        {/* Logo */}
+
+        <div
+          ref={logoRef}
+          className="flex justify-center pt-2 pb-3 opacity-0"
+        >
           <img
             src={SewacLogo}
             alt="SEWAC"
-            className="w-40 object-contain"
+            draggable={false}
+            className="
+              w-[150px]
+              object-contain
+              select-none
+              drop-shadow-[0_8px_20px_rgba(255,255,255,0.15)]
+            "
           />
         </div>
 
-        <hr className="border-white/10 mx-4 mb-4" />
+        {/* Navigation */}
 
-        <div className="px-4 flex flex-col gap-2">
-          {menuItems.map((item) => {
+        <nav
+          ref={navRef}
+          className="flex-1 px-4 flex flex-col gap-2"
+        >
+                    {menuItems.map((item) => {
             const Icon = item.icon;
 
             return (
@@ -95,66 +226,98 @@ export default function Sidebar() {
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-3xl transition ${
+                  `
+                  opacity-0
+                  group
+                  flex
+                  items-center
+                  gap-3
+                  px-4
+                  py-3
+                  rounded-2xl
+                  transition-all
+                  duration-300
+
+                  ${
                     isActive
-                      ? "bg-pink-500 text-white"
-                      : "text-white/70 hover:bg-white/10"
-                  }`
+                      ? `
+                        bg-gradient-to-r
+                        from-fuchsia-500
+                        via-purple-500
+                        to-violet-600
+                        text-white
+                        shadow-xl
+                        shadow-fuchsia-900/40
+                        scale-[1.02]
+                      `
+                      : `
+                        text-violet-100/85
+                        hover:bg-white/10
+                        hover:text-white
+                        hover:translate-x-1
+                        hover:shadow-lg
+                      `
+                  }
+                  `
                 }
               >
-                <Icon size={18} />
+                <Icon
+                  size={18}
+                  strokeWidth={2}
+                  className="transition-transform duration-300 group-hover:scale-110"
+                />
 
-                <span className="text-sm">
+                <span className="text-[14px] font-medium tracking-wide">
                   {item.name}
                 </span>
               </NavLink>
             );
           })}
-        </div>
-      </div>
+        </nav>
 
-      {/* BOTTOM CARD */}
-      <div className="p-3">
-        <div className="bg-white rounded-xl overflow-hidden shadow">
-          <img
-            src={sidebarImage}
-            alt="Sidebar Card"
-            className="
-              w-full
-              h-[220px]
-              object-cover
-            "
-          />
+        {/* Logout */}
 
-          <div className="p-4 text-sm">
-            <p className="font-semibold">
-              Today's Goal
-            </p>
-
-            <p>78%</p>
-          </div>
-        </div>
-
-        <button
-          className="
-            mt-4
-            w-full
-            flex
-            items-center
-            gap-2
-            px-4
-            py-3
-            bg-white/10
-            text-white
-            rounded-xl
-            hover:bg-white/15
-            transition
-          "
+        <div
+          ref={logoutRef}
+          className="px-4 pb-6 opacity-0"
         >
-          <LogOut size={18} />
-          Logout
-        </button>
+          <button
+            className="
+              group
+              w-full
+              h-12
+              rounded-2xl
+              bg-white/10
+              border
+              border-white/10
+              backdrop-blur-md
+              flex
+              items-center
+              justify-center
+              gap-2
+              text-violet-100
+              font-medium
+              transition-all
+              duration-300
+              hover:bg-white/20
+              hover:text-white
+              hover:scale-[1.02]
+              hover:shadow-xl
+              hover:shadow-fuchsia-900/20
+            "
+          >
+            <LogOut
+              size={17}
+              strokeWidth={2}
+              className="transition-transform duration-300 group-hover:-translate-x-1"
+            />
+
+            Logout
+          </button>
+        </div>
+
       </div>
+
     </aside>
   );
 }
