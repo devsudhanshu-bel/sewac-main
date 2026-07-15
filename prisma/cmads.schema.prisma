@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/cmads"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CMADS_DATABASE_URL")
+}
+
+model admins {
+  id                Int                 @id(map: "users_pkey") @default(autoincrement())
+  full_name         String              @db.VarChar(100)
+  email             String              @unique(map: "users_email_key") @db.VarChar(150)
+  password_hash     String
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  role              String              @default("WORKER") @db.VarChar(50)
+  phone_number      String?             @db.VarChar(20)
+  parent_admin_id   Int?
+  status            String?             @default("ACTIVE") @db.VarChar(30)
+  behavior_profiles behavior_profiles[]
+  behavior_samples  behavior_samples[]
+  devices           devices[]
+  risk_events       risk_events[]
+  preferences admin_preferences?
+  edit_requests_requested edit_requests[] @relation("EditRequestRequester")
+  edit_requests_approved edit_requests[] @relation("EditRequestApprover")
+  temporary_permissions temporary_permissions[]
+}
+
+model admin_preferences {
+  id                  Int      @id @default(autoincrement())
+  admin_id            Int      @unique
+  language            String   @default("English") @db.VarChar(30)
+  theme               String   @default("Light") @db.VarChar(30)
+  date_format         String   @default("DD MMM YYYY") @db.VarChar(30)
+  time_format         String   @default("12 Hour") @db.VarChar(30)
+  default_dashboard   String   @default("Overview") @db.VarChar(50)
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @updatedAt @db.Timestamp(6)
+  admin admins @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+}
+
+model audit_logs {
+  id                Int       @id @default(autoincrement())
+  admin_id          Int?
+  event_type        String    @db.VarChar(100)
+  event_description String?
+  ip_address        String?   @db.VarChar(100)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model behavior_profiles {
+  id                  Int       @id @default(autoincrement())
+  admin_id            Int
+  enrollment_phrase   String    @db.VarChar(255)
+  avg_dwell_time      Decimal?  @db.Decimal(10, 2)
+  avg_flight_time     Decimal?  @db.Decimal(10, 2)
+  avg_typing_speed    Decimal?  @db.Decimal(10, 2)
+  avg_backspace_usage Decimal?  @db.Decimal(10, 2)
+  avg_error_rate      Decimal?  @db.Decimal(10, 2)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  admins              admins    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_behavior_admin")
+}
+
+model behavior_samples {
+  id                  Int       @id @default(autoincrement())
+  admin_id            Int
+  dwell_time          Decimal?  @db.Decimal(10, 2)
+  flight_time         Decimal?  @db.Decimal(10, 2)
+  typing_speed        Decimal?  @db.Decimal(10, 2)
+  backspace_usage     Decimal?  @db.Decimal(10, 2)
+  error_rate          Decimal?  @db.Decimal(10, 2)
+  similarity_score    Decimal?  @db.Decimal(10, 2)
+  verification_result String?   @db.VarChar(50)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  sample_type         String?   @db.VarChar(50)
+  admins              admins    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_behavior_sample_admin")
+}
+
+model devices {
+  id                 Int       @id @default(autoincrement())
+  admin_id           Int
+  device_fingerprint String    @unique @db.VarChar(255)
+  device_name        String?   @db.VarChar(255)
+  trust_score        Int?      @default(50)
+  status             String?   @default("ACTIVE") @db.VarChar(20)
+  first_seen         DateTime? @default(now()) @db.Timestamp(6)
+  last_seen          DateTime? @default(now()) @db.Timestamp(6)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  admins             admins    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_admin")
+
+  @@index([admin_id], map: "idx_devices_admin")
+  @@index([device_fingerprint], map: "idx_devices_fingerprint")
+}
+
+model risk_events {
+  id                 Int       @id @default(autoincrement())
+  admin_id           Int?
+  identity_score     Decimal?  @db.Decimal(5, 2)
+  device_score       Decimal?  @db.Decimal(5, 2)
+  behavior_score     Decimal?  @db.Decimal(5, 2)
+  overall_risk_score Decimal?  @db.Decimal(5, 2)
+  decision           String?   @db.VarChar(20)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  admins             admins?   @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model security_alerts {
+  id          Int       @id @default(autoincrement())
+  admin_id    Int?
+  alert_layer String?   @db.VarChar(50)
+  severity    String?   @db.VarChar(20)
+  alert_type  String?   @db.VarChar(100)
+  description String?
+  ip_address  String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model edit_requests {
+  id                    Int       @id @default(autoincrement())
+  requested_by_admin_id Int
+  approved_by_admin_id  Int?
+  module                String    @db.VarChar(50)
+  action                String    @db.VarChar(20)
+  target_identifier     String    @db.VarChar(100)
+  reason                String    @db.Text
+  status                String    @default("PENDING") @db.VarChar(20)
+  approval_token String? @unique @db.VarChar(255)
+  requested_at          DateTime  @default(now())
+  approved_at           DateTime?
+  expires_at            DateTime?
+  requester             admins @relation("EditRequestRequester", fields: [requested_by_admin_id], references: [id])
+  approver              admins? @relation("EditRequestApprover", fields: [approved_by_admin_id], references: [id])
+}
+
+model temporary_permissions {
+  id         Int      @id @default(autoincrement())
+  admin_id   Int
+  module     String   @db.VarChar(50)
+  target_identifier String @db.VarChar(100)
+  approved_by Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+  admin admins @relation(fields: [admin_id], references: [id])
+  @@unique([admin_id, module, target_identifier])
+}

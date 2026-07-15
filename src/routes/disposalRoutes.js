@@ -3,6 +3,15 @@ const router = express.Router();
 
 const disposalController = require("../controllers/disposalController");
 
-router.get("/record", disposalController.recordDisposal);
+const authMiddleware = require("../middlewares/authMiddleware");
+const checkPermission = require("../middlewares/checkPermission");
+
+// Disposal record access
+router.get(
+  "/record",
+  authMiddleware,
+  checkPermission("logs"),
+  disposalController.recordDisposal
+);
 
 module.exports = router;
