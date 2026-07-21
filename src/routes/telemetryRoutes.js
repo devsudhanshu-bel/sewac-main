@@ -1,17 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
-const disposalController = require("../controllers/disposalController");
-
+const { recordTelemetry } = require("../controllers/telemetryController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
 
-// Disposal record access
 router.get(
-  "/record",
-  authMiddleware,
-  checkPermission("logs"),
-  disposalController.recordDisposal
+    "/record",
+    authMiddleware,
+    checkPermission("logs"),
+    recordTelemetry
 );
 
 module.exports = router;

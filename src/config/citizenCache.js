@@ -2,30 +2,45 @@ const helperDb = require("./helperDb");
 
 const citizenCache = new Map();
 const activeScans = new Set();
-const disposalQueue = [];
+const telemetryQueue = [];
 
 const loadCitizenCache = async () => {
   const result = await helperDb.query(`
     SELECT * FROM master_citizen_data
   `);
-
+ 
   citizenCache.clear();
 
   for (const citizen of result.rows) {
-    if (citizen.wetSlno) {
-      citizenCache.set(citizen.wetSlno, {
-        citizen,
-        type: "WET",
-      });
-    }
+    if (citizen.wetRFID) {
 
-    if (citizen.drySlno) {
-      citizenCache.set(citizen.drySlno, {
-        citizen,
-        type: "DRY",
-      });
-    }
-  }
+    citizenCache.set(citizen.wetRFID,{
+
+    citizen,
+
+    wasteType:"WET",
+
+    matchedRFID: citizen.wetRFID
+
+});
+
+}
+
+    if(citizen.dryRFID){
+
+    citizenCache.set(citizen.dryRFID,{
+
+    citizen,
+
+    wasteType:"DRY",
+
+    matchedRFID: citizen.dryRFID
+
+});
+}
+
+}
+
 
   console.log(`Cache loaded with ${citizenCache.size} RFIDs`);
 };
@@ -33,6 +48,7 @@ const loadCitizenCache = async () => {
 module.exports = {
   citizenCache,
   activeScans,
-  disposalQueue,
+  telemetryQueue,
   loadCitizenCache,
 };
+

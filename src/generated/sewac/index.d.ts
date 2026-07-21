@@ -14,10 +14,10 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 
 /**
- * Model waste_disposal_logs
+ * Model telemetry_logs
  * 
  */
-export type waste_disposal_logs = $Result.DefaultSelection<Prisma.$waste_disposal_logsPayload>
+export type telemetry_logs = $Result.DefaultSelection<Prisma.$telemetry_logsPayload>
 /**
  * Model vehicle_incidents
  * 
@@ -51,8 +51,8 @@ export type edit_logs = $Result.DefaultSelection<Prisma.$edit_logsPayload>
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more Waste_disposal_logs
- * const waste_disposal_logs = await prisma.waste_disposal_logs.findMany()
+ * // Fetch zero or more Telemetry_logs
+ * const telemetry_logs = await prisma.telemetry_logs.findMany()
  * ```
  *
  *
@@ -72,8 +72,8 @@ export class PrismaClient<
    * @example
    * ```
    * const prisma = new PrismaClient()
-   * // Fetch zero or more Waste_disposal_logs
-   * const waste_disposal_logs = await prisma.waste_disposal_logs.findMany()
+   * // Fetch zero or more Telemetry_logs
+   * const telemetry_logs = await prisma.telemetry_logs.findMany()
    * ```
    *
    *
@@ -170,14 +170,14 @@ export class PrismaClient<
   }>>
 
       /**
-   * `prisma.waste_disposal_logs`: Exposes CRUD operations for the **waste_disposal_logs** model.
+   * `prisma.telemetry_logs`: Exposes CRUD operations for the **telemetry_logs** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Waste_disposal_logs
-    * const waste_disposal_logs = await prisma.waste_disposal_logs.findMany()
+    * // Fetch zero or more Telemetry_logs
+    * const telemetry_logs = await prisma.telemetry_logs.findMany()
     * ```
     */
-  get waste_disposal_logs(): Prisma.waste_disposal_logsDelegate<ExtArgs, ClientOptions>;
+  get telemetry_logs(): Prisma.telemetry_logsDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.vehicle_incidents`: Exposes CRUD operations for the **vehicle_incidents** model.
@@ -668,7 +668,7 @@ export namespace Prisma {
 
 
   export const ModelName: {
-    waste_disposal_logs: 'waste_disposal_logs',
+    telemetry_logs: 'telemetry_logs',
     vehicle_incidents: 'vehicle_incidents',
     vehicle_master: 'vehicle_master',
     vehicle_telemetry: 'vehicle_telemetry',
@@ -692,81 +692,81 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "waste_disposal_logs" | "vehicle_incidents" | "vehicle_master" | "vehicle_telemetry" | "plant_master" | "edit_logs"
+      modelProps: "telemetry_logs" | "vehicle_incidents" | "vehicle_master" | "vehicle_telemetry" | "plant_master" | "edit_logs"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
-      waste_disposal_logs: {
-        payload: Prisma.$waste_disposal_logsPayload<ExtArgs>
-        fields: Prisma.waste_disposal_logsFieldRefs
+      telemetry_logs: {
+        payload: Prisma.$telemetry_logsPayload<ExtArgs>
+        fields: Prisma.telemetry_logsFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.waste_disposal_logsFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload> | null
+            args: Prisma.telemetry_logsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.waste_disposal_logsFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           findFirst: {
-            args: Prisma.waste_disposal_logsFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload> | null
+            args: Prisma.telemetry_logsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.waste_disposal_logsFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           findMany: {
-            args: Prisma.waste_disposal_logsFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>[]
+            args: Prisma.telemetry_logsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>[]
           }
           create: {
-            args: Prisma.waste_disposal_logsCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           createMany: {
-            args: Prisma.waste_disposal_logsCreateManyArgs<ExtArgs>
+            args: Prisma.telemetry_logsCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.waste_disposal_logsCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>[]
+            args: Prisma.telemetry_logsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>[]
           }
           delete: {
-            args: Prisma.waste_disposal_logsDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           update: {
-            args: Prisma.waste_disposal_logsUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           deleteMany: {
-            args: Prisma.waste_disposal_logsDeleteManyArgs<ExtArgs>
+            args: Prisma.telemetry_logsDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.waste_disposal_logsUpdateManyArgs<ExtArgs>
+            args: Prisma.telemetry_logsUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: Prisma.waste_disposal_logsUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>[]
+            args: Prisma.telemetry_logsUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>[]
           }
           upsert: {
-            args: Prisma.waste_disposal_logsUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$waste_disposal_logsPayload>
+            args: Prisma.telemetry_logsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$telemetry_logsPayload>
           }
           aggregate: {
-            args: Prisma.Waste_disposal_logsAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateWaste_disposal_logs>
+            args: Prisma.Telemetry_logsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateTelemetry_logs>
           }
           groupBy: {
-            args: Prisma.waste_disposal_logsGroupByArgs<ExtArgs>
-            result: $Utils.Optional<Waste_disposal_logsGroupByOutputType>[]
+            args: Prisma.telemetry_logsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Telemetry_logsGroupByOutputType>[]
           }
           count: {
-            args: Prisma.waste_disposal_logsCountArgs<ExtArgs>
-            result: $Utils.Optional<Waste_disposal_logsCountAggregateOutputType> | number
+            args: Prisma.telemetry_logsCountArgs<ExtArgs>
+            result: $Utils.Optional<Telemetry_logsCountAggregateOutputType> | number
           }
         }
       }
@@ -1224,7 +1224,7 @@ export namespace Prisma {
     omit?: Prisma.GlobalOmitConfig
   }
   export type GlobalOmitConfig = {
-    waste_disposal_logs?: waste_disposal_logsOmit
+    telemetry_logs?: telemetry_logsOmit
     vehicle_incidents?: vehicle_incidentsOmit
     vehicle_master?: vehicle_masterOmit
     vehicle_telemetry?: vehicle_telemetryOmit
@@ -1364,642 +1364,590 @@ export namespace Prisma {
    */
 
   /**
-   * Model waste_disposal_logs
+   * Model telemetry_logs
    */
 
-  export type AggregateWaste_disposal_logs = {
-    _count: Waste_disposal_logsCountAggregateOutputType | null
-    _avg: Waste_disposal_logsAvgAggregateOutputType | null
-    _sum: Waste_disposal_logsSumAggregateOutputType | null
-    _min: Waste_disposal_logsMinAggregateOutputType | null
-    _max: Waste_disposal_logsMaxAggregateOutputType | null
+  export type AggregateTelemetry_logs = {
+    _count: Telemetry_logsCountAggregateOutputType | null
+    _avg: Telemetry_logsAvgAggregateOutputType | null
+    _sum: Telemetry_logsSumAggregateOutputType | null
+    _min: Telemetry_logsMinAggregateOutputType | null
+    _max: Telemetry_logsMaxAggregateOutputType | null
   }
 
-  export type Waste_disposal_logsAvgAggregateOutputType = {
+  export type Telemetry_logsAvgAggregateOutputType = {
     id: number | null
     citizen_id: number | null
-    wet_weight_kg: Decimal | null
-    dry_weight_kg: Decimal | null
-    total_weight_kg: Decimal | null
-    reward_points: number | null
     latitude: Decimal | null
     longitude: Decimal | null
-    number_of_people: number | null
-  }
-
-  export type Waste_disposal_logsSumAggregateOutputType = {
-    id: number | null
-    citizen_id: number | null
     wet_weight_kg: Decimal | null
     dry_weight_kg: Decimal | null
-    total_weight_kg: Decimal | null
-    reward_points: number | null
+    other_weight_kg: Decimal | null
+    cumulative_weight_kg: Decimal | null
+  }
+
+  export type Telemetry_logsSumAggregateOutputType = {
+    id: number | null
+    citizen_id: number | null
     latitude: Decimal | null
     longitude: Decimal | null
-    number_of_people: number | null
-  }
-
-  export type Waste_disposal_logsMinAggregateOutputType = {
-    id: number | null
-    citizen_id: number | null
-    person_name: string | null
-    phone_number: string | null
-    city: string | null
-    ward: string | null
-    area: string | null
-    wet_slno: string | null
-    dry_slno: string | null
-    wet_rfid: string | null
-    dry_rfid: string | null
-    disposal_type: string | null
     wet_weight_kg: Decimal | null
     dry_weight_kg: Decimal | null
-    total_weight_kg: Decimal | null
-    reward_points: number | null
+    other_weight_kg: Decimal | null
+    cumulative_weight_kg: Decimal | null
+  }
+
+  export type Telemetry_logsMinAggregateOutputType = {
+    id: number | null
+    iot_timestamp: Date | null
+    received_at: Date | null
+    rfid_epc: string | null
+    citizen_id: number | null
+    citizen_contact: string | null
+    waste_type: string | null
+    latitude: Decimal | null
+    longitude: Decimal | null
+    wet_weight_kg: Decimal | null
+    dry_weight_kg: Decimal | null
+    other_weight_kg: Decimal | null
+    cumulative_weight_kg: Decimal | null
+    driver_name: string | null
+    vehicle_number: string | null
     vehicle_id: string | null
-    vehicle_name: string | null
-    latitude: Decimal | null
-    longitude: Decimal | null
-    disposed_at: Date | null
-    house_number: string | null
-    household_type: string | null
-    number_of_people: number | null
-    waste_generator_type: string | null
+    firmware_version: string | null
+    unit_number: string | null
+    collection_type: string | null
+    remarks: string | null
+    err_code: string | null
   }
 
-  export type Waste_disposal_logsMaxAggregateOutputType = {
+  export type Telemetry_logsMaxAggregateOutputType = {
     id: number | null
+    iot_timestamp: Date | null
+    received_at: Date | null
+    rfid_epc: string | null
     citizen_id: number | null
-    person_name: string | null
-    phone_number: string | null
-    city: string | null
-    ward: string | null
-    area: string | null
-    wet_slno: string | null
-    dry_slno: string | null
-    wet_rfid: string | null
-    dry_rfid: string | null
-    disposal_type: string | null
+    citizen_contact: string | null
+    waste_type: string | null
+    latitude: Decimal | null
+    longitude: Decimal | null
     wet_weight_kg: Decimal | null
     dry_weight_kg: Decimal | null
-    total_weight_kg: Decimal | null
-    reward_points: number | null
+    other_weight_kg: Decimal | null
+    cumulative_weight_kg: Decimal | null
+    driver_name: string | null
+    vehicle_number: string | null
     vehicle_id: string | null
-    vehicle_name: string | null
-    latitude: Decimal | null
-    longitude: Decimal | null
-    disposed_at: Date | null
-    house_number: string | null
-    household_type: string | null
-    number_of_people: number | null
-    waste_generator_type: string | null
+    firmware_version: string | null
+    unit_number: string | null
+    collection_type: string | null
+    remarks: string | null
+    err_code: string | null
   }
 
-  export type Waste_disposal_logsCountAggregateOutputType = {
+  export type Telemetry_logsCountAggregateOutputType = {
     id: number
+    iot_timestamp: number
+    received_at: number
+    rfid_epc: number
     citizen_id: number
-    person_name: number
-    phone_number: number
-    city: number
-    ward: number
-    area: number
-    wet_slno: number
-    dry_slno: number
-    wet_rfid: number
-    dry_rfid: number
-    disposal_type: number
-    wet_weight_kg: number
-    dry_weight_kg: number
-    total_weight_kg: number
-    reward_points: number
-    vehicle_id: number
-    vehicle_name: number
+    citizen_contact: number
+    waste_type: number
     latitude: number
     longitude: number
-    disposed_at: number
-    house_number: number
-    household_type: number
-    number_of_people: number
-    waste_generator_type: number
+    wet_weight_kg: number
+    dry_weight_kg: number
+    other_weight_kg: number
+    cumulative_weight_kg: number
+    driver_name: number
+    vehicle_number: number
+    vehicle_id: number
+    firmware_version: number
+    unit_number: number
+    collection_type: number
+    remarks: number
+    err_code: number
     _all: number
   }
 
 
-  export type Waste_disposal_logsAvgAggregateInputType = {
+  export type Telemetry_logsAvgAggregateInputType = {
     id?: true
     citizen_id?: true
-    wet_weight_kg?: true
-    dry_weight_kg?: true
-    total_weight_kg?: true
-    reward_points?: true
     latitude?: true
     longitude?: true
-    number_of_people?: true
-  }
-
-  export type Waste_disposal_logsSumAggregateInputType = {
-    id?: true
-    citizen_id?: true
     wet_weight_kg?: true
     dry_weight_kg?: true
-    total_weight_kg?: true
-    reward_points?: true
+    other_weight_kg?: true
+    cumulative_weight_kg?: true
+  }
+
+  export type Telemetry_logsSumAggregateInputType = {
+    id?: true
+    citizen_id?: true
     latitude?: true
     longitude?: true
-    number_of_people?: true
-  }
-
-  export type Waste_disposal_logsMinAggregateInputType = {
-    id?: true
-    citizen_id?: true
-    person_name?: true
-    phone_number?: true
-    city?: true
-    ward?: true
-    area?: true
-    wet_slno?: true
-    dry_slno?: true
-    wet_rfid?: true
-    dry_rfid?: true
-    disposal_type?: true
     wet_weight_kg?: true
     dry_weight_kg?: true
-    total_weight_kg?: true
-    reward_points?: true
+    other_weight_kg?: true
+    cumulative_weight_kg?: true
+  }
+
+  export type Telemetry_logsMinAggregateInputType = {
+    id?: true
+    iot_timestamp?: true
+    received_at?: true
+    rfid_epc?: true
+    citizen_id?: true
+    citizen_contact?: true
+    waste_type?: true
+    latitude?: true
+    longitude?: true
+    wet_weight_kg?: true
+    dry_weight_kg?: true
+    other_weight_kg?: true
+    cumulative_weight_kg?: true
+    driver_name?: true
+    vehicle_number?: true
     vehicle_id?: true
-    vehicle_name?: true
-    latitude?: true
-    longitude?: true
-    disposed_at?: true
-    house_number?: true
-    household_type?: true
-    number_of_people?: true
-    waste_generator_type?: true
+    firmware_version?: true
+    unit_number?: true
+    collection_type?: true
+    remarks?: true
+    err_code?: true
   }
 
-  export type Waste_disposal_logsMaxAggregateInputType = {
+  export type Telemetry_logsMaxAggregateInputType = {
     id?: true
+    iot_timestamp?: true
+    received_at?: true
+    rfid_epc?: true
     citizen_id?: true
-    person_name?: true
-    phone_number?: true
-    city?: true
-    ward?: true
-    area?: true
-    wet_slno?: true
-    dry_slno?: true
-    wet_rfid?: true
-    dry_rfid?: true
-    disposal_type?: true
-    wet_weight_kg?: true
-    dry_weight_kg?: true
-    total_weight_kg?: true
-    reward_points?: true
-    vehicle_id?: true
-    vehicle_name?: true
+    citizen_contact?: true
+    waste_type?: true
     latitude?: true
     longitude?: true
-    disposed_at?: true
-    house_number?: true
-    household_type?: true
-    number_of_people?: true
-    waste_generator_type?: true
+    wet_weight_kg?: true
+    dry_weight_kg?: true
+    other_weight_kg?: true
+    cumulative_weight_kg?: true
+    driver_name?: true
+    vehicle_number?: true
+    vehicle_id?: true
+    firmware_version?: true
+    unit_number?: true
+    collection_type?: true
+    remarks?: true
+    err_code?: true
   }
 
-  export type Waste_disposal_logsCountAggregateInputType = {
+  export type Telemetry_logsCountAggregateInputType = {
     id?: true
+    iot_timestamp?: true
+    received_at?: true
+    rfid_epc?: true
     citizen_id?: true
-    person_name?: true
-    phone_number?: true
-    city?: true
-    ward?: true
-    area?: true
-    wet_slno?: true
-    dry_slno?: true
-    wet_rfid?: true
-    dry_rfid?: true
-    disposal_type?: true
-    wet_weight_kg?: true
-    dry_weight_kg?: true
-    total_weight_kg?: true
-    reward_points?: true
-    vehicle_id?: true
-    vehicle_name?: true
+    citizen_contact?: true
+    waste_type?: true
     latitude?: true
     longitude?: true
-    disposed_at?: true
-    house_number?: true
-    household_type?: true
-    number_of_people?: true
-    waste_generator_type?: true
+    wet_weight_kg?: true
+    dry_weight_kg?: true
+    other_weight_kg?: true
+    cumulative_weight_kg?: true
+    driver_name?: true
+    vehicle_number?: true
+    vehicle_id?: true
+    firmware_version?: true
+    unit_number?: true
+    collection_type?: true
+    remarks?: true
+    err_code?: true
     _all?: true
   }
 
-  export type Waste_disposal_logsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Telemetry_logsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which waste_disposal_logs to aggregate.
+     * Filter which telemetry_logs to aggregate.
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of waste_disposal_logs to fetch.
+     * Determine the order of telemetry_logs to fetch.
      */
-    orderBy?: waste_disposal_logsOrderByWithRelationInput | waste_disposal_logsOrderByWithRelationInput[]
+    orderBy?: telemetry_logsOrderByWithRelationInput | telemetry_logsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: waste_disposal_logsWhereUniqueInput
+    cursor?: telemetry_logsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` waste_disposal_logs from the position of the cursor.
+     * Take `±n` telemetry_logs from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` waste_disposal_logs.
+     * Skip the first `n` telemetry_logs.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned waste_disposal_logs
+     * Count returned telemetry_logs
     **/
-    _count?: true | Waste_disposal_logsCountAggregateInputType
+    _count?: true | Telemetry_logsCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: Waste_disposal_logsAvgAggregateInputType
+    _avg?: Telemetry_logsAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: Waste_disposal_logsSumAggregateInputType
+    _sum?: Telemetry_logsSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: Waste_disposal_logsMinAggregateInputType
+    _min?: Telemetry_logsMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: Waste_disposal_logsMaxAggregateInputType
+    _max?: Telemetry_logsMaxAggregateInputType
   }
 
-  export type GetWaste_disposal_logsAggregateType<T extends Waste_disposal_logsAggregateArgs> = {
-        [P in keyof T & keyof AggregateWaste_disposal_logs]: P extends '_count' | 'count'
+  export type GetTelemetry_logsAggregateType<T extends Telemetry_logsAggregateArgs> = {
+        [P in keyof T & keyof AggregateTelemetry_logs]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateWaste_disposal_logs[P]>
-      : GetScalarType<T[P], AggregateWaste_disposal_logs[P]>
+        : GetScalarType<T[P], AggregateTelemetry_logs[P]>
+      : GetScalarType<T[P], AggregateTelemetry_logs[P]>
   }
 
 
 
 
-  export type waste_disposal_logsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: waste_disposal_logsWhereInput
-    orderBy?: waste_disposal_logsOrderByWithAggregationInput | waste_disposal_logsOrderByWithAggregationInput[]
-    by: Waste_disposal_logsScalarFieldEnum[] | Waste_disposal_logsScalarFieldEnum
-    having?: waste_disposal_logsScalarWhereWithAggregatesInput
+  export type telemetry_logsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: telemetry_logsWhereInput
+    orderBy?: telemetry_logsOrderByWithAggregationInput | telemetry_logsOrderByWithAggregationInput[]
+    by: Telemetry_logsScalarFieldEnum[] | Telemetry_logsScalarFieldEnum
+    having?: telemetry_logsScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: Waste_disposal_logsCountAggregateInputType | true
-    _avg?: Waste_disposal_logsAvgAggregateInputType
-    _sum?: Waste_disposal_logsSumAggregateInputType
-    _min?: Waste_disposal_logsMinAggregateInputType
-    _max?: Waste_disposal_logsMaxAggregateInputType
+    _count?: Telemetry_logsCountAggregateInputType | true
+    _avg?: Telemetry_logsAvgAggregateInputType
+    _sum?: Telemetry_logsSumAggregateInputType
+    _min?: Telemetry_logsMinAggregateInputType
+    _max?: Telemetry_logsMaxAggregateInputType
   }
 
-  export type Waste_disposal_logsGroupByOutputType = {
+  export type Telemetry_logsGroupByOutputType = {
     id: number
+    iot_timestamp: Date
+    received_at: Date
+    rfid_epc: string
     citizen_id: number | null
-    person_name: string | null
-    phone_number: string | null
-    city: string | null
-    ward: string | null
-    area: string | null
-    wet_slno: string | null
-    dry_slno: string | null
-    wet_rfid: string | null
-    dry_rfid: string | null
-    disposal_type: string | null
-    wet_weight_kg: Decimal | null
-    dry_weight_kg: Decimal | null
-    total_weight_kg: Decimal | null
-    reward_points: number | null
-    vehicle_id: string | null
-    vehicle_name: string | null
+    citizen_contact: string | null
+    waste_type: string | null
     latitude: Decimal | null
     longitude: Decimal | null
-    disposed_at: Date | null
-    house_number: string | null
-    household_type: string | null
-    number_of_people: number | null
-    waste_generator_type: string | null
-    _count: Waste_disposal_logsCountAggregateOutputType | null
-    _avg: Waste_disposal_logsAvgAggregateOutputType | null
-    _sum: Waste_disposal_logsSumAggregateOutputType | null
-    _min: Waste_disposal_logsMinAggregateOutputType | null
-    _max: Waste_disposal_logsMaxAggregateOutputType | null
+    wet_weight_kg: Decimal | null
+    dry_weight_kg: Decimal | null
+    other_weight_kg: Decimal | null
+    cumulative_weight_kg: Decimal | null
+    driver_name: string | null
+    vehicle_number: string | null
+    vehicle_id: string | null
+    firmware_version: string | null
+    unit_number: string | null
+    collection_type: string | null
+    remarks: string | null
+    err_code: string | null
+    _count: Telemetry_logsCountAggregateOutputType | null
+    _avg: Telemetry_logsAvgAggregateOutputType | null
+    _sum: Telemetry_logsSumAggregateOutputType | null
+    _min: Telemetry_logsMinAggregateOutputType | null
+    _max: Telemetry_logsMaxAggregateOutputType | null
   }
 
-  type GetWaste_disposal_logsGroupByPayload<T extends waste_disposal_logsGroupByArgs> = Prisma.PrismaPromise<
+  type GetTelemetry_logsGroupByPayload<T extends telemetry_logsGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<Waste_disposal_logsGroupByOutputType, T['by']> &
+      PickEnumerable<Telemetry_logsGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof Waste_disposal_logsGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof Telemetry_logsGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], Waste_disposal_logsGroupByOutputType[P]>
-            : GetScalarType<T[P], Waste_disposal_logsGroupByOutputType[P]>
+              : GetScalarType<T[P], Telemetry_logsGroupByOutputType[P]>
+            : GetScalarType<T[P], Telemetry_logsGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type waste_disposal_logsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type telemetry_logsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    iot_timestamp?: boolean
+    received_at?: boolean
+    rfid_epc?: boolean
     citizen_id?: boolean
-    person_name?: boolean
-    phone_number?: boolean
-    city?: boolean
-    ward?: boolean
-    area?: boolean
-    wet_slno?: boolean
-    dry_slno?: boolean
-    wet_rfid?: boolean
-    dry_rfid?: boolean
-    disposal_type?: boolean
-    wet_weight_kg?: boolean
-    dry_weight_kg?: boolean
-    total_weight_kg?: boolean
-    reward_points?: boolean
-    vehicle_id?: boolean
-    vehicle_name?: boolean
+    citizen_contact?: boolean
+    waste_type?: boolean
     latitude?: boolean
     longitude?: boolean
-    disposed_at?: boolean
-    house_number?: boolean
-    household_type?: boolean
-    number_of_people?: boolean
-    waste_generator_type?: boolean
-  }, ExtArgs["result"]["waste_disposal_logs"]>
+    wet_weight_kg?: boolean
+    dry_weight_kg?: boolean
+    other_weight_kg?: boolean
+    cumulative_weight_kg?: boolean
+    driver_name?: boolean
+    vehicle_number?: boolean
+    vehicle_id?: boolean
+    firmware_version?: boolean
+    unit_number?: boolean
+    collection_type?: boolean
+    remarks?: boolean
+    err_code?: boolean
+  }, ExtArgs["result"]["telemetry_logs"]>
 
-  export type waste_disposal_logsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type telemetry_logsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    iot_timestamp?: boolean
+    received_at?: boolean
+    rfid_epc?: boolean
     citizen_id?: boolean
-    person_name?: boolean
-    phone_number?: boolean
-    city?: boolean
-    ward?: boolean
-    area?: boolean
-    wet_slno?: boolean
-    dry_slno?: boolean
-    wet_rfid?: boolean
-    dry_rfid?: boolean
-    disposal_type?: boolean
-    wet_weight_kg?: boolean
-    dry_weight_kg?: boolean
-    total_weight_kg?: boolean
-    reward_points?: boolean
-    vehicle_id?: boolean
-    vehicle_name?: boolean
+    citizen_contact?: boolean
+    waste_type?: boolean
     latitude?: boolean
     longitude?: boolean
-    disposed_at?: boolean
-    house_number?: boolean
-    household_type?: boolean
-    number_of_people?: boolean
-    waste_generator_type?: boolean
-  }, ExtArgs["result"]["waste_disposal_logs"]>
+    wet_weight_kg?: boolean
+    dry_weight_kg?: boolean
+    other_weight_kg?: boolean
+    cumulative_weight_kg?: boolean
+    driver_name?: boolean
+    vehicle_number?: boolean
+    vehicle_id?: boolean
+    firmware_version?: boolean
+    unit_number?: boolean
+    collection_type?: boolean
+    remarks?: boolean
+    err_code?: boolean
+  }, ExtArgs["result"]["telemetry_logs"]>
 
-  export type waste_disposal_logsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type telemetry_logsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    iot_timestamp?: boolean
+    received_at?: boolean
+    rfid_epc?: boolean
     citizen_id?: boolean
-    person_name?: boolean
-    phone_number?: boolean
-    city?: boolean
-    ward?: boolean
-    area?: boolean
-    wet_slno?: boolean
-    dry_slno?: boolean
-    wet_rfid?: boolean
-    dry_rfid?: boolean
-    disposal_type?: boolean
-    wet_weight_kg?: boolean
-    dry_weight_kg?: boolean
-    total_weight_kg?: boolean
-    reward_points?: boolean
-    vehicle_id?: boolean
-    vehicle_name?: boolean
+    citizen_contact?: boolean
+    waste_type?: boolean
     latitude?: boolean
     longitude?: boolean
-    disposed_at?: boolean
-    house_number?: boolean
-    household_type?: boolean
-    number_of_people?: boolean
-    waste_generator_type?: boolean
-  }, ExtArgs["result"]["waste_disposal_logs"]>
+    wet_weight_kg?: boolean
+    dry_weight_kg?: boolean
+    other_weight_kg?: boolean
+    cumulative_weight_kg?: boolean
+    driver_name?: boolean
+    vehicle_number?: boolean
+    vehicle_id?: boolean
+    firmware_version?: boolean
+    unit_number?: boolean
+    collection_type?: boolean
+    remarks?: boolean
+    err_code?: boolean
+  }, ExtArgs["result"]["telemetry_logs"]>
 
-  export type waste_disposal_logsSelectScalar = {
+  export type telemetry_logsSelectScalar = {
     id?: boolean
+    iot_timestamp?: boolean
+    received_at?: boolean
+    rfid_epc?: boolean
     citizen_id?: boolean
-    person_name?: boolean
-    phone_number?: boolean
-    city?: boolean
-    ward?: boolean
-    area?: boolean
-    wet_slno?: boolean
-    dry_slno?: boolean
-    wet_rfid?: boolean
-    dry_rfid?: boolean
-    disposal_type?: boolean
-    wet_weight_kg?: boolean
-    dry_weight_kg?: boolean
-    total_weight_kg?: boolean
-    reward_points?: boolean
-    vehicle_id?: boolean
-    vehicle_name?: boolean
+    citizen_contact?: boolean
+    waste_type?: boolean
     latitude?: boolean
     longitude?: boolean
-    disposed_at?: boolean
-    house_number?: boolean
-    household_type?: boolean
-    number_of_people?: boolean
-    waste_generator_type?: boolean
+    wet_weight_kg?: boolean
+    dry_weight_kg?: boolean
+    other_weight_kg?: boolean
+    cumulative_weight_kg?: boolean
+    driver_name?: boolean
+    vehicle_number?: boolean
+    vehicle_id?: boolean
+    firmware_version?: boolean
+    unit_number?: boolean
+    collection_type?: boolean
+    remarks?: boolean
+    err_code?: boolean
   }
 
-  export type waste_disposal_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "citizen_id" | "person_name" | "phone_number" | "city" | "ward" | "area" | "wet_slno" | "dry_slno" | "wet_rfid" | "dry_rfid" | "disposal_type" | "wet_weight_kg" | "dry_weight_kg" | "total_weight_kg" | "reward_points" | "vehicle_id" | "vehicle_name" | "latitude" | "longitude" | "disposed_at" | "house_number" | "household_type" | "number_of_people" | "waste_generator_type", ExtArgs["result"]["waste_disposal_logs"]>
+  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "citizen_contact" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_number" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "err_code", ExtArgs["result"]["telemetry_logs"]>
 
-  export type $waste_disposal_logsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "waste_disposal_logs"
+  export type $telemetry_logsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "telemetry_logs"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: number
+      iot_timestamp: Date
+      received_at: Date
+      rfid_epc: string
       citizen_id: number | null
-      person_name: string | null
-      phone_number: string | null
-      city: string | null
-      ward: string | null
-      area: string | null
-      wet_slno: string | null
-      dry_slno: string | null
-      wet_rfid: string | null
-      dry_rfid: string | null
-      disposal_type: string | null
-      wet_weight_kg: Prisma.Decimal | null
-      dry_weight_kg: Prisma.Decimal | null
-      total_weight_kg: Prisma.Decimal | null
-      reward_points: number | null
-      vehicle_id: string | null
-      vehicle_name: string | null
+      citizen_contact: string | null
+      waste_type: string | null
       latitude: Prisma.Decimal | null
       longitude: Prisma.Decimal | null
-      disposed_at: Date | null
-      house_number: string | null
-      household_type: string | null
-      number_of_people: number | null
-      waste_generator_type: string | null
-    }, ExtArgs["result"]["waste_disposal_logs"]>
+      wet_weight_kg: Prisma.Decimal | null
+      dry_weight_kg: Prisma.Decimal | null
+      other_weight_kg: Prisma.Decimal | null
+      cumulative_weight_kg: Prisma.Decimal | null
+      driver_name: string | null
+      vehicle_number: string | null
+      vehicle_id: string | null
+      firmware_version: string | null
+      unit_number: string | null
+      collection_type: string | null
+      remarks: string | null
+      err_code: string | null
+    }, ExtArgs["result"]["telemetry_logs"]>
     composites: {}
   }
 
-  type waste_disposal_logsGetPayload<S extends boolean | null | undefined | waste_disposal_logsDefaultArgs> = $Result.GetResult<Prisma.$waste_disposal_logsPayload, S>
+  type telemetry_logsGetPayload<S extends boolean | null | undefined | telemetry_logsDefaultArgs> = $Result.GetResult<Prisma.$telemetry_logsPayload, S>
 
-  type waste_disposal_logsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<waste_disposal_logsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: Waste_disposal_logsCountAggregateInputType | true
+  type telemetry_logsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<telemetry_logsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Telemetry_logsCountAggregateInputType | true
     }
 
-  export interface waste_disposal_logsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['waste_disposal_logs'], meta: { name: 'waste_disposal_logs' } }
+  export interface telemetry_logsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['telemetry_logs'], meta: { name: 'telemetry_logs' } }
     /**
-     * Find zero or one Waste_disposal_logs that matches the filter.
-     * @param {waste_disposal_logsFindUniqueArgs} args - Arguments to find a Waste_disposal_logs
+     * Find zero or one Telemetry_logs that matches the filter.
+     * @param {telemetry_logsFindUniqueArgs} args - Arguments to find a Telemetry_logs
      * @example
-     * // Get one Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findUnique({
+     * // Get one Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends waste_disposal_logsFindUniqueArgs>(args: SelectSubset<T, waste_disposal_logsFindUniqueArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findUnique<T extends telemetry_logsFindUniqueArgs>(args: SelectSubset<T, telemetry_logsFindUniqueArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find one Waste_disposal_logs that matches the filter or throw an error with `error.code='P2025'`
+     * Find one Telemetry_logs that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
-     * @param {waste_disposal_logsFindUniqueOrThrowArgs} args - Arguments to find a Waste_disposal_logs
+     * @param {telemetry_logsFindUniqueOrThrowArgs} args - Arguments to find a Telemetry_logs
      * @example
-     * // Get one Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findUniqueOrThrow({
+     * // Get one Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends waste_disposal_logsFindUniqueOrThrowArgs>(args: SelectSubset<T, waste_disposal_logsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findUniqueOrThrow<T extends telemetry_logsFindUniqueOrThrowArgs>(args: SelectSubset<T, telemetry_logsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Waste_disposal_logs that matches the filter.
+     * Find the first Telemetry_logs that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsFindFirstArgs} args - Arguments to find a Waste_disposal_logs
+     * @param {telemetry_logsFindFirstArgs} args - Arguments to find a Telemetry_logs
      * @example
-     * // Get one Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findFirst({
+     * // Get one Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends waste_disposal_logsFindFirstArgs>(args?: SelectSubset<T, waste_disposal_logsFindFirstArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findFirst<T extends telemetry_logsFindFirstArgs>(args?: SelectSubset<T, telemetry_logsFindFirstArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Waste_disposal_logs that matches the filter or
+     * Find the first Telemetry_logs that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsFindFirstOrThrowArgs} args - Arguments to find a Waste_disposal_logs
+     * @param {telemetry_logsFindFirstOrThrowArgs} args - Arguments to find a Telemetry_logs
      * @example
-     * // Get one Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findFirstOrThrow({
+     * // Get one Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends waste_disposal_logsFindFirstOrThrowArgs>(args?: SelectSubset<T, waste_disposal_logsFindFirstOrThrowArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findFirstOrThrow<T extends telemetry_logsFindFirstOrThrowArgs>(args?: SelectSubset<T, telemetry_logsFindFirstOrThrowArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find zero or more Waste_disposal_logs that matches the filter.
+     * Find zero or more Telemetry_logs that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {telemetry_logsFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findMany()
+     * // Get all Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findMany()
      * 
-     * // Get first 10 Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.findMany({ take: 10 })
+     * // Get first 10 Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const waste_disposal_logsWithIdOnly = await prisma.waste_disposal_logs.findMany({ select: { id: true } })
+     * const telemetry_logsWithIdOnly = await prisma.telemetry_logs.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends waste_disposal_logsFindManyArgs>(args?: SelectSubset<T, waste_disposal_logsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    findMany<T extends telemetry_logsFindManyArgs>(args?: SelectSubset<T, telemetry_logsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
     /**
-     * Create a Waste_disposal_logs.
-     * @param {waste_disposal_logsCreateArgs} args - Arguments to create a Waste_disposal_logs.
+     * Create a Telemetry_logs.
+     * @param {telemetry_logsCreateArgs} args - Arguments to create a Telemetry_logs.
      * @example
-     * // Create one Waste_disposal_logs
-     * const Waste_disposal_logs = await prisma.waste_disposal_logs.create({
+     * // Create one Telemetry_logs
+     * const Telemetry_logs = await prisma.telemetry_logs.create({
      *   data: {
-     *     // ... data to create a Waste_disposal_logs
+     *     // ... data to create a Telemetry_logs
      *   }
      * })
      * 
      */
-    create<T extends waste_disposal_logsCreateArgs>(args: SelectSubset<T, waste_disposal_logsCreateArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    create<T extends telemetry_logsCreateArgs>(args: SelectSubset<T, telemetry_logsCreateArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Create many Waste_disposal_logs.
-     * @param {waste_disposal_logsCreateManyArgs} args - Arguments to create many Waste_disposal_logs.
+     * Create many Telemetry_logs.
+     * @param {telemetry_logsCreateManyArgs} args - Arguments to create many Telemetry_logs.
      * @example
-     * // Create many Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.createMany({
+     * // Create many Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends waste_disposal_logsCreateManyArgs>(args?: SelectSubset<T, waste_disposal_logsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends telemetry_logsCreateManyArgs>(args?: SelectSubset<T, telemetry_logsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Waste_disposal_logs and returns the data saved in the database.
-     * @param {waste_disposal_logsCreateManyAndReturnArgs} args - Arguments to create many Waste_disposal_logs.
+     * Create many Telemetry_logs and returns the data saved in the database.
+     * @param {telemetry_logsCreateManyAndReturnArgs} args - Arguments to create many Telemetry_logs.
      * @example
-     * // Create many Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.createManyAndReturn({
+     * // Create many Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many Waste_disposal_logs and only return the `id`
-     * const waste_disposal_logsWithIdOnly = await prisma.waste_disposal_logs.createManyAndReturn({
+     * // Create many Telemetry_logs and only return the `id`
+     * const telemetry_logsWithIdOnly = await prisma.telemetry_logs.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -2009,28 +1957,28 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends waste_disposal_logsCreateManyAndReturnArgs>(args?: SelectSubset<T, waste_disposal_logsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    createManyAndReturn<T extends telemetry_logsCreateManyAndReturnArgs>(args?: SelectSubset<T, telemetry_logsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Delete a Waste_disposal_logs.
-     * @param {waste_disposal_logsDeleteArgs} args - Arguments to delete one Waste_disposal_logs.
+     * Delete a Telemetry_logs.
+     * @param {telemetry_logsDeleteArgs} args - Arguments to delete one Telemetry_logs.
      * @example
-     * // Delete one Waste_disposal_logs
-     * const Waste_disposal_logs = await prisma.waste_disposal_logs.delete({
+     * // Delete one Telemetry_logs
+     * const Telemetry_logs = await prisma.telemetry_logs.delete({
      *   where: {
-     *     // ... filter to delete one Waste_disposal_logs
+     *     // ... filter to delete one Telemetry_logs
      *   }
      * })
      * 
      */
-    delete<T extends waste_disposal_logsDeleteArgs>(args: SelectSubset<T, waste_disposal_logsDeleteArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    delete<T extends telemetry_logsDeleteArgs>(args: SelectSubset<T, telemetry_logsDeleteArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Update one Waste_disposal_logs.
-     * @param {waste_disposal_logsUpdateArgs} args - Arguments to update one Waste_disposal_logs.
+     * Update one Telemetry_logs.
+     * @param {telemetry_logsUpdateArgs} args - Arguments to update one Telemetry_logs.
      * @example
-     * // Update one Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.update({
+     * // Update one Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2040,30 +1988,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends waste_disposal_logsUpdateArgs>(args: SelectSubset<T, waste_disposal_logsUpdateArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    update<T extends telemetry_logsUpdateArgs>(args: SelectSubset<T, telemetry_logsUpdateArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Delete zero or more Waste_disposal_logs.
-     * @param {waste_disposal_logsDeleteManyArgs} args - Arguments to filter Waste_disposal_logs to delete.
+     * Delete zero or more Telemetry_logs.
+     * @param {telemetry_logsDeleteManyArgs} args - Arguments to filter Telemetry_logs to delete.
      * @example
-     * // Delete a few Waste_disposal_logs
-     * const { count } = await prisma.waste_disposal_logs.deleteMany({
+     * // Delete a few Telemetry_logs
+     * const { count } = await prisma.telemetry_logs.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends waste_disposal_logsDeleteManyArgs>(args?: SelectSubset<T, waste_disposal_logsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends telemetry_logsDeleteManyArgs>(args?: SelectSubset<T, telemetry_logsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Waste_disposal_logs.
+     * Update zero or more Telemetry_logs.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {telemetry_logsUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.updateMany({
+     * // Update many Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2073,14 +2021,14 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends waste_disposal_logsUpdateManyArgs>(args: SelectSubset<T, waste_disposal_logsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends telemetry_logsUpdateManyArgs>(args: SelectSubset<T, telemetry_logsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Waste_disposal_logs and returns the data updated in the database.
-     * @param {waste_disposal_logsUpdateManyAndReturnArgs} args - Arguments to update many Waste_disposal_logs.
+     * Update zero or more Telemetry_logs and returns the data updated in the database.
+     * @param {telemetry_logsUpdateManyAndReturnArgs} args - Arguments to update many Telemetry_logs.
      * @example
-     * // Update many Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.updateManyAndReturn({
+     * // Update many Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2089,8 +2037,8 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Waste_disposal_logs and only return the `id`
-     * const waste_disposal_logsWithIdOnly = await prisma.waste_disposal_logs.updateManyAndReturn({
+     * // Update zero or more Telemetry_logs and only return the `id`
+     * const telemetry_logsWithIdOnly = await prisma.telemetry_logs.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -2103,56 +2051,56 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    updateManyAndReturn<T extends waste_disposal_logsUpdateManyAndReturnArgs>(args: SelectSubset<T, waste_disposal_logsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    updateManyAndReturn<T extends telemetry_logsUpdateManyAndReturnArgs>(args: SelectSubset<T, telemetry_logsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Create or update one Waste_disposal_logs.
-     * @param {waste_disposal_logsUpsertArgs} args - Arguments to update or create a Waste_disposal_logs.
+     * Create or update one Telemetry_logs.
+     * @param {telemetry_logsUpsertArgs} args - Arguments to update or create a Telemetry_logs.
      * @example
-     * // Update or create a Waste_disposal_logs
-     * const waste_disposal_logs = await prisma.waste_disposal_logs.upsert({
+     * // Update or create a Telemetry_logs
+     * const telemetry_logs = await prisma.telemetry_logs.upsert({
      *   create: {
-     *     // ... data to create a Waste_disposal_logs
+     *     // ... data to create a Telemetry_logs
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Waste_disposal_logs we want to update
+     *     // ... the filter for the Telemetry_logs we want to update
      *   }
      * })
      */
-    upsert<T extends waste_disposal_logsUpsertArgs>(args: SelectSubset<T, waste_disposal_logsUpsertArgs<ExtArgs>>): Prisma__waste_disposal_logsClient<$Result.GetResult<Prisma.$waste_disposal_logsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    upsert<T extends telemetry_logsUpsertArgs>(args: SelectSubset<T, telemetry_logsUpsertArgs<ExtArgs>>): Prisma__telemetry_logsClient<$Result.GetResult<Prisma.$telemetry_logsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
 
     /**
-     * Count the number of Waste_disposal_logs.
+     * Count the number of Telemetry_logs.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsCountArgs} args - Arguments to filter Waste_disposal_logs to count.
+     * @param {telemetry_logsCountArgs} args - Arguments to filter Telemetry_logs to count.
      * @example
-     * // Count the number of Waste_disposal_logs
-     * const count = await prisma.waste_disposal_logs.count({
+     * // Count the number of Telemetry_logs
+     * const count = await prisma.telemetry_logs.count({
      *   where: {
-     *     // ... the filter for the Waste_disposal_logs we want to count
+     *     // ... the filter for the Telemetry_logs we want to count
      *   }
      * })
     **/
-    count<T extends waste_disposal_logsCountArgs>(
-      args?: Subset<T, waste_disposal_logsCountArgs>,
+    count<T extends telemetry_logsCountArgs>(
+      args?: Subset<T, telemetry_logsCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], Waste_disposal_logsCountAggregateOutputType>
+          : GetScalarType<T['select'], Telemetry_logsCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Waste_disposal_logs.
+     * Allows you to perform aggregations operations on a Telemetry_logs.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {Waste_disposal_logsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {Telemetry_logsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -2172,13 +2120,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends Waste_disposal_logsAggregateArgs>(args: Subset<T, Waste_disposal_logsAggregateArgs>): Prisma.PrismaPromise<GetWaste_disposal_logsAggregateType<T>>
+    aggregate<T extends Telemetry_logsAggregateArgs>(args: Subset<T, Telemetry_logsAggregateArgs>): Prisma.PrismaPromise<GetTelemetry_logsAggregateType<T>>
 
     /**
-     * Group by Waste_disposal_logs.
+     * Group by Telemetry_logs.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {waste_disposal_logsGroupByArgs} args - Group by arguments.
+     * @param {telemetry_logsGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -2193,14 +2141,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends waste_disposal_logsGroupByArgs,
+      T extends telemetry_logsGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: waste_disposal_logsGroupByArgs['orderBy'] }
-        : { orderBy?: waste_disposal_logsGroupByArgs['orderBy'] },
+        ? { orderBy: telemetry_logsGroupByArgs['orderBy'] }
+        : { orderBy?: telemetry_logsGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -2249,20 +2197,20 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, waste_disposal_logsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetWaste_disposal_logsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, telemetry_logsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetTelemetry_logsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the waste_disposal_logs model
+   * Fields of the telemetry_logs model
    */
-  readonly fields: waste_disposal_logsFieldRefs;
+  readonly fields: telemetry_logsFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for waste_disposal_logs.
+   * The delegate class that acts as a "Promise-like" for telemetry_logs.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__waste_disposal_logsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__telemetry_logsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2290,397 +2238,393 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the waste_disposal_logs model
+   * Fields of the telemetry_logs model
    */
-  interface waste_disposal_logsFieldRefs {
-    readonly id: FieldRef<"waste_disposal_logs", 'Int'>
-    readonly citizen_id: FieldRef<"waste_disposal_logs", 'Int'>
-    readonly person_name: FieldRef<"waste_disposal_logs", 'String'>
-    readonly phone_number: FieldRef<"waste_disposal_logs", 'String'>
-    readonly city: FieldRef<"waste_disposal_logs", 'String'>
-    readonly ward: FieldRef<"waste_disposal_logs", 'String'>
-    readonly area: FieldRef<"waste_disposal_logs", 'String'>
-    readonly wet_slno: FieldRef<"waste_disposal_logs", 'String'>
-    readonly dry_slno: FieldRef<"waste_disposal_logs", 'String'>
-    readonly wet_rfid: FieldRef<"waste_disposal_logs", 'String'>
-    readonly dry_rfid: FieldRef<"waste_disposal_logs", 'String'>
-    readonly disposal_type: FieldRef<"waste_disposal_logs", 'String'>
-    readonly wet_weight_kg: FieldRef<"waste_disposal_logs", 'Decimal'>
-    readonly dry_weight_kg: FieldRef<"waste_disposal_logs", 'Decimal'>
-    readonly total_weight_kg: FieldRef<"waste_disposal_logs", 'Decimal'>
-    readonly reward_points: FieldRef<"waste_disposal_logs", 'Int'>
-    readonly vehicle_id: FieldRef<"waste_disposal_logs", 'String'>
-    readonly vehicle_name: FieldRef<"waste_disposal_logs", 'String'>
-    readonly latitude: FieldRef<"waste_disposal_logs", 'Decimal'>
-    readonly longitude: FieldRef<"waste_disposal_logs", 'Decimal'>
-    readonly disposed_at: FieldRef<"waste_disposal_logs", 'DateTime'>
-    readonly house_number: FieldRef<"waste_disposal_logs", 'String'>
-    readonly household_type: FieldRef<"waste_disposal_logs", 'String'>
-    readonly number_of_people: FieldRef<"waste_disposal_logs", 'Int'>
-    readonly waste_generator_type: FieldRef<"waste_disposal_logs", 'String'>
+  interface telemetry_logsFieldRefs {
+    readonly id: FieldRef<"telemetry_logs", 'Int'>
+    readonly iot_timestamp: FieldRef<"telemetry_logs", 'DateTime'>
+    readonly received_at: FieldRef<"telemetry_logs", 'DateTime'>
+    readonly rfid_epc: FieldRef<"telemetry_logs", 'String'>
+    readonly citizen_id: FieldRef<"telemetry_logs", 'Int'>
+    readonly citizen_contact: FieldRef<"telemetry_logs", 'String'>
+    readonly waste_type: FieldRef<"telemetry_logs", 'String'>
+    readonly latitude: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly longitude: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly wet_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly dry_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly other_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly cumulative_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
+    readonly driver_name: FieldRef<"telemetry_logs", 'String'>
+    readonly vehicle_number: FieldRef<"telemetry_logs", 'String'>
+    readonly vehicle_id: FieldRef<"telemetry_logs", 'String'>
+    readonly firmware_version: FieldRef<"telemetry_logs", 'String'>
+    readonly unit_number: FieldRef<"telemetry_logs", 'String'>
+    readonly collection_type: FieldRef<"telemetry_logs", 'String'>
+    readonly remarks: FieldRef<"telemetry_logs", 'String'>
+    readonly err_code: FieldRef<"telemetry_logs", 'String'>
   }
     
 
   // Custom InputTypes
   /**
-   * waste_disposal_logs findUnique
+   * telemetry_logs findUnique
    */
-  export type waste_disposal_logsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter, which waste_disposal_logs to fetch.
+     * Filter, which telemetry_logs to fetch.
      */
-    where: waste_disposal_logsWhereUniqueInput
+    where: telemetry_logsWhereUniqueInput
   }
 
   /**
-   * waste_disposal_logs findUniqueOrThrow
+   * telemetry_logs findUniqueOrThrow
    */
-  export type waste_disposal_logsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter, which waste_disposal_logs to fetch.
+     * Filter, which telemetry_logs to fetch.
      */
-    where: waste_disposal_logsWhereUniqueInput
+    where: telemetry_logsWhereUniqueInput
   }
 
   /**
-   * waste_disposal_logs findFirst
+   * telemetry_logs findFirst
    */
-  export type waste_disposal_logsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter, which waste_disposal_logs to fetch.
+     * Filter, which telemetry_logs to fetch.
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of waste_disposal_logs to fetch.
+     * Determine the order of telemetry_logs to fetch.
      */
-    orderBy?: waste_disposal_logsOrderByWithRelationInput | waste_disposal_logsOrderByWithRelationInput[]
+    orderBy?: telemetry_logsOrderByWithRelationInput | telemetry_logsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for waste_disposal_logs.
+     * Sets the position for searching for telemetry_logs.
      */
-    cursor?: waste_disposal_logsWhereUniqueInput
+    cursor?: telemetry_logsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` waste_disposal_logs from the position of the cursor.
+     * Take `±n` telemetry_logs from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` waste_disposal_logs.
+     * Skip the first `n` telemetry_logs.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of waste_disposal_logs.
+     * Filter by unique combinations of telemetry_logs.
      */
-    distinct?: Waste_disposal_logsScalarFieldEnum | Waste_disposal_logsScalarFieldEnum[]
+    distinct?: Telemetry_logsScalarFieldEnum | Telemetry_logsScalarFieldEnum[]
   }
 
   /**
-   * waste_disposal_logs findFirstOrThrow
+   * telemetry_logs findFirstOrThrow
    */
-  export type waste_disposal_logsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter, which waste_disposal_logs to fetch.
+     * Filter, which telemetry_logs to fetch.
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of waste_disposal_logs to fetch.
+     * Determine the order of telemetry_logs to fetch.
      */
-    orderBy?: waste_disposal_logsOrderByWithRelationInput | waste_disposal_logsOrderByWithRelationInput[]
+    orderBy?: telemetry_logsOrderByWithRelationInput | telemetry_logsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for waste_disposal_logs.
+     * Sets the position for searching for telemetry_logs.
      */
-    cursor?: waste_disposal_logsWhereUniqueInput
+    cursor?: telemetry_logsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` waste_disposal_logs from the position of the cursor.
+     * Take `±n` telemetry_logs from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` waste_disposal_logs.
+     * Skip the first `n` telemetry_logs.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of waste_disposal_logs.
+     * Filter by unique combinations of telemetry_logs.
      */
-    distinct?: Waste_disposal_logsScalarFieldEnum | Waste_disposal_logsScalarFieldEnum[]
+    distinct?: Telemetry_logsScalarFieldEnum | Telemetry_logsScalarFieldEnum[]
   }
 
   /**
-   * waste_disposal_logs findMany
+   * telemetry_logs findMany
    */
-  export type waste_disposal_logsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter, which waste_disposal_logs to fetch.
+     * Filter, which telemetry_logs to fetch.
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of waste_disposal_logs to fetch.
+     * Determine the order of telemetry_logs to fetch.
      */
-    orderBy?: waste_disposal_logsOrderByWithRelationInput | waste_disposal_logsOrderByWithRelationInput[]
+    orderBy?: telemetry_logsOrderByWithRelationInput | telemetry_logsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing waste_disposal_logs.
+     * Sets the position for listing telemetry_logs.
      */
-    cursor?: waste_disposal_logsWhereUniqueInput
+    cursor?: telemetry_logsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` waste_disposal_logs from the position of the cursor.
+     * Take `±n` telemetry_logs from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` waste_disposal_logs.
+     * Skip the first `n` telemetry_logs.
      */
     skip?: number
-    distinct?: Waste_disposal_logsScalarFieldEnum | Waste_disposal_logsScalarFieldEnum[]
+    distinct?: Telemetry_logsScalarFieldEnum | Telemetry_logsScalarFieldEnum[]
   }
 
   /**
-   * waste_disposal_logs create
+   * telemetry_logs create
    */
-  export type waste_disposal_logsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * The data needed to create a waste_disposal_logs.
+     * The data needed to create a telemetry_logs.
      */
-    data?: XOR<waste_disposal_logsCreateInput, waste_disposal_logsUncheckedCreateInput>
+    data: XOR<telemetry_logsCreateInput, telemetry_logsUncheckedCreateInput>
   }
 
   /**
-   * waste_disposal_logs createMany
+   * telemetry_logs createMany
    */
-  export type waste_disposal_logsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many waste_disposal_logs.
+     * The data used to create many telemetry_logs.
      */
-    data: waste_disposal_logsCreateManyInput | waste_disposal_logsCreateManyInput[]
+    data: telemetry_logsCreateManyInput | telemetry_logsCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * waste_disposal_logs createManyAndReturn
+   * telemetry_logs createManyAndReturn
    */
-  export type waste_disposal_logsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelectCreateManyAndReturn<ExtArgs> | null
+    select?: telemetry_logsSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * The data used to create many waste_disposal_logs.
+     * The data used to create many telemetry_logs.
      */
-    data: waste_disposal_logsCreateManyInput | waste_disposal_logsCreateManyInput[]
+    data: telemetry_logsCreateManyInput | telemetry_logsCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * waste_disposal_logs update
+   * telemetry_logs update
    */
-  export type waste_disposal_logsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * The data needed to update a waste_disposal_logs.
+     * The data needed to update a telemetry_logs.
      */
-    data: XOR<waste_disposal_logsUpdateInput, waste_disposal_logsUncheckedUpdateInput>
+    data: XOR<telemetry_logsUpdateInput, telemetry_logsUncheckedUpdateInput>
     /**
-     * Choose, which waste_disposal_logs to update.
+     * Choose, which telemetry_logs to update.
      */
-    where: waste_disposal_logsWhereUniqueInput
+    where: telemetry_logsWhereUniqueInput
   }
 
   /**
-   * waste_disposal_logs updateMany
+   * telemetry_logs updateMany
    */
-  export type waste_disposal_logsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update waste_disposal_logs.
+     * The data used to update telemetry_logs.
      */
-    data: XOR<waste_disposal_logsUpdateManyMutationInput, waste_disposal_logsUncheckedUpdateManyInput>
+    data: XOR<telemetry_logsUpdateManyMutationInput, telemetry_logsUncheckedUpdateManyInput>
     /**
-     * Filter which waste_disposal_logs to update
+     * Filter which telemetry_logs to update
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
-     * Limit how many waste_disposal_logs to update.
+     * Limit how many telemetry_logs to update.
      */
     limit?: number
   }
 
   /**
-   * waste_disposal_logs updateManyAndReturn
+   * telemetry_logs updateManyAndReturn
    */
-  export type waste_disposal_logsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelectUpdateManyAndReturn<ExtArgs> | null
+    select?: telemetry_logsSelectUpdateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * The data used to update waste_disposal_logs.
+     * The data used to update telemetry_logs.
      */
-    data: XOR<waste_disposal_logsUpdateManyMutationInput, waste_disposal_logsUncheckedUpdateManyInput>
+    data: XOR<telemetry_logsUpdateManyMutationInput, telemetry_logsUncheckedUpdateManyInput>
     /**
-     * Filter which waste_disposal_logs to update
+     * Filter which telemetry_logs to update
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
-     * Limit how many waste_disposal_logs to update.
+     * Limit how many telemetry_logs to update.
      */
     limit?: number
   }
 
   /**
-   * waste_disposal_logs upsert
+   * telemetry_logs upsert
    */
-  export type waste_disposal_logsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * The filter to search for the waste_disposal_logs to update in case it exists.
+     * The filter to search for the telemetry_logs to update in case it exists.
      */
-    where: waste_disposal_logsWhereUniqueInput
+    where: telemetry_logsWhereUniqueInput
     /**
-     * In case the waste_disposal_logs found by the `where` argument doesn't exist, create a new waste_disposal_logs with this data.
+     * In case the telemetry_logs found by the `where` argument doesn't exist, create a new telemetry_logs with this data.
      */
-    create: XOR<waste_disposal_logsCreateInput, waste_disposal_logsUncheckedCreateInput>
+    create: XOR<telemetry_logsCreateInput, telemetry_logsUncheckedCreateInput>
     /**
-     * In case the waste_disposal_logs was found with the provided `where` argument, update it with this data.
+     * In case the telemetry_logs was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<waste_disposal_logsUpdateInput, waste_disposal_logsUncheckedUpdateInput>
+    update: XOR<telemetry_logsUpdateInput, telemetry_logsUncheckedUpdateInput>
   }
 
   /**
-   * waste_disposal_logs delete
+   * telemetry_logs delete
    */
-  export type waste_disposal_logsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
     /**
-     * Filter which waste_disposal_logs to delete.
+     * Filter which telemetry_logs to delete.
      */
-    where: waste_disposal_logsWhereUniqueInput
+    where: telemetry_logsWhereUniqueInput
   }
 
   /**
-   * waste_disposal_logs deleteMany
+   * telemetry_logs deleteMany
    */
-  export type waste_disposal_logsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which waste_disposal_logs to delete
+     * Filter which telemetry_logs to delete
      */
-    where?: waste_disposal_logsWhereInput
+    where?: telemetry_logsWhereInput
     /**
-     * Limit how many waste_disposal_logs to delete.
+     * Limit how many telemetry_logs to delete.
      */
     limit?: number
   }
 
   /**
-   * waste_disposal_logs without action
+   * telemetry_logs without action
    */
-  export type waste_disposal_logsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type telemetry_logsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the waste_disposal_logs
+     * Select specific fields to fetch from the telemetry_logs
      */
-    select?: waste_disposal_logsSelect<ExtArgs> | null
+    select?: telemetry_logsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the waste_disposal_logs
+     * Omit specific fields from the telemetry_logs
      */
-    omit?: waste_disposal_logsOmit<ExtArgs> | null
+    omit?: telemetry_logsOmit<ExtArgs> | null
   }
 
 
@@ -8543,35 +8487,31 @@ export namespace Prisma {
   export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-  export const Waste_disposal_logsScalarFieldEnum: {
+  export const Telemetry_logsScalarFieldEnum: {
     id: 'id',
+    iot_timestamp: 'iot_timestamp',
+    received_at: 'received_at',
+    rfid_epc: 'rfid_epc',
     citizen_id: 'citizen_id',
-    person_name: 'person_name',
-    phone_number: 'phone_number',
-    city: 'city',
-    ward: 'ward',
-    area: 'area',
-    wet_slno: 'wet_slno',
-    dry_slno: 'dry_slno',
-    wet_rfid: 'wet_rfid',
-    dry_rfid: 'dry_rfid',
-    disposal_type: 'disposal_type',
-    wet_weight_kg: 'wet_weight_kg',
-    dry_weight_kg: 'dry_weight_kg',
-    total_weight_kg: 'total_weight_kg',
-    reward_points: 'reward_points',
-    vehicle_id: 'vehicle_id',
-    vehicle_name: 'vehicle_name',
+    citizen_contact: 'citizen_contact',
+    waste_type: 'waste_type',
     latitude: 'latitude',
     longitude: 'longitude',
-    disposed_at: 'disposed_at',
-    house_number: 'house_number',
-    household_type: 'household_type',
-    number_of_people: 'number_of_people',
-    waste_generator_type: 'waste_generator_type'
+    wet_weight_kg: 'wet_weight_kg',
+    dry_weight_kg: 'dry_weight_kg',
+    other_weight_kg: 'other_weight_kg',
+    cumulative_weight_kg: 'cumulative_weight_kg',
+    driver_name: 'driver_name',
+    vehicle_number: 'vehicle_number',
+    vehicle_id: 'vehicle_id',
+    firmware_version: 'firmware_version',
+    unit_number: 'unit_number',
+    collection_type: 'collection_type',
+    remarks: 'remarks',
+    err_code: 'err_code'
   };
 
-  export type Waste_disposal_logsScalarFieldEnum = (typeof Waste_disposal_logsScalarFieldEnum)[keyof typeof Waste_disposal_logsScalarFieldEnum]
+  export type Telemetry_logsScalarFieldEnum = (typeof Telemetry_logsScalarFieldEnum)[keyof typeof Telemetry_logsScalarFieldEnum]
 
 
   export const Vehicle_incidentsScalarFieldEnum: {
@@ -8702,6 +8642,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'DateTime'
+   */
+  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+  /**
+   * Reference to a field of type 'DateTime[]'
+   */
+  export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+  /**
    * Reference to a field of type 'String'
    */
   export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
@@ -8730,20 +8684,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'DateTime'
-   */
-  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-  /**
-   * Reference to a field of type 'DateTime[]'
-   */
-  export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Boolean'
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -8767,158 +8707,138 @@ export namespace Prisma {
    */
 
 
-  export type waste_disposal_logsWhereInput = {
-    AND?: waste_disposal_logsWhereInput | waste_disposal_logsWhereInput[]
-    OR?: waste_disposal_logsWhereInput[]
-    NOT?: waste_disposal_logsWhereInput | waste_disposal_logsWhereInput[]
-    id?: IntFilter<"waste_disposal_logs"> | number
-    citizen_id?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    person_name?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    phone_number?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    city?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    ward?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    area?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_slno?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    dry_slno?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_rfid?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    dry_rfid?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    disposal_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    reward_points?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    vehicle_id?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    vehicle_name?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    latitude?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    longitude?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: DateTimeNullableFilter<"waste_disposal_logs"> | Date | string | null
-    house_number?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    household_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    number_of_people?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    waste_generator_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
+  export type telemetry_logsWhereInput = {
+    AND?: telemetry_logsWhereInput | telemetry_logsWhereInput[]
+    OR?: telemetry_logsWhereInput[]
+    NOT?: telemetry_logsWhereInput | telemetry_logsWhereInput[]
+    id?: IntFilter<"telemetry_logs"> | number
+    iot_timestamp?: DateTimeFilter<"telemetry_logs"> | Date | string
+    received_at?: DateTimeFilter<"telemetry_logs"> | Date | string
+    rfid_epc?: StringFilter<"telemetry_logs"> | string
+    citizen_id?: IntNullableFilter<"telemetry_logs"> | number | null
+    citizen_contact?: StringNullableFilter<"telemetry_logs"> | string | null
+    waste_type?: StringNullableFilter<"telemetry_logs"> | string | null
+    latitude?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    longitude?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    wet_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
+    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
+    vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
+    firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
+    unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
+    collection_type?: StringNullableFilter<"telemetry_logs"> | string | null
+    remarks?: StringNullableFilter<"telemetry_logs"> | string | null
+    err_code?: StringNullableFilter<"telemetry_logs"> | string | null
   }
 
-  export type waste_disposal_logsOrderByWithRelationInput = {
+  export type telemetry_logsOrderByWithRelationInput = {
     id?: SortOrder
+    iot_timestamp?: SortOrder
+    received_at?: SortOrder
+    rfid_epc?: SortOrder
     citizen_id?: SortOrderInput | SortOrder
-    person_name?: SortOrderInput | SortOrder
-    phone_number?: SortOrderInput | SortOrder
-    city?: SortOrderInput | SortOrder
-    ward?: SortOrderInput | SortOrder
-    area?: SortOrderInput | SortOrder
-    wet_slno?: SortOrderInput | SortOrder
-    dry_slno?: SortOrderInput | SortOrder
-    wet_rfid?: SortOrderInput | SortOrder
-    dry_rfid?: SortOrderInput | SortOrder
-    disposal_type?: SortOrderInput | SortOrder
-    wet_weight_kg?: SortOrderInput | SortOrder
-    dry_weight_kg?: SortOrderInput | SortOrder
-    total_weight_kg?: SortOrderInput | SortOrder
-    reward_points?: SortOrderInput | SortOrder
-    vehicle_id?: SortOrderInput | SortOrder
-    vehicle_name?: SortOrderInput | SortOrder
+    citizen_contact?: SortOrderInput | SortOrder
+    waste_type?: SortOrderInput | SortOrder
     latitude?: SortOrderInput | SortOrder
     longitude?: SortOrderInput | SortOrder
-    disposed_at?: SortOrderInput | SortOrder
-    house_number?: SortOrderInput | SortOrder
-    household_type?: SortOrderInput | SortOrder
-    number_of_people?: SortOrderInput | SortOrder
-    waste_generator_type?: SortOrderInput | SortOrder
+    wet_weight_kg?: SortOrderInput | SortOrder
+    dry_weight_kg?: SortOrderInput | SortOrder
+    other_weight_kg?: SortOrderInput | SortOrder
+    cumulative_weight_kg?: SortOrderInput | SortOrder
+    driver_name?: SortOrderInput | SortOrder
+    vehicle_number?: SortOrderInput | SortOrder
+    vehicle_id?: SortOrderInput | SortOrder
+    firmware_version?: SortOrderInput | SortOrder
+    unit_number?: SortOrderInput | SortOrder
+    collection_type?: SortOrderInput | SortOrder
+    remarks?: SortOrderInput | SortOrder
+    err_code?: SortOrderInput | SortOrder
   }
 
-  export type waste_disposal_logsWhereUniqueInput = Prisma.AtLeast<{
+  export type telemetry_logsWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    AND?: waste_disposal_logsWhereInput | waste_disposal_logsWhereInput[]
-    OR?: waste_disposal_logsWhereInput[]
-    NOT?: waste_disposal_logsWhereInput | waste_disposal_logsWhereInput[]
-    citizen_id?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    person_name?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    phone_number?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    city?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    ward?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    area?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_slno?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    dry_slno?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_rfid?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    dry_rfid?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    disposal_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    wet_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    reward_points?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    vehicle_id?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    vehicle_name?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    latitude?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    longitude?: DecimalNullableFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: DateTimeNullableFilter<"waste_disposal_logs"> | Date | string | null
-    house_number?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    household_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
-    number_of_people?: IntNullableFilter<"waste_disposal_logs"> | number | null
-    waste_generator_type?: StringNullableFilter<"waste_disposal_logs"> | string | null
+    AND?: telemetry_logsWhereInput | telemetry_logsWhereInput[]
+    OR?: telemetry_logsWhereInput[]
+    NOT?: telemetry_logsWhereInput | telemetry_logsWhereInput[]
+    iot_timestamp?: DateTimeFilter<"telemetry_logs"> | Date | string
+    received_at?: DateTimeFilter<"telemetry_logs"> | Date | string
+    rfid_epc?: StringFilter<"telemetry_logs"> | string
+    citizen_id?: IntNullableFilter<"telemetry_logs"> | number | null
+    citizen_contact?: StringNullableFilter<"telemetry_logs"> | string | null
+    waste_type?: StringNullableFilter<"telemetry_logs"> | string | null
+    latitude?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    longitude?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    wet_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
+    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
+    vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
+    firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
+    unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
+    collection_type?: StringNullableFilter<"telemetry_logs"> | string | null
+    remarks?: StringNullableFilter<"telemetry_logs"> | string | null
+    err_code?: StringNullableFilter<"telemetry_logs"> | string | null
   }, "id">
 
-  export type waste_disposal_logsOrderByWithAggregationInput = {
+  export type telemetry_logsOrderByWithAggregationInput = {
     id?: SortOrder
+    iot_timestamp?: SortOrder
+    received_at?: SortOrder
+    rfid_epc?: SortOrder
     citizen_id?: SortOrderInput | SortOrder
-    person_name?: SortOrderInput | SortOrder
-    phone_number?: SortOrderInput | SortOrder
-    city?: SortOrderInput | SortOrder
-    ward?: SortOrderInput | SortOrder
-    area?: SortOrderInput | SortOrder
-    wet_slno?: SortOrderInput | SortOrder
-    dry_slno?: SortOrderInput | SortOrder
-    wet_rfid?: SortOrderInput | SortOrder
-    dry_rfid?: SortOrderInput | SortOrder
-    disposal_type?: SortOrderInput | SortOrder
-    wet_weight_kg?: SortOrderInput | SortOrder
-    dry_weight_kg?: SortOrderInput | SortOrder
-    total_weight_kg?: SortOrderInput | SortOrder
-    reward_points?: SortOrderInput | SortOrder
-    vehicle_id?: SortOrderInput | SortOrder
-    vehicle_name?: SortOrderInput | SortOrder
+    citizen_contact?: SortOrderInput | SortOrder
+    waste_type?: SortOrderInput | SortOrder
     latitude?: SortOrderInput | SortOrder
     longitude?: SortOrderInput | SortOrder
-    disposed_at?: SortOrderInput | SortOrder
-    house_number?: SortOrderInput | SortOrder
-    household_type?: SortOrderInput | SortOrder
-    number_of_people?: SortOrderInput | SortOrder
-    waste_generator_type?: SortOrderInput | SortOrder
-    _count?: waste_disposal_logsCountOrderByAggregateInput
-    _avg?: waste_disposal_logsAvgOrderByAggregateInput
-    _max?: waste_disposal_logsMaxOrderByAggregateInput
-    _min?: waste_disposal_logsMinOrderByAggregateInput
-    _sum?: waste_disposal_logsSumOrderByAggregateInput
+    wet_weight_kg?: SortOrderInput | SortOrder
+    dry_weight_kg?: SortOrderInput | SortOrder
+    other_weight_kg?: SortOrderInput | SortOrder
+    cumulative_weight_kg?: SortOrderInput | SortOrder
+    driver_name?: SortOrderInput | SortOrder
+    vehicle_number?: SortOrderInput | SortOrder
+    vehicle_id?: SortOrderInput | SortOrder
+    firmware_version?: SortOrderInput | SortOrder
+    unit_number?: SortOrderInput | SortOrder
+    collection_type?: SortOrderInput | SortOrder
+    remarks?: SortOrderInput | SortOrder
+    err_code?: SortOrderInput | SortOrder
+    _count?: telemetry_logsCountOrderByAggregateInput
+    _avg?: telemetry_logsAvgOrderByAggregateInput
+    _max?: telemetry_logsMaxOrderByAggregateInput
+    _min?: telemetry_logsMinOrderByAggregateInput
+    _sum?: telemetry_logsSumOrderByAggregateInput
   }
 
-  export type waste_disposal_logsScalarWhereWithAggregatesInput = {
-    AND?: waste_disposal_logsScalarWhereWithAggregatesInput | waste_disposal_logsScalarWhereWithAggregatesInput[]
-    OR?: waste_disposal_logsScalarWhereWithAggregatesInput[]
-    NOT?: waste_disposal_logsScalarWhereWithAggregatesInput | waste_disposal_logsScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"waste_disposal_logs"> | number
-    citizen_id?: IntNullableWithAggregatesFilter<"waste_disposal_logs"> | number | null
-    person_name?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    phone_number?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    city?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    ward?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    area?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    wet_slno?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    dry_slno?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    wet_rfid?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    dry_rfid?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    disposal_type?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    wet_weight_kg?: DecimalNullableWithAggregatesFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: DecimalNullableWithAggregatesFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: DecimalNullableWithAggregatesFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    reward_points?: IntNullableWithAggregatesFilter<"waste_disposal_logs"> | number | null
-    vehicle_id?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    vehicle_name?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    latitude?: DecimalNullableWithAggregatesFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    longitude?: DecimalNullableWithAggregatesFilter<"waste_disposal_logs"> | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: DateTimeNullableWithAggregatesFilter<"waste_disposal_logs"> | Date | string | null
-    house_number?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    household_type?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
-    number_of_people?: IntNullableWithAggregatesFilter<"waste_disposal_logs"> | number | null
-    waste_generator_type?: StringNullableWithAggregatesFilter<"waste_disposal_logs"> | string | null
+  export type telemetry_logsScalarWhereWithAggregatesInput = {
+    AND?: telemetry_logsScalarWhereWithAggregatesInput | telemetry_logsScalarWhereWithAggregatesInput[]
+    OR?: telemetry_logsScalarWhereWithAggregatesInput[]
+    NOT?: telemetry_logsScalarWhereWithAggregatesInput | telemetry_logsScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"telemetry_logs"> | number
+    iot_timestamp?: DateTimeWithAggregatesFilter<"telemetry_logs"> | Date | string
+    received_at?: DateTimeWithAggregatesFilter<"telemetry_logs"> | Date | string
+    rfid_epc?: StringWithAggregatesFilter<"telemetry_logs"> | string
+    citizen_id?: IntNullableWithAggregatesFilter<"telemetry_logs"> | number | null
+    citizen_contact?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    waste_type?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    latitude?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    longitude?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    wet_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
+    driver_name?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    vehicle_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    vehicle_id?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    firmware_version?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    unit_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    collection_type?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    remarks?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    err_code?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
   }
 
   export type vehicle_incidentsWhereInput = {
@@ -9348,197 +9268,169 @@ export namespace Prisma {
     success?: BoolNullableWithAggregatesFilter<"edit_logs"> | boolean | null
   }
 
-  export type waste_disposal_logsCreateInput = {
+  export type telemetry_logsCreateInput = {
+    iot_timestamp: Date | string
+    received_at?: Date | string
+    rfid_epc: string
     citizen_id?: number | null
-    person_name?: string | null
-    phone_number?: string | null
-    city?: string | null
-    ward?: string | null
-    area?: string | null
-    wet_slno?: string | null
-    dry_slno?: string | null
-    wet_rfid?: string | null
-    dry_rfid?: string | null
-    disposal_type?: string | null
-    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    reward_points?: number | null
-    vehicle_id?: string | null
-    vehicle_name?: string | null
+    citizen_contact?: string | null
+    waste_type?: string | null
     latitude?: Decimal | DecimalJsLike | number | string | null
     longitude?: Decimal | DecimalJsLike | number | string | null
-    disposed_at?: Date | string | null
-    house_number?: string | null
-    household_type?: string | null
-    number_of_people?: number | null
-    waste_generator_type?: string | null
+    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    driver_name?: string | null
+    vehicle_number?: string | null
+    vehicle_id?: string | null
+    firmware_version?: string | null
+    unit_number?: string | null
+    collection_type?: string | null
+    remarks?: string | null
+    err_code?: string | null
   }
 
-  export type waste_disposal_logsUncheckedCreateInput = {
+  export type telemetry_logsUncheckedCreateInput = {
     id?: number
+    iot_timestamp: Date | string
+    received_at?: Date | string
+    rfid_epc: string
     citizen_id?: number | null
-    person_name?: string | null
-    phone_number?: string | null
-    city?: string | null
-    ward?: string | null
-    area?: string | null
-    wet_slno?: string | null
-    dry_slno?: string | null
-    wet_rfid?: string | null
-    dry_rfid?: string | null
-    disposal_type?: string | null
-    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    reward_points?: number | null
-    vehicle_id?: string | null
-    vehicle_name?: string | null
+    citizen_contact?: string | null
+    waste_type?: string | null
     latitude?: Decimal | DecimalJsLike | number | string | null
     longitude?: Decimal | DecimalJsLike | number | string | null
-    disposed_at?: Date | string | null
-    house_number?: string | null
-    household_type?: string | null
-    number_of_people?: number | null
-    waste_generator_type?: string | null
+    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    driver_name?: string | null
+    vehicle_number?: string | null
+    vehicle_id?: string | null
+    firmware_version?: string | null
+    unit_number?: string | null
+    collection_type?: string | null
+    remarks?: string | null
+    err_code?: string | null
   }
 
-  export type waste_disposal_logsUpdateInput = {
+  export type telemetry_logsUpdateInput = {
+    iot_timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    received_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    rfid_epc?: StringFieldUpdateOperationsInput | string
     citizen_id?: NullableIntFieldUpdateOperationsInput | number | null
-    person_name?: NullableStringFieldUpdateOperationsInput | string | null
-    phone_number?: NullableStringFieldUpdateOperationsInput | string | null
-    city?: NullableStringFieldUpdateOperationsInput | string | null
-    ward?: NullableStringFieldUpdateOperationsInput | string | null
-    area?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    disposal_type?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    reward_points?: NullableIntFieldUpdateOperationsInput | number | null
-    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_name?: NullableStringFieldUpdateOperationsInput | string | null
+    citizen_contact?: NullableStringFieldUpdateOperationsInput | string | null
+    waste_type?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     longitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    house_number?: NullableStringFieldUpdateOperationsInput | string | null
-    household_type?: NullableStringFieldUpdateOperationsInput | string | null
-    number_of_people?: NullableIntFieldUpdateOperationsInput | number | null
-    waste_generator_type?: NullableStringFieldUpdateOperationsInput | string | null
+    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    driver_name?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
+    firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
+    unit_number?: NullableStringFieldUpdateOperationsInput | string | null
+    collection_type?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type waste_disposal_logsUncheckedUpdateInput = {
+  export type telemetry_logsUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
+    iot_timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    received_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    rfid_epc?: StringFieldUpdateOperationsInput | string
     citizen_id?: NullableIntFieldUpdateOperationsInput | number | null
-    person_name?: NullableStringFieldUpdateOperationsInput | string | null
-    phone_number?: NullableStringFieldUpdateOperationsInput | string | null
-    city?: NullableStringFieldUpdateOperationsInput | string | null
-    ward?: NullableStringFieldUpdateOperationsInput | string | null
-    area?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    disposal_type?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    reward_points?: NullableIntFieldUpdateOperationsInput | number | null
-    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_name?: NullableStringFieldUpdateOperationsInput | string | null
+    citizen_contact?: NullableStringFieldUpdateOperationsInput | string | null
+    waste_type?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     longitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    house_number?: NullableStringFieldUpdateOperationsInput | string | null
-    household_type?: NullableStringFieldUpdateOperationsInput | string | null
-    number_of_people?: NullableIntFieldUpdateOperationsInput | number | null
-    waste_generator_type?: NullableStringFieldUpdateOperationsInput | string | null
+    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    driver_name?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
+    firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
+    unit_number?: NullableStringFieldUpdateOperationsInput | string | null
+    collection_type?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type waste_disposal_logsCreateManyInput = {
+  export type telemetry_logsCreateManyInput = {
     id?: number
+    iot_timestamp: Date | string
+    received_at?: Date | string
+    rfid_epc: string
     citizen_id?: number | null
-    person_name?: string | null
-    phone_number?: string | null
-    city?: string | null
-    ward?: string | null
-    area?: string | null
-    wet_slno?: string | null
-    dry_slno?: string | null
-    wet_rfid?: string | null
-    dry_rfid?: string | null
-    disposal_type?: string | null
-    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: Decimal | DecimalJsLike | number | string | null
-    reward_points?: number | null
-    vehicle_id?: string | null
-    vehicle_name?: string | null
+    citizen_contact?: string | null
+    waste_type?: string | null
     latitude?: Decimal | DecimalJsLike | number | string | null
     longitude?: Decimal | DecimalJsLike | number | string | null
-    disposed_at?: Date | string | null
-    house_number?: string | null
-    household_type?: string | null
-    number_of_people?: number | null
-    waste_generator_type?: string | null
+    wet_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
+    driver_name?: string | null
+    vehicle_number?: string | null
+    vehicle_id?: string | null
+    firmware_version?: string | null
+    unit_number?: string | null
+    collection_type?: string | null
+    remarks?: string | null
+    err_code?: string | null
   }
 
-  export type waste_disposal_logsUpdateManyMutationInput = {
+  export type telemetry_logsUpdateManyMutationInput = {
+    iot_timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    received_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    rfid_epc?: StringFieldUpdateOperationsInput | string
     citizen_id?: NullableIntFieldUpdateOperationsInput | number | null
-    person_name?: NullableStringFieldUpdateOperationsInput | string | null
-    phone_number?: NullableStringFieldUpdateOperationsInput | string | null
-    city?: NullableStringFieldUpdateOperationsInput | string | null
-    ward?: NullableStringFieldUpdateOperationsInput | string | null
-    area?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    disposal_type?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    reward_points?: NullableIntFieldUpdateOperationsInput | number | null
-    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_name?: NullableStringFieldUpdateOperationsInput | string | null
+    citizen_contact?: NullableStringFieldUpdateOperationsInput | string | null
+    waste_type?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     longitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    house_number?: NullableStringFieldUpdateOperationsInput | string | null
-    household_type?: NullableStringFieldUpdateOperationsInput | string | null
-    number_of_people?: NullableIntFieldUpdateOperationsInput | number | null
-    waste_generator_type?: NullableStringFieldUpdateOperationsInput | string | null
+    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    driver_name?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
+    firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
+    unit_number?: NullableStringFieldUpdateOperationsInput | string | null
+    collection_type?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type waste_disposal_logsUncheckedUpdateManyInput = {
+  export type telemetry_logsUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
+    iot_timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    received_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    rfid_epc?: StringFieldUpdateOperationsInput | string
     citizen_id?: NullableIntFieldUpdateOperationsInput | number | null
-    person_name?: NullableStringFieldUpdateOperationsInput | string | null
-    phone_number?: NullableStringFieldUpdateOperationsInput | string | null
-    city?: NullableStringFieldUpdateOperationsInput | string | null
-    ward?: NullableStringFieldUpdateOperationsInput | string | null
-    area?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_slno?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    dry_rfid?: NullableStringFieldUpdateOperationsInput | string | null
-    disposal_type?: NullableStringFieldUpdateOperationsInput | string | null
-    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    total_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    reward_points?: NullableIntFieldUpdateOperationsInput | number | null
-    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_name?: NullableStringFieldUpdateOperationsInput | string | null
+    citizen_contact?: NullableStringFieldUpdateOperationsInput | string | null
+    waste_type?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     longitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
-    disposed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    house_number?: NullableStringFieldUpdateOperationsInput | string | null
-    household_type?: NullableStringFieldUpdateOperationsInput | string | null
-    number_of_people?: NullableIntFieldUpdateOperationsInput | number | null
-    waste_generator_type?: NullableStringFieldUpdateOperationsInput | string | null
+    wet_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    dry_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    driver_name?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
+    firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
+    unit_number?: NullableStringFieldUpdateOperationsInput | string | null
+    collection_type?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type vehicle_incidentsCreateInput = {
@@ -10026,6 +9918,32 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type DateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type StringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringFilter<$PrismaModel> | string
+  }
+
   export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -10063,128 +9981,103 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
   }
 
-  export type waste_disposal_logsCountOrderByAggregateInput = {
+  export type telemetry_logsCountOrderByAggregateInput = {
     id?: SortOrder
+    iot_timestamp?: SortOrder
+    received_at?: SortOrder
+    rfid_epc?: SortOrder
     citizen_id?: SortOrder
-    person_name?: SortOrder
-    phone_number?: SortOrder
-    city?: SortOrder
-    ward?: SortOrder
-    area?: SortOrder
-    wet_slno?: SortOrder
-    dry_slno?: SortOrder
-    wet_rfid?: SortOrder
-    dry_rfid?: SortOrder
-    disposal_type?: SortOrder
+    citizen_contact?: SortOrder
+    waste_type?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     wet_weight_kg?: SortOrder
     dry_weight_kg?: SortOrder
-    total_weight_kg?: SortOrder
-    reward_points?: SortOrder
+    other_weight_kg?: SortOrder
+    cumulative_weight_kg?: SortOrder
+    driver_name?: SortOrder
+    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_name?: SortOrder
-    latitude?: SortOrder
-    longitude?: SortOrder
-    disposed_at?: SortOrder
-    house_number?: SortOrder
-    household_type?: SortOrder
-    number_of_people?: SortOrder
-    waste_generator_type?: SortOrder
+    firmware_version?: SortOrder
+    unit_number?: SortOrder
+    collection_type?: SortOrder
+    remarks?: SortOrder
+    err_code?: SortOrder
   }
 
-  export type waste_disposal_logsAvgOrderByAggregateInput = {
+  export type telemetry_logsAvgOrderByAggregateInput = {
     id?: SortOrder
     citizen_id?: SortOrder
-    wet_weight_kg?: SortOrder
-    dry_weight_kg?: SortOrder
-    total_weight_kg?: SortOrder
-    reward_points?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
-    number_of_people?: SortOrder
-  }
-
-  export type waste_disposal_logsMaxOrderByAggregateInput = {
-    id?: SortOrder
-    citizen_id?: SortOrder
-    person_name?: SortOrder
-    phone_number?: SortOrder
-    city?: SortOrder
-    ward?: SortOrder
-    area?: SortOrder
-    wet_slno?: SortOrder
-    dry_slno?: SortOrder
-    wet_rfid?: SortOrder
-    dry_rfid?: SortOrder
-    disposal_type?: SortOrder
     wet_weight_kg?: SortOrder
     dry_weight_kg?: SortOrder
-    total_weight_kg?: SortOrder
-    reward_points?: SortOrder
+    other_weight_kg?: SortOrder
+    cumulative_weight_kg?: SortOrder
+  }
+
+  export type telemetry_logsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    iot_timestamp?: SortOrder
+    received_at?: SortOrder
+    rfid_epc?: SortOrder
+    citizen_id?: SortOrder
+    citizen_contact?: SortOrder
+    waste_type?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    wet_weight_kg?: SortOrder
+    dry_weight_kg?: SortOrder
+    other_weight_kg?: SortOrder
+    cumulative_weight_kg?: SortOrder
+    driver_name?: SortOrder
+    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_name?: SortOrder
-    latitude?: SortOrder
-    longitude?: SortOrder
-    disposed_at?: SortOrder
-    house_number?: SortOrder
-    household_type?: SortOrder
-    number_of_people?: SortOrder
-    waste_generator_type?: SortOrder
+    firmware_version?: SortOrder
+    unit_number?: SortOrder
+    collection_type?: SortOrder
+    remarks?: SortOrder
+    err_code?: SortOrder
   }
 
-  export type waste_disposal_logsMinOrderByAggregateInput = {
+  export type telemetry_logsMinOrderByAggregateInput = {
     id?: SortOrder
+    iot_timestamp?: SortOrder
+    received_at?: SortOrder
+    rfid_epc?: SortOrder
     citizen_id?: SortOrder
-    person_name?: SortOrder
-    phone_number?: SortOrder
-    city?: SortOrder
-    ward?: SortOrder
-    area?: SortOrder
-    wet_slno?: SortOrder
-    dry_slno?: SortOrder
-    wet_rfid?: SortOrder
-    dry_rfid?: SortOrder
-    disposal_type?: SortOrder
+    citizen_contact?: SortOrder
+    waste_type?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     wet_weight_kg?: SortOrder
     dry_weight_kg?: SortOrder
-    total_weight_kg?: SortOrder
-    reward_points?: SortOrder
+    other_weight_kg?: SortOrder
+    cumulative_weight_kg?: SortOrder
+    driver_name?: SortOrder
+    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_name?: SortOrder
-    latitude?: SortOrder
-    longitude?: SortOrder
-    disposed_at?: SortOrder
-    house_number?: SortOrder
-    household_type?: SortOrder
-    number_of_people?: SortOrder
-    waste_generator_type?: SortOrder
+    firmware_version?: SortOrder
+    unit_number?: SortOrder
+    collection_type?: SortOrder
+    remarks?: SortOrder
+    err_code?: SortOrder
   }
 
-  export type waste_disposal_logsSumOrderByAggregateInput = {
+  export type telemetry_logsSumOrderByAggregateInput = {
     id?: SortOrder
     citizen_id?: SortOrder
-    wet_weight_kg?: SortOrder
-    dry_weight_kg?: SortOrder
-    total_weight_kg?: SortOrder
-    reward_points?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
-    number_of_people?: SortOrder
+    wet_weight_kg?: SortOrder
+    dry_weight_kg?: SortOrder
+    other_weight_kg?: SortOrder
+    cumulative_weight_kg?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -10201,6 +10094,38 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type StringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -10253,7 +10178,7 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
     notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -10261,10 +10186,7 @@ export namespace Prisma {
     lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type Vehicle_masterNullableScalarRelationFilter = {
@@ -10322,19 +10244,18 @@ export namespace Prisma {
     excess_speed_kmh?: SortOrder
   }
 
-  export type StringFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringFilter<$PrismaModel> | string
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type Vehicle_incidentsListRelationFilter = {
@@ -10402,24 +10323,6 @@ export namespace Prisma {
 
   export type vehicle_masterSumOrderByAggregateInput = {
     id?: SortOrder
-  }
-
-  export type StringWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedStringFilter<$PrismaModel>
-    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type vehicle_telemetryCountOrderByAggregateInput = {
@@ -10613,6 +10516,14 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
+  }
+
+  export type StringFieldUpdateOperationsInput = {
+    set?: string
+  }
+
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -10633,10 +10544,6 @@ export namespace Prisma {
     divide?: Decimal | DecimalJsLike | number | string
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
-  }
-
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -10649,6 +10556,10 @@ export namespace Prisma {
     create?: XOR<vehicle_masterCreateWithoutVehicle_incidentsInput, vehicle_masterUncheckedCreateWithoutVehicle_incidentsInput>
     connectOrCreate?: vehicle_masterCreateOrConnectWithoutVehicle_incidentsInput
     connect?: vehicle_masterWhereUniqueInput
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
   }
 
   export type vehicle_masterUpdateOneWithoutVehicle_incidentsNestedInput = {
@@ -10687,10 +10598,6 @@ export namespace Prisma {
     connectOrCreate?: vehicle_telemetryCreateOrConnectWithoutVehicle_masterInput | vehicle_telemetryCreateOrConnectWithoutVehicle_masterInput[]
     createMany?: vehicle_telemetryCreateManyVehicle_masterInputEnvelope
     connect?: vehicle_telemetryWhereUniqueInput | vehicle_telemetryWhereUniqueInput[]
-  }
-
-  export type StringFieldUpdateOperationsInput = {
-    set?: string
   }
 
   export type vehicle_incidentsUpdateManyWithoutVehicle_masterNestedInput = {
@@ -10780,6 +10687,31 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type NestedDateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type NestedStringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringFilter<$PrismaModel> | string
+  }
+
   export type NestedIntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -10816,17 +10748,6 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -10852,6 +10773,37 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -10914,6 +10866,17 @@ export namespace Prisma {
     _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -10926,37 +10889,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
-  }
-
-  export type NestedStringFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringFilter<$PrismaModel> | string
-  }
-
-  export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedStringFilter<$PrismaModel>
-    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type NestedBoolNullableFilter<$PrismaModel = never> = {

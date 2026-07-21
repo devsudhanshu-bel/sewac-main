@@ -2,7 +2,7 @@ const express = require("express");
 
 const overviewRoutes = require("./routes/overviewRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
-const disposalRoutes = require("./routes/disposalRoutes");
+const telemetryRoutes = require("./routes/telemetryRoutes");
 const ragRoutes = require("./routes/ragRoutes");
 const app = express();
 const filterRoutes = require("./routes/filterRoutes");
@@ -19,7 +19,7 @@ app.use("/api/filters", filterRoutes);
 app.use("/api/admin/overview", overviewRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/admin/citizens", citizenRoutes);
-app.use("/api/admin/disposal", disposalRoutes);
+app.use("/api/admin/telemetry", telemetryRoutes);
 app.use("/api/waste-generators", wasteGeneratorRoutes);
 app.use("/api/rag", ragRoutes);
 app.use("/api/logs", logsRoutes);

@@ -120,32 +120,28 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.Waste_disposal_logsScalarFieldEnum = {
+exports.Prisma.Telemetry_logsScalarFieldEnum = {
   id: 'id',
+  iot_timestamp: 'iot_timestamp',
+  received_at: 'received_at',
+  rfid_epc: 'rfid_epc',
   citizen_id: 'citizen_id',
-  person_name: 'person_name',
-  phone_number: 'phone_number',
-  city: 'city',
-  ward: 'ward',
-  area: 'area',
-  wet_slno: 'wet_slno',
-  dry_slno: 'dry_slno',
-  wet_rfid: 'wet_rfid',
-  dry_rfid: 'dry_rfid',
-  disposal_type: 'disposal_type',
-  wet_weight_kg: 'wet_weight_kg',
-  dry_weight_kg: 'dry_weight_kg',
-  total_weight_kg: 'total_weight_kg',
-  reward_points: 'reward_points',
-  vehicle_id: 'vehicle_id',
-  vehicle_name: 'vehicle_name',
+  citizen_contact: 'citizen_contact',
+  waste_type: 'waste_type',
   latitude: 'latitude',
   longitude: 'longitude',
-  disposed_at: 'disposed_at',
-  house_number: 'house_number',
-  household_type: 'household_type',
-  number_of_people: 'number_of_people',
-  waste_generator_type: 'waste_generator_type'
+  wet_weight_kg: 'wet_weight_kg',
+  dry_weight_kg: 'dry_weight_kg',
+  other_weight_kg: 'other_weight_kg',
+  cumulative_weight_kg: 'cumulative_weight_kg',
+  driver_name: 'driver_name',
+  vehicle_number: 'vehicle_number',
+  vehicle_id: 'vehicle_id',
+  firmware_version: 'firmware_version',
+  unit_number: 'unit_number',
+  collection_type: 'collection_type',
+  remarks: 'remarks',
+  err_code: 'err_code'
 };
 
 exports.Prisma.Vehicle_incidentsScalarFieldEnum = {
@@ -234,7 +230,7 @@ exports.Prisma.NullsOrder = {
 
 
 exports.Prisma.ModelName = {
-  waste_disposal_logs: 'waste_disposal_logs',
+  telemetry_logs: 'telemetry_logs',
   vehicle_incidents: 'vehicle_incidents',
   vehicle_master: 'vehicle_master',
   vehicle_telemetry: 'vehicle_telemetry',
