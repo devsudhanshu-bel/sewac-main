@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ApproveDevice from "./pages/ApproveDevice";
 import BehaviorEnrollment from "./pages/BehaviorEnrollment";
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         <Route path="/behavior-enrollment" element={<BehaviorEnrollment />} />
+
+        <Route path="/approve-device" element={<ApproveDevice />} />
       </Routes>
     </BrowserRouter>
   );

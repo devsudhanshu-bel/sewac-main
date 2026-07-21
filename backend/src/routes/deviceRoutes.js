@@ -4,7 +4,8 @@ const authenticate =
   require("../middleware/authMiddleware");
 
 const {
-  registerDevice,
+  requestDeviceRegistration,
+  approveDeviceRegistration,
   verifyDevice,
   listDevices,
   revokeDevice,
@@ -13,9 +14,9 @@ const {
 const router = express.Router();
 
 router.post(
-  "/register",
+  "/request-registration",
   authenticate,
-  registerDevice
+  requestDeviceRegistration
 );
 
 router.post(
@@ -23,6 +24,8 @@ router.post(
   authenticate,
   verifyDevice
 );
+
+router.get("/approve", approveDeviceRegistration);
 
 router.get(
   "/list",

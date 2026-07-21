@@ -1,28 +1,23 @@
 const nodemailer = require("nodemailer");
 
-const transporter =
-  nodemailer.createTransport({
-    service: "gmail",
+const transporter = nodemailer.createTransport({
+  service: "gmail",
 
-    auth: {
-      user:
-        process.env.ALERT_EMAIL,
+  auth: {
+    user: process.env.ALERT_EMAIL,
 
-      pass:
-        process.env.ALERT_PASSWORD,
-    },
-  });
+    pass: process.env.ALERT_PASSWORD,
+  },
+});
 
-const sendSecurityAlert =
-  async ({
-    layer,
-    severity,
-    type,
-    description,
-    ipAddress,
-  }) => {
-
-    const message = `
+const sendSecurityAlert = async ({
+  layer,
+  severity,
+  type,
+  description,
+  ipAddress,
+}) => {
+  const message = `
 CMADS SECURITY ALERT
 
 Layer: ${layer}
@@ -41,19 +36,16 @@ Timestamp:
 ${new Date().toISOString()}
 `;
 
-    await transporter.sendMail({
-      from:
-        process.env.ALERT_EMAIL,
+  await transporter.sendMail({
+    from: process.env.ALERT_EMAIL,
 
-      to:
-        process.env.ADMIN_EMAIL,
+    to: process.env.ADMIN_EMAIL,
 
-      subject:
-        `[${severity}] CMADS ${layer} Alert`,
+    subject: `[${severity}] CMADS ${layer} Alert`,
 
-      text: message,
-    });
-  };
+    text: message,
+  });
+};
 
 const sendPermissionApprovalEmail = async ({
   requesterName,
@@ -65,7 +57,6 @@ const sendPermissionApprovalEmail = async ({
   approveLink,
   rejectLink,
 }) => {
-
   const html = `
     <h2>SEWAC Permission Approval Required</h2>
 
@@ -110,20 +101,77 @@ const sendPermissionApprovalEmail = async ({
   `;
 
   await transporter.sendMail({
-
     from: process.env.ALERT_EMAIL,
 
     to: process.env.ADMIN_EMAIL,
 
     subject: "SEWAC Permission Approval",
 
-    html
-
+    html,
   });
+};
 
+const sendDeviceRegistrationEmail = async (
+  recipientEmail,
+  adminName,
+  token
+) => {
+  const approvalLink =
+    `${process.env.BACKEND_URL}/api/devices/approve?token=${token}`;
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+      <h2>New Device Registration Request</h2>
+
+      <p>Hello <b>${adminName}</b>,</p>
+
+      <p>
+        A new device is requesting access to your CMADS administrator account.
+      </p>
+
+      <p>
+        If this was you, approve the device using the button below.
+      </p>
+
+      <br>
+
+      <a
+        href="${approvalLink}"
+        style="
+          background:#2563eb;
+          color:white;
+          padding:12px 24px;
+          text-decoration:none;
+          border-radius:6px;
+        "
+      >
+        Approve Device
+      </a>
+
+      <br><br>
+
+      <p>
+        This approval link expires in <b>60 minutes</b>.
+      </p>
+
+      <hr>
+
+      <small>
+        If you did not initiate this login, simply ignore this email.
+      </small>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.ALERT_EMAIL,
+    to: recipientEmail,
+    subject: "CMADS - New Device Registration",
+    html,
+  });
 };
 
 module.exports = {
   sendSecurityAlert,
-  sendPermissionApprovalEmail
+  sendPermissionApprovalEmail,
+  sendDeviceRegistrationEmail,
 };

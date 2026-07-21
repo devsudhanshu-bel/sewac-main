@@ -1,84 +1,204 @@
 const pool = require("../config/db");
 
+const crypto = require("crypto");
+
+const {
+  sendSecurityAlert,
+  sendPermissionApprovalEmail,
+  sendDeviceRegistrationEmail,
+} = require("../services/emailService");
+
 const { generateFingerprint } = require("../services/deviceService");
 
 const { logEvent } = require("../services/auditService");
 
 const { createAlert } = require("../services/alertService");
 
-const registerDevice = async (req, res) => {
+const requestDeviceRegistration = async (req, res) => {
   try {
     const adminId = req.admin.adminId;
-
     const { device_name } = req.body;
 
     const fingerprint = generateFingerprint(req);
 
+    // Generate secure registration token
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Hash the token before storing
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Token valid for 60 minutes
+    const tokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
     const existingDevice = await pool.query(
       `
-SELECT *
-FROM devices
-WHERE admin_id = $1
-`,
-      [adminId],
+    SELECT *
+    FROM devices
+    WHERE admin_id = $1
+    AND device_fingerprint = $2
+  `,
+      [adminId, fingerprint],
     );
 
     if (existingDevice.rows.length > 0) {
-      const updated = await pool.query(
+      const device = existingDevice.rows[0];
+
+      // Device already waiting for approval
+      if (
+        device.status === "PENDING" &&
+        device.token_expires_at &&
+        new Date(device.token_expires_at) > new Date()
+      ) {
+        return res.status(200).json({
+          success: true,
+          message:
+            "A registration email has already been sent. Please check your inbox.",
+        });
+      }
+      // Token expired or device was revoked
+      await pool.query(
         `
     UPDATE devices
     SET
-      device_fingerprint = $1,
-      device_name = $2,
-      status = 'ACTIVE'
-    WHERE admin_id = $3
-    RETURNING *
+      registration_token_hash = $1,
+      token_expires_at = $2,
+      status = 'PENDING',
+      device_name = $3
+    WHERE id = $4
     `,
-        [fingerprint, device_name, adminId],
+        [tokenHash, tokenExpiry, device_name, device.id],
       );
-      await logEvent({
-        adminId,
-        eventType: "DEVICE_UPDATED",
-        description: `Device fingerprint updated: ${device_name}`,
-        ipAddress: req.ip,
-      });
+    } else {
+      await pool.query(
+        `
+    INSERT INTO devices
+    (
+      admin_id,
+      device_fingerprint,
+      device_name,
+      trust_score,
+      status,
+      registration_token_hash,
+      token_expires_at
+    )
+    VALUES
+    (
+      $1,$2,$3,$4,$5,$6,$7
+    )
+    `,
+        [
+          adminId,
+          fingerprint,
+          device_name,
+          50,
+          "PENDING",
+          tokenHash,
+          tokenExpiry,
+        ],
+      );
+    }
 
-      return res.status(200).json({
-        success: true,
-        message: "Device fingerprint updated",
-        device: updated.rows[0],
+    const adminResult = await pool.query(
+      `
+      SELECT
+        full_name,
+        email
+      FROM admins
+      WHERE id = $1
+      `,
+      [adminId],
+    );
+
+    if (adminResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Administrator not found.",
       });
     }
 
-    const result = await pool.query(
+    const admin = adminResult.rows[0];
+
+    // Send email
+    await sendDeviceRegistrationEmail(admin.email, admin.full_name, token);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "A device approval email has been sent to your registered email address.",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+const approveDeviceRegistration = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration token is required.",
+      });
+    }
+
+    // Hash the received token
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find pending device
+    const deviceResult = await pool.query(
       `
-      INSERT INTO devices
-      (
-        admin_id,
-        device_fingerprint,
-        device_name,
-        trust_score
-      )
-      VALUES
-      (
-        $1,$2,$3,$4
-      )
-      RETURNING *
+      SELECT *
+      FROM devices
+      WHERE registration_token_hash = $1
+      AND status = 'PENDING'
       `,
-      [adminId, fingerprint, device_name, 50],
+      [tokenHash],
     );
 
-    await logEvent({
-      adminId,
-      eventType: "DEVICE_REGISTERED",
-      description: `Device registered: ${device_name}`,
-      ipAddress: req.ip,
-    });
+    if (deviceResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired registration link.",
+      });
+    }
 
-    return res.status(201).json({
+    const device = deviceResult.rows[0];
+
+    // Check expiry
+    if (
+      !device.token_expires_at ||
+      new Date(device.token_expires_at) < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration link has expired.",
+      });
+    }
+
+    // Activate device
+    await pool.query(
+      `
+      UPDATE devices
+      SET
+        status = 'ACTIVE',
+        registration_token_hash = NULL,
+        token_expires_at = NULL,
+        first_seen = NOW(),
+        last_seen = NOW()
+      WHERE id = $1
+      `,
+      [device.id],
+    );
+
+    return res.status(200).json({
       success: true,
-      message: "Device registered successfully",
-      device: result.rows[0],
+      message:
+        "Device approved successfully. You can now log in from this device.",
     });
   } catch (error) {
     console.error(error);
@@ -92,16 +212,18 @@ WHERE admin_id = $1
 
 const verifyDevice = async (req, res) => {
   try {
+    const adminId = req.admin.adminId;
     const fingerprint = generateFingerprint(req);
 
     const revokedDevice = await pool.query(
       `
-        SELECT *
-        FROM devices
-        WHERE device_fingerprint = $1
-        AND status = 'REVOKED'
-        `,
-      [fingerprint],
+    SELECT *
+    FROM devices
+    WHERE admin_id = $1
+    AND device_fingerprint = $2
+    AND status = 'REVOKED'
+  `,
+      [adminId, fingerprint],
     );
 
     if (revokedDevice.rows.length > 0) {
@@ -137,12 +259,13 @@ const verifyDevice = async (req, res) => {
 
     const device = await pool.query(
       `
-        SELECT *
-        FROM devices
-        WHERE device_fingerprint = $1
-        AND status = 'ACTIVE'
-        `,
-      [fingerprint],
+    SELECT *
+    FROM devices
+    WHERE admin_id = $1
+    AND device_fingerprint = $2
+    AND status = 'ACTIVE'
+  `,
+      [adminId, fingerprint],
     );
 
     if (device.rows.length > 0) {
@@ -302,7 +425,8 @@ const revokeDevice = async (req, res) => {
 };
 
 module.exports = {
-  registerDevice,
+  requestDeviceRegistration,
+  approveDeviceRegistration,
   verifyDevice,
   listDevices,
   revokeDevice,

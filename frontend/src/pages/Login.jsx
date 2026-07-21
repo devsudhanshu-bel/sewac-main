@@ -334,8 +334,9 @@ const Login = () => {
                 : "Unknown OS";
 
           const deviceName = `${browser} (${os})`;
-          const registerResponse = await fetch(
-            `${API_BASE_URL}/api/devices/register`,
+
+          const registrationResponse = await fetch(
+            `${API_BASE_URL}/api/devices/request-registration`,
             {
               method: "POST",
               headers: {
@@ -348,20 +349,17 @@ const Login = () => {
             },
           );
 
-          const registered = await registerResponse.json();
+          const registration = await registrationResponse.json();
 
-          const verifyAgain = await fetch(
-            `${API_BASE_URL}/api/devices/verify`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${tempToken}`,
-                "Content-Type": "application/json",
-              },
-            },
+          setMessage(
+            registration.message ||
+              "A device approval email has been sent. Please approve the device and log in again.",
           );
 
-          const verifiedDevice = await verifyAgain.json();
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("admin");
+
+          return;
         }
 
         const behaviorResponse = await fetch(
