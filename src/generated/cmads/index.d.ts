@@ -14146,11 +14146,12 @@ export namespace Prisma {
 
   export type devicesWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    device_fingerprint?: string
+    admin_id_device_fingerprint?: devicesAdmin_idDevice_fingerprintCompoundUniqueInput
     AND?: devicesWhereInput | devicesWhereInput[]
     OR?: devicesWhereInput[]
     NOT?: devicesWhereInput | devicesWhereInput[]
     admin_id?: IntFilter<"devices"> | number
+    device_fingerprint?: StringFilter<"devices"> | string
     device_name?: StringNullableFilter<"devices"> | string | null
     trust_score?: IntNullableFilter<"devices"> | number | null
     status?: StringNullableFilter<"devices"> | string | null
@@ -14160,7 +14161,7 @@ export namespace Prisma {
     last_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     created_at?: DateTimeNullableFilter<"devices"> | Date | string | null
     admins?: XOR<AdminsScalarRelationFilter, adminsWhereInput>
-  }, "id" | "device_fingerprint">
+  }, "id" | "admin_id_device_fingerprint">
 
   export type devicesOrderByWithAggregationInput = {
     id?: SortOrder
@@ -15855,6 +15856,11 @@ export namespace Prisma {
     backspace_usage?: SortOrder
     error_rate?: SortOrder
     similarity_score?: SortOrder
+  }
+
+  export type devicesAdmin_idDevice_fingerprintCompoundUniqueInput = {
+    admin_id: number
+    device_fingerprint: string
   }
 
   export type devicesCountOrderByAggregateInput = {
