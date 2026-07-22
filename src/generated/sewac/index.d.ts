@@ -1384,6 +1384,7 @@ export namespace Prisma {
     dry_weight_kg: Decimal | null
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
+    driver_action: number | null
   }
 
   export type Telemetry_logsSumAggregateOutputType = {
@@ -1395,6 +1396,7 @@ export namespace Prisma {
     dry_weight_kg: Decimal | null
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
+    driver_action: number | null
   }
 
   export type Telemetry_logsMinAggregateOutputType = {
@@ -1418,6 +1420,7 @@ export namespace Prisma {
     unit_number: string | null
     collection_type: string | null
     remarks: string | null
+    driver_action: number | null
     err_code: string | null
   }
 
@@ -1442,6 +1445,7 @@ export namespace Prisma {
     unit_number: string | null
     collection_type: string | null
     remarks: string | null
+    driver_action: number | null
     err_code: string | null
   }
 
@@ -1466,6 +1470,7 @@ export namespace Prisma {
     unit_number: number
     collection_type: number
     remarks: number
+    driver_action: number
     err_code: number
     _all: number
   }
@@ -1480,6 +1485,7 @@ export namespace Prisma {
     dry_weight_kg?: true
     other_weight_kg?: true
     cumulative_weight_kg?: true
+    driver_action?: true
   }
 
   export type Telemetry_logsSumAggregateInputType = {
@@ -1491,6 +1497,7 @@ export namespace Prisma {
     dry_weight_kg?: true
     other_weight_kg?: true
     cumulative_weight_kg?: true
+    driver_action?: true
   }
 
   export type Telemetry_logsMinAggregateInputType = {
@@ -1514,6 +1521,7 @@ export namespace Prisma {
     unit_number?: true
     collection_type?: true
     remarks?: true
+    driver_action?: true
     err_code?: true
   }
 
@@ -1538,6 +1546,7 @@ export namespace Prisma {
     unit_number?: true
     collection_type?: true
     remarks?: true
+    driver_action?: true
     err_code?: true
   }
 
@@ -1562,6 +1571,7 @@ export namespace Prisma {
     unit_number?: true
     collection_type?: true
     remarks?: true
+    driver_action?: true
     err_code?: true
     _all?: true
   }
@@ -1673,6 +1683,7 @@ export namespace Prisma {
     unit_number: string | null
     collection_type: string | null
     remarks: string | null
+    driver_action: number
     err_code: string | null
     _count: Telemetry_logsCountAggregateOutputType | null
     _avg: Telemetry_logsAvgAggregateOutputType | null
@@ -1716,6 +1727,7 @@ export namespace Prisma {
     unit_number?: boolean
     collection_type?: boolean
     remarks?: boolean
+    driver_action?: boolean
     err_code?: boolean
   }, ExtArgs["result"]["telemetry_logs"]>
 
@@ -1740,6 +1752,7 @@ export namespace Prisma {
     unit_number?: boolean
     collection_type?: boolean
     remarks?: boolean
+    driver_action?: boolean
     err_code?: boolean
   }, ExtArgs["result"]["telemetry_logs"]>
 
@@ -1764,6 +1777,7 @@ export namespace Prisma {
     unit_number?: boolean
     collection_type?: boolean
     remarks?: boolean
+    driver_action?: boolean
     err_code?: boolean
   }, ExtArgs["result"]["telemetry_logs"]>
 
@@ -1788,10 +1802,11 @@ export namespace Prisma {
     unit_number?: boolean
     collection_type?: boolean
     remarks?: boolean
+    driver_action?: boolean
     err_code?: boolean
   }
 
-  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "citizen_contact" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_number" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "err_code", ExtArgs["result"]["telemetry_logs"]>
+  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "citizen_contact" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_number" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "driver_action" | "err_code", ExtArgs["result"]["telemetry_logs"]>
 
   export type $telemetry_logsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "telemetry_logs"
@@ -1817,6 +1832,7 @@ export namespace Prisma {
       unit_number: string | null
       collection_type: string | null
       remarks: string | null
+      driver_action: number
       err_code: string | null
     }, ExtArgs["result"]["telemetry_logs"]>
     composites: {}
@@ -2261,6 +2277,7 @@ export namespace Prisma {
     readonly unit_number: FieldRef<"telemetry_logs", 'String'>
     readonly collection_type: FieldRef<"telemetry_logs", 'String'>
     readonly remarks: FieldRef<"telemetry_logs", 'String'>
+    readonly driver_action: FieldRef<"telemetry_logs", 'Int'>
     readonly err_code: FieldRef<"telemetry_logs", 'String'>
   }
     
@@ -8508,6 +8525,7 @@ export namespace Prisma {
     unit_number: 'unit_number',
     collection_type: 'collection_type',
     remarks: 'remarks',
+    driver_action: 'driver_action',
     err_code: 'err_code'
   };
 
@@ -8731,6 +8749,7 @@ export namespace Prisma {
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
     collection_type?: StringNullableFilter<"telemetry_logs"> | string | null
     remarks?: StringNullableFilter<"telemetry_logs"> | string | null
+    driver_action?: IntFilter<"telemetry_logs"> | number
     err_code?: StringNullableFilter<"telemetry_logs"> | string | null
   }
 
@@ -8755,6 +8774,7 @@ export namespace Prisma {
     unit_number?: SortOrderInput | SortOrder
     collection_type?: SortOrderInput | SortOrder
     remarks?: SortOrderInput | SortOrder
+    driver_action?: SortOrder
     err_code?: SortOrderInput | SortOrder
   }
 
@@ -8782,6 +8802,7 @@ export namespace Prisma {
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
     collection_type?: StringNullableFilter<"telemetry_logs"> | string | null
     remarks?: StringNullableFilter<"telemetry_logs"> | string | null
+    driver_action?: IntFilter<"telemetry_logs"> | number
     err_code?: StringNullableFilter<"telemetry_logs"> | string | null
   }, "id">
 
@@ -8806,6 +8827,7 @@ export namespace Prisma {
     unit_number?: SortOrderInput | SortOrder
     collection_type?: SortOrderInput | SortOrder
     remarks?: SortOrderInput | SortOrder
+    driver_action?: SortOrder
     err_code?: SortOrderInput | SortOrder
     _count?: telemetry_logsCountOrderByAggregateInput
     _avg?: telemetry_logsAvgOrderByAggregateInput
@@ -8838,6 +8860,7 @@ export namespace Prisma {
     unit_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     collection_type?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     remarks?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
+    driver_action?: IntWithAggregatesFilter<"telemetry_logs"> | number
     err_code?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
   }
 
@@ -9288,6 +9311,7 @@ export namespace Prisma {
     unit_number?: string | null
     collection_type?: string | null
     remarks?: string | null
+    driver_action?: number
     err_code?: string | null
   }
 
@@ -9312,6 +9336,7 @@ export namespace Prisma {
     unit_number?: string | null
     collection_type?: string | null
     remarks?: string | null
+    driver_action?: number
     err_code?: string | null
   }
 
@@ -9335,6 +9360,7 @@ export namespace Prisma {
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
     collection_type?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    driver_action?: IntFieldUpdateOperationsInput | number
     err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -9359,6 +9385,7 @@ export namespace Prisma {
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
     collection_type?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    driver_action?: IntFieldUpdateOperationsInput | number
     err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -9383,6 +9410,7 @@ export namespace Prisma {
     unit_number?: string | null
     collection_type?: string | null
     remarks?: string | null
+    driver_action?: number
     err_code?: string | null
   }
 
@@ -9406,6 +9434,7 @@ export namespace Prisma {
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
     collection_type?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    driver_action?: IntFieldUpdateOperationsInput | number
     err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -9430,6 +9459,7 @@ export namespace Prisma {
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
     collection_type?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
+    driver_action?: IntFieldUpdateOperationsInput | number
     err_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -10007,6 +10037,7 @@ export namespace Prisma {
     unit_number?: SortOrder
     collection_type?: SortOrder
     remarks?: SortOrder
+    driver_action?: SortOrder
     err_code?: SortOrder
   }
 
@@ -10019,6 +10050,7 @@ export namespace Prisma {
     dry_weight_kg?: SortOrder
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
+    driver_action?: SortOrder
   }
 
   export type telemetry_logsMaxOrderByAggregateInput = {
@@ -10042,6 +10074,7 @@ export namespace Prisma {
     unit_number?: SortOrder
     collection_type?: SortOrder
     remarks?: SortOrder
+    driver_action?: SortOrder
     err_code?: SortOrder
   }
 
@@ -10066,6 +10099,7 @@ export namespace Prisma {
     unit_number?: SortOrder
     collection_type?: SortOrder
     remarks?: SortOrder
+    driver_action?: SortOrder
     err_code?: SortOrder
   }
 
@@ -10078,6 +10112,7 @@ export namespace Prisma {
     dry_weight_kg?: SortOrder
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
+    driver_action?: SortOrder
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {

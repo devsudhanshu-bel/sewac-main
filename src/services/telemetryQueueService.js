@@ -26,23 +26,23 @@ const processTelemetryQueue = async () => {
   console.log("Queue payload:", payload);
 
   const {
-    rfidNumber,
-    iotTimestamp,
-    driverName,
-    vehicleNumber,
-    vehicleId,
-    latitude,
-    longitude,
-    wetWeightKg = 0,
-    dryWeightKg = 0,
-    otherWeightKg = 0,
-    firmwareVersion,
-    unitNumber,
-    remarks,
-    errCode,
-  } = payload;
+  rfidNumber,
+  iotTimestamp,
+  driverName,
+  vehicleNumber,
+  vehicleId,
+  latitude,
+  longitude,
+  weight = 0,
+  firmwareVersion,
+  unitNumber,
+  remarks,
+  errCode,
+} = payload;
 
-  const isAuto = remarks === "O";
+  const isAuto =
+  remarks === "O" &&
+  !rfidNumber;
 
   if (!isAuto && activeScans.has(rfidNumber)) {
     return;
@@ -55,16 +55,26 @@ const processTelemetryQueue = async () => {
   let citizenId = null;
   let citizenContact = null;
   let wasteType = "MIXED";
+  let wetWeightKg = 0;
+let dryWeightKg = 0;
+let otherWeightKg = 0;
+
+let driverAction = 0;
 
   let finalRemarks;
   let finalCollectionType;
   let finalRfidNumber;
 
   if (isAuto) {
-    finalRemarks = "O";
-    finalCollectionType = "AUTO";
-    finalRfidNumber = "AUTO";
-  } else {
+  finalRemarks = "O";
+  finalCollectionType = "AUTO";
+  finalRfidNumber = "AUTO";
+
+  otherWeightKg = Number(weight);
+
+  driverAction = 1;
+} 
+  else {
     const cachedData = citizenCache.get(rfidNumber);
 
     console.log("Citizen found in cache:", cachedData);
@@ -82,16 +92,24 @@ const processTelemetryQueue = async () => {
     finalRemarks = wasteType === "WET" ? "W" : "D";
     finalCollectionType = "MANUAL";
     finalRfidNumber = rfidNumber;
+
+    if (wasteType === "WET") {
+  wetWeightKg = Number(weight);
+} else {
+  dryWeightKg = Number(weight);
+}
+
+driverAction = 0;
   }
+
+
 
   try {
     console.log("Inserting telemetry into telemetry_logs...");
     const previousCumulativeWeightKg = await getLatestCumulativeWeight();
 
 const currentWeightKg =
-  Number(wetWeightKg || 0) +
-  Number(dryWeightKg || 0) +
-  Number(otherWeightKg || 0);
+  Number(weight || 0);
 
 const cumulativeWeightKg =
   previousCumulativeWeightKg + currentWeightKg;
@@ -112,6 +130,7 @@ const cumulativeWeightKg =
       unitNumber,
       collectionType: finalCollectionType,
       remarks: finalRemarks,
+      driverAction,
       errCode,
       citizenId,
       citizenContact,

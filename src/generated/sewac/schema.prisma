@@ -43,9 +43,9 @@ model telemetry_logs {
   // Classification
   collection_type String? @db.VarChar(20)
   remarks         String? @db.VarChar(1)
-
+  driver_action   Int     @default(0)
   // Error Flags
-  err_code String? @db.VarChar(20)
+  err_code        String? @db.VarChar(20)
 
   @@index([rfid_epc])
   @@index([vehicle_id])

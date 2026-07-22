@@ -141,6 +141,7 @@ exports.Prisma.Telemetry_logsScalarFieldEnum = {
   unit_number: 'unit_number',
   collection_type: 'collection_type',
   remarks: 'remarks',
+  driver_action: 'driver_action',
   err_code: 'err_code'
 };
 

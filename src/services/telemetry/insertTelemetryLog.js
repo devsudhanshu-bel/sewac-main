@@ -16,6 +16,7 @@ const insertTelemetryLog = async ({
   unitNumber,
   collectionType,
   remarks,
+  driverAction,
   errCode,
   citizenId,
   citizenContact,
@@ -40,6 +41,7 @@ const insertTelemetryLog = async ({
       unit_number,
       collection_type,
       remarks,
+      driver_action,
       err_code,
       citizen_id,
       citizen_contact,
@@ -48,7 +50,7 @@ const insertTelemetryLog = async ({
     VALUES
 (
   $1,$2,$3,$4,$5,$6,$7,$8,$9,
-  $10,$11,$12,$13,$14,$15,$16,$17,$18,$19
+  $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
 )
     `,
     [
@@ -67,6 +69,7 @@ const insertTelemetryLog = async ({
       unitNumber,
       collectionType,
       remarks,
+      driverAction,
       errCode,
       citizenId,
       citizenContact,

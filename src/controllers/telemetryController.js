@@ -6,32 +6,37 @@ const { getProducerClient } = require("../config/redis");
 const recordTelemetry = async (req, res) => {
   try {
     const {
-      rfidNumber,
-      iotTimestamp,
-      driverName,
-      vehicleNumber,
-      vehicleId,
-      latitude,
-      longitude,
-      wetWeightKg,
-      dryWeightKg,
-      otherWeightKg,
-      firmwareVersion,
-      unitNumber,
-      remarks,
-      errCode,
-    } = req.query;
+  rfidNumber,
+  iotTimestamp,
+  driverName,
+  vehicleNumber,
+  vehicleId,
+  latitude,
+  longitude,
+  weight,
+  firmwareVersion,
+  unitNumber,
+  remarks,
+  errCode,
+} = req.query;
 
-    // AUTO if remarks = O
-    const isAuto = remarks === "O";
+// Determine collection type
+const isAuto =
+  remarks === "O" &&
+  !rfidNumber;
 
-    // Remarks should only be sent for AUTO collection
-    if (!isAuto && remarks !== undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "Remarks should only be 'O' for AUTO collection.",
-      });
-    }
+const isManual =
+  remarks === "" &&
+  rfidNumber;
+
+// Validate payload
+if (!isAuto && !isManual) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Invalid payload. Either send remarks='O' or a valid RFID number.",
+  });
+}
 
     // Mandatory telemetry fields
     if (!iotTimestamp || !vehicleId) {
@@ -58,22 +63,20 @@ const recordTelemetry = async (req, res) => {
       }
     }
 
-    const payload = {
-      rfidNumber,
-      iotTimestamp,
-      driverName,
-      vehicleNumber,
-      vehicleId,
-      latitude,
-      longitude,
-      wetWeightKg,
-      dryWeightKg,
-      otherWeightKg,
-      firmwareVersion,
-      unitNumber,
-      remarks,
-      errCode,
-    };
+  const payload = {
+  rfidNumber,
+  iotTimestamp,
+  driverName,
+  vehicleNumber,
+  vehicleId,
+  latitude,
+  longitude,
+  weight,
+  firmwareVersion,
+  unitNumber,
+  remarks,
+  errCode,
+};
 
     const redisClient = getProducerClient();
 
