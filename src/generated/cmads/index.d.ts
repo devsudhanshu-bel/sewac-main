@@ -7714,6 +7714,8 @@ export namespace Prisma {
     device_name: string | null
     trust_score: number | null
     status: string | null
+    registration_token_hash: string | null
+    token_expires_at: Date | null
     first_seen: Date | null
     last_seen: Date | null
     created_at: Date | null
@@ -7726,6 +7728,8 @@ export namespace Prisma {
     device_name: string | null
     trust_score: number | null
     status: string | null
+    registration_token_hash: string | null
+    token_expires_at: Date | null
     first_seen: Date | null
     last_seen: Date | null
     created_at: Date | null
@@ -7738,6 +7742,8 @@ export namespace Prisma {
     device_name: number
     trust_score: number
     status: number
+    registration_token_hash: number
+    token_expires_at: number
     first_seen: number
     last_seen: number
     created_at: number
@@ -7764,6 +7770,8 @@ export namespace Prisma {
     device_name?: true
     trust_score?: true
     status?: true
+    registration_token_hash?: true
+    token_expires_at?: true
     first_seen?: true
     last_seen?: true
     created_at?: true
@@ -7776,6 +7784,8 @@ export namespace Prisma {
     device_name?: true
     trust_score?: true
     status?: true
+    registration_token_hash?: true
+    token_expires_at?: true
     first_seen?: true
     last_seen?: true
     created_at?: true
@@ -7788,6 +7798,8 @@ export namespace Prisma {
     device_name?: true
     trust_score?: true
     status?: true
+    registration_token_hash?: true
+    token_expires_at?: true
     first_seen?: true
     last_seen?: true
     created_at?: true
@@ -7887,6 +7899,8 @@ export namespace Prisma {
     device_name: string | null
     trust_score: number | null
     status: string | null
+    registration_token_hash: string | null
+    token_expires_at: Date | null
     first_seen: Date | null
     last_seen: Date | null
     created_at: Date | null
@@ -7918,6 +7932,8 @@ export namespace Prisma {
     device_name?: boolean
     trust_score?: boolean
     status?: boolean
+    registration_token_hash?: boolean
+    token_expires_at?: boolean
     first_seen?: boolean
     last_seen?: boolean
     created_at?: boolean
@@ -7931,6 +7947,8 @@ export namespace Prisma {
     device_name?: boolean
     trust_score?: boolean
     status?: boolean
+    registration_token_hash?: boolean
+    token_expires_at?: boolean
     first_seen?: boolean
     last_seen?: boolean
     created_at?: boolean
@@ -7944,6 +7962,8 @@ export namespace Prisma {
     device_name?: boolean
     trust_score?: boolean
     status?: boolean
+    registration_token_hash?: boolean
+    token_expires_at?: boolean
     first_seen?: boolean
     last_seen?: boolean
     created_at?: boolean
@@ -7957,12 +7977,14 @@ export namespace Prisma {
     device_name?: boolean
     trust_score?: boolean
     status?: boolean
+    registration_token_hash?: boolean
+    token_expires_at?: boolean
     first_seen?: boolean
     last_seen?: boolean
     created_at?: boolean
   }
 
-  export type devicesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "admin_id" | "device_fingerprint" | "device_name" | "trust_score" | "status" | "first_seen" | "last_seen" | "created_at", ExtArgs["result"]["devices"]>
+  export type devicesOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "admin_id" | "device_fingerprint" | "device_name" | "trust_score" | "status" | "registration_token_hash" | "token_expires_at" | "first_seen" | "last_seen" | "created_at", ExtArgs["result"]["devices"]>
   export type devicesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     admins?: boolean | adminsDefaultArgs<ExtArgs>
   }
@@ -7985,6 +8007,8 @@ export namespace Prisma {
       device_name: string | null
       trust_score: number | null
       status: string | null
+      registration_token_hash: string | null
+      token_expires_at: Date | null
       first_seen: Date | null
       last_seen: Date | null
       created_at: Date | null
@@ -8418,6 +8442,8 @@ export namespace Prisma {
     readonly device_name: FieldRef<"devices", 'String'>
     readonly trust_score: FieldRef<"devices", 'Int'>
     readonly status: FieldRef<"devices", 'String'>
+    readonly registration_token_hash: FieldRef<"devices", 'String'>
+    readonly token_expires_at: FieldRef<"devices", 'DateTime'>
     readonly first_seen: FieldRef<"devices", 'DateTime'>
     readonly last_seen: FieldRef<"devices", 'DateTime'>
     readonly created_at: FieldRef<"devices", 'DateTime'>
@@ -13516,6 +13542,8 @@ export namespace Prisma {
     device_name: 'device_name',
     trust_score: 'trust_score',
     status: 'status',
+    registration_token_hash: 'registration_token_hash',
+    token_expires_at: 'token_expires_at',
     first_seen: 'first_seen',
     last_seen: 'last_seen',
     created_at: 'created_at'
@@ -14093,6 +14121,8 @@ export namespace Prisma {
     device_name?: StringNullableFilter<"devices"> | string | null
     trust_score?: IntNullableFilter<"devices"> | number | null
     status?: StringNullableFilter<"devices"> | string | null
+    registration_token_hash?: StringNullableFilter<"devices"> | string | null
+    token_expires_at?: DateTimeNullableFilter<"devices"> | Date | string | null
     first_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     last_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     created_at?: DateTimeNullableFilter<"devices"> | Date | string | null
@@ -14106,6 +14136,8 @@ export namespace Prisma {
     device_name?: SortOrderInput | SortOrder
     trust_score?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
+    registration_token_hash?: SortOrderInput | SortOrder
+    token_expires_at?: SortOrderInput | SortOrder
     first_seen?: SortOrderInput | SortOrder
     last_seen?: SortOrderInput | SortOrder
     created_at?: SortOrderInput | SortOrder
@@ -14114,19 +14146,22 @@ export namespace Prisma {
 
   export type devicesWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    device_fingerprint?: string
+    admin_id_device_fingerprint?: devicesAdmin_idDevice_fingerprintCompoundUniqueInput
     AND?: devicesWhereInput | devicesWhereInput[]
     OR?: devicesWhereInput[]
     NOT?: devicesWhereInput | devicesWhereInput[]
     admin_id?: IntFilter<"devices"> | number
+    device_fingerprint?: StringFilter<"devices"> | string
     device_name?: StringNullableFilter<"devices"> | string | null
     trust_score?: IntNullableFilter<"devices"> | number | null
     status?: StringNullableFilter<"devices"> | string | null
+    registration_token_hash?: StringNullableFilter<"devices"> | string | null
+    token_expires_at?: DateTimeNullableFilter<"devices"> | Date | string | null
     first_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     last_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     created_at?: DateTimeNullableFilter<"devices"> | Date | string | null
     admins?: XOR<AdminsScalarRelationFilter, adminsWhereInput>
-  }, "id" | "device_fingerprint">
+  }, "id" | "admin_id_device_fingerprint">
 
   export type devicesOrderByWithAggregationInput = {
     id?: SortOrder
@@ -14135,6 +14170,8 @@ export namespace Prisma {
     device_name?: SortOrderInput | SortOrder
     trust_score?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
+    registration_token_hash?: SortOrderInput | SortOrder
+    token_expires_at?: SortOrderInput | SortOrder
     first_seen?: SortOrderInput | SortOrder
     last_seen?: SortOrderInput | SortOrder
     created_at?: SortOrderInput | SortOrder
@@ -14155,6 +14192,8 @@ export namespace Prisma {
     device_name?: StringNullableWithAggregatesFilter<"devices"> | string | null
     trust_score?: IntNullableWithAggregatesFilter<"devices"> | number | null
     status?: StringNullableWithAggregatesFilter<"devices"> | string | null
+    registration_token_hash?: StringNullableWithAggregatesFilter<"devices"> | string | null
+    token_expires_at?: DateTimeNullableWithAggregatesFilter<"devices"> | Date | string | null
     first_seen?: DateTimeNullableWithAggregatesFilter<"devices"> | Date | string | null
     last_seen?: DateTimeNullableWithAggregatesFilter<"devices"> | Date | string | null
     created_at?: DateTimeNullableWithAggregatesFilter<"devices"> | Date | string | null
@@ -14896,6 +14935,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -14909,6 +14950,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -14919,6 +14962,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -14932,6 +14977,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -14944,6 +14991,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -14954,6 +15003,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -14966,6 +15017,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -15805,6 +15858,11 @@ export namespace Prisma {
     similarity_score?: SortOrder
   }
 
+  export type devicesAdmin_idDevice_fingerprintCompoundUniqueInput = {
+    admin_id: number
+    device_fingerprint: string
+  }
+
   export type devicesCountOrderByAggregateInput = {
     id?: SortOrder
     admin_id?: SortOrder
@@ -15812,6 +15870,8 @@ export namespace Prisma {
     device_name?: SortOrder
     trust_score?: SortOrder
     status?: SortOrder
+    registration_token_hash?: SortOrder
+    token_expires_at?: SortOrder
     first_seen?: SortOrder
     last_seen?: SortOrder
     created_at?: SortOrder
@@ -15830,6 +15890,8 @@ export namespace Prisma {
     device_name?: SortOrder
     trust_score?: SortOrder
     status?: SortOrder
+    registration_token_hash?: SortOrder
+    token_expires_at?: SortOrder
     first_seen?: SortOrder
     last_seen?: SortOrder
     created_at?: SortOrder
@@ -15842,6 +15904,8 @@ export namespace Prisma {
     device_name?: SortOrder
     trust_score?: SortOrder
     status?: SortOrder
+    registration_token_hash?: SortOrder
+    token_expires_at?: SortOrder
     first_seen?: SortOrder
     last_seen?: SortOrder
     created_at?: SortOrder
@@ -16825,6 +16889,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -16836,6 +16902,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -17097,6 +17165,8 @@ export namespace Prisma {
     device_name?: StringNullableFilter<"devices"> | string | null
     trust_score?: IntNullableFilter<"devices"> | number | null
     status?: StringNullableFilter<"devices"> | string | null
+    registration_token_hash?: StringNullableFilter<"devices"> | string | null
+    token_expires_at?: DateTimeNullableFilter<"devices"> | Date | string | null
     first_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     last_seen?: DateTimeNullableFilter<"devices"> | Date | string | null
     created_at?: DateTimeNullableFilter<"devices"> | Date | string | null
@@ -17993,6 +18063,8 @@ export namespace Prisma {
     device_name?: string | null
     trust_score?: number | null
     status?: string | null
+    registration_token_hash?: string | null
+    token_expires_at?: Date | string | null
     first_seen?: Date | string | null
     last_seen?: Date | string | null
     created_at?: Date | string | null
@@ -18120,6 +18192,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -18131,6 +18205,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -18142,6 +18218,8 @@ export namespace Prisma {
     device_name?: NullableStringFieldUpdateOperationsInput | string | null
     trust_score?: NullableIntFieldUpdateOperationsInput | number | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
+    registration_token_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    token_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     first_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     last_seen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

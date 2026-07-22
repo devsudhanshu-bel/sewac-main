@@ -25,7 +25,7 @@ const ROLE_ACCESS = {
     audit_logs: true,
     edit_logs: false,
     rag: true,
-    users: false,
+    users: true,
     settings: true,
 
     canEdit: false,

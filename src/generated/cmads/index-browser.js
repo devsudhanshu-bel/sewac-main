@@ -186,6 +186,8 @@ exports.Prisma.DevicesScalarFieldEnum = {
   device_name: 'device_name',
   trust_score: 'trust_score',
   status: 'status',
+  registration_token_hash: 'registration_token_hash',
+  token_expires_at: 'token_expires_at',
   first_seen: 'first_seen',
   last_seen: 'last_seen',
   created_at: 'created_at'

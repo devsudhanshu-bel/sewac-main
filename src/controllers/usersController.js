@@ -374,6 +374,17 @@ exports.deleteUser = async (req, res) => {
     // ===========================
     // RBAC Validation
     // ===========================
+    if (loggedInUser.role === "ADMIN_LAYER_1") {
+      if (
+        existingUser.role !== "ADMIN_LAYER_1" &&
+        existingUser.role !== "ADMIN_LAYER_2"
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "Admin Layer 1 cannot manage Workers.",
+        });
+      }
+    }
 
     if (loggedInUser.role === "ADMIN_LAYER_2") {
       if (
@@ -459,6 +470,18 @@ exports.updateUser = async (req, res) => {
     // ===========================
     // RBAC
     // ===========================
+
+    if (loggedInUser.role === "ADMIN_LAYER_1") {
+      if (
+        existingUser.role !== "ADMIN_LAYER_1" &&
+        existingUser.role !== "ADMIN_LAYER_2"
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "Admin Layer 1 cannot manage Workers.",
+        });
+      }
+    }
 
     if (loggedInUser.role === "ADMIN_LAYER_2") {
       if (
