@@ -119,6 +119,12 @@ const requestDeviceRegistration = async (req, res) => {
 
     // Send email
     await sendDeviceRegistrationEmail(admin.email, admin.full_name, token);
+    await logEvent({
+      adminId,
+      eventType: "DEVICE_REGISTRATION_REQUESTED",
+      description: `Registration email sent for device: ${device_name}`,
+      ipAddress: req.ip,
+    });
 
     return res.status(200).json({
       success: true,
@@ -186,6 +192,7 @@ const approveDeviceRegistration = async (req, res) => {
       UPDATE devices
       SET
         status = 'ACTIVE',
+        trust_score = 80,
         registration_token_hash = NULL,
         token_expires_at = NULL,
         first_seen = NOW(),
@@ -194,6 +201,12 @@ const approveDeviceRegistration = async (req, res) => {
       `,
       [device.id],
     );
+    await logEvent({
+      adminId: device.admin_id,
+      eventType: "DEVICE_APPROVED",
+      description: `Device approved: ${device.device_name}`,
+      ipAddress: req.ip,
+    });
 
     return res.status(200).json({
       success: true,

@@ -153,8 +153,8 @@ const login = async (req, res) => {
 
     await logEvent({
       adminId: admin.id,
-      eventType: "LOGIN_SUCCESS",
-      description: `Administrator ${admin.email} logged in successfully`,
+      eventType: "IDENTITY_AUTH_SUCCESS",
+      description: `Identity authentication successful for ${admin.email}`,
       ipAddress: req.ip,
     });
 

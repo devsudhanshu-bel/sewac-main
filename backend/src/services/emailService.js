@@ -117,7 +117,7 @@ const sendDeviceRegistrationEmail = async (
   token
 ) => {
   const approvalLink =
-    `${process.env.BACKEND_URL}/api/devices/approve?token=${token}`;
+    `${process.env.FRONTEND_URL}/approve-device?token=${token}`;
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
