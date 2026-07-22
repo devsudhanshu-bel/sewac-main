@@ -174,7 +174,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Project\\sewac-main\\src\\generated\\zone",
+      "value": "D:\\Innovatives\\sewac-admin-backend\\src\\generated\\zone",
       "fromEnvVar": null
     },
     "config": {
@@ -185,10 +185,14 @@ const config = {
         "fromEnvVar": null,
         "value": "windows",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "debian-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Project\\sewac-main\\prisma\\zone.schema.prisma",
+    "sourceFilePath": "D:\\Innovatives\\sewac-admin-backend\\prisma\\zone.schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -211,8 +215,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/zone\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"SEWAC_ZONE_URL\")\n}\n\nmodel city_table {\n  city_id        Int              @id @default(autoincrement())\n  city_name      String           @unique @db.VarChar(100)\n  geo_boundary   Json?\n  created_at     DateTime?        @default(now()) @db.Timestamp(6)\n  division_table division_table[]\n  ward_table     ward_table[]\n  zone_table     zone_table[]\n}\n\nmodel division_table {\n  division_id   Int          @id @default(autoincrement())\n  division_name String       @db.VarChar(150)\n  city_id       Int\n  zone_id       Int\n  geo_boundary  Json?\n  created_at    DateTime?    @default(now()) @db.Timestamp(6)\n  city_table    city_table   @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_division_city\")\n  zone_table    zone_table   @relation(fields: [zone_id], references: [zone_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_division_zone\")\n  ward_table    ward_table[]\n\n  @@index([city_id], map: \"idx_division_city\")\n  @@index([city_id, zone_id], map: \"idx_division_city_zone\")\n  @@index([zone_id], map: \"idx_division_zone\")\n}\n\nmodel ward_table {\n  ward_id        Int            @id @default(autoincrement())\n  ward_no        Int            @unique\n  ward_name      String         @db.VarChar(150)\n  city_id        Int\n  zone_id        Int\n  division_id    Int\n  geo_boundary   Json?\n  created_at     DateTime?      @default(now()) @db.Timestamp(6)\n  city_table     city_table     @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_city\")\n  division_table division_table @relation(fields: [division_id], references: [division_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_division\")\n  zone_table     zone_table     @relation(fields: [zone_id], references: [zone_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_zone\")\n\n  @@index([city_id], map: \"idx_ward_city\")\n  @@index([division_id], map: \"idx_ward_division\")\n  @@index([city_id, zone_id, division_id], map: \"idx_ward_hierarchy\")\n  @@index([zone_id], map: \"idx_ward_zone\")\n}\n\nmodel zone_table {\n  zone_id         Int              @id @default(autoincrement())\n  zone_name       String           @db.VarChar(150)\n  city_id         Int\n  total_divisions Int?             @default(0)\n  total_wards     Int?             @default(0)\n  geo_boundary    Json?\n  created_at      DateTime?        @default(now()) @db.Timestamp(6)\n  division_table  division_table[]\n  ward_table      ward_table[]\n  city_table      city_table       @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_zone_city\")\n\n  @@index([city_id], map: \"idx_zone_city\")\n  @@index([zone_name], map: \"idx_zone_name\")\n}\n",
-  "inlineSchemaHash": "7700e68c0b04f49ff9da41d98278117b26ac9c0ec5db066c2b721a417579c6b0",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/zone\"\n  binaryTargets = [\"native\", \"debian-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"SEWAC_ZONE_URL\")\n}\n\nmodel city_table {\n  city_id        Int              @id @default(autoincrement())\n  city_name      String           @unique @db.VarChar(100)\n  geo_boundary   Json?\n  created_at     DateTime?        @default(now()) @db.Timestamp(6)\n  division_table division_table[]\n  ward_table     ward_table[]\n  zone_table     zone_table[]\n}\n\nmodel division_table {\n  division_id   Int          @id @default(autoincrement())\n  division_name String       @db.VarChar(150)\n  city_id       Int\n  zone_id       Int\n  geo_boundary  Json?\n  created_at    DateTime?    @default(now()) @db.Timestamp(6)\n  city_table    city_table   @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_division_city\")\n  zone_table    zone_table   @relation(fields: [zone_id], references: [zone_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_division_zone\")\n  ward_table    ward_table[]\n\n  @@index([city_id], map: \"idx_division_city\")\n  @@index([city_id, zone_id], map: \"idx_division_city_zone\")\n  @@index([zone_id], map: \"idx_division_zone\")\n}\n\nmodel ward_table {\n  ward_id        Int            @id @default(autoincrement())\n  ward_no        Int            @unique\n  ward_name      String         @db.VarChar(150)\n  city_id        Int\n  zone_id        Int\n  division_id    Int\n  geo_boundary   Json?\n  created_at     DateTime?      @default(now()) @db.Timestamp(6)\n  city_table     city_table     @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_city\")\n  division_table division_table @relation(fields: [division_id], references: [division_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_division\")\n  zone_table     zone_table     @relation(fields: [zone_id], references: [zone_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_ward_zone\")\n\n  @@index([city_id], map: \"idx_ward_city\")\n  @@index([division_id], map: \"idx_ward_division\")\n  @@index([city_id, zone_id, division_id], map: \"idx_ward_hierarchy\")\n  @@index([zone_id], map: \"idx_ward_zone\")\n}\n\nmodel zone_table {\n  zone_id         Int              @id @default(autoincrement())\n  zone_name       String           @db.VarChar(150)\n  city_id         Int\n  total_divisions Int?             @default(0)\n  total_wards     Int?             @default(0)\n  geo_boundary    Json?\n  created_at      DateTime?        @default(now()) @db.Timestamp(6)\n  division_table  division_table[]\n  ward_table      ward_table[]\n  city_table      city_table       @relation(fields: [city_id], references: [city_id], onDelete: Cascade, onUpdate: NoAction, map: \"fk_zone_city\")\n\n  @@index([city_id], map: \"idx_zone_city\")\n  @@index([zone_name], map: \"idx_zone_name\")\n}\n",
+  "inlineSchemaHash": "11e661e640b5a2fb5df8ed0653c80f400f36269c2afaa0cdd72f379b983e72e9",
   "copyEngine": true
 }
 
@@ -253,6 +257,10 @@ Object.assign(exports, Prisma)
 // file annotations for bundling tools to include these files
 path.join(__dirname, "query_engine-windows.dll.node");
 path.join(process.cwd(), "src/generated/zone/query_engine-windows.dll.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
+path.join(process.cwd(), "src/generated/zone/libquery_engine-debian-openssl-3.0.x.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "src/generated/zone/schema.prisma")

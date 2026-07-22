@@ -225,7 +225,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Project\\sewac-main\\src\\generated\\helper",
+      "value": "D:\\Innovatives\\sewac-admin-backend\\src\\generated\\helper",
       "fromEnvVar": null
     },
     "config": {
@@ -236,10 +236,14 @@ const config = {
         "fromEnvVar": null,
         "value": "windows",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "debian-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Project\\sewac-main\\prisma\\helper.schema.prisma",
+    "sourceFilePath": "D:\\Innovatives\\sewac-admin-backend\\prisma\\helper.schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -262,8 +266,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/helper\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"HELPER_DATABASE_URL\")\n}\n\nmodel Moderator {\n  id        Int      @id @default(autoincrement())\n  username  String   @unique\n  password  String\n  role      String   @default(\"MODERATOR\")\n  createdAt DateTime @default(now())\n}\n\nmodel RFIDMapping {\n  id          Int        @id @default(autoincrement())\n  slno        String\n  phoneNumber String?\n  rfid        String     @unique\n  wasteType   WasteType?\n  createdAt   DateTime   @default(now())\n\n  @@unique([slno, wasteType])\n}\n\nmodel TrackingLog {\n  id          Int            @id @default(autoincrement())\n  workerId    String\n  slno        String?\n  citizenName String?\n  phoneNumber String?\n  remarks     String?\n  createdAt   DateTime       @default(now())\n  address     String?\n  buildingNo  String?\n  drySlno     String?\n  floorNo     String?\n  latitude    Float?\n  longitude   Float?\n  photoUrl    String?\n  updatedAt   DateTime\n  wetSlno     String?\n  status      TrackingStatus @default(FOUND)\n}\n\nmodel master_citizen_data {\n  id                  Int      @id @default(autoincrement())\n  phoneNumber         String   @unique\n  city                String?\n  ward                String?\n  area                String?\n  wasteGeneratorTypes String?\n  houseNumber         String?\n  floorNumber         String?\n  householdType       String?\n  personName          String?\n  contactNumber       String?\n  numberOfPeople      String?\n  buildingPhoto       String?\n  createdAt           DateTime @default(now())\n  updatedAt           DateTime\n  dryRFID             String?\n  drySlno             String?\n  wetRFID             String?\n  wetSlno             String?\n  lat                 Decimal? @db.Decimal(10, 8)\n  lng                 Decimal? @db.Decimal(11, 8)\n}\n\nmodel survey_attribute_specific {\n  city                String?\n  ward                String?\n  area                String?\n  wasteGeneratorTypes String?\n  houseNumber         String?\n  floorNumber         String?\n  householdType       String?\n  personName          String?\n  contactNumber       String?\n  numberOfPeople      String?\n  buildingPhoto       String?\n  id                  Int      @id @default(autoincrement())\n  lat                 Decimal? @db.Decimal(10, 8)\n  lng                 Decimal? @db.Decimal(11, 8)\n  createdAt           DateTime @default(now())\n  updatedAt           DateTime\n}\n\nmodel users {\n  id            Int       @id @default(autoincrement())\n  full_name     String    @db.VarChar(100)\n  email         String    @unique @db.VarChar(150)\n  password_hash String\n  role          String    @default(\"citizen\") @db.VarChar(20)\n  created_at    DateTime? @default(now()) @db.Timestamp(6)\n}\n\nenum TrackingStatus {\n  FOUND\n  NOT_FOUND\n}\n\nenum WasteType {\n  DRY\n  WET\n}\n",
-  "inlineSchemaHash": "5ecae6a03b593f0a34b67e0b436260fb0d7dcc9a431ce5a8e0dc18d4924051e9",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/helper\"\n  binaryTargets = [\"native\", \"debian-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"HELPER_DATABASE_URL\")\n}\n\nmodel Moderator {\n  id        Int      @id @default(autoincrement())\n  username  String   @unique\n  password  String\n  role      String   @default(\"MODERATOR\")\n  createdAt DateTime @default(now())\n}\n\nmodel RFIDMapping {\n  id          Int        @id @default(autoincrement())\n  slno        String\n  phoneNumber String?\n  rfid        String     @unique\n  wasteType   WasteType?\n  createdAt   DateTime   @default(now())\n\n  @@unique([slno, wasteType])\n}\n\nmodel TrackingLog {\n  id          Int            @id @default(autoincrement())\n  workerId    String\n  slno        String?\n  citizenName String?\n  phoneNumber String?\n  remarks     String?\n  createdAt   DateTime       @default(now())\n  address     String?\n  buildingNo  String?\n  drySlno     String?\n  floorNo     String?\n  latitude    Float?\n  longitude   Float?\n  photoUrl    String?\n  updatedAt   DateTime\n  wetSlno     String?\n  status      TrackingStatus @default(FOUND)\n}\n\nmodel master_citizen_data {\n  id                  Int      @id @default(autoincrement())\n  phoneNumber         String   @unique\n  city                String?\n  ward                String?\n  area                String?\n  wasteGeneratorTypes String?\n  houseNumber         String?\n  floorNumber         String?\n  householdType       String?\n  personName          String?\n  contactNumber       String?\n  numberOfPeople      String?\n  buildingPhoto       String?\n  createdAt           DateTime @default(now())\n  updatedAt           DateTime\n  dryRFID             String?\n  drySlno             String?\n  wetRFID             String?\n  wetSlno             String?\n  lat                 Decimal? @db.Decimal(10, 8)\n  lng                 Decimal? @db.Decimal(11, 8)\n}\n\nmodel survey_attribute_specific {\n  city                String?\n  ward                String?\n  area                String?\n  wasteGeneratorTypes String?\n  houseNumber         String?\n  floorNumber         String?\n  householdType       String?\n  personName          String?\n  contactNumber       String?\n  numberOfPeople      String?\n  buildingPhoto       String?\n  id                  Int      @id @default(autoincrement())\n  lat                 Decimal? @db.Decimal(10, 8)\n  lng                 Decimal? @db.Decimal(11, 8)\n  createdAt           DateTime @default(now())\n  updatedAt           DateTime\n}\n\nmodel users {\n  id            Int       @id @default(autoincrement())\n  full_name     String    @db.VarChar(100)\n  email         String    @unique @db.VarChar(150)\n  password_hash String\n  role          String    @default(\"citizen\") @db.VarChar(20)\n  created_at    DateTime? @default(now()) @db.Timestamp(6)\n}\n\nenum TrackingStatus {\n  FOUND\n  NOT_FOUND\n}\n\nenum WasteType {\n  DRY\n  WET\n}\n",
+  "inlineSchemaHash": "db508bd09e50644867a5b0ca496db37210d4d1033d22af0e36fe926a66243119",
   "copyEngine": true
 }
 
@@ -304,6 +308,10 @@ Object.assign(exports, Prisma)
 // file annotations for bundling tools to include these files
 path.join(__dirname, "query_engine-windows.dll.node");
 path.join(process.cwd(), "src/generated/helper/query_engine-windows.dll.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
+path.join(process.cwd(), "src/generated/helper/libquery_engine-debian-openssl-3.0.x.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "src/generated/helper/schema.prisma")
