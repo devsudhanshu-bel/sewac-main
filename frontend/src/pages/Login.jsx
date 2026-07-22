@@ -21,6 +21,8 @@ const Login = () => {
 
   const [error, setError] = useState("");
 
+  const [message, setMessage] = useState("");
+
   const [typingStart, setTypingStart] = useState(null);
 
   const [typingEnd, setTypingEnd] = useState(null);
@@ -240,6 +242,7 @@ const Login = () => {
     setLoading(true);
 
     setError("");
+    setMessage("");
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -351,9 +354,11 @@ const Login = () => {
 
           const registration = await registrationResponse.json();
 
+          setError("");
+
           setMessage(
             registration.message ||
-              "A device approval email has been sent. Please approve the device and log in again.",
+              "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
           );
 
           sessionStorage.removeItem("token");
@@ -501,6 +506,11 @@ const Login = () => {
         {/* ========================================= */}
         {/* ERROR */}
         {/* ========================================= */}
+        {message && (
+          <div className="mt-5 rounded-xl border border-green-300 bg-green-100 px-4 py-3 text-center text-green-700">
+            {message}
+          </div>
+        )}
         {error && (
           <div className="mt-5 bg-red-500/20 border border-red-400/30 text-white text-sm rounded-xl px-4 py-3 text-center">
             {error}

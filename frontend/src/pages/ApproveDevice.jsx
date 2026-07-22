@@ -55,11 +55,11 @@ const ApproveDevice = () => {
               size={60}
             />
 
-            <h2 className="text-2xl font-bold mt-6">
+            <h2 className="mt-6 text-2xl font-bold" style={{ color: "#000", opacity: 1 }}>
               Approving Device...
             </h2>
 
-            <p className="text-gray-500 mt-3">
+            <p className="mt-3 text-black">
               Please wait while we verify your request.
             </p>
           </>
@@ -70,11 +70,11 @@ const ApproveDevice = () => {
               size={70}
             />
 
-            <h2 className="text-3xl font-bold mt-6 text-green-700">
+            <h2 className="mt-6 text-3xl font-bold"style={{ color: "#000", opacity: 1 }}>
               Device Approved
             </h2>
 
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-black">
               {message}
             </p>
 
@@ -92,11 +92,11 @@ const ApproveDevice = () => {
               size={70}
             />
 
-            <h2 className="text-3xl font-bold mt-6 text-red-700">
+            <h2 className="mt-6 text-3xl font-bold" style={{ color: "#000", opacity: 1 }}>
               Approval Failed
             </h2>
 
-            <p className="mt-4 text-gray-600">
+            <p className="mt-4 text-black">
               {message}
             </p>
 
