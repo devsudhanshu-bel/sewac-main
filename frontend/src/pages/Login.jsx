@@ -4,7 +4,7 @@ import { User, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 import { useNavigate } from "react-router-dom";
-
+import { getDeviceFingerprint } from "../utils/deviceFingerprint";
 import gsap from "gsap";
 import "@fontsource/oswald";
 import "@fontsource-variable/finlandica";
@@ -295,6 +295,8 @@ const Login = () => {
           return;
         }
 
+        const fingerprint = getDeviceFingerprint();
+
         const deviceResponse = await fetch(
           `${API_BASE_URL}/api/devices/verify`,
           {
@@ -303,6 +305,9 @@ const Login = () => {
               Authorization: `Bearer ${tempToken}`,
               "Content-Type": "application/json",
             },
+            body: JSON.stringify({
+              fingerprint,
+            }),
           },
         );
 
@@ -348,6 +353,7 @@ const Login = () => {
               },
               body: JSON.stringify({
                 device_name: deviceName,
+                fingerprint,
               }),
             },
           );
