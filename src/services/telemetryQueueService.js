@@ -40,9 +40,16 @@ const processTelemetryQueue = async () => {
   errCode,
 } = payload;
 
-  const isAuto =
+const isManual =
+  remarks === "" &&
+  rfidNumber?.startsWith("E") &&
+  unitNumber === "SEWAC_01_UHF";
+
+const isAuto =
   remarks === "O" &&
-  !rfidNumber;
+  !rfidNumber?.startsWith("E") &&
+  unitNumber === "SEWAC_01_HF";
+
 
   if (!isAuto && activeScans.has(rfidNumber)) {
     return;
@@ -68,8 +75,7 @@ let driverAction = 0;
   if (isAuto) {
   finalRemarks = "O";
   finalCollectionType = "AUTO";
-  finalRfidNumber = "AUTO";
-
+  finalRfidNumber = rfidNumber;
   otherWeightKg = Number(weight);
 
   driverAction = 1;

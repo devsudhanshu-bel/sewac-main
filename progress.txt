@@ -264,3 +264,27 @@ modifications made:
 //just say YES/NO
 
 YES.
+
+//
+
+23/07/2026
+
+on demand to change comparision of Driver hf or ciizens uhf
+
+updated:
+
+| Payload                                                  | Decision | DB `rfid_epc`    | Weight  | Waste Type | Driver Action |
+| -------------------------------------------------------- | -------- | ---------------- | ------- | ---------- | ------------- |
+| `rfid starts with E` + `SEWAC_01_UHF` + `remarks=""`     | Citizen  | Citizen UHF RFID | Wet/Dry | WET/DRY    | `0`           |
+| `rfid NOT starts with E` + `SEWAC_01_HF` + `remarks="O"` | Driver   | Driver HF RFID   | Other   | MIXED      | `1`           |
+
+
+
+worst conditions:
+| Condition                                                | Response                        |
+| -------------------------------------------------------- | ------------------------------- |
+| `remarks=""`, RFID not starting with `E`, `SEWAC_01_UHF` | `400 Invalid telemetry payload` |
+| `remarks="O"`, RFID starts with `E`                      | `400 Invalid telemetry payload` |
+| `remarks=""`, valid UHF but RFID not in cache            | `404 RFID not registered`       |
+| `remarks="O"`, HF RFID, `SEWAC_01_HF`                    | ✅ Process as driver collection  |
+| Wrong `unitNumber`                                       | `400 Invalid telemetry payload` |

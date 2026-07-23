@@ -21,20 +21,22 @@ const recordTelemetry = async (req, res) => {
 } = req.query;
 
 // Determine collection type
-const isAuto =
-  remarks === "O" &&
-  !rfidNumber;
-
 const isManual =
   remarks === "" &&
-  rfidNumber;
+  rfidNumber?.startsWith("E") &&
+  unitNumber === "SEWAC_01_UHF";
+
+const isAuto =
+  remarks === "O" &&
+  !rfidNumber?.startsWith("E") &&
+  unitNumber === "SEWAC_01_HF";
 
 // Validate payload
 if (!isAuto && !isManual) {
   return res.status(400).json({
     success: false,
     message:
-      "Invalid payload. Either send remarks='O' or a valid RFID number.",
+  "Invalid telemetry payload. Check RFID format, unitNumber and remarks.",
   });
 }
 
@@ -48,10 +50,10 @@ if (!isAuto && !isManual) {
 
     // Manual collection validation
     if (!isAuto) {
-      if (!rfidNumber) {
+      if (!rfidNumber?.startsWith("E")) {
         return res.status(400).json({
           success: false,
-          message: "RFID number is required for manual collection.",
+          message: "Valid UHF RFID is required for citizen collection.",
         });
       }
 
