@@ -1,7 +1,7 @@
 EC2 Instance
 │
 ├── sewac-helper-admin-portal
-│   └── Port 5000
+│   └── Port 5003
 │
 ├── sewac-helper-app
 │   └── Port 5001
