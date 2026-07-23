@@ -7,6 +7,7 @@ const { logEvent } = require("../services/auditService");
 const {
   checkFailedLoginThreshold,
 } = require("../services/threatDetectionService");
+const rolePermissionService = require("../services/rolePermissionService");
 
 const register = async (req, res) => {
   try {
@@ -138,6 +139,7 @@ const login = async (req, res) => {
         expiresIn: "4h",
       },
     );
+    const permissions = rolePermissionService.getPermissionsByRole(admin.role);
 
     // Check whether behavior profile exists
     const behaviorProfile = await pool.query(
@@ -174,6 +176,8 @@ const login = async (req, res) => {
         email: admin.email,
         role: admin.role,
       },
+
+      permissions,
     });
   } catch (error) {
     console.error(error);

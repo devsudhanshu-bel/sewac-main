@@ -3,6 +3,7 @@ const { PrismaClient } = require("../generated/cmads");
 const prisma = new PrismaClient();
 
 const jwt = require("jsonwebtoken");
+const ROLE_ACCESS = require("../config/permissions");
 const {sendPermissionApprovalEmail} = require("./emailService");
 
 const requestPermission = async (req) => {
@@ -51,4 +52,8 @@ const requestPermission = async (req) => {
     request,
     approvalToken,
   };
+};
+
+exports.getPermissionsByRole = (role) => {
+    return ROLE_ACCESS[role] || {};
 };
