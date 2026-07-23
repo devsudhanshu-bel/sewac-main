@@ -1,19 +1,18 @@
 const crypto = require("crypto");
 
+const crypto = require("crypto");
+
 const generateFingerprint = (req) => {
+  const fingerprint = req.body.fingerprint || {};
 
-  const userAgent = req.headers["user-agent"] || "";
+  const fingerprintString = JSON.stringify(fingerprint);
 
-  const fingerprint = crypto
+  return crypto
     .createHash("sha256")
-    .update(userAgent)
+    .update(fingerprintString)
     .digest("hex");
-
-  ("USER AGENT:", userAgent);
-  ("GENERATED FP:", fingerprint);
-
-  return fingerprint;
 };
+
 module.exports = {
   generateFingerprint,
 };
