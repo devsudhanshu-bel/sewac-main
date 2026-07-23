@@ -340,3 +340,33 @@ I would implement this in **two phases**:
    * Result: **Crash-safe + duplicate-safe.**
 
 That combination is a robust design and still doesn't require a major architectural change. It builds directly on the queue you already have.
+
+////////////////////////
+
+IoT
+    │
+    ▼
+LPUSH telemetry_queue
+    │
+    ▼
+BLMOVE
+telemetry_queue ─────► telemetry_processing_queue
+                           │
+                           ▼
+                   Business Logic
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+          Success                    Crash/Error
+             │                           │
+             ▼                           ▼
+          LREM                 Remains in processing_queue
+                                       │
+                                       ▼
+                              Next startup
+                                       │
+                                       ▼
+                                   LMOVE
+                                       │
+                                       ▼
+                               telemetry_queue

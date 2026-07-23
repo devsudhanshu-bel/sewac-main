@@ -43,10 +43,7 @@ const payload = JSON.parse(payloadString);
   errCode,
 } = payload;
 
-const isManual =
-  remarks === "" &&
-  rfidNumber?.startsWith("E") &&
-  unitNumber === "SEWAC_01_UHF";
+
 
 const isAuto =
   remarks === "O" &&
@@ -173,9 +170,11 @@ console.log("Removed packet from processing queue.");
         isAuto ? "AUTO" : finalRfidNumber
       }`
     );
-  } catch (err) {
-    console.error("\n========== QUEUE ERROR ==========", err);
-  } finally {
+  }
+  catch (err) {
+  console.error("\n========== QUEUE ERROR ==========", err);
+}
+  finally {
     if (!isAuto) {
       activeScans.delete(rfidNumber);
     }
@@ -190,25 +189,19 @@ async function recoverProcessingQueue() {
   );
 
   while (true) {
-    const payload = await redisClient.rPop(
-      "telemetry_processing_queue"
-    );
-
-    if (!payload) break;
-
-    await redisClient.lPush(
+    const moved = await redisClient.lMove(
+      "telemetry_processing_queue",
       "telemetry_queue",
-      payload
+      "RIGHT",
+      "LEFT"
     );
 
-    console.log(
-      "Recovered one telemetry packet."
-    );
+    if (!moved) break;
+
+    console.log("Recovered one telemetry packet.");
   }
 
-  console.log(
-    "Telemetry recovery completed."
-  );
+  console.log("Telemetry recovery completed.");
 }
 
 console.log("Telemetry Queue Worker Started");

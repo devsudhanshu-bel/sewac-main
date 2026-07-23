@@ -288,3 +288,70 @@ worst conditions:
 | `remarks=""`, valid UHF but RFID not in cache            | `404 RFID not registered`       |
 | `remarks="O"`, HF RFID, `SEWAC_01_HF`                    | ✅ Process as driver collection  |
 | Wrong `unitNumber`                                       | `400 Invalid telemetry payload` |
+
+
+
+////
+Overall
+
+I'd say you're at about 95–98% of a robust queue implementation.
+
+You now have:
+
+✅ Fast Redis ingestion
+✅ Reliable buffering
+✅ Crash recovery
+✅ Automatic resume after restart
+✅ Acknowledgement only after successful business logic
+
+//
+telemetry_queue
+↓
+
+Packet 1
+
+↓
+
+processing_queue
+
+↓
+
+Business Logic
+
+↓
+
+ACK
+
+↓
+
+processing_queue = 0 
+
+//
+
+IoT
+    │
+    ▼
+LPUSH telemetry_queue
+    │
+    ▼
+BLMOVE
+telemetry_queue ─────► telemetry_processing_queue
+                           │
+                           ▼
+                   Business Logic
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+          Success                    Crash/Error
+             │                           │
+             ▼                           ▼
+          LREM                 Remains in processing_queue
+                                       │
+                                       ▼
+                              Next startup
+                                       │
+                                       ▼
+                                   LMOVE
+                                       │
+                                       ▼
+                               telemetry_queue

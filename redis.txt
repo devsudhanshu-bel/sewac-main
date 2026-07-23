@@ -75,3 +75,68 @@ Database Inserts
 ```
 
 So the **HashMap-based optimizations, Redis queue, and duplicate-scan protection are all still active**. The only thing that changed is **how the worker decides whether a scan is from a citizen (UHF) or a driver (HF)**. Everything else in the optimized pipeline remains unchanged.
+///
+
+IoT
+    │
+    ▼
+LPUSH telemetry_queue
+    │
+    ▼
+BLMOVE
+telemetry_queue ─────► telemetry_processing_queue
+                           │
+                           ▼
+                   Business Logic
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+          Success                    Crash/Error
+             │                           │
+             ▼                           ▼
+          LREM                 Remains in processing_queue
+                                       │
+                                       ▼
+                              Next startup
+                                       │
+                                       ▼
+                                   LMOVE
+                                       │
+                                       ▼
+                               telemetry_queue
+
+
+                               ////
+
+                               IoT
+    │
+    ▼
+LPUSH telemetry_queue
+    │
+    ▼
+BLMOVE
+    │
+    ▼
+telemetry_processing_queue
+    │
+    ▼
+Business Logic
+    │
+    ├── Success
+    │      │
+    │      ▼
+    │    LREM (ACK)
+    │
+    └── Failure
+           │
+           ▼
+Packet stays in processing queue
+           │
+           ▼
+Server restart
+           │
+           ▼
+LMOVE
+           │
+           ▼
+telemetry_queue
