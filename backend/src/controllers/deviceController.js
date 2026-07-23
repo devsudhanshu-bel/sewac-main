@@ -282,7 +282,7 @@ const verifyDevice = async (req, res) => {
     );
 
     if (device.rows.length > 0) {
-      const updatedTrustScore = Math.min(device.rows[0].trust_score + 2, 100);
+      const updatedTrustScore = Math.min(device.rows[0].trust_score + 2, 80);
 
       await pool.query(
         `

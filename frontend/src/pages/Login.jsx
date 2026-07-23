@@ -284,7 +284,13 @@ const Login = () => {
 
           sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-          window.location.href = "http://localhost:5173/overview";
+          sessionStorage.setItem(
+            "permissions",
+            JSON.stringify(data.permissions)
+          );
+
+          window.location.href =
+  `http://localhost:5173/auth/callback?token=${encodeURIComponent(tempToken)}`;
 
           return;
         }
@@ -316,6 +322,7 @@ const Login = () => {
         if (!device.success) {
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("admin");
+          sessionStorage.removeItem("permissions");
 
           setError("Authentication Failed");
 
@@ -364,11 +371,12 @@ const Login = () => {
 
           setMessage(
             registration.message ||
-              "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
+            "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
           );
 
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("admin");
+          sessionStorage.removeItem("permissions");
 
           return;
         }
@@ -390,6 +398,7 @@ const Login = () => {
         if (!behavior.success) {
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("admin");
+          sessionStorage.removeItem("permissions");
 
           setError("Authentication Failed");
 
@@ -411,6 +420,7 @@ const Login = () => {
         if (!risk.success) {
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("admin");
+          sessionStorage.removeItem("permissions");
 
           setError("Authentication Failed");
 
@@ -426,7 +436,13 @@ const Login = () => {
 
         sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-        navigate("/dashboard");
+        sessionStorage.setItem(
+          "permissions",
+          JSON.stringify(data.permissions)
+        );
+
+        window.location.href =
+  `http://localhost:5173/auth/callback?token=${encodeURIComponent(tempToken)}`;
       } else {
         setError(data.message || "Invalid credentials");
       }
