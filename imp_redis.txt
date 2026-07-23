@@ -1,0 +1,216 @@
+Yes, you're thinking about the right thing. The queue itself is **not** the bottleneck—the database work is.
+
+For **your SEWAC backend**, one packet currently does:
+
+```text
+BLMOVE
+↓
+HashMap lookup (RAM)
+↓
+getLatestCumulativeWeight()
+↓
+insertTelemetryLog()
+↓
+updateVehicleTelemetry()
+↓
+checkVehicleIncident()
+↓
+updatePlantStatistics()
+↓
+LREM (ACK)
+↓
+Next packet
+```
+
+### Expected time per packet
+
+* Redis operations (`BLMOVE`, `LREM`): **< 1 ms**
+* HashMap lookup: **< 1 ms**
+* PostgreSQL queries (4 operations): typically **5–30 ms each** on a healthy RDS connection
+* Total processing: **roughly 20–100 ms per packet** in normal conditions.
+
+That means a **single worker** can realistically process around **10–50 packets/second**, depending on your database latency.
+
+### Your understanding is correct
+
+```text
+telemetry_queue
+[P1 P2 P3]
+
+↓
+
+processing_queue
+[P1]
+
+↓
+
+DB work completes
+
+↓
+
+ACK (LREM)
+
+↓
+
+processing_queue
+[]
+
+↓
+
+Move P2
+
+↓
+
+Repeat...
+```
+
+So `telemetry_processing_queue` is normally **empty most of the time**. It only contains a packet **while it's actively being processed**.
+
+### Should you worry?
+
+For your use case, **no**.
+
+An IoT bin or vehicle is **not sending hundreds of packets per second**. Even if 20 vehicles send data at nearly the same time, Redis will buffer them in `telemetry_queue`, and the worker will drain them sequentially.
+
+If, in the future, the client scales to **hundreds of vehicles**, you don't need to redesign anything. You simply start **2–4 worker processes**, and they all consume from the same `telemetry_queue`, increasing throughput while keeping the same architecture.
+
+So this design is both **safe** (no packet loss on worker crash) and **scalable** without major changes.
+
+///
+
+
+Exactly! There's an important distinction here.
+
+Your **citizen data is NOT stored in Redis**.
+
+It's stored in a JavaScript **`Map`**:
+
+```js
+const citizenCache = new Map();
+```
+
+That `Map` lives in the **RAM of your Node.js process**.
+
+---
+
+### On your local machine
+
+```text
+Windows
+    ↓
+Node.js Process
+    ↓
+RAM
+    ↓
+citizenCache (Map)
+```
+
+---
+
+### After deploying to EC2
+
+```text
+AWS EC2 Instance
+        ↓
+Node.js Process
+        ↓
+EC2 RAM
+        ↓
+citizenCache (Map)
+```
+
+So yes, after deployment it uses the **EC2 instance's RAM**, not your laptop's.
+
+---
+
+### What happens on startup?
+
+When your backend starts:
+
+```text
+PostgreSQL
+      ↓
+Load all citizens once
+      ↓
+citizenCache (Map in RAM)
+```
+
+After that, every lookup is:
+
+```js
+citizenCache.get(rfidNumber);
+```
+
+which is an **O(1)** memory lookup.
+
+No PostgreSQL query.
+
+No Redis query.
+
+---
+
+### Why not Redis?
+
+Redis is excellent for:
+
+* Queues
+* Sessions
+* Distributed cache
+* Shared state between multiple servers
+
+Your `citizenCache` is:
+
+* Read-only most of the time
+* Used only by this backend
+* Small enough to fit comfortably in memory
+
+A local `Map` is actually **faster than Redis** because there's **no network call**.
+
+Approximate lookup times:
+
+```text
+JavaScript Map (RAM)      ~ nanoseconds to a few microseconds
+Redis GET (network)       ~ 0.3–2 ms
+PostgreSQL SELECT         ~ 5–20+ ms
+```
+
+---
+
+### Is EC2 RAM enough?
+
+Definitely.
+
+Suppose:
+
+* 10,000 citizens
+* ~500 bytes per cached record (rough estimate)
+
+Memory usage:
+
+```text
+10,000 × 500 bytes
+≈ 5 MB
+```
+
+Even if it grows to **100,000 citizens**, you're looking at roughly **50–100 MB**, which is still very reasonable for a typical EC2 instance.
+
+---
+
+### Your architecture is actually a good one
+
+```text
+PostgreSQL
+      │
+      └── Load once at startup
+                │
+                ▼
+      citizenCache (EC2 RAM)
+                │
+                ▼
+Telemetry Worker
+                │
+                ▼
+O(1) citizen lookup
+```
+
+So every telemetry packet avoids a database read entirely, which is one of the reasons your processing stays fast. Redis is handling the **queue**, while the in-memory `Map` is handling the **lookup**—each technology is being used for what it does best.

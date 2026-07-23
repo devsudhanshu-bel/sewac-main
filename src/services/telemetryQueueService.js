@@ -13,14 +13,17 @@ const { getConsumerClient } = require("../config/redis");
 const processTelemetryQueue = async () => {
   const redisClient = getConsumerClient();
 
-  const result = await redisClient.blPop(
-    "telemetry_queue",
-    0
-  );
+const payloadString = await redisClient.blMove(
+  "telemetry_queue",
+  "telemetry_processing_queue",
+  "RIGHT",
+  "LEFT",
+  0
+);
 
-  if (!result) return;
+if (!payloadString) return;
 
-  const payload = JSON.parse(result.element);
+const payload = JSON.parse(payloadString);
 
   console.log("\n========== NEW TELEMETRY ==========");
   console.log("Queue payload:", payload);
@@ -161,6 +164,10 @@ const cumulativeWeightKg =
 
     console.log("Telemetry inserted successfully.");
 
+    await redisClient.lRem("telemetry_processing_queue",1,payloadString);
+
+console.log("Removed packet from processing queue.");
+
     console.log(
       `Telemetry recorded successfully for ${
         isAuto ? "AUTO" : finalRfidNumber
@@ -175,20 +182,51 @@ const cumulativeWeightKg =
   }
 };
 
+async function recoverProcessingQueue() {
+  const redisClient = getConsumerClient();
+
+  console.log(
+    "Checking telemetry_processing_queue for pending packets..."
+  );
+
+  while (true) {
+    const payload = await redisClient.rPop(
+      "telemetry_processing_queue"
+    );
+
+    if (!payload) break;
+
+    await redisClient.lPush(
+      "telemetry_queue",
+      payload
+    );
+
+    console.log(
+      "Recovered one telemetry packet."
+    );
+  }
+
+  console.log(
+    "Telemetry recovery completed."
+  );
+}
+
 console.log("Telemetry Queue Worker Started");
 
 (async function startWorker() {
-  while (true) {
-  try {
-    await processTelemetryQueue();
-  } catch (err) {
-    console.error("Worker Error:", err);
+  await recoverProcessingQueue();
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, 5000)
-    );
+  while (true) {
+    try {
+      await processTelemetryQueue();
+    } catch (err) {
+      console.error("Worker Error:", err);
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 5000)
+      );
+    }
   }
-}
 })();
 
 module.exports = {

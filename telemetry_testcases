@@ -13,19 +13,19 @@ Assumptions:
 ### DRY Citizen
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:00:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:00:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ### WET Citizen
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470574606026FF800108&iotTimestamp=2026-07-23T12:02:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=7.2&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470574606026FF800108&iotTimestamp=2026-07-23T12:02:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=7.2&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ### Driver HF (Mixed Waste)
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:05:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=9.4&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=O&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:05:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=9.4&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=O&errCode=R0L0G0D0C0
 ```
 
 
@@ -36,7 +36,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimest
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:10:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=8.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=O&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:10:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=8.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=O&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -46,7 +46,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimest
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:11:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:11:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -56,7 +56,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:12:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=O&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:12:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=O&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -66,7 +66,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:13:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=9.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-23T12:13:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=9.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -76,7 +76,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=6667889028&iotTimest
 **Expected:** `404 RFID not registered`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E2004706009060260843010C&iotTimestamp=2026-07-23T12:14:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=6.0&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E2004706009060260843010C&iotTimestamp=2026-07-23T12:14:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=6.0&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -86,7 +86,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E2004706009060260843
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:15:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_02_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:15:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_02_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -96,7 +96,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=&iotTimestamp=2026-07-23T12:16:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=&iotTimestamp=2026-07-23T12:16:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -116,7 +116,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Missing required telemetry fields`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -126,7 +126,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:18:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=X&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-23T12:18:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=X&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -136,7 +136,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=E200470600106026083B
 **Expected:** `400 Bad Request` *(with your current `startsWith("E")` logic)*
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=e200470600106026083B0113&iotTimestamp=2026-07-23T12:19:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=e200470600106026083B0113&iotTimestamp=2026-07-23T12:19:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
 ```
 
 ---
@@ -146,7 +146,7 @@ http://localhost:5002/api/admin/telemetry/record?rfidNumber=e200470600106026083B
 **Expected:** `400 Bad Request`
 
 ```text
-http://localhost:5002/api/admin/telemetry/record?rfidNumber=E6667889028&iotTimestamp=2026-07-23T12:20:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=1&latitude=12.9716&longitude=77.5946&weight=9.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=O&errCode=R0L0G0D0C0
+http://localhost:5002/api/admin/telemetry/record?rfidNumber=E6667889028&iotTimestamp=2026-07-23T12:20:00Z&driverName=Ramesh&vehicleNumber=KA01AB1234&vehicleId=VH001&latitude=12.9716&longitude=77.5946&weight=9.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=O&errCode=R0L0G0D0C0
 ```
 
 ---

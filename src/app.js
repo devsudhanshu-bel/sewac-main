@@ -1,10 +1,10 @@
 const express = require("express");
-
+const cors = require("cors");
 const overviewRoutes = require("./routes/overviewRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
 const telemetryRoutes = require("./routes/telemetryRoutes");
 const ragRoutes = require("./routes/ragRoutes");
-const app = express();
+
 const filterRoutes = require("./routes/filterRoutes");
 const wasteGeneratorRoutes = require("./routes/wasteGeneratorRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -13,6 +13,15 @@ const usersRoutes = require("./routes/usersRoutes");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const plantRoutes = require("./routes/plantRoutes");
 const permissionRoutes = require("./routes/permissionRoutes");
+
+const app = express();
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use("/api/filters", filterRoutes);
