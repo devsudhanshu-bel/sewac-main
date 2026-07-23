@@ -63,10 +63,10 @@ const isAuto =
   let citizenContact = null;
   let wasteType = "MIXED";
   let wetWeightKg = 0;
-let dryWeightKg = 0;
-let otherWeightKg = 0;
+  let dryWeightKg = 0;
+  let otherWeightKg = 0;
 
-let driverAction = 0;
+  let driverAction = 0;
 
   let finalRemarks;
   let finalCollectionType;
