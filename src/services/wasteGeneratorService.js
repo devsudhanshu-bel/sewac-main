@@ -376,8 +376,47 @@ const getSummary = async () => {
   };
 };
 
+const getGVPTrend = async () => {
+  const result = await sewacPrisma.telemetry_logs.groupBy({
+    by: ["unit_number"],
+
+    where: {
+      unit_number: {
+        not: null,
+        notIn: [],
+      },
+
+      remarks: "O",
+
+      citizen_contact: null,
+    },
+
+    _max: {
+      cumulative_weight_kg: true,
+    },
+  });
+
+  const data = result
+    .filter(
+      (row) =>
+        row.unit_number &&
+        !row.unit_number.toUpperCase().includes("UHF")
+    )
+    .map((row) => ({
+      zone: row.unit_number,
+      value: Number(row._max.cumulative_weight_kg || 0),
+      color:
+        Number(row._max.cumulative_weight_kg || 0) >= 6500
+          ? "#DC2626"
+          : "#16A34A",
+    }));
+
+  return data;
+};
+
 module.exports = {
   getSummary,
+  getGVPTrend,
   getAllWasteGenerators,
   getWasteGeneratorByPhone,
   createWasteGenerator,

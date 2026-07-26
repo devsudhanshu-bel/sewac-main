@@ -200,3 +200,21 @@ exports.deleteWasteGenerator = async (req, res) => {
     });
   }
 };
+
+exports.getGVPTrend = async (req, res) => {
+  try {
+    const data = await wasteGeneratorService.getGVPTrend();
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
