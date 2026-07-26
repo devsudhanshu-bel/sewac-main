@@ -384,24 +384,24 @@ const getGVPTrend = async () => {
   let previousCumulative = 0;
   let currentDay = null;
 
-  const unitWaste = {};
+  const trend = {};
 
   for (const log of logs) {
-    const logDay = new Date(log.iot_timestamp).toISOString().split("T")[0];
+    const day = new Date(log.iot_timestamp).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
 
-    // Reset cumulative every new day
-    if (currentDay !== logDay) {
-      currentDay = logDay;
+    // Reset cumulative at the start of a new day
+    if (currentDay !== day) {
+      currentDay = day;
       previousCumulative = 0;
     }
 
-    const currentCumulative = Number(log.cumulative_weight_kg || 0);
+    const current = Number(log.cumulative_weight_kg || 0);
+    const actualWaste = current - previousCumulative;
+    previousCumulative = current;
 
-    const actualWaste = currentCumulative - previousCumulative;
-
-    previousCumulative = currentCumulative;
-
-    // Only count GVP collections
     const isGVP =
       log.unit_number &&
       !log.unit_number.includes("UHF") &&
@@ -410,12 +410,11 @@ const getGVPTrend = async () => {
 
     if (!isGVP) continue;
 
-    unitWaste[log.unit_number] =
-      (unitWaste[log.unit_number] || 0) + actualWaste;
+    trend[day] = (trend[day] || 0) + actualWaste;
   }
 
-  return Object.entries(unitWaste).map(([unit, value]) => ({
-    zone: unit,
+  return Object.entries(trend).map(([date, value]) => ({
+    date,
     value: Number(value.toFixed(2)),
     color: value >= 6500 ? "#DC2626" : "#16A34A",
   }));
