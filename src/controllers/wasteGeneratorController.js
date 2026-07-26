@@ -52,106 +52,18 @@ exports.getWasteGeneratorByPhone = async (req, res) => {
 
 exports.getSummary = async (req, res) => {
   try {
-    const { city, ward } = req.query;
-
-    const citizenFilter = {};
-
-    if (city) citizenFilter.city = city;
-    if (ward) citizenFilter.ward = ward;
-
-    /*
-    Total Waste Generators
-    Source: master_citizen_data
-    */
-    const totalWasteGenerators = await helperPrisma.master_citizen_data.count({
-      where: citizenFilter,
-    });
-
-    /*
-    Active Waste Generators (Trash Given)
-    Source: telemetry_log
-    */
-    const activeWasteGenerators = await sewacPrisma.telemetry_log.groupBy({
-      by: ["name"],
-      where: {
-        name: {
-          not: null,
-        },
-      },
-    });
-
-    const activeCount = activeWasteGenerators.length;
-
-    /*
-    Inactive Waste Generators (Trash Not Given)
-    */
-    const inactiveCount = totalWasteGenerators - activeCount;
-
-    /*
-    Total Waste Generated
-    Formula: SUM(weightCollected)
-    */
-    const totalWaste = await sewacPrisma.telemetry_log.aggregate({
-      _sum: {
-        weightCollected: true,
-      },
-      where: {
-        name: {
-          not: null,
-        },
-      },
-    });
-
-    const totalWasteGenerated = totalWaste._sum.weightCollected || 0;
-
-    /*
-    Average Waste
-    Formula: totalWasteGenerated / activeCount
-    */
-    const averageWaste =
-      activeCount > 0 ? totalWasteGenerated / activeCount : 0;
-
-    /*
-    Above / Below Average Classification
-    */
-    const perGeneratorWaste = await sewacPrisma.telemetry_log.groupBy({
-      by: ["name"],
-      _sum: {
-        weightCollected: true,
-      },
-      where: {
-        name: {
-          not: null,
-        },
-      },
-    });
-
-    let aboveAverage = 0;
-    let belowAverage = 0;
-
-    perGeneratorWaste.forEach((entry) => {
-      const waste = entry._sum.weightCollected || 0;
-
-      if (waste >= averageWaste) {
-        aboveAverage++;
-      } else {
-        belowAverage++;
-      }
-    });
+    const data = await wasteGeneratorService.getSummary();
 
     res.status(200).json({
-      totalWasteGenerators,
-      activeWasteGenerators: activeCount,
-      inactiveWasteGenerators: inactiveCount,
-      totalWasteGenerated,
-      averageWaste,
-      aboveAverage,
-      belowAverage,
+      success: true,
+      data,
     });
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
-      error: "Failed to fetch summary",
-      details: error.message,
+      success: false,
+      message: error.message,
     });
   }
 };
