@@ -142,7 +142,10 @@ exports.getGvpTrend = async (req, res) => {
 
 exports.createWasteGenerator = async (req, res) => {
   try {
-    const data = await wasteGeneratorService.createWasteGenerator(req.body, req);
+    const data = await wasteGeneratorService.createWasteGenerator(
+      req.body,
+      req,
+    );
 
     res.status(201).json({
       success: true,
@@ -163,7 +166,7 @@ exports.updateWasteGenerator = async (req, res) => {
     const data = await wasteGeneratorService.updateWasteGenerator(
       req.params.phoneNumber,
       req.body,
-      req
+      req,
     );
 
     res.status(200).json({
@@ -184,7 +187,7 @@ exports.deleteWasteGenerator = async (req, res) => {
   try {
     const data = await wasteGeneratorService.deleteWasteGenerator(
       req.params.phoneNumber,
-      req
+      req,
     );
 
     res.status(200).json({
@@ -205,7 +208,7 @@ exports.getGVPTrend = async (req, res) => {
   try {
     const data = await wasteGeneratorService.getGVPTrend();
 
-    res.status(200).json({
+    res.json({
       success: true,
       data,
     });

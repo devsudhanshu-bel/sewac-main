@@ -377,41 +377,48 @@ const getSummary = async () => {
 };
 
 const getGVPTrend = async () => {
-  const result = await sewacPrisma.telemetry_logs.groupBy({
-    by: ["unit_number"],
-
-    where: {
-      unit_number: {
-        not: null,
-        notIn: [],
-      },
-
-      remarks: "O",
-
-      citizen_contact: null,
-    },
-
-    _max: {
-      cumulative_weight_kg: true,
-    },
+  const logs = await sewacPrisma.telemetry_logs.findMany({
+    orderBy: [{ iot_timestamp: "asc" }, { id: "asc" }],
   });
 
-  const data = result
-    .filter(
-      (row) =>
-        row.unit_number &&
-        !row.unit_number.toUpperCase().includes("UHF")
-    )
-    .map((row) => ({
-      zone: row.unit_number,
-      value: Number(row._max.cumulative_weight_kg || 0),
-      color:
-        Number(row._max.cumulative_weight_kg || 0) >= 6500
-          ? "#DC2626"
-          : "#16A34A",
-    }));
+  let previousCumulative = 0;
+  let currentDay = null;
 
-  return data;
+  const unitWaste = {};
+
+  for (const log of logs) {
+    const logDay = new Date(log.iot_timestamp).toISOString().split("T")[0];
+
+    // Reset cumulative every new day
+    if (currentDay !== logDay) {
+      currentDay = logDay;
+      previousCumulative = 0;
+    }
+
+    const currentCumulative = Number(log.cumulative_weight_kg || 0);
+
+    const actualWaste = currentCumulative - previousCumulative;
+
+    previousCumulative = currentCumulative;
+
+    // Only count GVP collections
+    const isGVP =
+      log.unit_number &&
+      !log.unit_number.includes("UHF") &&
+      log.remarks === "O" &&
+      log.citizen_contact === null;
+
+    if (!isGVP) continue;
+
+    unitWaste[log.unit_number] =
+      (unitWaste[log.unit_number] || 0) + actualWaste;
+  }
+
+  return Object.entries(unitWaste).map(([unit, value]) => ({
+    zone: unit,
+    value: Number(value.toFixed(2)),
+    color: value >= 6500 ? "#DC2626" : "#16A34A",
+  }));
 };
 
 module.exports = {

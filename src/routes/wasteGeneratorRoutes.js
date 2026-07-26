@@ -17,7 +17,7 @@ router.get(
   wasteGeneratorController.getSummary
 );
 
-router.get("/gvp-trend", controller.getGVPTrend);
+router.get("/gvp-trend", wasteGeneratorController.getGVPTrend);
 // Waste Generator Directory
 router.get(
   "/directory",
