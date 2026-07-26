@@ -302,6 +302,19 @@ const getSummary = async () => {
 
   let active = 0;
 
+  // Active / Inactive calculation
+  telemetry.forEach((t) => {
+    if (t._max.received_at) {
+      const diff =
+        (Date.now() - new Date(t._max.received_at)) / (1000 * 60 * 60 * 24);
+
+      if (diff <= 4) {
+        active++;
+      }
+    }
+  });
+
+  // Actual waste calculation from running cumulative
   const logs = await sewacPrisma.telemetry_logs.findMany({
     where: {
       citizen_id: {
@@ -343,33 +356,9 @@ const getSummary = async () => {
     } else {
       belowAverage++;
     }
-
-    if (t._max.received_at) {
-      const diff =
-        (Date.now() - new Date(t._max.received_at)) / (1000 * 60 * 60 * 24);
-
-      if (diff <= 4) {
-        active++;
-      }
-    }
   });
 
   const inactive = totalWasteGenerators - active;
-
-  const averageWaste = telemetry.length ? totalWaste / telemetry.length : 0;
-
-  let aboveAverage = 0;
-
-  let belowAverage = 0;
-
-  averages.forEach((value) => {
-    if (value >= averageWaste) {
-      aboveAverage++;
-    } else {
-      belowAverage++;
-    }
-  });
-
   return {
     totalWasteGenerators,
 
