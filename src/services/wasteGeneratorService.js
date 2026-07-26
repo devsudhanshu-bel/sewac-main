@@ -302,16 +302,47 @@ const getSummary = async () => {
 
   let active = 0;
 
-  let totalWaste = 0;
+  const logs = await sewacPrisma.telemetry_logs.findMany({
+    where: {
+      citizen_id: {
+        not: null,
+      },
+    },
+    orderBy: [{ iot_timestamp: "asc" }, { id: "asc" }],
+  });
 
-  const averages = [];
+  let previousCumulative = 0;
 
-  telemetry.forEach((t) => {
-    const waste = Number(t._sum.cumulative_weight_kg || 0);
+  const citizenWaste = {};
 
-    totalWaste += waste;
+  logs.forEach((log) => {
+    const current = Number(log.cumulative_weight_kg || 0);
 
-    averages.push(waste);
+    const actualWaste = current - previousCumulative;
+
+    previousCumulative = current;
+
+    citizenWaste[log.citizen_id] =
+      (citizenWaste[log.citizen_id] || 0) + actualWaste;
+  });
+
+  const wasteValues = Object.values(citizenWaste);
+
+  const totalWasteGenerated = wasteValues.reduce((a, b) => a + b, 0);
+
+  const averageWaste = wasteValues.length
+    ? totalWasteGenerated / wasteValues.length
+    : 0;
+
+  let aboveAverage = 0;
+  let belowAverage = 0;
+
+  wasteValues.forEach((value) => {
+    if (value >= averageWaste) {
+      aboveAverage++;
+    } else {
+      belowAverage++;
+    }
 
     if (t._max.received_at) {
       const diff =
@@ -346,7 +377,7 @@ const getSummary = async () => {
 
     inactiveWasteGenerators: inactive,
 
-    totalWasteGenerated: totalWaste,
+    totalWasteGenerated,
 
     averageWaste,
 
