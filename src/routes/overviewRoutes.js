@@ -5,15 +5,21 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  getOverview,
-  getOverviewFilters,
-} = require("../controllers/overviewController");
+    getSummary,
+    getVehicleSummary,
+    getGenerationTrend,
+    getMapData,
+    getOverviewFilters
+}=require("../controllers/overviewController");
 
 // Overview main page access
-router.get(
-  "/",
-  getOverview
-);
+router.get("/summary",getSummary);
+
+router.get("/vehicle-summary",getVehicleSummary);
+
+router.get("/generation-trend",getGenerationTrend);
+
+router.get("/map",getMapData);
 
 // Overview filters access
 router.get(

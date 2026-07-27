@@ -1,6 +1,9 @@
-const { PrismaClient } = require("../generated/helper");
+const { PrismaClient: HelperClient } = require("../generated/helper");
+const { PrismaClient: SewacClient } = require("../generated/sewac");
 
-const prisma = new PrismaClient();
+const prisma = new HelperClient();
+const sewacPrisma = new SewacClient();
+
 const logEdit = require("../utils/editLogger");
 
 const getAllWasteGenerators = async (query) => {
@@ -21,6 +24,18 @@ const getAllWasteGenerators = async (query) => {
           },
           {
             personName: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            wetRFID: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            dryRFID: {
               contains: search,
               mode: "insensitive",
             },
@@ -50,16 +65,107 @@ const getAllWasteGenerators = async (query) => {
     },
   });
 
+  const citizenIds = wasteGenerators.map((c) => c.id);
+
+  const telemetry = await sewacPrisma.telemetry_logs.groupBy({
+    by: ["citizen_id"],
+
+    where: {
+      citizen_id: {
+        in: citizenIds,
+      },
+    },
+
+    _sum: {
+      cumulative_weight_kg: true,
+    },
+
+    _max: {
+      received_at: true,
+    },
+  });
+
+  const collectionDays = await sewacPrisma.telemetry_logs.findMany({
+    where: {
+      citizen_id: {
+        in: citizenIds,
+      },
+    },
+
+    select: {
+      citizen_id: true,
+      received_at: true,
+    },
+  });
+
+  const telemetryMap = new Map();
+
+  telemetry.forEach((t) => {
+    telemetryMap.set(t.citizen_id, t);
+  });
+
+  const dayMap = new Map();
+
+  collectionDays.forEach((row) => {
+    if (!row.received_at) return;
+
+    const day = row.received_at.toISOString().split("T")[0];
+
+    if (!dayMap.has(row.citizen_id)) {
+      dayMap.set(row.citizen_id, new Set());
+    }
+
+    dayMap.get(row.citizen_id).add(day);
+  });
+
   const total = await prisma.master_citizen_data.count({
     where,
   });
 
+  const enriched = wasteGenerators.map((citizen) => {
+    const tele = telemetryMap.get(citizen.id);
+
+    const totalWaste = Number(tele?._sum?.cumulative_weight_kg || 0);
+
+    const totalDays = dayMap.get(citizen.id)?.size || 0;
+
+    const averageWaste = totalDays === 0 ? 0 : totalWaste / totalDays;
+
+    const lastCollection = tele?._max?.received_at || null;
+
+    let status = "Inactive";
+
+    if (lastCollection) {
+      const diff =
+        (Date.now() - new Date(lastCollection)) / (1000 * 60 * 60 * 24);
+
+      if (diff <= 4) {
+        status = "Active";
+      }
+    }
+
+    return {
+      ...citizen,
+
+      totalWasteGenerated: totalWaste,
+
+      averageWaste,
+
+      lastCollection,
+
+      status,
+    };
+  });
   return {
-    wasteGenerators,
+    wasteGenerators: enriched,
+
     pagination: {
       page,
+
       limit,
+
       total,
+
       totalPages: Math.ceil(total / limit),
     },
   };
@@ -164,8 +270,8 @@ const deleteWasteGenerator = async (phoneNumber, req) => {
     req,
     module: "Waste Generators",
     action: "DELETE",
-    recordId: citizen.phoneNumber,
-    description: `Deleted Waste Generator ${citizen.personName}`,
+    recordId: existing.phoneNumber,
+    description: `Deleted Waste Generator ${existing.personName}`,
   });
 
   return {
@@ -173,7 +279,150 @@ const deleteWasteGenerator = async (phoneNumber, req) => {
   };
 };
 
+const getSummary = async () => {
+  const totalWasteGenerators = await prisma.master_citizen_data.count();
+
+  const telemetry = await sewacPrisma.telemetry_logs.groupBy({
+    by: ["citizen_id"],
+
+    where: {
+      citizen_id: {
+        not: null,
+      },
+    },
+
+    _sum: {
+      cumulative_weight_kg: true,
+    },
+
+    _max: {
+      received_at: true,
+    },
+  });
+
+  let active = 0;
+
+  // Active / Inactive calculation
+  telemetry.forEach((t) => {
+    if (t._max.received_at) {
+      const diff =
+        (Date.now() - new Date(t._max.received_at)) / (1000 * 60 * 60 * 24);
+
+      if (diff <= 4) {
+        active++;
+      }
+    }
+  });
+
+  // Actual waste calculation from running cumulative
+  const logs = await sewacPrisma.telemetry_logs.findMany({
+    where: {
+      citizen_id: {
+        not: null,
+      },
+    },
+    orderBy: [{ iot_timestamp: "asc" }, { id: "asc" }],
+  });
+
+  let previousCumulative = 0;
+
+  const citizenWaste = {};
+
+  logs.forEach((log) => {
+    const current = Number(log.cumulative_weight_kg || 0);
+
+    const actualWaste = current - previousCumulative;
+
+    previousCumulative = current;
+
+    citizenWaste[log.citizen_id] =
+      (citizenWaste[log.citizen_id] || 0) + actualWaste;
+  });
+
+  const wasteValues = Object.values(citizenWaste);
+
+  const totalWasteGenerated = wasteValues.reduce((a, b) => a + b, 0);
+
+  const averageWaste = wasteValues.length
+    ? totalWasteGenerated / wasteValues.length
+    : 0;
+
+  let aboveAverage = 0;
+  let belowAverage = 0;
+
+  wasteValues.forEach((value) => {
+    if (value >= averageWaste) {
+      aboveAverage++;
+    } else {
+      belowAverage++;
+    }
+  });
+
+  const inactive = totalWasteGenerators - active;
+  return {
+    totalWasteGenerators,
+
+    activeWasteGenerators: active,
+
+    inactiveWasteGenerators: inactive,
+
+    totalWasteGenerated,
+
+    averageWaste,
+
+    aboveAverage,
+
+    belowAverage,
+  };
+};
+
+const getGVPTrend = async () => {
+  const logs = await sewacPrisma.telemetry_logs.findMany({
+    orderBy: [{ iot_timestamp: "asc" }, { id: "asc" }],
+  });
+
+  let previousCumulative = 0;
+  let currentDay = null;
+
+  const trend = {};
+
+  for (const log of logs) {
+    const day = new Date(log.iot_timestamp).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+
+    // Reset cumulative at the start of a new day
+    if (currentDay !== day) {
+      currentDay = day;
+      previousCumulative = 0;
+    }
+
+    const current = Number(log.cumulative_weight_kg || 0);
+    const actualWaste = current - previousCumulative;
+    previousCumulative = current;
+
+    const isGVP =
+      log.unit_number &&
+      !log.unit_number.includes("UHF") &&
+      log.remarks === "O" &&
+      log.citizen_contact === null;
+
+    if (!isGVP) continue;
+
+    trend[day] = (trend[day] || 0) + actualWaste;
+  }
+
+  return Object.entries(trend).map(([date, value]) => ({
+    date,
+    value: Number(value.toFixed(2)),
+    color: value >= 6500 ? "#DC2626" : "#16A34A",
+  }));
+};
+
 module.exports = {
+  getSummary,
+  getGVPTrend,
   getAllWasteGenerators,
   getWasteGeneratorByPhone,
   createWasteGenerator,

@@ -3,23 +3,77 @@
 const helperDb = require("../config/helperDb");
 const mainDb = require("../config/mainDb");
 
-const getOverviewStats = async () => {
-  const totalCitizensResult = await helperDb.query(`
-    SELECT COUNT(*) as total
-    FROM master_citizen_data
-  `);
+const getSummary = async () => {
+  const [
+    totalCitizensResult,
+    totalWasteResult,
+    collectionPointsResult,
+    trashGivenResult,
+  ] = await Promise.all([
+    helperDb.query(`
+      SELECT COUNT(*) AS total
+      FROM master_citizen_data
+    `),
+
+    mainDb.query(`
+      SELECT COALESCE(SUM(cumulative_weight_kg),0) AS total
+      FROM telemetry_logs
+    `),
+
+    mainDb.query(`
+      SELECT COUNT(*) AS total
+      FROM (
+        SELECT DISTINCT latitude, longitude
+        FROM telemetry_logs
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+      ) t
+    `),
+
+    mainDb.query(`
+      SELECT COUNT(DISTINCT citizen_id) AS total
+      FROM telemetry_logs
+      WHERE citizen_id IS NOT NULL
+        AND (remarks IS NULL OR remarks <> 'O')
+    `),
+  ]);
 
   const totalCitizens = Number(totalCitizensResult.rows[0].total);
-  const totalVehiclesResult = await mainDb.query(`
-    SELECT COUNT(*) AS total
-    FROM vehicle_master
-`);
 
-  const runningVehiclesResult = await mainDb.query(`
-    SELECT COUNT(*) AS total
-    FROM vehicle_master
-    WHERE status = 'ACTIVE'
-`);
+  const totalWasteCollected = Number(totalWasteResult.rows[0].total);
+
+  const collectionPoints = Number(collectionPointsResult.rows[0].total);
+
+  const trashGiven = Number(trashGivenResult.rows[0].total);
+
+  const notGiven = Math.max(totalCitizens - trashGiven, 0);
+
+  return {
+    totalWasteCollected,
+
+    collectionPoints,
+
+    totalCitizens,
+
+    trashGiven,
+
+    notGiven,
+  };
+};
+
+const getVehicleSummary = async () => {
+  const [totalVehiclesResult, runningVehiclesResult] = await Promise.all([
+    mainDb.query(`
+      SELECT COUNT(*) AS total
+      FROM vehicle_master
+    `),
+
+    mainDb.query(`
+      SELECT COUNT(*) AS total
+      FROM vehicle_master
+      WHERE status='ACTIVE'
+    `),
+  ]);
 
   const totalVehicles = Number(totalVehiclesResult.rows[0].total);
 
@@ -28,63 +82,41 @@ const getOverviewStats = async () => {
   const inactiveVehicles = totalVehicles - runningVehicles;
 
   return {
-    summary: {
-      totalWasteCollected: 0,
+    totalVehicles,
 
-      collectionPoints: 0,
+    runningVehicles,
 
-      totalCitizens,
-
-      trashGiven: totalCitizens,
-
-      notGiven: 0,
-    },
-
-    vehicleSummary: {
-      totalVehicles,
-
-      runningVehicles,
-
-      inactiveVehicles
-    },
-
-    generationTrend: [
-      {
-        label: "West Corporation",
-        wasteGenerated: 2200,
-        threshold: 6500,
-      },
-
-      {
-        label: "North Corporation",
-        wasteGenerated: 4500,
-        threshold: 6500,
-      },
-
-      {
-        label: "East Corporation",
-        wasteGenerated: 7800,
-        threshold: 6500,
-      },
-
-      {
-        label: "Central Corporation",
-        wasteGenerated: 5200,
-        threshold: 6500,
-      },
-
-      {
-        label: "South Corporation",
-        wasteGenerated: 6100,
-        threshold: 6500,
-      },
-    ],
-
-    map: {
-      defaultView: "route-map",
-    },
+    inactiveVehicles,
   };
 };
+
+const getGenerationTrend = async () => {
+  const result = await mainDb.query(`
+    SELECT
+        vm.zone,
+        COALESCE(SUM(t.cumulative_weight_kg),0) AS wasteGenerated
+    FROM telemetry_logs t
+    INNER JOIN vehicle_master vm
+        ON vm.vehicle_number = t.vehicle_number
+    GROUP BY vm.zone
+    ORDER BY vm.zone;
+  `);
+
+  return result.rows.map((row) => ({
+    label: row.zone,
+
+    wasteGenerated: Number(row.wastegenerated),
+
+    threshold: 6500,
+  }));
+};
+
+const getMapData = async () => {
+  return {
+    defaultView: "route-map",
+  };
+};
+
 const getOverviewFilters = async () => {
   const citiesResult = await helperDb.query(`
     SELECT DISTINCT city
@@ -108,6 +140,9 @@ const getOverviewFilters = async () => {
 };
 
 module.exports = {
-  getOverviewStats,
+  getSummary,
+  getVehicleSummary,
+  getGenerationTrend,
+  getMapData,
   getOverviewFilters,
 };
