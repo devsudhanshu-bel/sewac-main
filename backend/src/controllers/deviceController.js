@@ -132,11 +132,12 @@ const requestDeviceRegistration = async (req, res) => {
         "A device approval email has been sent to your registered email address.",
     });
   } catch (error) {
-    console.error(error);
+    console.error("VERIFY DEVICE ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Server Error",
+      message: error.message,
+      stack: error.stack,
     });
   }
 };
@@ -313,7 +314,7 @@ WHERE id = $2
       });
     }
 
-    await logEvent({
+    /*await logEvent({
       adminId: null,
 
       eventType: "UNKNOWN_DEVICE_DETECTED",
@@ -335,7 +336,7 @@ WHERE id = $2
       description: "Unknown device attempted access",
 
       ipAddress: req.ip,
-    });
+    });*/
 
     return res.status(200).json({
       success: true,
