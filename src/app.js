@@ -4,6 +4,7 @@ const overviewRoutes = require("./routes/overviewRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
 const telemetryRoutes = require("./routes/telemetryRoutes");
 const ragRoutes = require("./routes/ragRoutes");
+const iotRoutes = require("./routes/iotRoutes");
 
 const filterRoutes = require("./routes/filterRoutes");
 const wasteGeneratorRoutes = require("./routes/wasteGeneratorRoutes");
@@ -30,6 +31,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/admin/citizens", citizenRoutes);
 app.use("/api/admin/telemetry", telemetryRoutes);
 app.use("/api/waste-generators", wasteGeneratorRoutes);
+app.use("/api/iot", iotRoutes);
 app.use("/api/rag", ragRoutes);
 app.use("/api/logs", logsRoutes);
 app.use("/api/auth", authRoutes);

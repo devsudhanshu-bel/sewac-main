@@ -106,9 +106,9 @@ telemetry_queue ─────► telemetry_processing_queue
                                telemetry_queue
 
 
-                               ////
+////
 
-                               IoT
+   IoT
     │
     ▼
 LPUSH telemetry_queue
