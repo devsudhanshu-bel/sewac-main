@@ -132,6 +132,11 @@ String response = http.getString();
 
 http.end();
 ```
+So the HTTP request sent by the ESP32 becomes:
+
+GET /api/iot/telemetry/record?... HTTP/1.1
+Host: sewac-main.onrender.com
+x-api-key: 8fd2A7B3K91XZ
 
 ---
 
