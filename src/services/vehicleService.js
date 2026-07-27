@@ -6,41 +6,51 @@ const getAllVehicles = async (query) => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const search = query.search || "";
-
+  const status = query.status || "";
   const offset = (page - 1) * limit;
 
-  const vehicles = await mainDb.query(
-    `
+  let whereClause = `
+  (
+      vehicle_id ILIKE $1
+      OR vehicle_number ILIKE $1
+      OR vehicle_type ILIKE $1
+      OR city ILIKE $1
+      OR zone ILIKE $1
+      OR division ILIKE $1
+      OR ward ILIKE $1
+  )
+  `;
+
+  const params = [`%${search}%`];
+
+  if (status && status !== "ALL") {
+    whereClause += ` AND status = $2`;
+    params.push(status);
+  }
+
+  const vehiclesQuery = `
     SELECT *
     FROM vehicle_master
-    WHERE
-      vehicle_id ILIKE $1
-      OR vehicle_number ILIKE $1
-      OR vehicle_type ILIKE $1
-      OR city ILIKE $1
-      OR zone ILIKE $1
-      OR division ILIKE $1
-      OR ward ILIKE $1
+    WHERE ${whereClause}
     ORDER BY created_at DESC
-    LIMIT $2 OFFSET $3
-    `,
-    [`%${search}%`, limit, offset],
+    LIMIT $${params.length + 1}
+    OFFSET $${params.length + 2}
+  `;
+
+  const vehicles = await mainDb.query(
+    vehiclesQuery,
+    [...params, limit, offset]
   );
 
-  const total = await mainDb.query(
-    `
+  const totalQuery = `
     SELECT COUNT(*) AS total
     FROM vehicle_master
-    WHERE
-      vehicle_id ILIKE $1
-      OR vehicle_number ILIKE $1
-      OR vehicle_type ILIKE $1
-      OR city ILIKE $1
-      OR zone ILIKE $1
-      OR division ILIKE $1
-      OR ward ILIKE $1
-    `,
-    [`%${search}%`],
+    WHERE ${whereClause}
+  `;
+
+  const total = await mainDb.query(
+    totalQuery,
+    params
   );
 
   return {
@@ -49,6 +59,7 @@ const getAllVehicles = async (query) => {
       page,
       limit,
       total: Number(total.rows[0].total),
+      totalPages: Math.ceil(Number(total.rows[0].total) / limit),
     },
   };
 };
@@ -146,16 +157,15 @@ const deleteVehicle = async (vehicleId) => {
     throw new Error("Vehicle not found");
   }
 
-  const deletedVehicle = await prisma.vehicle_master.update({
+  await prisma.vehicle_master.delete({
     where: {
       vehicle_id: vehicleId,
     },
-    data: {
-      status: "INACTIVE",
-    },
   });
 
-  return deletedVehicle;
+  return {
+    message: "Vehicle deleted successfully",
+  };
 };
 
 const getVehicleSummary = async () => {

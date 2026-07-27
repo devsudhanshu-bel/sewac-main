@@ -111,11 +111,30 @@ const getVehicleSummary = async (req, res) => {
   }
 };
 
+const getVehicleDirectory = async (req, res) => {
+  try {
+    const data = await vehicleService.getVehicleDirectory(req.query);
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllVehicles,
   getVehicleById,
   createVehicle,
   updateVehicle,
   deleteVehicle,
-  getVehicleSummary
+  getVehicleSummary,
+  getVehicleDirectory
 };
