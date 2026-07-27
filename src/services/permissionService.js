@@ -1,6 +1,5 @@
 const { PrismaClient } = require("../generated/cmads");
 const axios = require("axios");
-console.log(process.env.CMADS_DATABASE_URL);
 const prisma = new PrismaClient();
 
 const jwt = require("jsonwebtoken");

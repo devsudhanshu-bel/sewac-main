@@ -58,7 +58,7 @@ const updateVehicle = async (req, res) => {
   try {
     const data = await vehicleService.updateVehicle(
       req.params.vehicleId,
-      req.body
+      req.body,
     );
 
     return res.status(200).json({
@@ -93,10 +93,29 @@ const deleteVehicle = async (req, res) => {
   }
 };
 
+const getVehicleSummary = async (req, res) => {
+  try {
+    const summary = await vehicleService.getVehicleSummary();
+
+    res.status(200).json({
+      success: true,
+      data: summary,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllVehicles,
   getVehicleById,
   createVehicle,
   updateVehicle,
   deleteVehicle,
+  getVehicleSummary
 };

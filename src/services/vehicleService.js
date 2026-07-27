@@ -24,7 +24,7 @@ const getAllVehicles = async (query) => {
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3
     `,
-    [`%${search}%`, limit, offset]
+    [`%${search}%`, limit, offset],
   );
 
   const total = await mainDb.query(
@@ -40,7 +40,7 @@ const getAllVehicles = async (query) => {
       OR division ILIKE $1
       OR ward ILIKE $1
     `,
-    [`%${search}%`]
+    [`%${search}%`],
   );
 
   return {
@@ -54,7 +54,6 @@ const getAllVehicles = async (query) => {
 };
 
 const getVehicleById = async (vehicleId) => {
-
   const vehicle = await prisma.vehicle_master.findUnique({
     where: {
       vehicle_id: vehicleId,
@@ -69,7 +68,6 @@ const getVehicleById = async (vehicleId) => {
 };
 
 const createVehicle = async (body) => {
-
   const {
     vehicle_id,
     vehicle_number,
@@ -109,7 +107,6 @@ const createVehicle = async (body) => {
 };
 
 const updateVehicle = async (vehicleId, body) => {
-
   const existingVehicle = await prisma.vehicle_master.findUnique({
     where: {
       vehicle_id: vehicleId,
@@ -139,7 +136,6 @@ const updateVehicle = async (vehicleId, body) => {
 };
 
 const deleteVehicle = async (vehicleId) => {
-
   const existingVehicle = await prisma.vehicle_master.findUnique({
     where: {
       vehicle_id: vehicleId,
@@ -162,10 +158,37 @@ const deleteVehicle = async (vehicleId) => {
   return deletedVehicle;
 };
 
+const getVehicleSummary = async () => {
+  const totalVehicles = await prisma.vehicle_master.count();
+
+  const activeVehicles = await prisma.vehicle_master.count({
+    where: {
+      status: "ACTIVE",
+    },
+  });
+
+  const inactiveVehicles = await prisma.vehicle_master.count({
+    where: {
+      status: "INACTIVE",
+    },
+  });
+
+  // Temporary until telemetry weight logic is implemented
+  const averageWeightPerVehicle = 0;
+
+  return {
+    totalVehicles,
+    activeVehicles,
+    inactiveVehicles,
+    averageWeightPerVehicle,
+  };
+};
+
 module.exports = {
   getAllVehicles,
+  getVehicleSummary,
   getVehicleById,
   createVehicle,
   updateVehicle,
-  deleteVehicle
+  deleteVehicle,
 };
