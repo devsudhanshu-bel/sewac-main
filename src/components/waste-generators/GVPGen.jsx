@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import api from "../../api/axios";
 import { gsap } from "gsap";
 
 import {
@@ -12,44 +13,6 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
-
-const data = [
-  {
-    zone: "West Zone",
-    value: 4200,
-    color: "#16A34A",
-  },
-  {
-    zone: "North Zone",
-    value: 11200,
-    color: "#DC2626",
-  },
-  {
-    zone: "Central Zone",
-    value: 5600,
-    color: "#16A34A",
-  },
-  {
-    zone: "East Zone",
-    value: 13800,
-    color: "#DC2626",
-  },
-  {
-    zone: "South Zone",
-    value: 5200,
-    color: "#16A34A",
-  },
-  {
-    zone: "South East Zone",
-    value: 6100,
-    color: "#16A34A",
-  },
-  {
-    zone: "North East Zone",
-    value: 9700,
-    color: "#DC2626",
-  },
-];
 
 function Dot(props) {
   const { cx, cy, payload } = props;
@@ -68,13 +31,8 @@ function Dot(props) {
   );
 }
 
-function ValueLabel(props) {
-  const { x, y, value, index } = props;
-
-  const color =
-    data[index].value >= 6500
-      ? "#DC2626"
-      : "#16A34A";
+function ValueLabel({ x, y, value }) {
+  const color = Number(value) >= 6500 ? "#DC2626" : "#16A34A";
 
   return (
     <text
@@ -85,12 +43,13 @@ function ValueLabel(props) {
       fontWeight="700"
       fill={color}
     >
-      {value.toLocaleString()} Kg
+      {Number(value).toFixed(1)} Kg
     </text>
   );
 }
 
 export default function GVPGen() {
+  const [data, setData] = useState([]);
   const sectionRef = useRef(null);
 
   useEffect(() => {
@@ -108,6 +67,20 @@ export default function GVPGen() {
     return () => ctx.revert();
   }, []);
 
+  useEffect(() => {
+    const loadTrend = async () => {
+      try {
+        const res = await api.get("/api/waste-generators/gvp-trend");
+
+        setData(res.data.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadTrend();
+  }, []);
+
   return (
     <div
       ref={sectionRef}
@@ -120,7 +93,6 @@ export default function GVPGen() {
         shadow-[0_2px_12px_rgba(0,0,0,0.04)]
       "
     >
-
       {/* ================= Header ================= */}
 
       <div
@@ -133,7 +105,6 @@ export default function GVPGen() {
           justify-between
         "
       >
-
         <h2
           className="
             text-[15px]
@@ -151,7 +122,6 @@ export default function GVPGen() {
             gap-2
           "
         >
-
           <span
             className="
               text-[11px]
@@ -179,20 +149,13 @@ export default function GVPGen() {
           >
             <option>Zone</option>
           </select>
-
         </div>
-
       </div>
 
       {/* ================= Chart ================= */}
 
       <div className="h-[250px] pr-5 pb-4">
-
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-        >
-
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}
             margin={{
@@ -202,14 +165,10 @@ export default function GVPGen() {
               bottom: 10,
             }}
           >
-
-            <CartesianGrid
-              vertical={false}
-              stroke="#F2F4F7"
-            />
+            <CartesianGrid vertical={false} stroke="#F2F4F7" />
 
             <XAxis
-              dataKey="zone"
+              dataKey="date"
               tick={{
                 fontSize: 11,
                 fill: "#475569",
@@ -220,14 +179,7 @@ export default function GVPGen() {
             />
 
             <YAxis
-              ticks={[
-                0,
-                3000,
-                6000,
-                9000,
-                12000,
-                15000,
-              ]}
+              ticks={[0, 3000, 6000, 9000, 12000, 15000]}
               tick={{
                 fontSize: 11,
                 fill: "#475569",
@@ -235,11 +187,9 @@ export default function GVPGen() {
               axisLine={false}
               tickLine={false}
               width={45}
-              tickFormatter={(v) =>
-                v === 0 ? "0" : `${v / 1000}K`
-              }
+              tickFormatter={(v) => (v === 0 ? "0" : `${v / 1000}K`)}
             />
-                        <ReferenceLine
+            <ReferenceLine
               y={6500}
               stroke="#EF4444"
               strokeDasharray="6 4"
@@ -283,18 +233,11 @@ export default function GVPGen() {
               animationDuration={900}
               animationEasing="ease-out"
             >
-              <LabelList
-                dataKey="value"
-                content={<ValueLabel />}
-              />
+              <LabelList dataKey="value" content={<ValueLabel />} />
             </Line>
-
           </LineChart>
-
         </ResponsiveContainer>
-
       </div>
-
     </div>
   );
 }

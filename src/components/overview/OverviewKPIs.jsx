@@ -34,7 +34,7 @@ export default function OverviewKPIs({ data }) {
       {
         title: "Total Waste Collected",
         value: Number(data.totalWasteCollected).toLocaleString(),
-        unit: "Ton",
+        unit: "KG",
         icon: Trash2,
         iconColor: "text-pink-500",
         bg: "bg-pink-50",

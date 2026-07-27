@@ -100,7 +100,7 @@ export default function WasteComposition() {
             </h2>
 
             <p className="text-[10px] text-gray-500">
-              Ton
+              KG
             </p>
           </div>
 
@@ -140,7 +140,7 @@ export default function WasteComposition() {
                 </p>
 
                 <p className="text-[11px] font-semibold text-gray-900 mt-1">
-                  {item.value} Ton
+                  {item.value} KG
                 </p>
 
                 <p className="text-[10px] text-gray-400">

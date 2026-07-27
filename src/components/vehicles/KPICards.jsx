@@ -6,12 +6,16 @@ import {
   PackageOpen,
 } from "lucide-react";
 
-export default function KPICards() {
-  const totalVehicles = 1248;
-  const activeVehicles = 978;
-  const inactiveVehicles = 270;
-  const avgWeight = 6.52;
+export default function KPICards({ summary }) {
 
+    const {
+        totalVehicles,
+        activeVehicles,
+        inactiveVehicles,
+        averageWeightPerVehicle
+    } = summary;
+
+    const avgWeight = averageWeightPerVehicle;
   const activePercent = (
     (activeVehicles / totalVehicles) *
     100

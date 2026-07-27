@@ -12,57 +12,15 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useFilters } from "../../contexts/FilterContext";
+
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import Calendar from "../Calendar/Calendar";
 
-const cities = [
-  "Bangalore",
-  "Mysore",
-  "Mangalore",
-  "Hubli",
-  "Belgaum",
-];
-
-const zones = [
-  "All Zones",
-  "East Zone",
-  "West Zone",
-  "South Zone",
-  "North Zone",
-  "Mahadevapura",
-  "Bommanahalli",
-  "RR Nagar",
-  "Yelahanka",
-  "Dasarahalli",
-];
-
-const divisions = [
-  "All Divisions",
-  "Division 1",
-  "Division 2",
-  "Division 3",
-];
-
-const wards = [
-  "All Wards",
-  "Ward 1",
-  "Ward 2",
-  "Ward 3",
-];
-
-const languages = [
-  "English",
-  "Kannada",
-  "Hindi",
-];
+const languages = ["English", "Kannada", "Hindi"];
 
 const notifications = [
   {
@@ -83,13 +41,7 @@ const notifications = [
   },
 ];
 
-function Dropdown({
-  width,
-  value,
-  options,
-  addLabel,
-  onChange,
-}) {
+function Dropdown({ width, value, options, addLabel, onChange }) {
   const [open, setOpen] = useState(false);
 
   const wrapperRef = useRef(null);
@@ -98,14 +50,12 @@ function Dropdown({
 
   useEffect(() => {
     function close(e) {
-      if (!wrapperRef.current?.contains(e.target))
-        setOpen(false);
+      if (!wrapperRef.current?.contains(e.target)) setOpen(false);
     }
 
     window.addEventListener("mousedown", close);
 
-    return () =>
-      window.removeEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
   }, []);
 
   useEffect(() => {
@@ -123,16 +73,13 @@ function Dropdown({
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        }
+        },
       );
     }
   }, [open]);
 
   return (
-    <div
-      ref={wrapperRef}
-      className={`relative ${width}`}
-    >
+    <div ref={wrapperRef} className={`relative ${width}`}>
       <button
         onClick={() => setOpen(!open)}
         className="
@@ -178,38 +125,51 @@ function Dropdown({
             border-gray-100
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
             overflow-hidden
-            z-50
+            z-[9999]
           "
         >
-          {options.map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                onChange(item);
-                setOpen(false);
-              }}
-              className="
-                w-full
-                px-4
-                py-2.5
-                flex
-                items-center
-                justify-between
-                text-[12px]
-                hover:bg-violet-50
-                transition
-              "
-            >
-              {item}
+          {options.map((item) => {
+            const label =
+              item.city_name ||
+              item.zone_name ||
+              item.division_name ||
+              item.ward_name ||
+              item;
 
-              {item === value && (
-                <Check
-                  size={14}
-                  className="text-violet-600"
-                />
-              )}
-            </button>
-          ))}
+            const key =
+              item.city_id ||
+              item.zone_id ||
+              item.division_id ||
+              item.ward_id ||
+              label;
+
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  onChange(item);
+                  setOpen(false);
+                }}
+                className="
+        w-full
+        px-4
+        py-2.5
+        flex
+        items-center
+        justify-between
+        text-[12px]
+        hover:bg-violet-50
+        transition
+      "
+              >
+                {label}
+
+                {label === value && (
+                  <Check size={14} className="text-violet-600" />
+                )}
+              </button>
+            );
+          })}
 
           <button
             className="
@@ -238,9 +198,7 @@ function Dropdown({
   );
 }
 
-export default function Header({
-  variant = "dashboard",
-}) {
+export default function Header({ variant = "dashboard" }) {
   const navigate = useNavigate();
 
   const headerRef = useRef(null);
@@ -257,41 +215,45 @@ export default function Header({
 
   const languageRef = useRef(null);
 
-  const [selectedCity, setSelectedCity] =
-    useState("Bangalore");
+  const {
+    selectedCity,
+    setSelectedCity,
 
-  const [selectedZone, setSelectedZone] =
-    useState("All Zones");
+    selectedZone,
+    setSelectedZone,
 
-  const [selectedDivision, setSelectedDivision] =
-    useState("All Divisions");
+    selectedDivision,
+    setSelectedDivision,
 
-  const [selectedWard, setSelectedWard] =
-    useState("All Wards");
+    selectedWard,
+    setSelectedWard,
 
-  const [selectedLanguage, setSelectedLanguage] =
-    useState("English");
+    cities,
+    zones,
+    divisions,
+    wards,
+  } = useFilters();
 
-  const [selectedDate, setSelectedDate] =
-    useState(new Date());
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
-  const [dayType, setDayType] =
-    useState("dry");
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [search, setSearch] =
-    useState("");
+  const selectedDay = selectedDate.getDay();
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  // Wednesday (3) & Saturday (6)
+  const isDryDay = selectedDay === 3 || selectedDay === 6;
 
-  const [notificationOpen, setNotificationOpen] =
-    useState(false);
+  const [dayType, setDayType] = useState("wet");
 
-  const [languageOpen, setLanguageOpen] =
-    useState(false);
+  const [search, setSearch] = useState("");
 
-  const isDashboard =
-    variant === "dashboard";
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  const [languageOpen, setLanguageOpen] = useState(false);
+
+  const isDashboard = variant === "dashboard";
 
   useLayoutEffect(() => {
     const tl = gsap.timeline();
@@ -310,34 +272,27 @@ export default function Header({
         stagger: 0.05,
         ease: "power3.out",
       },
-      "-=0.2"
+      "-=0.2",
     );
   }, []);
 
   useEffect(() => {
     function close(e) {
-      if (!profileRef.current?.contains(e.target))
-        setProfileOpen(false);
+      if (!profileRef.current?.contains(e.target)) setProfileOpen(false);
 
-      if (!bellRef.current?.contains(e.target))
-        setNotificationOpen(false);
+      if (!bellRef.current?.contains(e.target)) setNotificationOpen(false);
 
-      if (!languageRef.current?.contains(e.target))
-        setLanguageOpen(false);
+      if (!languageRef.current?.contains(e.target)) setLanguageOpen(false);
     }
 
     window.addEventListener("mousedown", close);
 
-    return () =>
-      window.removeEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
   }, []);
 
   useEffect(() => {
     function shortcut(e) {
-      if (
-        e.key === "/" &&
-        variant !== "dashboard"
-      ) {
+      if (e.key === "/" && variant !== "dashboard") {
         e.preventDefault();
         searchRef.current?.focus();
       }
@@ -345,89 +300,68 @@ export default function Header({
 
     window.addEventListener("keydown", shortcut);
 
-    return () =>
-      window.removeEventListener(
-        "keydown",
-        shortcut
-      );
+    return () => window.removeEventListener("keydown", shortcut);
   }, [variant]);
 
   return (
     <header
-      ref={headerRef}
       className="
-        h-16
-        bg-white
-        border-b
-        border-gray-100
-        px-4
-        flex
-        items-center
-        justify-between
-      "
+    sticky
+    top-0
+    z-[9999]
+    h-16
+    bg-white
+    border-b
+    border-gray-100
+    px-4
+    flex
+    items-center
+    justify-between
+  "
     >
       {/* ================= LEFT ================= */}
 
-      <div
-        ref={controlsRef}
-        className="flex items-center gap-3"
-      >
-        <button
-          className="
-            w-9
-            h-9
-            rounded-xl
-            bg-violet-50
-            text-violet-600
-            flex
-            items-center
-            justify-center
-            hover:bg-violet-100
-            transition-all
-            duration-300
-          "
-        >
-          <Menu size={17} />
-        </button>
-
+      <div ref={controlsRef} className="flex items-center gap-3">
         {isDashboard ? (
           <div className="flex items-center gap-2">
-                        <Dropdown
+            <Dropdown
               width="w-[118px]"
-              value={selectedCity}
+              value={selectedCity?.city_name || "Select City"}
               options={cities}
-              addLabel="+ Add City"
+              addLabel="Add City"
               onChange={setSelectedCity}
             />
 
             <Dropdown
-              width="w-[118px]"
-              value={selectedZone}
+              width="w-[200px]"
+              value={selectedZone?.zone_name || "Select Zone"}
               options={zones}
-              addLabel="+ Add Zone"
+              addLabel="Add Zone"
               onChange={setSelectedZone}
             />
 
             <Dropdown
               width="w-[138px]"
-              value={selectedDivision}
+              value={selectedDivision?.division_name || "Select Division"}
               options={divisions}
-              addLabel="+ Add Division"
+              addLabel="Add Division"
               onChange={setSelectedDivision}
             />
 
             <Dropdown
               width="w-[122px]"
-              value={selectedWard}
+              value={
+                selectedWard
+                  ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
+                  : "Select Ward"
+              }
               options={wards}
-              addLabel="+ Add Ward"
+              addLabel="Add Ward"
               onChange={setSelectedWard}
             />
-
           </div>
         ) : (
           <div className="relative">
-
             <Search
               size={16}
               className="
@@ -443,9 +377,7 @@ export default function Header({
               ref={searchRef}
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
               className="
                 w-[330px]
@@ -467,7 +399,6 @@ export default function Header({
             />
 
             {search.length > 0 && (
-
               <button
                 onClick={() => setSearch("")}
                 className="
@@ -482,103 +413,87 @@ export default function Header({
               >
                 <X size={14} />
               </button>
-
             )}
-
           </div>
         )}
-
       </div>
 
       {/* ================= RIGHT ================= */}
 
       <div className="flex items-center gap-2.5">
+        {/* ================= Calendar ================= */}
 
-
- {/* ================= Calendar ================= */}
-
-<div
-  className="
+        <div
+          className="
     flex
     items-center
     justify-center
   "
->
-  <Calendar
-    value={selectedDate}
-    onChange={setSelectedDate}
-  />
-</div>
+        >
+          <Calendar value={selectedDate} onChange={setSelectedDate} />
+        </div>
 
         {/* Dry / Wet */}
 
+        {/* Collection Day */}
+
         <div
           className="
-            flex
-            rounded-xl
-            border
-            border-gray-200
-            overflow-hidden
-          "
+    flex
+    rounded-xl
+    border
+    border-gray-200
+    overflow-hidden
+  "
         >
+          {isDryDay && (
+            <button
+              onClick={() => setDayType("dry")}
+              className={`
+        h-9
+        px-4
+        text-[12px]
+        font-semibold
+        transition-all
+        duration-300
+
+        ${
+          dayType === "dry"
+            ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+            : "bg-white text-[#16295A] hover:bg-gray-50"
+        }
+      `}
+            >
+              Dry Day
+            </button>
+          )}
 
           <button
-            onClick={() =>
-              setDayType("dry")
-            }
+            onClick={() => setDayType("wet")}
             className={`
-              h-9
-              px-4
-              text-[12px]
-              font-semibold
-              transition-all
-              duration-300
+      h-9
+      px-4
+      text-[12px]
+      font-semibold
+      transition-all
+      duration-300
 
-              ${
-                dayType === "dry"
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                  : "bg-white text-[#16295A] hover:bg-gray-50"
-              }
-            `}
-          >
-            Dry Day
-          </button>
-
-          <button
-            onClick={() =>
-              setDayType("wet")
-            }
-            className={`
-              h-9
-              px-4
-              text-[12px]
-              font-semibold
-              transition-all
-              duration-300
-
-              ${
-                dayType === "wet"
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                  : "bg-white text-[#16295A] hover:bg-gray-50"
-              }
-            `}
+      ${
+        dayType === "wet"
+          ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+          : "bg-white text-[#16295A] hover:bg-gray-50"
+      }
+    `}
           >
             Wet Day
           </button>
-
         </div>
 
         {/* Language */}
 
-        <div
-          ref={languageRef}
-          className="relative"
-        >
-
+        <div ref={languageRef} className="relative">
           <button
-            onClick={() =>
-              setLanguageOpen(!languageOpen)
-            }
+            onClick={() => setLanguageOpen(!languageOpen)}
             className="
               h-9
               px-3
@@ -594,33 +509,25 @@ export default function Header({
               duration-300
             "
           >
-
-            <Globe
-              size={15}
-              className="text-violet-600"
-            />
+            <Globe size={15} className="text-violet-600" />
 
             <span className="text-[12px] font-semibold text-[#16295A]">
               {selectedLanguage === "English"
                 ? "EN"
                 : selectedLanguage === "Kannada"
-                ? "KN"
-                : "HI"}
+                  ? "KN"
+                  : "HI"}
             </span>
 
             <ChevronDown
               size={13}
               className={`transition-transform duration-300 ${
-                languageOpen
-                  ? "rotate-180"
-                  : ""
+                languageOpen ? "rotate-180" : ""
               }`}
             />
-
           </button>
 
           {languageOpen && (
-
             <div
               ref={languageMenuRef}
               className="
@@ -634,11 +541,10 @@ export default function Header({
                 border-gray-100
                 shadow-[0_15px_40px_rgba(0,0,0,0.08)]
                 overflow-hidden
-                z-50
+                z-[9999]
               "
             >
               {languages.map((language) => (
-
                 <button
                   key={language}
                   onClick={() => {
@@ -657,35 +563,21 @@ export default function Header({
                     transition
                   "
                 >
-
                   {language}
 
                   {selectedLanguage === language && (
-                    <Check
-                      size={14}
-                      className="text-violet-600"
-                    />
+                    <Check size={14} className="text-violet-600" />
                   )}
-
                 </button>
-
               ))}
-
             </div>
-
           )}
-
         </div>
-                {/* Notifications */}
+        {/* Notifications */}
 
-        <div
-          ref={bellRef}
-          className="relative"
-        >
+        <div ref={bellRef} className="relative">
           <button
-            onClick={() =>
-              setNotificationOpen(!notificationOpen)
-            }
+            onClick={() => setNotificationOpen(!notificationOpen)}
             className="
               relative
               w-9
@@ -702,10 +594,7 @@ export default function Header({
               duration-300
             "
           >
-            <Bell
-              size={17}
-              className="text-[#16295A]"
-            />
+            <Bell size={17} className="text-[#16295A]" />
 
             <span
               className="
@@ -741,7 +630,7 @@ export default function Header({
                 border-gray-100
                 shadow-[0_15px_40px_rgba(0,0,0,0.08)]
                 overflow-hidden
-                z-50
+                z-[9999]
               "
               ref={(el) => {
                 if (el) {
@@ -758,7 +647,7 @@ export default function Header({
                       y: 0,
                       duration: 0.22,
                       ease: "power3.out",
-                    }
+                    },
                   );
                 }
               }}
@@ -787,9 +676,7 @@ export default function Header({
                     {item.title}
                   </h4>
 
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    {item.time}
-                  </p>
+                  <p className="text-[11px] text-gray-500 mt-1">{item.time}</p>
                 </button>
               ))}
 
@@ -812,14 +699,9 @@ export default function Header({
 
         {/* Profile */}
 
-        <div
-          ref={profileRef}
-          className="relative"
-        >
+        <div ref={profileRef} className="relative">
           <button
-            onClick={() =>
-              setProfileOpen(!profileOpen)
-            }
+            onClick={() => setProfileOpen(!profileOpen)}
             className="
               h-9
               pl-2
@@ -860,9 +742,7 @@ export default function Header({
                 Admin
               </h4>
 
-              <p className="text-[10px] text-gray-500">
-                Super Admin
-              </p>
+              <p className="text-[10px] text-gray-500">Super Admin</p>
             </div>
 
             <ChevronDown
@@ -886,7 +766,7 @@ export default function Header({
                 border-gray-100
                 shadow-[0_15px_40px_rgba(0,0,0,0.08)]
                 overflow-hidden
-                z-50
+                z-[9999]
               "
               ref={(el) => {
                 if (el) {
@@ -903,7 +783,7 @@ export default function Header({
                       y: 0,
                       duration: 0.22,
                       ease: "power3.out",
-                    }
+                    },
                   );
                 }
               }}
@@ -936,7 +816,6 @@ export default function Header({
                 "
               >
                 <Settings size={16} />
-
                 Settings
               </button>
 
@@ -960,15 +839,12 @@ export default function Header({
                 "
               >
                 <LogOut size={16} />
-
                 Logout
               </button>
             </div>
           )}
         </div>
-
       </div>
-
     </header>
   );
 }

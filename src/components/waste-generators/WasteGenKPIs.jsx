@@ -1,13 +1,11 @@
 import { useEffect, useRef } from "react";
-import {
-  Users,
-  Trash2,
-  Scale,
-  UserRound,
-} from "lucide-react";
+import { Users, Trash2, Scale, UserRound } from "lucide-react";
 import { gsap } from "gsap";
 
-export default function WasteGenKPIs() {
+export default function WasteGenKPIs({ summary }) {
+  if (!summary) {
+    return null;
+  }
   const sectionRef = useRef(null);
 
   useEffect(() => {
@@ -26,10 +24,7 @@ export default function WasteGenKPIs() {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="grid grid-cols-5 gap-4 mt-6"
-    >
+    <section ref={sectionRef} className="grid grid-cols-5 gap-4 mt-6">
       {/* ========================= Total Waste Generators ========================= */}
 
       <div
@@ -60,10 +55,7 @@ export default function WasteGenKPIs() {
               justify-center
             "
           >
-            <Users
-              size={18}
-              className="text-violet-600"
-            />
+            <Users size={18} className="text-violet-600" />
           </div>
 
           <div>
@@ -82,7 +74,7 @@ export default function WasteGenKPIs() {
               text-[#18214D]
             "
           >
-            12,846
+            {summary?.activeWasteGenerators?.toLocaleString() ?? 0}
           </h2>
         </div>
       </div>
@@ -110,11 +102,7 @@ export default function WasteGenKPIs() {
         </h3>
 
         <div className="flex items-center gap-3">
-          <UserRound
-            size={20}
-            className="text-green-600"
-            fill="currentColor"
-          />
+          <UserRound size={20} className="text-green-600" fill="currentColor" />
 
           <div className="flex-1">
             <p className="text-[12px] text-slate-600">
@@ -130,7 +118,7 @@ export default function WasteGenKPIs() {
                   leading-none
                 "
               >
-                9,245
+                {summary?.activeWasteGenerators?.toLocaleString() ?? 0}
               </span>
 
               <span
@@ -141,7 +129,15 @@ export default function WasteGenKPIs() {
                   pb-1
                 "
               >
-                (71.9%)
+                (
+                {summary.totalWasteGenerators
+                  ? (
+                      (summary.activeWasteGenerators /
+                        summary.totalWasteGenerators) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
               </span>
             </div>
           </div>
@@ -170,7 +166,7 @@ export default function WasteGenKPIs() {
                   leading-none
                 "
               >
-                3,601
+                {summary?.inactiveWasteGenerators?.toLocaleString() ?? 0}
               </span>
 
               <span
@@ -181,7 +177,15 @@ export default function WasteGenKPIs() {
                   pb-1
                 "
               >
-                (28.1%)
+                (
+                {summary.totalWasteGenerators
+                  ? (
+                      (summary.inactiveWasteGenerators /
+                        summary.totalWasteGenerators) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
               </span>
             </div>
           </div>
@@ -219,10 +223,7 @@ export default function WasteGenKPIs() {
               shrink-0
             "
           >
-            <Trash2
-              size={18}
-              className="text-pink-600"
-            />
+            <Trash2 size={18} className="text-pink-600" />
           </div>
 
           <p className="text-[12px] font-semibold leading-5 text-slate-800">
@@ -242,7 +243,7 @@ export default function WasteGenKPIs() {
                 text-[#18214D]
               "
             >
-              124.8
+              {Number(summary?.totalWasteGenerated ?? 0).toFixed(1)}
             </h2>
 
             <span
@@ -253,12 +254,12 @@ export default function WasteGenKPIs() {
                 mb-2
               "
             >
-              Ton
+              KG
             </span>
           </div>
         </div>
       </div>
-            {/* ========================= Average Waste ========================= */}
+      {/* ========================= Average Waste ========================= */}
 
       <div
         className="
@@ -288,10 +289,7 @@ export default function WasteGenKPIs() {
               justify-center
             "
           >
-            <Scale
-              size={20}
-              className="text-emerald-600"
-            />
+            <Scale size={20} className="text-emerald-600" />
           </div>
 
           <div>
@@ -311,7 +309,7 @@ export default function WasteGenKPIs() {
                 text-[#18214D]
               "
             >
-              9.72
+              {Number(summary?.averageWaste ?? 0).toFixed(2)}
             </h2>
 
             <span
@@ -322,7 +320,7 @@ export default function WasteGenKPIs() {
                 mb-2
               "
             >
-              Kg
+              KG
             </span>
           </div>
 
@@ -358,9 +356,7 @@ export default function WasteGenKPIs() {
           <span className="w-3 h-3 rounded-full bg-green-500"></span>
 
           <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
-              Above Average
-            </p>
+            <p className="text-[12px] text-slate-600">Above Average</p>
 
             <div className="flex items-end gap-2 mt-1">
               <span
@@ -371,7 +367,7 @@ export default function WasteGenKPIs() {
                   leading-none
                 "
               >
-                6,732
+                {summary?.aboveAverage?.toLocaleString() ?? 0}
               </span>
 
               <span
@@ -382,7 +378,15 @@ export default function WasteGenKPIs() {
                   pb-1
                 "
               >
-                (52.4%)
+                (
+                {summary.aboveAverage + summary.belowAverage
+                  ? (
+                      (summary.aboveAverage /
+                        (summary.aboveAverage + summary.belowAverage)) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
               </span>
             </div>
           </div>
@@ -394,9 +398,7 @@ export default function WasteGenKPIs() {
           <span className="w-3 h-3 rounded-full bg-orange-500"></span>
 
           <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
-              Below Average
-            </p>
+            <p className="text-[12px] text-slate-600">Below Average</p>
 
             <div className="flex items-end gap-2 mt-1">
               <span
@@ -407,7 +409,7 @@ export default function WasteGenKPIs() {
                   leading-none
                 "
               >
-                6,114
+                {summary?.belowAverage?.toLocaleString() ?? 0}
               </span>
 
               <span
@@ -418,13 +420,20 @@ export default function WasteGenKPIs() {
                   pb-1
                 "
               >
-                (47.6%)
+                (
+                {summary.aboveAverage + summary.belowAverage
+                  ? (
+                      (summary.belowAverage /
+                        (summary.aboveAverage + summary.belowAverage)) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
               </span>
             </div>
           </div>
         </div>
       </div>
-
     </section>
   );
 }

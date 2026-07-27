@@ -18,13 +18,24 @@ export default function Overview() {
       setLoading(true);
       setError("");
 
-      const { data } = await api.get("/api/admin/overview");
+      const [
+        summary,
+        vehicleSummary,
+        generationTrend,
+        map,
+      ] = await Promise.all([
+        api.get("/api/admin/overview/summary"),
+        api.get("/api/admin/overview/vehicle-summary"),
+        api.get("/api/admin/overview/generation-trend"),
+        api.get("/api/admin/overview/map"),
+      ]);
 
-      if (data.success) {
-        setOverviewData(data.data);
-      } else {
-        setError(data.message || "Failed to load dashboard.");
-      }
+      setOverviewData({
+        summary: summary.data.data,
+        vehicleSummary: vehicleSummary.data.data,
+        generationTrend: generationTrend.data.data,
+        map: map.data.data,
+      });
     } catch (err) {
       console.error("Overview API Error:", err);
 
@@ -38,43 +49,7 @@ export default function Overview() {
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const { data } = await api.get("/api/admin/overview");
-
-        if (!mounted) return;
-
-        if (data.success) {
-          setOverviewData(data.data);
-        } else {
-          setError(data.message || "Failed to load dashboard.");
-        }
-      } catch (err) {
-        if (!mounted) return;
-
-        console.error("Overview API Error:", err);
-
-        setError(
-          err.response?.data?.message ||
-            "Unable to connect to the server."
-        );
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      mounted = false;
-    };
+    fetchOverview();
   }, []);
 
   if (loading) {
