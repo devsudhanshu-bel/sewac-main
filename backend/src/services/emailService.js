@@ -121,7 +121,7 @@ const sendDeviceRegistrationEmail = async (
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
-      <h2>New Device Registration Request</h2>
+      <h2>🔥 THIS IS THE NEW EMAIL TEMPLATE 🔥</h2>
 
       <p>Hello <b>${adminName}</b>,</p>
 
