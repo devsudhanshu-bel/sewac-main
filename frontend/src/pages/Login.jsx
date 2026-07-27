@@ -10,6 +10,7 @@ import "@fontsource/oswald";
 import "@fontsource-variable/finlandica";
 
 const Login = () => {
+  console.log("🔥 LOGIN CONTROLLER HIT");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -294,7 +295,7 @@ const Login = () => {
 
           return;
         }
-
+        console.log("🔥 RETURNING LOGIN RESPONSE");
         if (data.enrollmentRequired) {
           navigate("/behavior-enrollment");
 
