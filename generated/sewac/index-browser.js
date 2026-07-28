@@ -222,6 +222,9 @@ exports.Prisma.ComplaintsScalarFieldEnum = {
   description: 'description',
   priority: 'priority',
   status: 'status',
+  latitude: 'latitude',
+  longitude: 'longitude',
+  address: 'address',
   created_at: 'created_at',
   updated_at: 'updated_at'
 };

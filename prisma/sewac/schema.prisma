@@ -131,18 +131,28 @@ enum ComplaintStatus {
 model complaints {
   id Int @id @default(autoincrement())
 
+  // Citizen Information
   phone_number String
 
+  // Complaint Details
   image_url   String?
-  description String  @db.Text
+  description String @db.Text
 
   priority ComplaintPriority
-  status   ComplaintStatus   @default(PENDING)
+  status   ComplaintStatus @default(PENDING)
 
+  // Complaint Location
+  latitude  Float
+  longitude Float
+  address   String @db.Text
+
+  // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@index([phone_number])
   @@index([status])
+  @@index([latitude, longitude])
+
   @@map("complaints")
 }

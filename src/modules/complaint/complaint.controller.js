@@ -3,13 +3,22 @@ import complaintService from "./complaint.service.js";
 class ComplaintController {
   async createComplaint(req, res, next) {
     try {
-      const { description, priority } = req.body;
+      const {
+        description,
+        priority,
+        latitude,
+        longitude,
+        address,
+      } = req.body;
 
       const result = await complaintService.createComplaint(
         req.user,
         req.file,
         description,
-        priority
+        priority,
+        latitude,
+        longitude,
+        address
       );
 
       return res.status(201).json(result);

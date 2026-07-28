@@ -8619,10 +8619,14 @@ export namespace Prisma {
 
   export type ComplaintsAvgAggregateOutputType = {
     id: number | null
+    latitude: number | null
+    longitude: number | null
   }
 
   export type ComplaintsSumAggregateOutputType = {
     id: number | null
+    latitude: number | null
+    longitude: number | null
   }
 
   export type ComplaintsMinAggregateOutputType = {
@@ -8632,6 +8636,9 @@ export namespace Prisma {
     description: string | null
     priority: $Enums.ComplaintPriority | null
     status: $Enums.ComplaintStatus | null
+    latitude: number | null
+    longitude: number | null
+    address: string | null
     created_at: Date | null
     updated_at: Date | null
   }
@@ -8643,6 +8650,9 @@ export namespace Prisma {
     description: string | null
     priority: $Enums.ComplaintPriority | null
     status: $Enums.ComplaintStatus | null
+    latitude: number | null
+    longitude: number | null
+    address: string | null
     created_at: Date | null
     updated_at: Date | null
   }
@@ -8654,6 +8664,9 @@ export namespace Prisma {
     description: number
     priority: number
     status: number
+    latitude: number
+    longitude: number
+    address: number
     created_at: number
     updated_at: number
     _all: number
@@ -8662,10 +8675,14 @@ export namespace Prisma {
 
   export type ComplaintsAvgAggregateInputType = {
     id?: true
+    latitude?: true
+    longitude?: true
   }
 
   export type ComplaintsSumAggregateInputType = {
     id?: true
+    latitude?: true
+    longitude?: true
   }
 
   export type ComplaintsMinAggregateInputType = {
@@ -8675,6 +8692,9 @@ export namespace Prisma {
     description?: true
     priority?: true
     status?: true
+    latitude?: true
+    longitude?: true
+    address?: true
     created_at?: true
     updated_at?: true
   }
@@ -8686,6 +8706,9 @@ export namespace Prisma {
     description?: true
     priority?: true
     status?: true
+    latitude?: true
+    longitude?: true
+    address?: true
     created_at?: true
     updated_at?: true
   }
@@ -8697,6 +8720,9 @@ export namespace Prisma {
     description?: true
     priority?: true
     status?: true
+    latitude?: true
+    longitude?: true
+    address?: true
     created_at?: true
     updated_at?: true
     _all?: true
@@ -8795,6 +8821,9 @@ export namespace Prisma {
     description: string
     priority: $Enums.ComplaintPriority
     status: $Enums.ComplaintStatus
+    latitude: number
+    longitude: number
+    address: string
     created_at: Date
     updated_at: Date
     _count: ComplaintsCountAggregateOutputType | null
@@ -8825,6 +8854,9 @@ export namespace Prisma {
     description?: boolean
     priority?: boolean
     status?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    address?: boolean
     created_at?: boolean
     updated_at?: boolean
   }, ExtArgs["result"]["complaints"]>
@@ -8836,6 +8868,9 @@ export namespace Prisma {
     description?: boolean
     priority?: boolean
     status?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    address?: boolean
     created_at?: boolean
     updated_at?: boolean
   }, ExtArgs["result"]["complaints"]>
@@ -8847,6 +8882,9 @@ export namespace Prisma {
     description?: boolean
     priority?: boolean
     status?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    address?: boolean
     created_at?: boolean
     updated_at?: boolean
   }, ExtArgs["result"]["complaints"]>
@@ -8858,11 +8896,14 @@ export namespace Prisma {
     description?: boolean
     priority?: boolean
     status?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    address?: boolean
     created_at?: boolean
     updated_at?: boolean
   }
 
-  export type complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "phone_number" | "image_url" | "description" | "priority" | "status" | "created_at" | "updated_at", ExtArgs["result"]["complaints"]>
+  export type complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "phone_number" | "image_url" | "description" | "priority" | "status" | "latitude" | "longitude" | "address" | "created_at" | "updated_at", ExtArgs["result"]["complaints"]>
 
   export type $complaintsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "complaints"
@@ -8874,6 +8915,9 @@ export namespace Prisma {
       description: string
       priority: $Enums.ComplaintPriority
       status: $Enums.ComplaintStatus
+      latitude: number
+      longitude: number
+      address: string
       created_at: Date
       updated_at: Date
     }, ExtArgs["result"]["complaints"]>
@@ -9305,6 +9349,9 @@ export namespace Prisma {
     readonly description: FieldRef<"complaints", 'String'>
     readonly priority: FieldRef<"complaints", 'ComplaintPriority'>
     readonly status: FieldRef<"complaints", 'ComplaintStatus'>
+    readonly latitude: FieldRef<"complaints", 'Float'>
+    readonly longitude: FieldRef<"complaints", 'Float'>
+    readonly address: FieldRef<"complaints", 'String'>
     readonly created_at: FieldRef<"complaints", 'DateTime'>
     readonly updated_at: FieldRef<"complaints", 'DateTime'>
   }
@@ -9806,6 +9853,9 @@ export namespace Prisma {
     description: 'description',
     priority: 'priority',
     status: 'status',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    address: 'address',
     created_at: 'created_at',
     updated_at: 'updated_at'
   };
@@ -10526,6 +10576,9 @@ export namespace Prisma {
     description?: StringFilter<"complaints"> | string
     priority?: EnumComplaintPriorityFilter<"complaints"> | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFilter<"complaints"> | $Enums.ComplaintStatus
+    latitude?: FloatFilter<"complaints"> | number
+    longitude?: FloatFilter<"complaints"> | number
+    address?: StringFilter<"complaints"> | string
     created_at?: DateTimeFilter<"complaints"> | Date | string
     updated_at?: DateTimeFilter<"complaints"> | Date | string
   }
@@ -10537,6 +10590,9 @@ export namespace Prisma {
     description?: SortOrder
     priority?: SortOrder
     status?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    address?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
   }
@@ -10551,6 +10607,9 @@ export namespace Prisma {
     description?: StringFilter<"complaints"> | string
     priority?: EnumComplaintPriorityFilter<"complaints"> | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFilter<"complaints"> | $Enums.ComplaintStatus
+    latitude?: FloatFilter<"complaints"> | number
+    longitude?: FloatFilter<"complaints"> | number
+    address?: StringFilter<"complaints"> | string
     created_at?: DateTimeFilter<"complaints"> | Date | string
     updated_at?: DateTimeFilter<"complaints"> | Date | string
   }, "id">
@@ -10562,6 +10621,9 @@ export namespace Prisma {
     description?: SortOrder
     priority?: SortOrder
     status?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    address?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     _count?: complaintsCountOrderByAggregateInput
@@ -10581,6 +10643,9 @@ export namespace Prisma {
     description?: StringWithAggregatesFilter<"complaints"> | string
     priority?: EnumComplaintPriorityWithAggregatesFilter<"complaints"> | $Enums.ComplaintPriority
     status?: EnumComplaintStatusWithAggregatesFilter<"complaints"> | $Enums.ComplaintStatus
+    latitude?: FloatWithAggregatesFilter<"complaints"> | number
+    longitude?: FloatWithAggregatesFilter<"complaints"> | number
+    address?: StringWithAggregatesFilter<"complaints"> | string
     created_at?: DateTimeWithAggregatesFilter<"complaints"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"complaints"> | Date | string
   }
@@ -11237,6 +11302,9 @@ export namespace Prisma {
     description: string
     priority: $Enums.ComplaintPriority
     status?: $Enums.ComplaintStatus
+    latitude: number
+    longitude: number
+    address: string
     created_at?: Date | string
     updated_at?: Date | string
   }
@@ -11248,6 +11316,9 @@ export namespace Prisma {
     description: string
     priority: $Enums.ComplaintPriority
     status?: $Enums.ComplaintStatus
+    latitude: number
+    longitude: number
+    address: string
     created_at?: Date | string
     updated_at?: Date | string
   }
@@ -11258,6 +11329,9 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    latitude?: FloatFieldUpdateOperationsInput | number
+    longitude?: FloatFieldUpdateOperationsInput | number
+    address?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11269,6 +11343,9 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    latitude?: FloatFieldUpdateOperationsInput | number
+    longitude?: FloatFieldUpdateOperationsInput | number
+    address?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11280,6 +11357,9 @@ export namespace Prisma {
     description: string
     priority: $Enums.ComplaintPriority
     status?: $Enums.ComplaintStatus
+    latitude: number
+    longitude: number
+    address: string
     created_at?: Date | string
     updated_at?: Date | string
   }
@@ -11290,6 +11370,9 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    latitude?: FloatFieldUpdateOperationsInput | number
+    longitude?: FloatFieldUpdateOperationsInput | number
+    address?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11301,6 +11384,9 @@ export namespace Prisma {
     description?: StringFieldUpdateOperationsInput | string
     priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
     status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    latitude?: FloatFieldUpdateOperationsInput | number
+    longitude?: FloatFieldUpdateOperationsInput | number
+    address?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11933,6 +12019,17 @@ export namespace Prisma {
     not?: NestedEnumComplaintStatusFilter<$PrismaModel> | $Enums.ComplaintStatus
   }
 
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type complaintsCountOrderByAggregateInput = {
     id?: SortOrder
     phone_number?: SortOrder
@@ -11940,12 +12037,17 @@ export namespace Prisma {
     description?: SortOrder
     priority?: SortOrder
     status?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    address?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
   }
 
   export type complaintsAvgOrderByAggregateInput = {
     id?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
   }
 
   export type complaintsMaxOrderByAggregateInput = {
@@ -11955,6 +12057,9 @@ export namespace Prisma {
     description?: SortOrder
     priority?: SortOrder
     status?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    address?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
   }
@@ -11966,12 +12071,17 @@ export namespace Prisma {
     description?: SortOrder
     priority?: SortOrder
     status?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    address?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
   }
 
   export type complaintsSumOrderByAggregateInput = {
     id?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
   }
 
   export type EnumComplaintPriorityWithAggregatesFilter<$PrismaModel = never> = {
@@ -11992,6 +12102,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumComplaintStatusFilter<$PrismaModel>
     _max?: NestedEnumComplaintStatusFilter<$PrismaModel>
+  }
+
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -12160,6 +12286,14 @@ export namespace Prisma {
 
   export type EnumComplaintStatusFieldUpdateOperationsInput = {
     set?: $Enums.ComplaintStatus
+  }
+
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -12422,6 +12556,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumComplaintStatusFilter<$PrismaModel>
     _max?: NestedEnumComplaintStatusFilter<$PrismaModel>
+  }
+
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
   }
 
   export type vehicle_masterCreateWithoutVehicle_incidentsInput = {

@@ -5,11 +5,22 @@ import { COMPLAINT_MESSAGES } from "./complaint.constants.js";
 import uploadImage from "../../utils/cloudinaryUpload.js";
 
 class ComplaintService {
-  async createComplaint(user, file, description, priority) {
+  async createComplaint(
+    user,
+    file,
+    description,
+    priority,
+    latitude,
+    longitude,
+    address
+  ) {
     complaintValidation.validateCreateComplaint(
       file,
       description,
-      priority
+      priority,
+      latitude,
+      longitude,
+      address
     );
 
     const { imageUrl } = await uploadImage(
@@ -17,13 +28,15 @@ class ComplaintService {
       "sewac/complaints"
     );
 
-    const complaint =
-      await complaintRepository.createComplaint({
-        phone_number: user.phoneNumber,
-        image_url: imageUrl,
-        description: description.trim(),
-        priority: priority.toUpperCase(),
-      });
+    const complaint = await complaintRepository.createComplaint({
+      phone_number: user.phoneNumber,
+      image_url: imageUrl,
+      description: description.trim(),
+      priority: priority.toUpperCase(),
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      address: address.trim(),
+    });
 
     return {
       success: true,
