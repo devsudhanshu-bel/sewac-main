@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dns = require("dns");
+const net = require("net");
 
 const securityRoutes = require("./routes/securityRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -38,6 +39,37 @@ app.get("/smtp-test", (req, res) => {
       host: "smtp-relay.brevo.com",
       address,
       family,
+    });
+  });
+});
+
+app.get("/smtp-port-test", (req, res) => {
+  const socket = new net.Socket();
+
+  socket.setTimeout(10000);
+
+  socket.connect(587, "smtp-relay.brevo.com", () => {
+    socket.destroy();
+    res.json({
+      success: true,
+      message: "Port 587 is reachable",
+    });
+  });
+
+  socket.on("timeout", () => {
+    socket.destroy();
+    res.status(500).json({
+      success: false,
+      message: "Timeout connecting to port 587",
+    });
+  });
+
+  socket.on("error", (err) => {
+    socket.destroy();
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      code: err.code,
     });
   });
 });
