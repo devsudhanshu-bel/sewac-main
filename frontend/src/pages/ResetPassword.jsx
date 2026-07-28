@@ -3,16 +3,21 @@ import { Lock, ShieldCheck, Loader2 } from "lucide-react";
 
 import { useState, useEffect, useRef } from "react";
 
-import { useParams, useNavigate } from "react-router-dom";
-
 import gsap from "gsap";
+import {
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 
 import "@fontsource/oswald";
 import "@fontsource-variable/finlandica";
 
 const ResetPassword = () => {
-  const { token } = useParams();
   const navigate = useNavigate();
+  
+  const [searchParams] = useSearchParams();
+
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
 
