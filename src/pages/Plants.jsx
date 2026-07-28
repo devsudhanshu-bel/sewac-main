@@ -12,19 +12,24 @@ export default function Plants() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [plants, setPlants] = useState([]);
+  const [pagination, setPagination] = useState({});
 
   const fetchDashboard = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const { data } = await api.get("/api/plants/dashboard");
+      const [dashboardResponse,plantsResponse,] = await Promise.all([api.get("/api/plants/dashboard"),api.get("/api/plants"),]);
 
-      if (data.success) {
-        setDashboardData(data.data);
-      } else {
-        setError(data.message || "Failed to load dashboard.");
-      }
+      if (dashboardResponse.data.success) {
+  setDashboardData(dashboardResponse.data.data);
+}
+
+if (plantsResponse.data.success) {
+  setPlants(plantsResponse.data.data.plants);
+  setPagination(plantsResponse.data.data.pagination);
+}
     } catch (err) {
       console.error("Plants Dashboard Error:", err);
 
@@ -45,15 +50,28 @@ export default function Plants() {
         setLoading(true);
         setError("");
 
-        const { data } = await api.get("/api/plants/dashboard");
+        const [
+  dashboardResponse,
+  plantsResponse,
+] = await Promise.all([
+  api.get("/api/plants/dashboard"),
+  api.get("/api/plants"),
+]);
 
         if (!mounted) return;
 
-        if (data.success) {
-          setDashboardData(data.data);
-        } else {
-          setError(data.message || "Failed to load dashboard.");
-        }
+        if (dashboardResponse.data.success) {
+  setDashboardData(dashboardResponse.data.data);
+} else {
+  setError(
+    dashboardResponse.data.message || "Failed to load dashboard."
+  );
+}
+
+if (plantsResponse.data.success) {
+  setPlants(plantsResponse.data.data.plants);
+  setPagination(plantsResponse.data.data.pagination);
+}
       } catch (err) {
         if (!mounted) return;
 
@@ -133,7 +151,10 @@ export default function Plants() {
         <PlantLocations />
 
         {/* Plant Directory */}
-        <PlantDirectory />
+        <PlantDirectory
+  plants={plants}
+  pagination={pagination}
+/>
       </div>
     </div>
   );

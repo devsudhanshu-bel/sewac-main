@@ -1,89 +1,11 @@
 import { MoreHorizontal } from "lucide-react";
 
-const plants = [
-  {
-    id: 1,
-    name: "Shobha Organic Plant",
-    zone: "North Zone",
-    capacity: 120,
-    manager: "Ramesh Kumar",
-    vehicles: 24,
-  },
-  {
-    id: 2,
-    name: "Green Earth Recyclers",
-    zone: "Central Zone",
-    capacity: 150,
-    manager: "Anjali Singh",
-    vehicles: 28,
-  },
-  {
-    id: 3,
-    name: "Eco Processors Unit",
-    zone: "East Zone",
-    capacity: 100,
-    manager: "Suresh Patel",
-    vehicles: 18,
-  },
-  {
-    id: 4,
-    name: "Clean City Solutions",
-    zone: "South Zone",
-    capacity: 200,
-    manager: "Priya Sharma",
-    vehicles: 32,
-  },
-  {
-    id: 5,
-    name: "Waste to Energy Plant",
-    zone: "North East Zone",
-    capacity: 250,
-    manager: "Mahesh Yadav",
-    vehicles: 36,
-  },
-  {
-    id: 6,
-    name: "BioGreen Facility",
-    zone: "North Zone",
-    capacity: 80,
-    manager: "Deepak Nair",
-    vehicles: 14,
-  },
-  {
-    id: 7,
-    name: "Sustainable Waste Hub",
-    zone: "South East Zone",
-    capacity: 130,
-    manager: "Kavita Rao",
-    vehicles: 22,
-  },
-  {
-    id: 8,
-    name: "Eco Warrior Plant",
-    zone: "West Zone",
-    capacity: 110,
-    manager: "Vikram Shetty",
-    vehicles: 20,
-  },
-  {
-    id: 9,
-    name: "Greenovit Processing",
-    zone: "Central Zone",
-    capacity: 90,
-    manager: "Neha Iyer",
-    vehicles: 16,
-  },
-  {
-    id: 10,
-    name: "Future Waste Solutions",
-    zone: "East Zone",
-    capacity: 140,
-    manager: "Arun Kumar",
-    vehicles: 26,
-  },
-];
 
-export default function PlantDirectory() {
+
+export default function PlantDirectory({
+  plants = [],
+  pagination = {},
+}) {
   return (
     <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
 
@@ -151,7 +73,7 @@ export default function PlantDirectory() {
                 </td>
 
                 <td className="border-b border-gray-100 px-5 py-4 text-[15px] font-semibold text-[#1F2937]">
-                  {plant.name}
+                  {plant.plant_name}
                 </td>
 
                 <td className="border-b border-gray-100 px-5 py-4 text-[15px] text-gray-700">
@@ -160,17 +82,17 @@ export default function PlantDirectory() {
 
                 <td className="border-b border-gray-100 px-5 py-4">
                 <div className="flex justify-center">
-                    {plant.capacity}
+                    {plant.capacity_ton_per_day}
                 </div>
                 </td>
 
                 <td className="border-b border-gray-100 px-5 py-4 text-[15px] text-gray-700">
-                  {plant.manager}
+                 {plant.plant_manager} 
                 </td>
 
                 <td className="border-b border-gray-100 px-5 py-4">
                 <div className="flex justify-center">
-                    {plant.vehicles}
+                   {plant.vehicles_enrolled} 
                 </div>
                 </td>
 
@@ -210,9 +132,16 @@ export default function PlantDirectory() {
         {/* Showing Entries */}
 
         <p className="text-[14px] text-gray-500">
-          Showing <span className="font-semibold text-gray-700">1–10</span> of{" "}
-          <span className="font-semibold text-gray-700">18</span> plants
-        </p>
+  Showing{" "}
+  <span className="font-semibold text-gray-700">
+    {plants.length === 0 ? 0 : 1}–{plants.length}
+  </span>{" "}
+  of{" "}
+  <span className="font-semibold text-gray-700">
+    {pagination.total ?? plants.length}
+  </span>{" "}
+  plants
+</p>
 
         {/* Pagination */}
 
