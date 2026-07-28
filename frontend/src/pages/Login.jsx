@@ -1,4 +1,4 @@
-import API_BASE_URL from "../services/api";
+import API_BASE_URL, { SEWAC_MAIN_URL } from "../services/api";
 import { User, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 
 import { useState, useEffect, useRef } from "react";
@@ -290,7 +290,7 @@ const Login = () => {
           );
 
           window.location.href =
-  `http://localhost:5173/auth/callback?token=${encodeURIComponent(tempToken)}`;
+  `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
 
           return;
         }
@@ -441,7 +441,7 @@ const Login = () => {
         );
 
         window.location.href =
-  `http://localhost:5173/auth/callback?token=${encodeURIComponent(tempToken)}`;
+  `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
       } else {
         setError(data.message || "Invalid credentials");
       }
