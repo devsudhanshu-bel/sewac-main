@@ -28,6 +28,17 @@ class ComplaintService {
       "sewac/complaints"
     );
 
+    console.log("=== CREATE COMPLAINT DATA ===");
+    console.log({
+      phone_number: user.phoneNumber,
+      image_url: imageUrl,
+      description,
+      priority,
+      latitude,
+      longitude,
+      address,
+    });
+
     const complaint = await complaintRepository.createComplaint({
       phone_number: user.phoneNumber,
       image_url: imageUrl,
