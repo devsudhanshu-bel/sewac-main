@@ -228,25 +228,6 @@ const forgotPassword = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     await sendPasswordResetEmail(admin.email, resetLink);
-    await transporter.sendMail({
-      from: process.env.ALERT_EMAIL,
-
-      to: admin.email,
-
-      subject: "CMADS Password Reset",
-
-      html: `
-        <h2>Password Reset Request</h2>
-
-        <p>Click the link below to reset your password:</p>
-
-        <a href="${resetLink}">
-          Reset Password
-        </a>
-
-        <p>This link expires in 15 minutes.</p>
-      `,
-    });
 
     return res.status(200).json({
       success: true,
