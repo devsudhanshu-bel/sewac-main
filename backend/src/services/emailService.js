@@ -1,22 +1,13 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
+  service: "gmail",
 
   auth: {
     user: process.env.ALERT_EMAIL,
+
     pass: process.env.ALERT_PASSWORD,
   },
-});
-
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error("SMTP ERROR:", error);
-  } else {
-    console.log("SMTP SERVER READY");
-  }
 });
 
 const sendSecurityAlert = async ({
@@ -123,9 +114,10 @@ const sendPermissionApprovalEmail = async ({
 const sendDeviceRegistrationEmail = async (
   recipientEmail,
   adminName,
-  token,
+  token
 ) => {
-  const approvalLink = `${process.env.FRONTEND_URL}/approve-device?token=${token}`;
+  const approvalLink =
+    `${process.env.FRONTEND_URL}/approve-device?token=${token}`;
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
