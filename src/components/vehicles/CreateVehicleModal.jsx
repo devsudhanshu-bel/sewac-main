@@ -58,8 +58,7 @@ export default function CreateVehicleModal({ onClose, onSuccess }) {
         !form.zone ||
         !form.division ||
         !form.ward ||
-        !form.status ||
-        !form.driver_name
+        !form.status
       ) {
         alert("Please fill all fields.");
         return;

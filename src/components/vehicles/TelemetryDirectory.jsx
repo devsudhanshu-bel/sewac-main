@@ -45,7 +45,7 @@ export default function TelemetryDirectory() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  
+
   const fetchVehicles = async () => {
     try {
       const res = await api.get("/api/vehicles", {
@@ -67,6 +67,50 @@ export default function TelemetryDirectory() {
     fetchVehicles();
   }, [page, limit, search, status]);
 
+  const downloadCSV = () => {
+    const headers = [
+      "Vehicle ID",
+      "Vehicle Number",
+      "Vehicle Type",
+      "City",
+      "Zone",
+      "Division",
+      "Ward",
+      "Status",
+    ];
+
+    const rows = telemetry.map((v) => [
+      v.vehicle_id,
+      v.vehicle_number,
+      v.vehicle_type,
+      v.city,
+      v.zone,
+      v.division,
+      v.ward,
+      v.status,
+    ]);
+
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "vehicles.csv";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+  };
+
   return (
     <section className="bg-white rounded-[30px] border border-[#ECECF3] shadow-sm overflow-hidden">
       {/* ===========================================================
@@ -83,21 +127,21 @@ export default function TelemetryDirectory() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div className="relative w-[420px]">
             <Search
               size={18}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
             />
 
             <input
+              type="text"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              type="text"
-              placeholder="Search by Vehicle ID or Vehicle No...."
-              className="w-[560px] h-[48px] rounded-xl border border-[#E5E7EB] pl-14 pr-5 outline-none text-[14px] placeholder:text-[#94A3B8] focus:border-[#6C2BFF]"
+              placeholder="Search by Vehicle ID or Vehicle No..."
+              className="w-full h-12 pl-12 pr-4 border border-gray-300 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6C2BFF] focus:border-[#6C2BFF] transition"
             />
           </div>
 
@@ -107,20 +151,17 @@ export default function TelemetryDirectory() {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="h-[48px] w-[190px] rounded-xl border border-[#E5E7EB] px-4"
+            className="h-12 w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
           >
             <option value="ALL">All Status</option>
-
             <option value="ACTIVE">Active</option>
-
             <option value="INACTIVE">Inactive</option>
           </select>
 
-          <button className="w-[48px] h-[48px] rounded-xl border border-[#E5E7EB] flex items-center justify-center hover:border-[#16A34A]">
-            <FileSpreadsheet size={20} className="text-[#16A34A]" />
-          </button>
-
-          <button className="w-[48px] h-[48px] rounded-xl border border-[#E5E7EB] flex items-center justify-center">
+          <button
+            onClick={downloadCSV}
+            className="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+          >
             <Download size={20} />
           </button>
 
