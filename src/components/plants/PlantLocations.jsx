@@ -4,6 +4,7 @@ import {
   Marker,
   Popup,
   ZoomControl,
+  useMap,
 } from "react-leaflet";
 
 import {
@@ -17,6 +18,7 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
+import { useEffect } from "react";
 
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -30,10 +32,45 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+function FitBounds({ plants }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!plants.length) return;
+
+    // Single marker
+    if (plants.length === 1) {
+      map.setView(plants[0].position, 15);
+      return;
+    }
+
+    // Multiple markers
+    const bounds = L.latLngBounds(
+      plants.map((plant) => plant.position)
+    );
+
+    map.fitBounds(bounds, {
+      padding: [60, 60],
+    });
+
+  }, [plants, map]);
+
+  return null;
+}
+
 export default function PlantLocations({
   plants = [],
 }) {
-  const formattedPlants = plants.map((plant) => ({
+  
+  const formattedPlants = plants
+  .filter(
+    (plant) =>
+      plant.latitude &&
+      plant.longitude &&
+      !isNaN(Number(plant.latitude)) &&
+      !isNaN(Number(plant.longitude))
+  )
+  .map((plant) => ({
     id: plant.id,
     name: plant.plant_name,
     zone: plant.zone,
@@ -46,7 +83,7 @@ export default function PlantLocations({
       Number(plant.longitude),
     ],
   }));
-
+ 
   return (
         <div className="mt-8 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
 
@@ -82,8 +119,8 @@ export default function PlantLocations({
       <div className="overflow-hidden rounded-2xl">
 
         <MapContainer
-          center={[12.9716, 77.5946]}
-          zoom={11}
+  center={[13.0358, 77.597]}
+  zoom={13}
           zoomControl={false}
           className="h-[560px] w-full"
         >
@@ -93,12 +130,14 @@ export default function PlantLocations({
           />
 
           <ZoomControl position="bottomright" />
+          <FitBounds plants={formattedPlants} />
 
           {formattedPlants.map((plant) => (
             <Marker
-              key={plant.id}
-              position={plant.position}
-            >
+    key={plant.id}
+    position={plant.position}
+
+>
               <Popup
                 maxWidth={300}
                 minWidth={270}
