@@ -238,23 +238,7 @@ longitude: plant.longitude,
 
                   </div>
 
-                  <button
-                    className="
-                      mt-5
-                      w-full
-                      rounded-xl
-                      bg-violet-600
-                      text-white
-                      py-2.5
-                      text-sm
-                      font-medium
-                      hover:bg-violet-700
-                      transition
-                    "
-                  >
-                    View Details
-                  </button>
-
+                  
                 </div>
               </Popup>
             </Marker>

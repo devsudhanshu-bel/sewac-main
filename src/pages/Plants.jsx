@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/axios";
-
 import Header from "../components/layouts/Header";
 
+import CreatePlantModal from "../components/plants/CreatePlantModal";
+import EditPlantModal from "../components/plants/EditPlantModal";
+import DeletePlantModal from "../components/plants/DeletePlantModal";
 import PlantKPICards from "../components/plants/PlantKPICards";
 import PlantLocations from "../components/plants/PlantLocations";
 import PlantDirectory from "../components/plants/PlantDirectory";
@@ -15,7 +17,10 @@ export default function Plants() {
   const [plants, setPlants] = useState([]);
   const [plantLocations, setPlantLocations] = useState([]);
   const [pagination, setPagination] = useState({});
-
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPlant, setSelectedPlant] = useState(null);
   const fetchDashboard = async () => {
     try {
       setLoading(true);
@@ -54,63 +59,23 @@ if (locationsResponse.data.success) {
     }
   };
 
+  const handleCreatePlant = () => {
+  setShowCreateModal(true);
+};
+
+const handleEditPlant = (plant) => {
+  setSelectedPlant(plant);
+  setShowEditModal(true);
+};
+
+const handleDeletePlant = (plant) => {
+  setSelectedPlant(plant);
+  setShowDeleteModal(true);
+};
+
   useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const [
-  dashboardResponse,
-  plantsResponse,
-  locationsResponse,
-] = await Promise.all([
-  api.get("/api/plants/dashboard"),
-  api.get("/api/plants"),
-  api.get("/api/plants/locations"),
-]);
-
-        if (!mounted) return;
-
-        if (dashboardResponse.data.success) {
-  setDashboardData(dashboardResponse.data.data);
-} else {
-  setError(
-    dashboardResponse.data.message || "Failed to load dashboard."
-  );
-}
-
-if (plantsResponse.data.success) {
-  setPlants(plantsResponse.data.data.plants);
-  setPagination(plantsResponse.data.data.pagination);
-}
-if (locationsResponse.data.success) {
-  setPlantLocations(locationsResponse.data.data);
-}
-      } catch (err) {
-        if (!mounted) return;
-
-        console.error("Plants Dashboard Error:", err);
-
-        setError(
-          err.response?.data?.message ||
-            "Unable to connect to the server."
-        );
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  fetchDashboard();
+}, []);
 
   if (loading) {
     return (
@@ -169,6 +134,7 @@ if (locationsResponse.data.success) {
   plants={plantLocations.map((location) => {
     const plant = plants.find((p) => p.id === location.id);
 
+
     return {
       ...location,
       plant_manager: plant?.plant_manager,
@@ -185,7 +151,38 @@ if (locationsResponse.data.success) {
         <PlantDirectory
   plants={plants}
   pagination={pagination}
+  onCreatePlant={handleCreatePlant}
+  onEditPlant={handleEditPlant}
+  onDeletePlant={handleDeletePlant}
 />
+{showCreateModal && (
+  <CreatePlantModal
+    onClose={() => setShowCreateModal(false)}
+    onSuccess={fetchDashboard}
+  />
+)}
+
+{showEditModal && selectedPlant && (
+  <EditPlantModal
+    plant={selectedPlant}
+    onClose={() => {
+      setShowEditModal(false);
+      setSelectedPlant(null);
+    }}
+    onSuccess={fetchDashboard}
+  />
+)}
+
+{showDeleteModal && selectedPlant && (
+  <DeletePlantModal
+    plant={selectedPlant}
+    onClose={() => {
+      setShowDeleteModal(false);
+      setSelectedPlant(null);
+    }}
+    onSuccess={fetchDashboard}
+  />
+)}
       </div>
     </div>
   );

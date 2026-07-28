@@ -1,23 +1,41 @@
-import { MoreHorizontal } from "lucide-react";
-
 
 
 export default function PlantDirectory({
   plants = [],
   pagination = {},
+  onCreatePlant,
+  onEditPlant,
+  onDeletePlant,
 }) {
   return (
     <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
 
       {/* Header */}
 
-      <div className="px-8 pt-7 pb-6">
+      <div className="flex items-center justify-between px-8 pt-7 pb-6">
 
-        <h2 className="text-[24px] font-bold uppercase text-[#16295A]">
-          Plant Directory
-        </h2>
+  <h2 className="text-[24px] font-bold uppercase text-[#16295A]">
+    Plant Directory
+  </h2>
 
-      </div>
+  <button
+    onClick={onCreatePlant}
+    className="
+      rounded-xl
+      bg-violet-600
+      px-5
+      py-2.5
+      text-sm
+      font-semibold
+      text-white
+      transition
+      hover:bg-violet-700
+    "
+  >
+    + Add Plant
+  </button>
+
+</div>
 
       {/* Table */}
 
@@ -53,7 +71,9 @@ export default function PlantDirectory({
                 Vehicles Enrolled
               </th>
 
-              <th className="rounded-r-xl px-5 py-4"></th>
+              <th className="w-[170px] rounded-r-xl px-5 py-4 text-center text-[14px] font-semibold text-[#4F46E5]">
+  Actions
+</th>
 
             </tr>
 
@@ -98,21 +118,41 @@ export default function PlantDirectory({
 
                 <td className="border-b border-gray-100 px-5 py-4 text-center">
 
-                  <button
-                    className="
-                      flex
-                      h-9
-                      w-9
-                      items-center
-                      justify-center
-                      rounded-lg
-                      text-[#4F46E5]
-                      transition
-                      hover:bg-violet-50
-                    "
-                  >
-                    <MoreHorizontal size={18} />
-                  </button>
+                  <select
+  className="
+    rounded-lg
+    border
+    border-gray-200
+    px-2
+    py-1.5
+    text-sm
+    outline-none
+  "
+  defaultValue=""
+  onChange={(e) => {
+    if (e.target.value === "edit") {
+      onEditPlant(plant);
+    }
+
+    if (e.target.value === "delete") {
+      onDeletePlant(plant);
+    }
+
+    e.target.value = "";
+  }}
+>
+  <option value="" disabled>
+    Actions
+  </option>
+
+  <option value="edit">
+    Update Plant
+  </option>
+
+  <option value="delete">
+    Delete Plant
+  </option>
+</select>
 
                 </td>
 
