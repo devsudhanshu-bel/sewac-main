@@ -13,6 +13,7 @@ export default function Plants() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [plants, setPlants] = useState([]);
+  const [plantLocations, setPlantLocations] = useState([]);
   const [pagination, setPagination] = useState({});
 
   const fetchDashboard = async () => {
@@ -20,7 +21,15 @@ export default function Plants() {
       setLoading(true);
       setError("");
 
-      const [dashboardResponse,plantsResponse,] = await Promise.all([api.get("/api/plants/dashboard"),api.get("/api/plants"),]);
+      const [
+  dashboardResponse,
+  plantsResponse,
+  locationsResponse,
+] = await Promise.all([
+  api.get("/api/plants/dashboard"),
+  api.get("/api/plants"),
+  api.get("/api/plants/locations"),
+]);
 
       if (dashboardResponse.data.success) {
   setDashboardData(dashboardResponse.data.data);
@@ -29,6 +38,9 @@ export default function Plants() {
 if (plantsResponse.data.success) {
   setPlants(plantsResponse.data.data.plants);
   setPagination(plantsResponse.data.data.pagination);
+}
+if (locationsResponse.data.success) {
+  setPlantLocations(locationsResponse.data.data);
 }
     } catch (err) {
       console.error("Plants Dashboard Error:", err);
@@ -53,9 +65,11 @@ if (plantsResponse.data.success) {
         const [
   dashboardResponse,
   plantsResponse,
+  locationsResponse,
 ] = await Promise.all([
   api.get("/api/plants/dashboard"),
   api.get("/api/plants"),
+  api.get("/api/plants/locations"),
 ]);
 
         if (!mounted) return;
@@ -71,6 +85,9 @@ if (plantsResponse.data.success) {
 if (plantsResponse.data.success) {
   setPlants(plantsResponse.data.data.plants);
   setPagination(plantsResponse.data.data.pagination);
+}
+if (locationsResponse.data.success) {
+  setPlantLocations(locationsResponse.data.data);
 }
       } catch (err) {
         if (!mounted) return;
@@ -148,7 +165,7 @@ if (plantsResponse.data.success) {
         />
 
         {/* Plant Locations */}
-        <PlantLocations />
+        <PlantLocations plants={plantLocations} />
 
         {/* Plant Directory */}
         <PlantDirectory
