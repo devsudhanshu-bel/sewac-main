@@ -344,11 +344,14 @@ WHERE id = $2
       trust_score: 0,
     });
   } catch (error) {
+    console.error("========== VERIFY DEVICE ERROR ==========");
     console.error(error);
+    console.error(error.stack);
 
     return res.status(500).json({
       success: false,
-      message: "Server Error",
+      message: error.message,
+      stack: error.stack,
     });
   }
 };
