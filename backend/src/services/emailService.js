@@ -23,18 +23,43 @@ const sendEmail = async ({ to, subject, html }) => {
           "content-type": "application/json",
           "api-key": process.env.BREVO_API_KEY,
         },
-      }
+      },
     );
 
     console.log("✅ Email sent:", response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      "❌ BREVO ERROR:",
-      error.response?.data || error.message
-    );
+    console.error("❌ BREVO ERROR:", error.response?.data || error.message);
     throw error;
   }
+};
+
+const sendPasswordResetEmail = async (recipientEmail, resetLink) => {
+  const html = `
+<h2>Password Reset</h2>
+
+<p>Click the button below to reset your password.</p>
+
+<a
+href="${resetLink}"
+style="
+background:#2563eb;
+color:white;
+padding:12px 24px;
+text-decoration:none;
+border-radius:6px;
+">
+Reset Password
+</a>
+
+<p>This link expires in 15 minutes.</p>
+`;
+
+  await sendEmail({
+    to: recipientEmail,
+    subject: "CMADS Password Reset",
+    html,
+  });
 };
 
 const sendSecurityAlert = async ({
@@ -135,7 +160,7 @@ REJECT
 const sendDeviceRegistrationEmail = async (
   recipientEmail,
   adminName,
-  token
+  token,
 ) => {
   const approvalLink = `${process.env.FRONTEND_URL}/approve-device?token=${token}`;
 
@@ -194,5 +219,6 @@ If you did not initiate this login, simply ignore this email.
 module.exports = {
   sendSecurityAlert,
   sendPermissionApprovalEmail,
+  sendPasswordResetEmail,
   sendDeviceRegistrationEmail,
 };

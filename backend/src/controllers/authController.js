@@ -2,7 +2,7 @@ const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+const { sendPasswordResetEmail } = require("../services/emailService");
 const { logEvent } = require("../services/auditService");
 const {
   checkFailedLoginThreshold,
@@ -225,19 +225,11 @@ const forgotPassword = async (req, res) => {
       },
     );
 
-    const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-
-      auth: {
-        user: process.env.ALERT_EMAIL,
-        pass: process.env.ALERT_PASSWORD,
-      },
-    });
-
+    await sendPasswordResetEmail(admin.email, resetLink);
     await transporter.sendMail({
-      from: process.env.ALERTEMAIL,
+      from: process.env.ALERT_EMAIL,
 
       to: admin.email,
 
