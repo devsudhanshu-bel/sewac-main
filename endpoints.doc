@@ -1,0 +1,307 @@
+    POST: http://localhost:5002/api/citizen/auth/login
+
+    INPUT:
+    {
+        "phonenumber" : "8660916859",
+    }
+
+    OUTPUT:
+    {
+      "success": true,
+      "message": "Citizen found.",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAzNiwicGhvbmVOdW1iZXIiOiI5OTAxMDE1NTg5IiwiaWF0IjoxNzg1MTY4NjEyLCJleHAiOjE3ODU3NzM0MTJ9.32qJDsgZSPzt3Gv6mmEET8n-5U7gFD-7n14UQFqFYpY",
+        "citizen": {
+          "id": 1036,
+          "personName": "Kr******pa",
+          "phoneNumber": "9901015589",
+          "drySlno": "00001208",
+          "wetSlno": "00001339"
+        }
+      }
+    }
+
+GET: http://localhost:5002/api/citizen/home/calendar?year=2026&month=7
+
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Calendar fetched successfully.",
+  "data": {
+    "year": 2026,
+    "month": 7,
+    "dry": {
+      "completed": 0,
+      "total": 9
+    },
+    "wet": {
+      "completed": 9,
+      "total": 22
+    },
+    "streak": 1,
+    "calendar": [
+      {
+        "day": 1,
+        "date": "2026-06-30",
+        "weekday": 3,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 2,
+        "date": "2026-07-01",
+        "weekday": 4,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 3,
+        "date": "2026-07-02",
+        "weekday": 5,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 4,
+        "date": "2026-07-03",
+        "weekday": 6,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 5,
+        "date": "2026-07-04",
+        "weekday": 0,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 6,
+        "date": "2026-07-05",
+        "weekday": 1,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 7,
+        "date": "2026-07-06",
+        "weekday": 2,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 8,
+        "date": "2026-07-07",
+        "weekday": 3,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 9,
+        "date": "2026-07-08",
+        "weekday": 4,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 10,
+        "date": "2026-07-09",
+        "weekday": 5,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 11,
+        "date": "2026-07-10",
+        "weekday": 6,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 12,
+        "date": "2026-07-11",
+        "weekday": 0,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 13,
+        "date": "2026-07-12",
+        "weekday": 1,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 14,
+        "date": "2026-07-13",
+        "weekday": 2,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 15,
+        "date": "2026-07-14",
+        "weekday": 3,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 16,
+        "date": "2026-07-15",
+        "weekday": 4,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 17,
+        "date": "2026-07-16",
+        "weekday": 5,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 18,
+        "date": "2026-07-17",
+        "weekday": 6,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 19,
+        "date": "2026-07-18",
+        "weekday": 0,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 20,
+        "date": "2026-07-19",
+        "weekday": 1,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 21,
+        "date": "2026-07-20",
+        "weekday": 2,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 22,
+        "date": "2026-07-21",
+        "weekday": 3,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 23,
+        "date": "2026-07-22",
+        "weekday": 4,
+        "collectionType": "WET",
+        "status": "ATTENDED"
+      },
+      {
+        "day": 24,
+        "date": "2026-07-23",
+        "weekday": 5,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 25,
+        "date": "2026-07-24",
+        "weekday": 6,
+        "collectionType": "DRY",
+        "status": "MISSED"
+      },
+      {
+        "day": 26,
+        "date": "2026-07-25",
+        "weekday": 0,
+        "collectionType": "WET",
+        "status": "MISSED"
+      },
+      {
+        "day": 27,
+        "date": "2026-07-26",
+        "weekday": 1,
+        "collectionType": "WET",
+        "status": "TODAY"
+      },
+      {
+        "day": 28,
+        "date": "2026-07-27",
+        "weekday": 2,
+        "collectionType": "WET",
+        "status": "UPCOMING"
+      },
+      {
+        "day": 29,
+        "date": "2026-07-28",
+        "weekday": 3,
+        "collectionType": "DRY",
+        "status": "UPCOMING"
+      },
+      {
+        "day": 30,
+        "date": "2026-07-29",
+        "weekday": 4,
+        "collectionType": "WET",
+        "status": "UPCOMING"
+      },
+      {
+        "day": 31,
+        "date": "2026-07-30",
+        "weekday": 5,
+        "collectionType": "WET",
+        "status": "UPCOMING"
+      }
+    ]
+  }
+}
+
+GET: http://localhost:5002/api/citizen/stats/analytics?startDate=2026-06-10&endDate=2026-06-20
+
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Analytics fetched successfully.",
+  "data": {
+    "range": {
+      "startDate": "2026-06-10",
+      "endDate": "2026-06-20"
+    },
+    "dry": {
+      "completed": 4,
+      "total": 4
+    },
+    "wet": {
+      "completed": 3,
+      "total": 7
+    },
+    "streak": 1,
+    "participation": 64
+  }
+}
+
+POST /api/citizen/complaints
+
+curl -X POST "http://localhost:5002/api/citizen/complaints" \
+-H "Authorization: Bearer <JWT_TOKEN>" \
+-F "image=@D:\test_run.png" \
+-F "description=Garbage has not been collected for two days." \
+-F "priority=HIGH"
+
+{
+  "success": true,
+  "message": "Complaint created successfully.",
+  "data": {
+    "id": 1,
+    "phone_number": "9743814124",
+    "image_url": "https://res.cloudinary.com/sewac/image/upload/v1785213166/sewac/complaints/q51xmckaytqpz5pkpkff.png",
+    "description": "Garbage has not been collected for two days.",
+    "priority": "HIGH",
+    "created_at": "2026-07-28T10:35:42.123Z"
+  }
+}
