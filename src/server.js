@@ -33,7 +33,7 @@ async function startServer() {
     mapWorker.start();
 
     // Start HTTP Server
-    server.listen(PORT, () => {
+    server.listen(PORT, "0.0.0.0", () => {
       console.log(`
 ==========================================
 🚀 SEWAC Citizen Backend Started
