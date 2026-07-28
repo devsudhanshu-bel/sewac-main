@@ -1,4 +1,4 @@
-import ApiResponse from "../../utils/ApiResponse.js";
+import ApiResponse from "../../utils/apiResponse.js";
 import statsService from "./stats.service.js";
 
 class StatsController {
