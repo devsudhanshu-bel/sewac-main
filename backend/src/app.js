@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const dns = require("dns");
+
 const securityRoutes = require("./routes/securityRoutes");
 const authRoutes = require("./routes/authRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
@@ -19,10 +21,41 @@ app.get("/", (req, res) => {
   });
 });
 
+// ===============================
+// SMTP DNS TEST
+// ===============================
+app.get("/smtp-test", (req, res) => {
+  dns.lookup("smtp-relay.brevo.com", (err, address, family) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      host: "smtp-relay.brevo.com",
+      address,
+      family,
+    });
+  });
+});
+
+// ===============================
+// Routes
+// ===============================
 app.use("/api/auth", authRoutes);
 app.use("/api/security", securityRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/behavior", behaviorRoutes);
 app.use("/api/risk", riskRoutes);
 app.use("/api/email", emailRoutes);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 CMADS Backend running on port ${PORT}`);
+});
+
 module.exports = app;
