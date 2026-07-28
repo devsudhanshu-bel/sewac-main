@@ -165,7 +165,21 @@ if (locationsResponse.data.success) {
         />
 
         {/* Plant Locations */}
-        <PlantLocations plants={plantLocations} />
+       <PlantLocations
+  plants={plantLocations.map((location) => {
+    const plant = plants.find((p) => p.id === location.id);
+
+    return {
+      ...location,
+      plant_manager: plant?.plant_manager,
+      vehicles_enrolled: plant?.vehicles_enrolled,
+      capacity_ton_per_day: plant?.capacity_ton_per_day,
+
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
+  })}
+/>
 
         {/* Plant Directory */}
         <PlantDirectory

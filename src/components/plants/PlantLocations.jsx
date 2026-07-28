@@ -74,14 +74,16 @@ export default function PlantLocations({
     id: plant.id,
     name: plant.plant_name,
     zone: plant.zone,
-    manager: plant.manager || "Not Assigned",
-    capacity: plant.capacity || "N/A",
-    vehicles: plant.vehicles ?? 0,
+    manager: plant.plant_manager || "Not Assigned",
+    capacity: plant.capacity_ton_per_day || "N/A",
+    vehicles: plant.vehicles_enrolled ?? 0,
     status: plant.status,
     position: [
       Number(plant.latitude),
       Number(plant.longitude),
     ],
+    latitude: plant.latitude,
+longitude: plant.longitude,
   }));
  
   return (
@@ -212,14 +214,27 @@ export default function PlantLocations({
 
                     <div className="flex items-center gap-2">
 
-                      <Factory
-                        size={16}
-                        className="text-violet-600"
-                      />
+  <Factory
+    size={16}
+    className="text-violet-600"
+  />
 
-                      <span>{plant.capacity}</span>
+  <span>{plant.capacity} Ton/Day</span>
 
-                    </div>
+</div>
+
+<div className="flex items-center gap-2">
+
+  <MapPinned
+    size={16}
+    className="text-violet-600"
+  />
+
+  <span>
+    {plant.latitude}, {plant.longitude}
+  </span>
+
+</div>
 
                   </div>
 
