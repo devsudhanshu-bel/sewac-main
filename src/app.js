@@ -1,11 +1,11 @@
 const express = require("express");
 const cors = require("cors");
+
 const overviewRoutes = require("./routes/overviewRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
 const telemetryRoutes = require("./routes/telemetryRoutes");
 const ragRoutes = require("./routes/ragRoutes");
 const iotRoutes = require("./routes/iotRoutes");
-
 const filterRoutes = require("./routes/filterRoutes");
 const wasteGeneratorRoutes = require("./routes/wasteGeneratorRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -17,14 +17,28 @@ const permissionRoutes = require("./routes/permissionRoutes");
 
 const app = express();
 
+const allowedOrigins = [
+  "https://app-authentication-frontend.onrender.com",
+  "https://sewac-main-frontend.onrender.com",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
 
 app.use(express.json());
+
 app.use("/api/filters", filterRoutes);
 app.use("/api/admin/overview", overviewRoutes);
 app.use("/api/users", usersRoutes);
@@ -37,5 +51,6 @@ app.use("/api/logs", logsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/plants", plantRoutes);
-app.use("/api/permissions",permissionRoutes);
-module.exports = app;   
+app.use("/api/permissions", permissionRoutes);
+
+module.exports = app;

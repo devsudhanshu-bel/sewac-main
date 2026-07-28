@@ -51,6 +51,15 @@ const requestPermission = async (req) => {
     },
   );
 
+  console.log("CMADS_EMAIL_API =", process.env.CMADS_EMAIL_API);
+  console.log("SEWAC_API =", process.env.SEWAC_API);
+
+  const approveLink = `${process.env.SEWAC_API}/api/permissions/approve/${approvalToken}`;
+  const rejectLink = `${process.env.SEWAC_API}/api/permissions/reject/${approvalToken}`;
+
+  console.log("Approve Link =", approveLink);
+  console.log("Reject Link =", rejectLink);
+
   await axios.post(process.env.CMADS_EMAIL_API, {
     requesterName: "Admin Level 2",
 
