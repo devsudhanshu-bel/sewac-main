@@ -5,7 +5,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (!token) {
     sessionStorage.clear();
-    window.location.replace("http://localhost:5174");
+    window.location.replace("https://app-authentication-frontend.onrender.com");
     return null;
   }
 
@@ -17,14 +17,14 @@ const ProtectedRoute = ({ children }) => {
 
     if (decoded.exp && decoded.exp < currentTime) {
       sessionStorage.clear();
-      window.location.replace("http://localhost:5174");
+      window.location.replace("https://app-authentication-frontend.onrender.com");
       return null;
     }
 
     return children;
   } catch (error) {
     sessionStorage.clear();
-    window.location.replace("http://localhost:5174");
+    window.location.replace("https://app-authentication-frontend.onrender.com");
     return null;
   }
 };

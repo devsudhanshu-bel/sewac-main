@@ -284,7 +284,7 @@ const Login = () => {
 
           sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-          window.location.href = "http://localhost:5173/overview";
+          window.location.href = "https://sewac-main-frontend.onrender.com/overview";
 
           return;
         }

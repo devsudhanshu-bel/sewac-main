@@ -11,7 +11,7 @@ const AuthCallback = () => {
     console.log("Token from URL:", token);
     if (!token) {
       console.log("No Token Found");
-      window.location.replace("http://localhost:5174");
+      window.location.replace("https://app-authentication-frontend.onrender.com");
       return;
     }
 

@@ -67,7 +67,7 @@ export default function Sidebar() {
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace("http://localhost:5174");
+    window.location.replace("https://app-authentication-frontend.onrender.com");
   };
 
   useLayoutEffect(() => {
@@ -230,7 +230,7 @@ export default function Sidebar() {
             const handleLogout = () => {
               sessionStorage.clear();
 
-              window.location.replace("http://localhost:5174");
+              window.location.replace("https://app-authentication-frontend.onrender.com");
             };
 
             return (
