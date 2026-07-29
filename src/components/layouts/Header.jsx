@@ -200,8 +200,8 @@ function Dropdown({ width, value, options, addLabel, onChange }) {
 
 export default function Header({
   variant = "dashboard",
-  selectedDate,
-  setSelectedDate,
+  selectedDate = new Date().toISOString().split("T")[0],
+  setSelectedDate = () => {},
 }) {
   const navigate = useNavigate();
 
@@ -240,13 +240,15 @@ export default function Header({
 
   const [selectedLanguage, setSelectedLanguage] = useState("English");
 
-  const selectedDay = selectedDate.getDay();
+  // Convert the incoming string ("YYYY-MM-DD") to a Date object
+  const selectedDateObj = selectedDate ? new Date(selectedDate) : new Date();
+
+  const selectedDay = selectedDateObj.getDay();
 
   // Wednesday (3) & Saturday (6)
   const isDryDay = selectedDay === 3 || selectedDay === 6;
 
   const [dayType, setDayType] = useState("wet");
-
   const [search, setSearch] = useState("");
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -433,13 +435,9 @@ export default function Header({
   "
         >
           <Calendar
-            value={selectedDate ? new Date(selectedDate) : new Date()}
+            value={selectedDateObj}
             onChange={(date) => {
-              const formatted =
-                date instanceof Date
-                  ? date.toISOString().split("T")[0]
-                  : new Date(date).toISOString().split("T")[0];
-
+              const formatted = new Date(date).toISOString().split("T")[0];
               setSelectedDate(formatted);
             }}
           />
