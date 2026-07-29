@@ -2,7 +2,7 @@ const overviewService = require("../services/overviewService");
 
 const getSummary = async (req, res) => {
   try {
-    const data = await overviewService.getSummary();
+    const data = await overviewService.getSummary(req.query.date);
 
     return res.status(200).json({
       success: true,
@@ -38,7 +38,7 @@ const getVehicleSummary = async (req, res) => {
 
 const getGenerationTrend = async (req, res) => {
   try {
-    const data = await overviewService.getGenerationTrend();
+    const data = await overviewService.getGenerationTrend(req.query.date);
 
     return res.status(200).json({
       success: true,
