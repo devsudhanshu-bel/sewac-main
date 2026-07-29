@@ -19,7 +19,7 @@ function DashboardLayout() {
     <div className="flex h-screen bg-[#FAFAFC] overflow-hidden">
       <Sidebar />
 
-      <main className="flex-1 overflow -y auto">
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>
