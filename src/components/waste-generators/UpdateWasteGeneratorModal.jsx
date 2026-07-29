@@ -200,7 +200,30 @@ export default function UpdateWasteGeneratorModal({ open, onClose, citizen }) {
             Cancel
           </button>
 
-          <button className="px-8 py-3 rounded-xl bg-[#6D28D9] text-white">
+          <button
+            onClick={async () => {
+              try {
+                await api.put(
+                  `/api/waste-generators/${citizen.phoneNumber}`,
+                  form,
+                );
+
+                alert("Waste Generator updated successfully.");
+
+                await refreshData();
+
+                onClose();
+              } catch (err) {
+                console.error(err);
+
+                alert(
+                  err.response?.data?.message ||
+                    "Failed to update waste generator.",
+                );
+              }
+            }}
+            className="px-8 py-3 rounded-xl bg-[#6D28D9] text-white"
+          >
             Update
           </button>
         </div>
