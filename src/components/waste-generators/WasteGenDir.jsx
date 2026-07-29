@@ -508,12 +508,7 @@ export default function WasteGenDir() {
       <CreateWasteGeneratorModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onRequestPermission={(form) => {
-          setPendingAction("CREATE");
-          setPendingCitizen(form);
-          setShowCreateModal(false);
-          setShowPermissionModal(true);
-        }}
+        refreshData={fetchWasteGenerators}
       />
 
       <UpdateWasteGeneratorModal

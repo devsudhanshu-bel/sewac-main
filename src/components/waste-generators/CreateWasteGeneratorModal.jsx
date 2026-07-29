@@ -5,18 +5,20 @@ import api from "../../api/axios";
 export default function CreateWasteGeneratorModal({
   open,
   onClose,
-  onRequestPermission,
+  refreshData,
 }) {
   const [form, setForm] = useState({
     personName: "",
     phoneNumber: "",
-    wetRFID: "",
-    dryRFID: "",
     city: "",
-    zone: "",
-    division: "",
     ward: "",
     area: "",
+    houseNumber: "",
+    floorNumber: "",
+    householdType: "",
+    contactNumber: "",
+    numberOfPeople: "",
+    wasteGeneratorTypes: "",
   });
 
   const [cities, setCities] = useState([]);
@@ -81,7 +83,7 @@ export default function CreateWasteGeneratorModal({
 
         <h2 className="text-3xl font-bold mb-8">Create Waste Generator</h2>
 
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-3 gap-5">
           <input
             value={form.personName}
             onChange={(e) =>
@@ -103,30 +105,6 @@ export default function CreateWasteGeneratorModal({
               })
             }
             placeholder="Phone Number"
-            className="border rounded-xl p-4"
-          />
-
-          <input
-            value={form.wetRFID}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                wetRFID: e.target.value,
-              })
-            }
-            placeholder="Wet RFID"
-            className="border rounded-xl p-4"
-          />
-
-          <input
-            value={form.dryRFID}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                dryRFID: e.target.value,
-              })
-            }
-            placeholder="Dry RFID"
             className="border rounded-xl p-4"
           />
 
@@ -237,14 +215,105 @@ export default function CreateWasteGeneratorModal({
           />
         </div>
 
+        <input
+          value={form.houseNumber}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              houseNumber: e.target.value,
+            })
+          }
+          placeholder="House Number"
+          className="border rounded-xl p-4"
+        />
+
+        <input
+          value={form.floorNumber}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              floorNumber: e.target.value,
+            })
+          }
+          placeholder="Floor Number"
+          className="border rounded-xl p-4"
+        />
+
+        <input
+          value={form.numberOfPeople}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              numberOfPeople: e.target.value,
+            })
+          }
+          placeholder="Number Of People"
+          className="border rounded-xl p-4"
+        />
+
+        <select
+          value={form.householdType}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              householdType: e.target.value,
+            })
+          }
+          className="border rounded-xl p-4"
+        >
+          <option value="">Select Household Type</option>
+
+          <option value="Residential">Residential</option>
+
+          <option value="Commercial">Commercial</option>
+
+          <option value="Industrial">Industrial</option>
+        </select>
+
+        <select
+          value={form.wasteGeneratorTypes}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              wasteGeneratorTypes: e.target.value,
+            })
+          }
+          className="border rounded-xl p-4"
+        >
+          <option value="">Select Waste Generator Type</option>
+
+          <option value="Domestic">Domestic</option>
+
+          <option value="Commercial">Commercial</option>
+
+          <option value="Industrial">Industrial</option>
+
+          <option value="Institutional">Institutional</option>
+        </select>
+
         <div className="flex justify-end gap-4 mt-8">
           <button onClick={onClose} className="px-8 py-3 rounded-xl border">
             Cancel
           </button>
 
           <button
-            onClick={() => {
-              onRequestPermission(form);
+            onClick={async () => {
+              try {
+                await api.post("/api/waste-generators", form);
+
+                alert("Waste Generator created successfully.");
+
+                await refreshData();
+
+                onClose();
+              } catch (err) {
+                console.error(err);
+
+                alert(
+                  err.response?.data?.message ||
+                    "Failed to create waste generator.",
+                );
+              }
             }}
             className="px-8 py-3 rounded-xl bg-[#6D28D9] text-white"
           >
