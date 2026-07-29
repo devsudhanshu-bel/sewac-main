@@ -12,23 +12,23 @@ export default function Overview() {
   const [overviewData, setOverviewData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
 
   const fetchOverview = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [
-        summary,
-        vehicleSummary,
-        generationTrend,
-        map,
-      ] = await Promise.all([
-        api.get(`/api/overview/summary?date=${selectedDate}`),
-        api.get("/api/admin/overview/vehicle-summary"),
-        api.get(`/api/overview/generation-trend?date=${selectedDate}`),
-        api.get("/api/admin/overview/map"),
-      ]);
+      const [summary, vehicleSummary, generationTrend, map] = await Promise.all(
+        [
+          api.get(`/api/overview/summary?date=${selectedDate}`),
+          api.get("/api/admin/overview/vehicle-summary"),
+          api.get(`/api/overview/generation-trend?date=${selectedDate}`),
+          api.get("/api/admin/overview/map"),
+        ],
+      );
 
       setOverviewData({
         summary: summary.data.data,
@@ -40,8 +40,7 @@ export default function Overview() {
       console.error("Overview API Error:", err);
 
       setError(
-        err.response?.data?.message ||
-          "Unable to connect to the server."
+        err.response?.data?.message || "Unable to connect to the server.",
       );
     } finally {
       setLoading(false);
@@ -50,7 +49,7 @@ export default function Overview() {
 
   useEffect(() => {
     fetchOverview();
-  }, []);
+  }, [selectedDate]);
 
   if (loading) {
     return (
@@ -66,9 +65,7 @@ export default function Overview() {
     return (
       <div className="flex items-center justify-center h-screen bg-[#FAFAFC]">
         <div className="text-center">
-          <p className="text-lg font-semibold text-red-500">
-            {error}
-          </p>
+          <p className="text-lg font-semibold text-red-500">{error}</p>
 
           <button
             onClick={fetchOverview}
@@ -83,21 +80,17 @@ export default function Overview() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header />
+      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
       <main className="space-y-6 px-8 py-6">
-        <OverviewKPIs
-          data={overviewData?.summary}
-        />
+        <OverviewKPIs data={overviewData?.summary} />
 
         <VehicleStats
           vehicleData={overviewData?.vehicleSummary}
           trendData={overviewData?.generationTrend}
         />
 
-        <CityOverviewMap
-          mapData={overviewData?.map}
-        />
+        <CityOverviewMap mapData={overviewData?.map} />
       </main>
     </div>
   );
