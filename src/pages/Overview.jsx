@@ -37,7 +37,13 @@ export default function Overview() {
         map: map.data.data,
       });
     } catch (err) {
-      console.error("Overview API Error:", err);
+      console.log("ERR TYPE:", err.constructor.name);
+      console.log("ERR:", err);
+
+      if (err.response) {
+        console.log("STATUS:", err.response.status);
+        console.log("DATA:", err.response.data);
+      }
 
       setError(
         err.response?.data?.message || "Unable to connect to the server.",
