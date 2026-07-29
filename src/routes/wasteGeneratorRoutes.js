@@ -38,7 +38,7 @@ router.post(
   authMiddleware,
   wasteGeneratorController.createWasteGenerator
 );
-router.put("/:phoneNumber", authMiddleware, checkTemporaryPermission("waste-generators"), wasteGeneratorController.updateWasteGenerator);
-router.delete("/:phoneNumber", authMiddleware, checkTemporaryPermission("waste-generators"), wasteGeneratorController.deleteWasteGenerator);
+router.put("/:phoneNumber", authMiddleware, wasteGeneratorController.updateWasteGenerator);
+router.delete("/:phoneNumber", authMiddleware, wasteGeneratorController.deleteWasteGenerator);
 
 module.exports = router;
