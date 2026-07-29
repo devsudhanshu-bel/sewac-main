@@ -46,7 +46,7 @@ export function FilterProvider({ children }) {
 
         setZones(res.data);
 
-        setSelectedZone(res.data.length ? res.data[0] : null);
+        setSelectedZone(res.data.length ? res.data[3] : null);
       } catch (err) {
         console.error(err);
       }
@@ -62,9 +62,7 @@ export function FilterProvider({ children }) {
       try {
         const res = await getDivisions(selectedZone.zone_id);
 
-        setDivisions(res.data);
-
-        setSelectedDivision(res.data.length ? res.data[0] : null);
+        setSelectedDivision(res.data.length ? res.data[4] : null);
       } catch (err) {
         console.error(err);
       }
@@ -82,7 +80,7 @@ export function FilterProvider({ children }) {
 
         setWards(res.data);
 
-        setSelectedWard(res.data.length ? res.data[0] : null);
+        setSelectedWard(res.data.length ? res.data[5] : null);
       } catch (err) {
         console.error(err);
       }
