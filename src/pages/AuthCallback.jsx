@@ -5,18 +5,14 @@ const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("AuthCallback loaded");
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    console.log("Token from URL:", token);
     if (!token) {
-      console.log("No Token Found");
       window.location.replace("https://app-authentication-frontend.onrender.com");
       return;
     }
 
     sessionStorage.setItem("token", token);
-    console.log("Stored token:", sessionStorage.getItem("token"));
 
     navigate("/dashboard/admin/overview", {
       replace: true,
