@@ -16,10 +16,10 @@ import Settings from "./pages/Settings";
 
 function DashboardLayout() {
   return (
-    <div className="flex min-h-screen bg-[#FAFAFC]">
+    <div className="flex h-screen bg-[#FAFAFC] overflow-hidden">
       <Sidebar />
 
-      <main className="flex-1 relative">
+      <main className="flex-1 overflow -y auto">
         <Outlet />
       </main>
     </div>
