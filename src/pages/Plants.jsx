@@ -77,6 +77,27 @@ const handleDeletePlant = (plant) => {
   fetchDashboard();
 }, []);
 
+useEffect(() => {
+  if (
+    showCreateModal ||
+    showEditModal ||
+    showDeleteModal
+  ) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
+
+  return () => {
+    document.body.style.overflow = "auto";
+  };
+}, [
+  showCreateModal,
+  showEditModal,
+  showDeleteModal,
+]);
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F8F9FD]">
