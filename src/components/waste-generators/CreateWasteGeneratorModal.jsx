@@ -7,7 +7,6 @@ export default function CreateWasteGeneratorModal({
   onClose,
   onRequestPermission,
 }) {
-  if (!open) return null;
   const [form, setForm] = useState({
     personName: "",
     phoneNumber: "",
@@ -19,11 +18,18 @@ export default function CreateWasteGeneratorModal({
     ward: "",
     area: "",
   });
+
+  const [cities, setCities] = useState([]);
+  const [zones, setZones] = useState([]);
+  const [divisions, setDivisions] = useState([]);
+  const [wards, setWards] = useState([]);
+
   useEffect(() => {
     if (open) {
       loadCities();
     }
   }, [open]);
+  if (!open) return null;
 
   const loadCities = async () => {
     try {
@@ -66,11 +72,6 @@ export default function CreateWasteGeneratorModal({
     }
   };
 
-  const [cities, setCities] = useState([]);
-  const [zones, setZones] = useState([]);
-  const [divisions, setDivisions] = useState([]);
-  const [wards, setWards] = useState([]);
-
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
       <div className="bg-white w-[900px] rounded-2xl p-8 relative">
@@ -81,13 +82,53 @@ export default function CreateWasteGeneratorModal({
         <h2 className="text-3xl font-bold mb-8">Create Waste Generator</h2>
 
         <div className="grid grid-cols-2 gap-5">
-          <input placeholder="Citizen Name" className="border rounded-xl p-4" />
+          <input
+            value={form.personName}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                personName: e.target.value,
+              })
+            }
+            placeholder="Citizen Name"
+            className="border rounded-xl p-4"
+          />
 
-          <input placeholder="Phone Number" className="border rounded-xl p-4" />
+          <input
+            value={form.phoneNumber}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                phoneNumber: e.target.value,
+              })
+            }
+            placeholder="Phone Number"
+            className="border rounded-xl p-4"
+          />
 
-          <input placeholder="Wet RFID" className="border rounded-xl p-4" />
+          <input
+            value={form.wetRFID}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                wetRFID: e.target.value,
+              })
+            }
+            placeholder="Wet RFID"
+            className="border rounded-xl p-4"
+          />
 
-          <input placeholder="Dry RFID" className="border rounded-xl p-4" />
+          <input
+            value={form.dryRFID}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                dryRFID: e.target.value,
+              })
+            }
+            placeholder="Dry RFID"
+            className="border rounded-xl p-4"
+          />
 
           <select
             className="border rounded-xl p-4"
@@ -108,7 +149,7 @@ export default function CreateWasteGeneratorModal({
           >
             <option value="">Select City</option>
 
-            {cities.map((city) => (
+            {cities?.map((city) => (
               <option key={city.city_id} value={city.city_id}>
                 {city.city_name}
               </option>
@@ -133,7 +174,7 @@ export default function CreateWasteGeneratorModal({
           >
             <option value="">Select Zone</option>
 
-            {zones.map((zone) => (
+            {zones?.map((zone) => (
               <option key={zone.zone_id} value={zone.zone_id}>
                 {zone.zone_name}
               </option>
@@ -157,7 +198,7 @@ export default function CreateWasteGeneratorModal({
           >
             <option value="">Select Division</option>
 
-            {divisions.map((division) => (
+            {divisions?.map((division) => (
               <option key={division.division_id} value={division.division_id}>
                 {division.division_name}
               </option>
@@ -176,7 +217,7 @@ export default function CreateWasteGeneratorModal({
           >
             <option value="">Select Ward</option>
 
-            {wards.map((ward) => (
+            {wards?.map((ward) => (
               <option key={ward.ward_id} value={ward.ward_id}>
                 {ward.ward_name}
               </option>
@@ -184,6 +225,13 @@ export default function CreateWasteGeneratorModal({
           </select>
 
           <input
+            value={form.area}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                area: e.target.value,
+              })
+            }
             placeholder="Area"
             className="border rounded-xl p-4 col-span-2"
           />
