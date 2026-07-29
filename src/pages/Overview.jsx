@@ -24,9 +24,9 @@ export default function Overview() {
         generationTrend,
         map,
       ] = await Promise.all([
-        api.get("/api/admin/overview/summary"),
+        api.get(`/api/overview/summary?date=${selectedDate}`),
         api.get("/api/admin/overview/vehicle-summary"),
-        api.get("/api/admin/overview/generation-trend"),
+        api.get(`/api/overview/generation-trend?date=${selectedDate}`),
         api.get("/api/admin/overview/map"),
       ]);
 
