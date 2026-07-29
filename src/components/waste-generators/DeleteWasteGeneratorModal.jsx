@@ -1,5 +1,5 @@
 import { X, TriangleAlert } from "lucide-react";
-import api from "../src/api/axios.js"; // <-- adjust path if needed
+import api from "../../api/axios"; // <-- adjust path if needed
 
 export default function DeleteWasteGeneratorModal({
   open,
