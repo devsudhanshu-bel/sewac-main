@@ -31,7 +31,7 @@ export default function WasteGenerators() {
 
       {/* ================= Page ================= */}
 
-      <div className="max-w-[1650px] mx-auto px-8 py-7">
+      <div className="w-full px-8 py-7 overflow-x-hidden">
         {/* ================= Title ================= */}
 
         <div>

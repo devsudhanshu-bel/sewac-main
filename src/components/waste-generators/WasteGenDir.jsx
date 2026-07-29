@@ -106,6 +106,7 @@ export default function WasteGenDir() {
     <section
       className="
         mt-5
+        w-full
         bg-white
         rounded-[22px]
         border
@@ -189,8 +190,8 @@ export default function WasteGenDir() {
 
       {/* ================= Table ================= */}
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[1400px] w-full border-collapse">
           <thead>
             <tr className="bg-[#F8F8FD] border-y border-[#ECECF4]">
               <th className="w-[40px] py-3 pl-4 text-left text-[11px] font-semibold text-[#3B3F53]">
