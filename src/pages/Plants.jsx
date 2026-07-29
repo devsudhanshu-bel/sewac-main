@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { createPortal } from "react-dom";
 import api from "../api/axios";
 import Header from "../components/layouts/Header";
 
@@ -176,34 +176,43 @@ useEffect(() => {
   onEditPlant={handleEditPlant}
   onDeletePlant={handleDeletePlant}
 />
-{showCreateModal && (
-  <CreatePlantModal
-    onClose={() => setShowCreateModal(false)}
-    onSuccess={fetchDashboard}
-  />
-)}
 
-{showEditModal && selectedPlant && (
-  <EditPlantModal
-    plant={selectedPlant}
-    onClose={() => {
-      setShowEditModal(false);
-      setSelectedPlant(null);
-    }}
-    onSuccess={fetchDashboard}
-  />
-)}
+{showCreateModal &&
+  createPortal(
+    <CreatePlantModal
+      onClose={() => setShowCreateModal(false)}
+      onSuccess={fetchDashboard}
+    />,
+    document.body
+  )}
 
-{showDeleteModal && selectedPlant && (
-  <DeletePlantModal
-    plant={selectedPlant}
-    onClose={() => {
-      setShowDeleteModal(false);
-      setSelectedPlant(null);
-    }}
-    onSuccess={fetchDashboard}
-  />
-)}
+{showEditModal &&
+  selectedPlant &&
+  createPortal(
+    <EditPlantModal
+      plant={selectedPlant}
+      onClose={() => {
+        setShowEditModal(false);
+        setSelectedPlant(null);
+      }}
+      onSuccess={fetchDashboard}
+    />,
+    document.body
+  )}
+
+{showDeleteModal &&
+  selectedPlant &&
+  createPortal(
+    <DeletePlantModal
+      plant={selectedPlant}
+      onClose={() => {
+        setShowDeleteModal(false);
+        setSelectedPlant(null);
+      }}
+      onSuccess={fetchDashboard}
+    />,
+    document.body
+  )}
       </div>
     </div>
   );
