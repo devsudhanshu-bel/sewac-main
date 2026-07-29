@@ -168,29 +168,6 @@ export default function WasteGenDir() {
     "
             />
           </div>
-
-          {/* Dropdown */}
-
-          <button
-            className="
-              w-[170px]
-              h-10
-              rounded-xl
-              border
-              border-[#E8E8EF]
-              bg-white
-              flex
-              items-center
-              justify-between
-              px-4
-              text-[12px]
-              font-medium
-              text-[#6D28D9]
-            "
-          >
-            All Waste Generators
-            <ChevronDown size={15} />
-          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="
