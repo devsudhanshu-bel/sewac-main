@@ -198,7 +198,11 @@ function Dropdown({ width, value, options, addLabel, onChange }) {
   );
 }
 
-export default function Header({ variant = "dashboard" }) {
+export default function Header({
+  variant = "dashboard",
+  selectedDate,
+  setSelectedDate,
+}) {
   const navigate = useNavigate();
 
   const headerRef = useRef(null);
@@ -235,8 +239,6 @@ export default function Header({ variant = "dashboard" }) {
   } = useFilters();
 
   const [selectedLanguage, setSelectedLanguage] = useState("English");
-
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const selectedDay = selectedDate.getDay();
 
@@ -430,7 +432,17 @@ export default function Header({ variant = "dashboard" }) {
     justify-center
   "
         >
-          <Calendar value={selectedDate} onChange={setSelectedDate} />
+          <Calendar
+            value={selectedDate ? new Date(selectedDate) : new Date()}
+            onChange={(date) => {
+              const formatted =
+                date instanceof Date
+                  ? date.toISOString().split("T")[0]
+                  : new Date(date).toISOString().split("T")[0];
+
+              setSelectedDate(formatted);
+            }}
+          />
         </div>
 
         {/* Dry / Wet */}
