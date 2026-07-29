@@ -6,6 +6,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ApproveDevice from "./pages/ApproveDevice";
 import BehaviorEnrollment from "./pages/BehaviorEnrollment";
+import SuperAdminLogin from "./pages/SuperAdminLogin";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 function App() {
   return (
@@ -22,6 +24,15 @@ function App() {
         <Route path="/behavior-enrollment" element={<BehaviorEnrollment />} />
 
         <Route path="/approve-device" element={<ApproveDevice />} />
+
+        <Route path="/super-admin" element={<SuperAdminLogin />} />
+
+        <Route
+          path="/super-admin/dashboard"
+          element={<SuperAdminDashboard />}
+        />
+
+        
       </Routes>
     </BrowserRouter>
   );

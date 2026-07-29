@@ -9,6 +9,7 @@ const deviceRoutes = require("./routes/deviceRoutes");
 const behaviorRoutes = require("./routes/behaviorRoutes");
 const riskRoutes = require("./routes/riskRoutes");
 const emailRoutes = require("./routes/emailRoutes");
+const superAdminRoutes = require("./routes/superAdminRoutes");
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use("/api/devices", deviceRoutes);
 app.use("/api/behavior", behaviorRoutes);
 app.use("/api/risk", riskRoutes);
 app.use("/api/email", emailRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 const PORT = process.env.PORT || 5000;
 
