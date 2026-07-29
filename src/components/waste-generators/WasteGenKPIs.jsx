@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Users, Trash2, Scale, UserRound } from "lucide-react";
+import { Trash2, Scale, UserRound } from "lucide-react";
 import { gsap } from "gsap";
 
 export default function WasteGenKPIs({ summary }) {
@@ -24,61 +24,10 @@ export default function WasteGenKPIs({ summary }) {
   }, []);
 
   return (
-    <section ref={sectionRef} className="grid grid-cols-5 gap-4 mt-6">
-      {/* ========================= Total Waste Generators ========================= */}
-
-      <div
-        className="
-          bg-white
-          rounded-3xl
-          border
-          border-gray-200
-          px-5
-          py-5
-          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-          hover:shadow-lg
-          hover:-translate-y-0.5
-          transition-all
-          duration-300
-          min-h-[145px]
-        "
-      >
-        <div className="flex items-center gap-4">
-          <div
-            className="
-              w-10
-              h-10
-              rounded-xl
-              bg-violet-100
-              flex
-              items-center
-              justify-center
-            "
-          >
-            <Users size={18} className="text-violet-600" />
-          </div>
-
-          <div>
-            <p className="text-[12px] font-semibold text-slate-800">
-              Total Waste Generators
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-center items-center h-[95px]">
-          <h2
-            className="
-              text-[28px]
-              font-bold
-              tracking-tight
-              text-[#18214D]
-            "
-          >
-            {summary?.activeWasteGenerators?.toLocaleString() ?? 0}
-          </h2>
-        </div>
-      </div>
-
+    <section
+      ref={sectionRef}
+      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6"
+    >
       {/* ========================= Waste Generator Status ========================= */}
 
       <div
@@ -94,7 +43,7 @@ export default function WasteGenKPIs({ summary }) {
           hover:-translate-y-0.5
           transition-all
           duration-300
-          min-h-[145px]
+          min-h-[185px]
         "
       >
         <h3 className="text-[12px] font-semibold text-slate-800 mb-5">
@@ -207,7 +156,7 @@ export default function WasteGenKPIs({ summary }) {
           hover:-translate-y-0.5
           transition-all
           duration-300
-          min-h-[175px]
+          min-h-[185px]
         "
       >
         <div className="flex items-center gap-3">
@@ -274,7 +223,7 @@ export default function WasteGenKPIs({ summary }) {
           hover:-translate-y-0.5
           transition-all
           duration-300
-          min-h-[145px]
+          min-h-[185px]
         "
       >
         <div className="flex items-center gap-4">
@@ -345,7 +294,7 @@ export default function WasteGenKPIs({ summary }) {
           hover:-translate-y-0.5
           transition-all
           duration-300
-          min-h-[145px]
+          min-h-[185px]
         "
       >
         <h3 className="text-[11px] font-semibold text-slate-800 mb-5">
