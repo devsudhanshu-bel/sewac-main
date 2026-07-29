@@ -1,532 +1,215 @@
-Here's a complete summary of everything we implemented for the **Plant Management module**, in the order we worked on it.
+Perfect. Since your frontend is wired to these endpoints, here are the Thunder Client requests to verify everything end-to-end.
 
 ---
 
-# Plant Module Integration Summary
+# 1. Create Plant
 
-## 1. Dashboard KPI Integration
+### Method
+
+```http
+POST
+```
 
 ### Endpoint
 
 ```http
-GET /api/plants/dashboard
+http://localhost:5002/api/plants
 ```
 
-### Connected Component
-
-```
-PlantKPICards.jsx
-```
-
-### Functionality
-
-Integrated the dashboard statistics with the backend.
-
-Displays:
-
-* Total Plants
-* Total Vehicles Enrolled
-* Total Waste Collected
-
-Example response
+### Body (JSON)
 
 ```json
 {
-  "totalPlants": 1,
-  "totalVehiclesEnrolled": 24,
-  "totalWasteCollected": 1258.4
+  "plant_name": "KR Puram Plant",
+  "plant_type": "Dry Waste",
+  "city": "Bangalore",
+  "zone": "East Corporation",
+  "division": "Mahadevapura",
+  "ward": "KR Puram",
+  "plant_manager": "Ramesh Kumar",
+  "capacity_ton_per_day": 250,
+  "vehicles_enrolled": 18,
+  "total_waste_collected": 0,
+  "latitude": 12.9986,
+  "longitude": 77.6954,
+  "status": "ACTIVE"
+}
+```
+
+### Expected Response
+
+```json
+{
+  "success": true,
+  "data": {
+    ...
+  }
 }
 ```
 
 ---
 
-# 2. Plant Directory Integration
+# 2. Get All Plants
+
+### Method
+
+```http
+GET
+```
 
 ### Endpoint
 
 ```http
-GET /api/plants
+http://localhost:5002/api/plants
 ```
 
-### Connected Component
+No body required.
 
+Use this to verify the newly created plant appears in the directory.
+
+---
+
+# 3. Update Plant
+
+### Method
+
+```http
+PUT
 ```
-PlantDirectory.jsx
+
+### Endpoint
+
+Example:
+
+```http
+http://localhost:5002/api/plants/2
 ```
 
-### Functionality
+(Change `2` to the actual plant ID.)
 
-Removed all hardcoded plant data.
-
-Now displays live backend data including:
-
-* Plant ID
-* Plant Name
-* Zone
-* Capacity (Ton/Day)
-* Plant Manager
-* Vehicles Enrolled
-
-Integrated pagination information:
+### Body
 
 ```json
-pagination.total
+{
+  "plant_name": "KR Puram Plant Updated",
+  "plant_type": "Dry Waste",
+  "city": "Bangalore",
+  "zone": "East Corporation",
+  "division": "Mahadevapura",
+  "ward": "KR Puram",
+  "plant_manager": "Suresh Kumar",
+  "capacity_ton_per_day": 300,
+  "vehicles_enrolled": 22,
+  "total_waste_collected": 25,
+  "latitude": 12.9986,
+  "longitude": 77.6954,
+  "status": "ACTIVE"
+}
 ```
 
-Footer now displays
+### Expected Response
 
+```json
+{
+  "success": true,
+  "data": {
+    ...
+  }
+}
 ```
-Showing 1–N of Total Plants
-```
-
-using backend values.
 
 ---
 
-# 3. Plant Locations Map
+# 4. Delete Plant
+
+### Method
+
+```http
+DELETE
+```
 
 ### Endpoint
 
 ```http
-GET /api/plants/locations
+http://localhost:5002/api/plants/2
 ```
 
-### Connected Component
+(Change `2` to the target plant ID.)
 
-```
-PlantLocations.jsx
-```
+### Body
 
-### Functionality
+❌ No body required.
 
-Integrated Leaflet map with backend coordinates.
+### Expected Response
 
-Displays markers using
-
-```
-latitude
-longitude
+```json
+{
+  "success": true,
+  "message": "Plant deleted successfully."
+}
 ```
 
-from API.
-
-Implemented:
-
-* Marker rendering
-* Popup information
-* Dynamic map fitting
+(or whatever message your backend returns)
 
 ---
 
-### FitBounds
+# 5. Dashboard KPIs
 
-Added
-
-```jsx
-FitBounds()
-```
-
-to automatically adjust the map.
-
-Supports
-
-* 1 plant
-* 5 plants
-* 50 plants
-* 500+ plants
-
-without changing code.
-
----
-
-### Popup Information
-
-Merged
-
-```
-GET /locations
-```
-
-with
-
-```
-GET /plants
-```
-
-inside
-
-```
-Plants.jsx
-```
-
-so popup now shows
-
-* Plant Name
-* Zone
-* Plant Manager
-* Vehicles Enrolled
-* Capacity
-* Latitude
-* Longitude
-
-instead of placeholders like
-
-```
-Not Assigned
-0 Vehicles
-N/A
-```
-
----
-
-# 4. Refactored Plants.jsx
-
-Integrated multiple endpoints simultaneously.
-
-Now loads
+### Method
 
 ```http
-GET /api/plants/dashboard
-GET /api/plants
-GET /api/plants/locations
+GET
 ```
-
-using
-
-```jsx
-Promise.all()
-```
-
-Stores data in
-
-```jsx
-dashboardData
-plants
-plantLocations
-pagination
-```
-
----
-
-# 5. Create Plant Button
-
-Added
-
-```
-+ Add Plant
-```
-
-to
-
-```
-PlantDirectory.jsx
-```
-
-Clicking opens
-
-```
-CreatePlantModal
-```
-
----
-
-# 6. Create Plant
 
 ### Endpoint
 
 ```http
-POST /api/plants
+http://localhost:5002/api/plants/dashboard
 ```
 
-Created
-
-```
-CreatePlantModal.jsx
-```
-
-Supports entering
-
-* Plant Name
-* Plant Type
-* City
-* Zone
-* Division
-* Ward
-* Plant Manager
-* Capacity
-* Vehicles Enrolled
-* Waste Collected
-* Latitude
-* Longitude
-* Status
-
-After success
-
-```
-Refresh Dashboard
-Close Modal
-```
+This verifies the KPI cards on the Plant Overview page.
 
 ---
 
-# 7. Update Plant
+# 6. Plant Locations (Map)
+
+### Method
+
+```http
+GET
+```
 
 ### Endpoint
 
 ```http
-PUT /api/plants/:id
+http://localhost:5002/api/plants/locations
 ```
 
-Created
+This endpoint supplies the latitude and longitude used by the Leaflet map.
 
-```
-EditPlantModal.jsx
-```
+---
 
-Features
+# 7. Verify Updated Data
 
-Automatically loads selected plant.
-
-Uses
-
-```jsx
-useEffect(() => {
-    setForm(plant);
-}, [plant]);
-```
-
-Updates
-
-* Name
-* Type
-* City
-* Zone
-* Division
-* Ward
-* Manager
-* Capacity
-* Vehicles
-* Waste
-* Latitude
-* Longitude
-* Status
-
-Calls
+After creating or updating a plant, call:
 
 ```http
-PUT /api/plants/:id
+GET http://localhost:5002/api/plants
 ```
 
-Refreshes page after success.
+to confirm the changes are reflected.
 
 ---
 
-# 8. Delete Plant
-
-### Endpoint
-
-```http
-DELETE /api/plants/:id
-```
-
-Created
-
-```
-DeletePlantModal.jsx
-```
-
-Displays confirmation dialog.
-
-Delete performs backend soft delete.
-
-After success
-
-* Refresh Dashboard
-* Refresh Directory
-* Refresh Map
-
----
-
-# 9. Action Menu
-
-Removed
-
-```
-...
-```
-
-button.
-
-Replaced with dropdown
-
-```
-Actions
-
-▼ Update Plant
-▼ Delete Plant
-```
-
-Each row now has independent actions.
-
----
-
-# 10. Modal Integration
-
-Inside
-
-```
-Plants.jsx
-```
-
-Integrated
-
-```
-CreatePlantModal
-EditPlantModal
-DeletePlantModal
-```
-
-using state
-
-```jsx
-showCreateModal
-showEditModal
-showDeleteModal
-selectedPlant
-```
-
----
-
-# 11. Auto Refresh
-
-After
-
-* Create
-* Update
-* Delete
-
-the application automatically calls
-
-```jsx
-fetchDashboard()
-```
-
-which refreshes
-
-* KPI Cards
-* Plant Directory
-* Plant Locations
-
-without manual reload.
-
----
-
-# 12. Removed Static Data
-
-Removed all hardcoded data from
-
-```
-PlantDirectory.jsx
-```
-
-Everything now comes directly from backend APIs.
-
----
-
-# 13. Leaflet Improvements
-
-Implemented
-
-```
-FitBounds
-```
-
-for scalability.
-
-Automatically zooms to include every plant marker.
-
-Works regardless of the number of plants.
-
----
-
-# 14. Data Mapping
-
-Merged
-
-```
-GET /locations
-```
-
-and
-
-```
-GET /plants
-```
-
-using
-
-```jsx
-plants.find(...)
-```
-
-to enrich map markers with
-
-* Manager
-* Capacity
-* Vehicles
-
-while retaining
-
-* Latitude
-* Longitude
-* Status
-
----
-
-# APIs Integrated
-
-| Endpoint                    | Status | Purpose              |
-| --------------------------- | ------ | -------------------- |
-| `GET /api/plants/dashboard` | ✅      | KPI Cards            |
-| `GET /api/plants`           | ✅      | Plant Directory      |
-| `GET /api/plants/locations` | ✅      | Leaflet Map          |
-| `POST /api/plants`          | ✅      | Create Plant         |
-| `PUT /api/plants/:id`       | ✅      | Update Plant         |
-| `DELETE /api/plants/:id`    | ✅      | Delete (Soft Delete) |
-
----
-
-# Components Created
-
-```
-CreatePlantModal.jsx
-EditPlantModal.jsx
-DeletePlantModal.jsx
-```
-
----
-
-# Components Updated
-
-```
-Plants.jsx
-PlantDirectory.jsx
-PlantLocations.jsx
-PlantKPICards.jsx
-```
-
----
-
-# Final Outcome
-
-The Plant module now supports:
-
-* ✅ Live KPI dashboard
-* ✅ Live plant directory
-* ✅ Interactive Leaflet map with dynamic markers
-* ✅ Automatic map fitting for any number of plants
-* ✅ Create new plants
-* ✅ Update existing plants
-* ✅ Soft delete plants
-* ✅ Automatic refresh after CRUD operations
-* ✅ Backend-driven data throughout the module, replacing all hardcoded content
+## Complete endpoint summary
+
+| Function        | Method | Endpoint                |
+| --------------- | ------ | ----------------------- |
+| Create Plant    | POST   | `/api/plants`           |
+| Get All Plants  | GET    | `/api/plants`           |
+| Update Plant    | PUT    | `/api/plants/:id`       |
+| Delete Plant    | DELETE | `/api/plants/:id`       |
+| Dashboard KPIs  | GET    | `/api/plants/dashboard` |
+| Plant Locations | GET    | `/api/plants/locations` |
+
+These are the endpoints your Plant frontend currently depends on, so testing them in Thunder Client will verify both the backend and the frontend integration.
