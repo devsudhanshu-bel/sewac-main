@@ -49,8 +49,8 @@ export default function CreatePlantModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-[700px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6 overflow-y-auto">
+      <div className="bg-white rounded-2xl p-6 w-[700px] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-bold">
             Create Plant
