@@ -12,6 +12,7 @@ import api from "../../api/axios";
 import CreateWasteGeneratorModal from "./CreateWasteGeneratorModal";
 import UpdateWasteGeneratorModal from "./UpdateWasteGeneratorModal";
 import DeleteWasteGeneratorModal from "./DeleteWasteGeneratorModal";
+import PermissionRequestModal from "./PermissionRequestModal";
 
 export default function WasteGenDir() {
   const [wasteGenerators, setWasteGenerators] = useState([]);
@@ -31,6 +32,9 @@ export default function WasteGenDir() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState("");
+  const [pendingCitizen, setPendingCitizen] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -360,12 +364,16 @@ export default function WasteGenDir() {
                       onChange={(e) => {
                         if (e.target.value === "update") {
                           setSelectedCitizen(item);
-                          setShowUpdateModal(true);
+                          setPendingCitizen(item);
+                          setPendingAction("UPDATE");
+                          setShowPermissionModal(true);
                         }
 
                         if (e.target.value === "delete") {
                           setSelectedCitizen(item);
-                          setShowDeleteModal(true);
+                          setPendingCitizen(item);
+                          setPendingAction("DELETE");
+                          setShowPermissionModal(true);
                         }
 
                         e.target.value = "";
@@ -500,6 +508,12 @@ export default function WasteGenDir() {
       <CreateWasteGeneratorModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onRequestPermission={(form) => {
+          setPendingAction("CREATE");
+          setPendingCitizen(form);
+          setShowCreateModal(false);
+          setShowPermissionModal(true);
+        }}
       />
 
       <UpdateWasteGeneratorModal
@@ -512,6 +526,41 @@ export default function WasteGenDir() {
         open={showDeleteModal}
         citizen={selectedCitizen}
         onClose={() => setShowDeleteModal(false)}
+      />
+
+      <PermissionRequestModal
+        open={showPermissionModal}
+        action={pendingAction}
+        onClose={() => setShowPermissionModal(false)}
+        onSubmit={async (reason) => {
+          try {
+            await api.post("/api/permissions/request", {
+              requested_by_admin_id: 2,
+
+              module: "waste-generators",
+
+              action: pendingAction,
+
+              target_identifier:
+                pendingAction === "CREATE"
+                  ? pendingCitizen.phoneNumber
+                  : pendingCitizen.phoneNumber,
+
+              reason,
+            });
+
+            alert("Permission request sent successfully.");
+
+            setShowPermissionModal(false);
+          } catch (err) {
+            console.error(err);
+
+            alert(
+              err.response?.data?.message ||
+                "Failed to send permission request.",
+            );
+          }
+        }}
       />
     </section>
   );
