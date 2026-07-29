@@ -1,7 +1,36 @@
 import { X, TriangleAlert } from "lucide-react";
+import api from "../../services/api"; // <-- adjust path if needed
 
-export default function DeleteWasteGeneratorModal({ open, onClose, citizen }) {
-  if (!open) return null;
+export default function DeleteWasteGeneratorModal({
+  open,
+  onClose,
+  citizen,
+  refreshData,
+}) {
+  if (!open || !citizen) return null;
+
+  const handleDelete = async () => {
+    try {
+      console.log("Deleting citizen:", citizen);
+      console.log("Phone:", citizen.phoneNumber);
+
+      await api.delete(`/api/waste-generators/${citizen.phoneNumber}`);
+
+      alert("Waste Generator deleted successfully.");
+
+      if (refreshData) {
+        await refreshData();
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("DELETE ERROR:", err);
+      console.log("Status:", err.response?.status);
+      console.log("Response:", err.response?.data);
+
+      alert(err.response?.data?.message || "Failed to delete waste generator.");
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
@@ -23,7 +52,7 @@ export default function DeleteWasteGeneratorModal({ open, onClose, citizen }) {
         <p className="text-center mt-4 text-gray-500">
           Are you sure you want to delete
           <br />
-          <b>{citizen?.personName}</b> ?
+          <b>{citizen.personName}</b>?
         </p>
 
         <div className="flex justify-center gap-4 mt-8">
@@ -32,27 +61,8 @@ export default function DeleteWasteGeneratorModal({ open, onClose, citizen }) {
           </button>
 
           <button
-            onClick={async () => {
-              try {
-                await api.delete(
-                  `/api/waste-generators/${citizen.phoneNumber}`,
-                );
-
-                alert("Waste Generator deleted successfully.");
-
-                await refreshData();
-
-                onClose();
-              } catch (err) {
-                console.error(err);
-
-                alert(
-                  err.response?.data?.message ||
-                    "Failed to delete waste generator.",
-                );
-              }
-            }}
-            className="px-8 py-3 rounded-xl bg-red-600 text-white"
+            onClick={handleDelete}
+            className="px-8 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700"
           >
             Delete
           </button>
