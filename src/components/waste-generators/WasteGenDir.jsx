@@ -9,6 +9,9 @@ import {
 
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import CreateWasteGeneratorModal from "./CreateWasteGeneratorModal";
+import UpdateWasteGeneratorModal from "./UpdateWasteGeneratorModal";
+import DeleteWasteGeneratorModal from "./DeleteWasteGeneratorModal";
 
 export default function WasteGenDir() {
   const [wasteGenerators, setWasteGenerators] = useState([]);
@@ -25,6 +28,9 @@ export default function WasteGenDir() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedCitizen, setSelectedCitizen] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -185,47 +191,21 @@ export default function WasteGenDir() {
             All Waste Generators
             <ChevronDown size={15} />
           </button>
-
-          {/* Excel */}
-
           <button
+            onClick={() => setShowCreateModal(true)}
             className="
-              w-10
-              h-10
-              rounded-xl
-              border
-              border-[#E8E8EF]
-              flex
-              items-center
-              justify-center
-              hover:bg-green-50
-              transition
-            "
+    h-10
+    px-5
+    rounded-xl
+    bg-[#6D28D9]
+    text-white
+    text-[12px]
+    font-semibold
+    hover:bg-[#5B21B6]
+    transition
+  "
           >
-            <FileSpreadsheet size={18} className="text-green-600" />
-          </button>
-
-          {/* Edit */}
-
-          <button
-            disabled={!selectedCitizen}
-            onClick={requestPermission}
-            className={`
-        h-10
-        px-5
-        rounded-xl
-        text-white
-        text-[12px]
-        font-semibold
-
-        ${
-          selectedCitizen
-            ? "bg-[#6D28D9] hover:bg-[#5B21B6]"
-            : "bg-gray-300 cursor-not-allowed"
-        }
-    `}
-          >
-            Edit Record
+            + Add Waste Generator
           </button>
         </div>
       </div>
@@ -278,6 +258,10 @@ export default function WasteGenDir() {
 
               <th className="min-w-[90px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
                 Status
+              </th>
+
+              <th className="min-w-[140px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
+                Actions
               </th>
             </tr>
           </thead>
@@ -381,6 +365,39 @@ export default function WasteGenDir() {
                     >
                       {"Active"}
                     </span>
+                  </td>
+                  <td className="px-3 py-[11px] text-center">
+                    <select
+                      defaultValue=""
+                      className="
+      w-[120px]
+      h-9
+      rounded-lg
+      border
+      border-[#D1D5DB]
+      bg-white
+      px-3
+      text-[11px]
+      outline-none
+    "
+                      onChange={(e) => {
+                        if (e.target.value === "update") {
+                          setSelectedCitizen(item);
+                          setShowUpdateModal(true);
+                        }
+
+                        if (e.target.value === "delete") {
+                          setSelectedCitizen(item);
+                          setShowDeleteModal(true);
+                        }
+
+                        e.target.value = "";
+                      }}
+                    >
+                      <option value="">Actions</option>
+                      <option value="update">Update</option>
+                      <option value="delete">Delete</option>
+                    </select>
                   </td>
                 </tr>
               ))
@@ -503,6 +520,22 @@ export default function WasteGenDir() {
           </div>
         </div>
       </div>
+      <CreateWasteGeneratorModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
+
+      <UpdateWasteGeneratorModal
+        open={showUpdateModal}
+        citizen={selectedCitizen}
+        onClose={() => setShowUpdateModal(false)}
+      />
+
+      <DeleteWasteGeneratorModal
+        open={showDeleteModal}
+        citizen={selectedCitizen}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </section>
   );
 }
