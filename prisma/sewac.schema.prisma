@@ -34,7 +34,6 @@ model telemetry_logs {
 
   // Vehicle Information
   driver_name          String?   @db.VarChar(100)
-  vehicle_number       String?   @db.VarChar(30)
   vehicle_id           String?   @db.VarChar(50)
 
   // Device Information
@@ -66,16 +65,18 @@ model vehicle_incidents {
 }
 
 model vehicle_master {
-  id                Int                 @id @default(autoincrement())
-  vehicle_id        String              @unique @db.VarChar(50)
-  vehicle_number    String              @unique @db.VarChar(30)
-  vehicle_type      String?             @db.VarChar(50)
-  city              String?             @db.VarChar(100)
-  zone              String?             @db.VarChar(100)
-  division          String?             @db.VarChar(100)
-  ward              String?             @db.VarChar(100)
-  status            String?             @default("ACTIVE") @db.VarChar(30)
-  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  id             Int      @id @default(autoincrement())
+
+  vehicle_id     String   @unique @db.VarChar(50)
+
+  vehicle_type   String?  @db.VarChar(50)
+  city           String?  @db.VarChar(100)
+  zone           String?  @db.VarChar(100)
+  division       String?  @db.VarChar(100)
+  ward           String?  @db.VarChar(100)
+  status         String?  @default("ACTIVE") @db.VarChar(30)
+  created_at     DateTime? @default(now())
+
   vehicle_incidents vehicle_incidents[]
   vehicle_telemetry vehicle_telemetry[]
 }

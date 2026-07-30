@@ -14,6 +14,7 @@ const usersRoutes = require("./routes/usersRoutes");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const plantRoutes = require("./routes/plantRoutes");
 const permissionRoutes = require("./routes/permissionRoutes");
+const redisRoutes = require("./routes/redisRoutes");
 
 const app = express();
 
@@ -52,5 +53,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/plants", plantRoutes);
 app.use("/api/permissions", permissionRoutes);
+app.use("/api/redis", redisRoutes);
+
+
+
 
 module.exports = app;

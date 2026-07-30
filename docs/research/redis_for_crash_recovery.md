@@ -1,372 +1,628 @@
-I actually recommend doing this. It gives you **at-least-once delivery** semantics with **very small code changes**, and it fits your current architecture.
+Perfect. Let's visualize a realistic scenario with **multiple successful packets + multiple failed packets**, because that's exactly how your Redis queue behaves.
 
-## Current flow (risk)
+---
 
-```text
+# Initial State
+
+Suppose five IoT devices send packets almost simultaneously.
+
+```
+P1 -> vehicleId = 09              ❌ Invalid
+P2 -> vehicleId = KA01AB1234      ✅ Valid
+P3 -> vehicleId = KA01AB1237      ✅ Valid
+P4 -> vehicleId = 99              ❌ Invalid
+P5 -> vehicleId = KA05AB9999      ✅ Valid
+```
+
+All requests first reach your controller.
+
+```
+IoT Devices
+      │
+      ▼
+Telemetry Controller
+      │
+      ▼
 LPUSH telemetry_queue
-        ↓
-      BLPOP  ❌ removes item
-        ↓
-Process
-        ↓
-Insert DB
 ```
 
-If the worker crashes after `BLPOP` but before the DB insert, the telemetry is lost.
+Redis now contains
 
----
-
-# Proposed flow (minimal changes)
-
-```text
-LPUSH telemetry_queue
-        ↓
-BLMOVE telemetry_queue processing_queue RIGHT LEFT
-        ↓
-Process
-        ↓
-DB Success
-        ↓
-LREM processing_queue
 ```
-
-If the worker crashes:
-
-```text
-telemetry_queue      processing_queue
-
-[]                   [telemetry]
-```
-
-The telemetry is still present and can be recovered.
-
----
-
-# Files to modify
-
-Only **one file** needs logic changes.
-
-### ✅ `src/services/telemetryQueueService.js`
-
-Replace:
-
-```js
-const result = await redisClient.blPop(
-  "telemetry_queue",
-  0
-);
-```
-
-with a blocking move from `telemetry_queue` to `processing_queue` (using `BLMOVE` if your Redis client/version supports it, or the equivalent command).
-
----
-
-After a **successful** end of processing (after all of these complete):
-
-```js
-await insertTelemetryLog(...);
-
-await updateVehicleTelemetry(...);
-
-await checkVehicleIncident(...);
-
-await updatePlantStatistics(...);
-```
-
-remove the processed payload from the processing queue:
-
-```js
-await redisClient.lRem(
-  "processing_queue",
-  1,
-  JSON.stringify(payload)
-);
-```
-
----
-
-# Crash recovery
-
-When the worker starts, before entering the infinite loop, recover any unfinished items.
-
-Pseudo-flow:
-
-```text
-processing_queue
-        ↓
-Move everything back
-        ↓
-telemetry_queue
-        ↓
-Start worker
-```
-
-This is a one-time recovery during startup.
-
----
-
-## Files affected
-
-| File                                    | Change                                              |
-| --------------------------------------- | --------------------------------------------------- |
-| `src/services/telemetryQueueService.js` | ✅ Replace `BLPOP`, add `LREM`, add startup recovery |
-
-Nothing else changes:
-
-* ✅ Controller
-* ✅ Redis producer
-* ✅ HashMap cache
-* ✅ Duplicate scan protection
-* ✅ DB logic
-* ✅ Telemetry tables
-* ✅ Validation
-
----
-
-# Why I recommend this
-
-This is the classic **reliable queue** pattern:
-
-* Producer unchanged (`LPUSH`).
-* Consumer becomes crash-safe.
-* Upstash already provides durable storage.
-* Startup recovery is a few lines of code.
-* No schema changes.
-* No controller changes.
-* No impact on the rest of your business logic.
-
-The only thing I'd verify before giving you the exact code is your Node Redis client version (`redis` package version), because `BLMOVE` support depends on the client API. Once we know that, we can implement this in roughly 20–30 lines inside `telemetryQueueService.js`.
-
-///////////////////////////
-
-SOLUTION:
-😂 Good question, bro. This is exactly the kind of question senior backend engineers ask.
-
-The answer is:
-
-> **Nothing is lost.**
-
-Let's see why.
-
----
-
-### Crash #1
-
-```text
 telemetry_queue
 
-[Packet1]
-
-↓
-
-Move
-
-↓
+┌─────────────┐
+│ P1 (09)     │ ❌
+├─────────────┤
+│ P2          │ ✅
+├─────────────┤
+│ P3          │ ✅
+├─────────────┤
+│ P4 (99)     │ ❌
+├─────────────┤
+│ P5          │ ✅
+└─────────────┘
 
 processing_queue
 
-[Packet1]
-
-↓
-
-💥 Crash
-```
-
-Restart.
-
-Startup recovery does:
-
-```text
-processing_queue
-      ↓
-telemetry_queue
-```
-
-Now
-
-```text
-telemetry_queue
-
-[Packet1]
+(empty)
 ```
 
 ---
 
-### Crash #2
+# Worker Iteration 1
 
-Worker again picks Packet1.
+Worker calls
 
-```text
+```
+BLMOVE()
+```
+
+Redis moves ONLY ONE packet.
+
+```
 telemetry_queue
 
-↓
+P2
+P3
+P4
+P5
 
 processing_queue
 
+P1
+```
+
+Worker memory
+
+```
+packet = P1
+```
+
+Business Logic
+
+```
+Citizen lookup
 ↓
 
+Telemetry insert
+↓
+
+Vehicle Telemetry
+
+↓
+
+FK ERROR
+
+(vehicleId=09)
+```
+
+Failure.
+
+No LREM.
+
+Queues become
+
+```
+telemetry_queue
+
+P2
+P3
+P4
+P5
+
+processing_queue
+
+P1 ❌
+```
+
+Notice
+
+P1 simply remains.
+
+---
+
+# Worker Iteration 2
+
+Worker loops again.
+
+Calls
+
+```
+BLMOVE()
+```
+
+Redis looks ONLY at telemetry_queue.
+
+Moves
+
+```
+P2
+```
+
+Queues
+
+```
+telemetry_queue
+
+P3
+P4
+P5
+
+processing_queue
+
+P1 ❌
+P2
+```
+
+Worker memory
+
+```
+packet=P2
+```
+
+Business Logic
+
+```
 Citizen lookup
 
 ↓
 
-💥 Crash again
-```
-
-Restart again.
-
-Same recovery.
-
-```text
-processing_queue
+Telemetry insert
 
 ↓
 
+Vehicle telemetry
+
+↓
+
+Plant
+
+↓
+
+Success
+```
+
+Now
+
+```
+LREM(P2)
+```
+
+Queues become
+
+```
+telemetry_queue
+
+P3
+P4
+P5
+
+processing_queue
+
+P1 ❌
+```
+
+P2 disappears.
+
+---
+
+# Worker Iteration 3
+
+BLMOVE()
+
+Moves
+
+```
+P3
+```
+
+Queues
+
+```
+telemetry_queue
+
+P4
+P5
+
+processing_queue
+
+P1 ❌
+P3
+```
+
+Worker
+
+```
+packet=P3
+```
+
+Success
+
+↓
+
+LREM(P3)
+
+Queues
+
+```
+telemetry_queue
+
+P4
+P5
+
+processing_queue
+
+P1 ❌
+```
+
+---
+
+# Worker Iteration 4
+
+BLMOVE()
+
+Moves
+
+```
+P4
+```
+
+Queues
+
+```
+telemetry_queue
+
+P5
+
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+Worker
+
+```
+packet=P4
+```
+
+Fails
+
+```
+vehicleId=99
+```
+
+No LREM.
+
+Queues
+
+```
+telemetry_queue
+
+P5
+
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+---
+
+# Worker Iteration 5
+
+BLMOVE()
+
+Moves
+
+```
+P5
+```
+
+Queues
+
+```
+telemetry_queue
+
+(empty)
+
+processing_queue
+
+P1 ❌
+P4 ❌
+P5
+```
+
+Worker
+
+```
+packet=P5
+```
+
+Success
+
+↓
+
+LREM(P5)
+
+Queues
+
+```
+telemetry_queue
+
+(empty)
+
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+---
+
+# Final State Before Crash
+
+```
+telemetry_queue
+
+(empty)
+```
+
+```
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+Only the failed packets remain.
+
+All successful packets have already been removed.
+
+---
+
+# Server Crashes
+
+Redis is still alive.
+
+```
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+---
+
+# Server Restarts
+
+Immediately
+
+```
+recoverProcessingQueue()
+```
+
+runs.
+
+It performs
+
+```
+processing_queue
+        │
+        ▼
 telemetry_queue
 ```
 
-Packet1 comes back **again**.
+Result
 
-Nothing is lost.
+```
+telemetry_queue
 
----
-
-### Crash #3
-
-Same story.
-
-Packet keeps surviving.
-
----
-
-## So what's the catch?
-
-The packet may be processed **multiple times** if the server repeatedly crashes before completion.
-
-This is called:
-
-> **At-Least-Once Delivery**
-
-It guarantees:
-
-* ✅ Never lose a packet.
-* ⚠️ A packet may be retried.
-
-This is exactly how systems like Kafka, RabbitMQ, and AWS SQS are commonly used.
-
----
-
-## But won't duplicate DB records happen?
-
-That's the next engineering problem.
-
-Right now your flow is:
-
-```text
-Packet
-↓
-
-Insert telemetry_logs
-
-↓
-
-Done
+P1 ❌
+P4 ❌
 ```
 
-If the crash happens **after** `insertTelemetryLog()` succeeds but **before** you remove the item from `processing_queue`, then on restart the same packet will be processed again and inserted a second time.
+```
+processing_queue
 
-That's why production systems usually make processing **idempotent**.
+(empty)
+```
 
 ---
 
-## The good news for SEWAC
+# Worker Starts Again
 
-Your payload already contains:
+Iteration 1
 
-```text
-iotTimestamp
-vehicleId
-rfidNumber
-unitNumber
+Moves
+
+```
+P1
 ```
 
-Even better, it contains:
+Fails again.
 
-```text
-errCode
-firmwareVersion
 ```
+telemetry_queue
 
-And you mentioned there's also:
+P4
 
-```text
-id="3d44fz"
-id = "tdnvz3"
+processing_queue
+
+P1 ❌
 ```
-
-If that `id` is **generated by the IoT device and stays the same across retries**, then it's the perfect unique event identifier.
-
-The clean solution is:
-
-* Add an `event_id` (or reuse that existing `id`) in `telemetry_logs`.
-* Make it `UNIQUE`.
-* Before inserting, check whether that event already exists (or let the unique constraint reject duplicates).
-
-Then you get:
-
-* ✅ Never lose packets.
-* ✅ No duplicate inserts.
-* ✅ Safe retries after crashes.
-
-That's called **Exactly-Once Processing (from the application's perspective)**.
 
 ---
 
-### My recommendation
+Iteration 2
 
-I would implement this in **two phases**:
+Moves
 
-1. **Phase 1 (30 minutes):**
+```
+P4
+```
 
-   * Add `processing_queue`.
-   * Startup recovery.
-   * Crash-safe queue.
-   * Result: **No packet loss.**
+Fails again.
 
-2. **Phase 2 (another 30–60 minutes):**
+```
+telemetry_queue
 
-   * Persist the IoT event `id` in `telemetry_logs`.
-   * Make it unique.
-   * Skip duplicate inserts on retries.
-   * Result: **Crash-safe + duplicate-safe.**
+(empty)
 
-That combination is a robust design and still doesn't require a major architectural change. It builds directly on the queue you already have.
+processing_queue
 
-////////////////////////
+P1 ❌
+P4 ❌
+```
 
-IoT
-    │
-    ▼
+---
+
+# Meanwhile...
+
+A brand new IoT packet arrives.
+
+```
+P6
+```
+
+Controller
+
+```
 LPUSH telemetry_queue
-    │
-    ▼
-BLMOVE
-telemetry_queue ─────► telemetry_processing_queue
-                           │
-                           ▼
-                   Business Logic
-                           │
-             ┌─────────────┴─────────────┐
-             │                           │
-          Success                    Crash/Error
-             │                           │
-             ▼                           ▼
-          LREM                 Remains in processing_queue
-                                       │
-                                       ▼
-                              Next startup
-                                       │
-                                       ▼
-                                   LMOVE
-                                       │
-                                       ▼
-                               telemetry_queue
+```
+
+Queues
+
+```
+telemetry_queue
+
+P6 ✅
+```
+
+```
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+---
+
+Worker loops again.
+
+Calls
+
+```
+BLMOVE()
+```
+
+Redis moves
+
+```
+P6
+```
+
+Queues
+
+```
+telemetry_queue
+
+(empty)
+```
+
+```
+processing_queue
+
+P1 ❌
+P4 ❌
+P6
+```
+
+Worker memory
+
+```
+packet=P6
+```
+
+Processes it.
+
+Success.
+
+```
+LREM(P6)
+```
+
+Queues become
+
+```
+processing_queue
+
+P1 ❌
+P4 ❌
+```
+
+---
+
+# Entire Life Cycle
+
+```text
+                 Incoming IoT Packets
+                        │
+                        ▼
+                telemetry_queue
+     ┌─────────────────────────────────┐
+     │ P1❌ P2✅ P3✅ P4❌ P5✅          │
+     └─────────────────────────────────┘
+                        │
+                 Worker (BLMOVE)
+                        ▼
+              processing_queue
+     ┌─────────────────────────────────┐
+     │ P1❌                            │ ← stays (failed)
+     │ P2✅ → processed → removed      │
+     │ P3✅ → processed → removed      │
+     │ P4❌ → stays (failed)           │
+     │ P5✅ → processed → removed      │
+     └─────────────────────────────────┘
+                        │
+                 Server crashes
+                        ▼
+     processing_queue still contains
+          P1❌      P4❌
+                        │
+                recoverProcessingQueue()
+                        ▼
+                telemetry_queue
+     ┌─────────────────────────────────┐
+     │ P1❌      P4❌                   │
+     └─────────────────────────────────┘
+                        │
+                 Worker retries
+                        ▼
+        P1 fails again → remains
+        P4 fails again → remains
+                        │
+        New packet P6 arrives (valid)
+                        ▼
+                telemetry_queue
+                    P6✅
+                        │
+                 Worker picks P6
+                        ▼
+                 Success → Removed
+
+processing_queue finally contains
+
+P1❌
+P4❌
+```
+
+---
+
+### This is exactly how your current implementation behaves.
+
+* ✅ Successful packets are removed from `processing_queue` after processing.
+* ❌ Failed packets remain in `processing_queue` so they are not lost.
+* 🔄 On server restart, only those failed packets are moved back to `telemetry_queue` and retried.
+* ➕ New valid packets continue to be accepted and processed normally—they are **not blocked** by the presence of failed packets.

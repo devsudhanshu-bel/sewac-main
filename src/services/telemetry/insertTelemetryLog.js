@@ -4,7 +4,6 @@ const insertTelemetryLog = async ({
   iotTimestamp,
   driverName,
   vehicleId,
-  vehicleNumber,
   rfidNumber,
   latitude,
   longitude,
@@ -29,7 +28,6 @@ const insertTelemetryLog = async ({
       iot_timestamp,
       driver_name,
       vehicle_id,
-      vehicle_number,
       rfid_epc,
       latitude,
       longitude,
@@ -49,15 +47,14 @@ const insertTelemetryLog = async ({
     )
     VALUES
 (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,
-  $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+$1,$2,$3,$4,$5,$6,$7,$8,$9,
+$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
 )
     `,
     [
       iotTimestamp,
       driverName,
       vehicleId,
-      vehicleNumber,
       rfidNumber,
       latitude,
       longitude,

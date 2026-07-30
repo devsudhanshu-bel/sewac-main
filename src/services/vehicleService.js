@@ -11,8 +11,7 @@ const getAllVehicles = async (query) => {
 
   let whereClause = `
   (
-      vehicle_id ILIKE $1
-      OR vehicle_number ILIKE $1
+      vehicle_id ILIKE $1  
       OR vehicle_type ILIKE $1
       OR city ILIKE $1
       OR zone ILIKE $1
@@ -79,17 +78,15 @@ const getVehicleById = async (vehicleId) => {
 };
 
 const createVehicle = async (body) => {
-  const {
+const {
     vehicle_id,
-    vehicle_number,
     vehicle_type,
     city,
     zone,
     division,
     ward,
     status,
-  } = body;
-
+} = body;
   // Check duplicate Vehicle ID
   const existingVehicle = await prisma.vehicle_master.findUnique({
     where: {
@@ -104,7 +101,6 @@ const createVehicle = async (body) => {
   const vehicle = await prisma.vehicle_master.create({
     data: {
       vehicle_id,
-      vehicle_number,
       vehicle_type,
       city,
       zone,
@@ -133,7 +129,6 @@ const updateVehicle = async (vehicleId, body) => {
       vehicle_id: vehicleId,
     },
     data: {
-      vehicle_number: body.vehicle_number,
       vehicle_type: body.vehicle_type,
       city: body.city,
       zone: body.zone,

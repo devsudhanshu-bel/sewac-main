@@ -7,6 +7,12 @@ Assumptions:
 * Firmware = `v1.0.0`
 * Coordinates remain the same.
 
+
+http://localhost:5002/api/iot/telemetry/record?rfidNumber=E200470600106026083B0113&iotTimestamp=2026-07-30T10:00:00Z&driverName=Ramesh&vehicleId=KA01AB1234&latitude=12.9716&longitude=77.5946&weight=5.5&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+
+http://localhost:5002/api/iot/telemetry/record?rfidNumber=E200470574606026FF800108&iotTimestamp=2026-07-30T10:02:00Z&driverName=Ramesh&vehicleId=KA01AB1234&latitude=12.9716&longitude=77.5946&weight=7.2&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_UHF&remarks=&errCode=R0L0G0D0C0
+
+http://localhost:5002/api/iot/telemetry/record?rfidNumber=6667889028&iotTimestamp=2026-07-30T10:05:00Z&driverName=Ramesh&vehicleId=KA01AB1234&latitude=12.9716&longitude=77.5946&weight=9.4&firmwareVersion=v1.0.0&unitNumber=SEWAC_01_HF&remarks=O&errCode=R0L0G0D0C0
 # Base URLs:
 1) Local: http://localhost:5002/api/
 2) Render: https://sewac-main.onrender.com/api/
