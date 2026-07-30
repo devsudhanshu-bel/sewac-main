@@ -241,7 +241,9 @@ export default function Header({
   const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   // Convert the incoming string ("YYYY-MM-DD") to a Date object
-  const selectedDateObj = selectedDate ? new Date(selectedDate) : new Date();
+  const selectedDateObj = selectedDate
+    ? new Date(`${selectedDate}T12:00:00`)
+    : new Date();
 
   const selectedDay = selectedDateObj.getDay();
 
@@ -437,8 +439,15 @@ export default function Header({
           <Calendar
             value={selectedDateObj}
             onChange={(date) => {
-              const formatted = new Date(date).toISOString().split("T")[0];
-              setSelectedDate(formatted);
+              const formatLocalDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+
+                return `${year}-${month}-${day}`;
+              };
+
+              setSelectedDate(formatLocalDate(date));
             }}
           />
         </div>
