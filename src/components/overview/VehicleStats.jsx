@@ -115,7 +115,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
   return (
     <section ref={sectionRef} className="mt-6">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-[0.9fr_1.1fr] gap-6 items-start">
         {/* ================= VEHICLE DETAILS ================= */}
 
         <div
@@ -132,15 +132,15 @@ export default function VehicleStats({ vehicleData, trendData }) {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-4">
             {vehicleStats.map((item, index) => (
               <div
                 key={item.title}
                 ref={(el) => (statCardsRef.current[index] = el)}
-                className="border border-[#EEF1F6] rounded-2xl h-[96px] px-5 flex items-center"
+                className="border border-[#EEF1F6] rounded-2xl h-[72px] px-4 flex items-center"
               >
                 <div
-                  className={`w-11 h-11 rounded-xl ${item.bg} flex items-center justify-center`}
+                  className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center`}
                 >
                   <Truck size={21} className={item.color} />
                 </div>
@@ -151,7 +151,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   </p>
 
                   <div className="flex items-end gap-2 mt-2">
-                    <span className="text-[18px] font-bold">{item.value}</span>
+                    <span className="text-[16px] font-bold">{item.value}</span>
 
                     {item.percentage && (
                       <span
