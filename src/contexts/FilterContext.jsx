@@ -62,7 +62,13 @@ export function FilterProvider({ children }) {
       try {
         const res = await getDivisions(selectedZone.zone_id);
 
-        setSelectedDivision(res.data.length ? res.data[4] : null);
+        setDivisions(res.data); // <-- THIS WAS MISSING
+
+        const defaultDivision =
+          res.data.find((d) => d.division_name === "Bommanahalli Division") ||
+          res.data[0];
+
+        setSelectedDivision(defaultDivision || null);
       } catch (err) {
         console.error(err);
       }
@@ -80,7 +86,10 @@ export function FilterProvider({ children }) {
 
         setWards(res.data);
 
-        setSelectedWard(res.data.length ? res.data[5] : null);
+        const defaultWard =
+          res.data.find((w) => w.ward_name === "Ibbalur") || res.data[0];
+
+        setSelectedWard(defaultWard || null);
       } catch (err) {
         console.error(err);
       }
