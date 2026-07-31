@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum AttendanceStatus { attended, missed, future, otherMonth, today }
+enum AttendanceStatus {
+  attended,
+  missed,
+  future,
+  otherMonth,
+  today,
+}
 
 class AttendanceDay extends StatelessWidget {
   final int day;
@@ -33,10 +39,10 @@ class AttendanceDay extends StatelessWidget {
         textColor = Colors.white;
         boxShadow = [
           BoxShadow(
-            color: const Color(0xFFA855F7).withValues(alpha: 0.45),
+            color: Color(0xFFA855F7).withValues(alpha: 0.45),
             blurRadius: 6,
             spreadRadius: 1,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ];
         break;
@@ -46,9 +52,9 @@ class AttendanceDay extends StatelessWidget {
         textColor = Colors.white;
         boxShadow = [
           BoxShadow(
-            color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+            color: Color(0xFF2E7D32).withValues(alpha: 0.30),
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ];
         break;
@@ -69,27 +75,30 @@ class AttendanceDay extends StatelessWidget {
         break;
     }
 
-    return AspectRatio(
-      aspectRatio: 1.0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          gradient: gradient,
-          shape: BoxShape.circle,
-          boxShadow: boxShadow,
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '$day',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11.5,
-                fontWeight: status == AttendanceStatus.future ||
-                    status == AttendanceStatus.otherMonth
-                    ? FontWeight.w500
-                    : FontWeight.w700,
-                color: textColor,
+    return Center(
+      child: SizedBox(
+        width: 34,
+        height: 34,
+        child: Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            gradient: gradient,
+            shape: BoxShape.circle,
+            boxShadow: boxShadow,
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                day == 0 ? '' : '$day',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: status == AttendanceStatus.future ||
+                      status == AttendanceStatus.otherMonth
+                      ? FontWeight.w500
+                      : FontWeight.w700,
+                  color: textColor,
+                ),
               ),
             ),
           ),

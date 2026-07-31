@@ -13,7 +13,8 @@ class CustomBottomNavigation extends StatefulWidget {
   });
 
   @override
-  State<CustomBottomNavigation> createState() => _CustomBottomNavigationState();
+  State<CustomBottomNavigation> createState() =>
+      _CustomBottomNavigationState();
 }
 
 class _CustomBottomNavigationState extends State<CustomBottomNavigation>
@@ -22,17 +23,10 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   late final Animation<double> _scaleAnimation;
   int _lastTappedIndex = -1;
 
-  final List<IconData> _navIcons = const [
-    Icons.home_rounded,
-    Icons.map_rounded,
-    Icons.credit_card_rounded,
-    Icons.report_problem_rounded,
-  ];
-
   @override
   void initState() {
     super.initState();
-    // Micro-interaction bounce controller (1.0 -> 0.92 -> 1.08 -> 1.0 sequence)
+
     _bounceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 240),
@@ -66,7 +60,6 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   void _handleTap(int index) {
     if (widget.currentIndex == index) return;
 
-    // Trigger haptic feedback
     HapticFeedback.lightImpact();
 
     setState(() {
@@ -81,21 +74,19 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 22.0), // Elevated floating margin
+        padding: const EdgeInsets.only(bottom: 1),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: FractionallySizedBox(
-            widthFactor: 0.84, // Balanced dock width
+            widthFactor: 0.84,
             child: Container(
               height: 62,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(34),
                 boxShadow: [
-                  // Single soft elegant shadow
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.22),
                     blurRadius: 26,
-                    spreadRadius: 0,
                     offset: const Offset(0, 10),
                   ),
                 ],
@@ -103,28 +94,62 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(34),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 11, sigmaY: 11), // Subtle blur
+                  filter: ImageFilter.blur(
+                    sigmaX: 11,
+                    sigmaY: 11,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      // Translucent purple glass background
-                      color: const Color(0xFF1E0A3C).withValues(alpha: 0.22),
+                      color: const Color(0xFF1E0A3C)
+                          .withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(34),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(_navIcons.length, (index) {
+                      children: List.generate(4, (index) {
                         final isSelected = widget.currentIndex == index;
 
+                        IconData icon;
+
+                        switch (index) {
+                          case 0:
+                            icon = isSelected
+                                ? Icons.delete
+                                : Icons.delete_outline;
+                            break;
+
+                          case 1:
+                            icon = isSelected
+                                ? Icons.local_shipping
+                                : Icons.local_shipping_outlined;
+                            break;
+
+                          case 2:
+                            icon = isSelected
+                                ? Icons.analytics
+                                : Icons.analytics_outlined;
+                            break;
+
+                          case 3:
+                            icon = isSelected
+                                ? Icons.report_problem
+                                : Icons.report_problem_outlined;
+                            break;
+
+                          default:
+                            icon = Icons.circle;
+                        }
+
                         Widget iconWidget = Icon(
-                          _navIcons[index],
+                          icon,
                           size: isSelected ? 28 : 24,
                           color: isSelected
                               ? Colors.white
-                              : const Color(0xFFE9D5FF).withValues(alpha: 0.55),
+                              : const Color(0xFFE9D5FF)
+                              .withValues(alpha: 0.55),
                         );
 
-                        // Apply spring animation to the newly selected item
                         if (isSelected && _lastTappedIndex == index) {
                           iconWidget = AnimatedBuilder(
                             animation: _scaleAnimation,
@@ -139,17 +164,17 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
                         }
 
                         return GestureDetector(
-                          onTap: () => _handleTap(index),
                           behavior: HitTestBehavior.opaque,
+                          onTap: () => _handleTap(index),
                           child: SizedBox(
                             width: 48,
                             height: 48,
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                // Selected Circular Indicator (43px)
                                 AnimatedContainer(
-                                  duration: const Duration(milliseconds: 240),
+                                  duration:
+                                  const Duration(milliseconds: 240),
                                   curve: Curves.easeOutCubic,
                                   width: isSelected ? 43 : 0,
                                   height: isSelected ? 43 : 0,
@@ -158,8 +183,8 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
                                     gradient: isSelected
                                         ? const LinearGradient(
                                       colors: [
-                                        Color(0xFFA855F7), // Top Purple
-                                        Color(0xFF7C3AED), // Bottom Deep Purple
+                                        Color(0xFFA855F7),
+                                        Color(0xFF7C3AED),
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -167,22 +192,19 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation>
                                         : null,
                                     boxShadow: isSelected
                                         ? [
-                                      // Softened ambient glow
                                       BoxShadow(
                                         color: const Color(0xFF7C3AED)
                                             .withValues(alpha: 0.28),
                                         blurRadius: 10,
-                                        spreadRadius: 0,
                                         offset: const Offset(0, 3),
                                       ),
                                     ]
                                         : [],
                                   ),
                                 ),
-
-                                // Icon
                                 AnimatedOpacity(
-                                  duration: const Duration(milliseconds: 200),
+                                  duration:
+                                  const Duration(milliseconds: 200),
                                   opacity: isSelected ? 1.0 : 0.65,
                                   child: iconWidget,
                                 ),

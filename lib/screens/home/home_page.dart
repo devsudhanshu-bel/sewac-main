@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sewac_citizen_app/widgets/streak_calendar.dart';
 import 'package:sewac_citizen_app/widgets/waste_summary_card.dart';
 import 'package:sewac_citizen_app/screens/login/login_page.dart';
+import 'package:sewac_citizen_app/models/calendar_response.dart';
+import 'package:sewac_citizen_app/services/home_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,11 +30,45 @@ class _HomePageState extends State<HomePage>
 
   String _userPhone = "+91 XXXXXXXXXX";
 
+  CalendarResponse? _calendarData;
+
+  bool _isLoadingCalendar = true;
+
+  String? _calendarError;
+
+  Future<void> _loadCalendar() async {
+    try {
+      final now = DateTime.now();
+
+      final response = await HomeService.getCalendar(
+        year: now.year,
+        month: now.month,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _calendarData = response;
+        _isLoadingCalendar = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _calendarError = e.toString();
+        _isLoadingCalendar = false;
+      });
+
+      debugPrint(e.toString());
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
     _loadUserSession();
+    _loadCalendar();
 
     _entranceController = AnimationController(
       vsync: this,
@@ -90,6 +126,7 @@ class _HomePageState extends State<HomePage>
   Future<void> _loadUserSession() async {
     final prefs = await SharedPreferences.getInstance();
     final phone = prefs.getString('user_phone') ??
+        prefs.getString('phoneNumber') ??
         prefs.getString('phone_number') ??
         prefs.getString('phone');
 
@@ -384,12 +421,13 @@ class _HomePageState extends State<HomePage>
           ),
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 85),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Spacer(flex: 1),
+
 
                 // 1. REFINED HEADER SECTION
                 AnimatedBuilder(
@@ -414,7 +452,7 @@ class _HomePageState extends State<HomePage>
                             child: Text(
                               '♻️ Today\'s Collection',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 25,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                                 letterSpacing: 0.3,
@@ -478,7 +516,9 @@ class _HomePageState extends State<HomePage>
                   ),
                 ),
 
-                const Spacer(flex: 2),
+                const SizedBox(height: 16),
+
+
 
                 // 2. SUMMARY CARDS SECTION
                 AnimatedBuilder(
@@ -492,34 +532,57 @@ class _HomePageState extends State<HomePage>
                       ),
                     );
                   },
-                  child: Row(
-                    children: const [
-                      Expanded(
-                        child: WasteSummaryCard(
-                          title: 'Dry Waste Collection',
-                          completed: 6,
-                          total: 8,
-                          subtitle: 'Collections this month',
-                          icon: Icons.local_shipping_rounded,
-                          accentColor: Color(0xFFFF9800),
-                        ),
+                  child: _isLoadingCalendar
+                      ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  )
+                      : _calendarError != null
+                      ? Center(
+                    child: Text(
+                      "Unable to load calendar",
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: WasteSummaryCard(
-                          title: 'Wet Waste Collection',
-                          completed: 16,
-                          total: 22,
-                          subtitle: 'Collections this month',
-                          icon: Icons.water_drop_rounded,
-                          accentColor: Color(0xFF4CAF50),
+                    ),
+                  )
+                      : Row(
+                      children: [
+                        Expanded(
+                          child: WasteSummaryCard(
+                            title: "Dry Waste Collection",
+                            completed:
+                            _calendarData?.dry.completed ?? 0,
+                            total:
+                            _calendarData?.dry.total ?? 0,
+                            subtitle: "Collections this month",
+                            icon: Icons.local_shipping_rounded,
+                            accentColor: const Color(0xFFFF9800),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                const Spacer(flex: 2),
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: WasteSummaryCard(
+                            title: "Wet Waste Collection",
+                            completed:
+                            _calendarData?.wet.completed ?? 0,
+                            total:
+                            _calendarData?.wet.total ?? 0,
+                            subtitle: "Collections this month",
+                            icon: Icons.water_drop_rounded,
+                            accentColor: const Color(0xFF4CAF50),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+
 
                 // 3. STREAK CALENDAR SECTION
                 AnimatedBuilder(
@@ -533,10 +596,23 @@ class _HomePageState extends State<HomePage>
                       ),
                     );
                   },
-                  child: const StreakCalendar(),
+                  child: _isLoadingCalendar
+                      ? const SizedBox(
+                    height: 330,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                      : _calendarData == null
+                      ? const SizedBox.shrink()
+                      : StreakCalendar(
+                    calendarData: _calendarData!,
+                  ),
                 ),
 
-                const Spacer(flex: 1),
+
               ],
             ),
           ),
@@ -544,6 +620,8 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
+
+
 
   Widget _buildCollectionTypeBadge(bool isBoth, {required Key key}) {
     if (isBoth) {
@@ -596,6 +674,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 }
+
 
 // ============================================================================
 // PROFILE ICON BUTTON WITH GLASSMORPHISM & ANIMATIONS

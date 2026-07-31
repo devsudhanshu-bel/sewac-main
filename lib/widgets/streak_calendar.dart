@@ -1,96 +1,157 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sewac_citizen_app/widgets/attendance_day.dart';
+
+import '../models/calendar_response.dart';
+import '../services/home_service.dart';
+import 'attendance_day.dart';
 
 class StreakCalendar extends StatefulWidget {
-  const StreakCalendar({super.key});
+  final CalendarResponse calendarData;
+
+  const StreakCalendar({super.key, required this.calendarData});
 
   @override
   State<StreakCalendar> createState() => _StreakCalendarState();
 }
 
 class _StreakCalendarState extends State<StreakCalendar> {
-  DateTime _currentDate = DateTime(2026, 6, 1);
+  late CalendarResponse _calendar;
 
-  final Map<int, AttendanceStatus> _june2026Attendance = {
-    1: AttendanceStatus.attended,
-    2: AttendanceStatus.missed,
-    3: AttendanceStatus.attended,
-    4: AttendanceStatus.attended,
-    5: AttendanceStatus.missed,
-    6: AttendanceStatus.attended,
-    7: AttendanceStatus.attended,
-    8: AttendanceStatus.attended,
-    9: AttendanceStatus.missed,
-    10: AttendanceStatus.attended,
-    11: AttendanceStatus.attended,
-    12: AttendanceStatus.attended,
-    13: AttendanceStatus.missed,
-    14: AttendanceStatus.attended,
-    15: AttendanceStatus.attended,
-    16: AttendanceStatus.attended,
-    17: AttendanceStatus.attended,
-    18: AttendanceStatus.missed,
-    19: AttendanceStatus.attended,
-    20: AttendanceStatus.attended,
-    21: AttendanceStatus.missed,
-    22: AttendanceStatus.attended,
-    23: AttendanceStatus.attended,
-    24: AttendanceStatus.today,
-    25: AttendanceStatus.attended,
-    26: AttendanceStatus.missed,
-    27: AttendanceStatus.attended,
-    28: AttendanceStatus.attended,
-    29: AttendanceStatus.attended,
-    30: AttendanceStatus.attended,
-  };
+  bool _loading = false;
 
-  void _nextMonth() {
+  @override
+  void initState() {
+    super.initState();
+    _calendar = widget.calendarData;
+  }
+
+  @override
+  void didUpdateWidget(covariant StreakCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.calendarData != widget.calendarData) {
+      _calendar = widget.calendarData;
+    }
+  }
+
+  Future<void> _changeMonth(int offset) async {
+    if (_loading) return;
+
     setState(() {
-      _currentDate = DateTime(_currentDate.year, _currentDate.month + 1, 1);
+      _loading = true;
+    });
+
+    try {
+      DateTime month = DateTime(_calendar.year, _calendar.month + offset, 1);
+
+      final response = await HomeService.getCalendar(
+        year: month.year,
+        month: month.month,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _calendar = response;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _loading = false;
     });
   }
 
-  void _previousMonth() {
-    setState(() {
-      _currentDate = DateTime(_currentDate.year, _currentDate.month - 1, 1);
-    });
-  }
-
-  String _getMonthName(int month) {
+  String _monthName(int month) {
     const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
+
     return months[month - 1];
+  }
+
+  AttendanceStatus _statusFromApi(CalendarDay day) {
+    switch (day.status.toUpperCase()) {
+      case "ATTENDED":
+        return AttendanceStatus.attended;
+
+      case "MISSED":
+        return AttendanceStatus.missed;
+
+      case "TODAY":
+        return AttendanceStatus.today;
+
+      case "UPCOMING":
+        return AttendanceStatus.future;
+
+      default:
+        return AttendanceStatus.future;
+    }
+  }
+
+  List<Widget> _buildCalendarGrid() {
+    List<Widget> widgets = [];
+
+    final calendar = _calendar.calendar;
+
+    if (calendar.isEmpty) {
+      return widgets;
+    }
+
+    final firstWeekday = calendar.first.weekday;
+
+    int leadingSpaces = firstWeekday == 0 ? 6 : firstWeekday - 1;
+
+    for (int i = 0; i < leadingSpaces; i++) {
+      widgets.add(
+        const AttendanceDay(day: 0, status: AttendanceStatus.otherMonth),
+      );
+    }
+
+    for (final day in calendar) {
+      widgets.add(AttendanceDay(day: day.day, status: _statusFromApi(day)));
+    }
+
+    while (widgets.length % 7 != 0) {
+      widgets.add(
+        const AttendanceDay(day: 0, status: AttendanceStatus.otherMonth),
+      );
+    }
+
+    return widgets;
   }
 
   @override
   Widget build(BuildContext context) {
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availableWidth = constraints.maxWidth;
-        final double paddingVal = availableWidth < 340 ? 12.0 : 16.0;
+        final availableWidth = constraints.maxWidth;
+        final paddingVal = availableWidth < 340 ? 12.0 : 16.0;
 
         return ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              padding: EdgeInsets.fromLTRB(paddingVal, 16, paddingVal, 14),
+              padding: EdgeInsets.fromLTRB(paddingVal, 18, paddingVal, 20),
               decoration: BoxDecoration(
                 color: const Color(0xFF4C2878).withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(24),
@@ -101,8 +162,7 @@ class _StreakCalendarState extends State<StreakCalendar> {
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 24,
-                    spreadRadius: 0,
+                    blurRadius: 22,
                     offset: const Offset(0, 8),
                   ),
                 ],
@@ -111,7 +171,9 @@ class _StreakCalendarState extends State<StreakCalendar> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header
+                  // ===========================
+                  // HEADER
+                  // ===========================
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -120,133 +182,115 @@ class _StreakCalendarState extends State<StreakCalendar> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Attendance Streak',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.2,
-                                ),
+                            Text(
+                              "Attendance Streak",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
                               ),
                             ),
+
                             const SizedBox(height: 2),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Your monthly participation',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withValues(alpha: 0.75),
-                                ),
+
+                            Text(
+                              "Your monthly participation",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.75),
                               ),
                             ),
                           ],
                         ),
                       ),
+
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            onPressed: _previousMonth,
+                            onPressed: _loading ? null : () => _changeMonth(-1),
                             icon: Icon(
                               Icons.chevron_left_rounded,
                               color: Colors.white.withValues(alpha: 0.85),
-                              size: 20,
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            splashRadius: 16,
                           ),
-                          const SizedBox(width: 2),
+
                           AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            transitionBuilder: (child, animation) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0.0, 0.15),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              );
-                            },
+                            duration: const Duration(milliseconds: 250),
                             child: Text(
-                              '${_getMonthName(_currentDate.month)} ${_currentDate.year}',
+                              "${_monthName(_calendar.month)} ${_calendar.year}",
                               key: ValueKey(
-                                  '${_currentDate.month}-${_currentDate.year}'),
+                                "${_calendar.month}-${_calendar.year}",
+                              ),
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
                                 color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 2),
+
                           IconButton(
-                            onPressed: _nextMonth,
+                            onPressed: _loading ? null : () => _changeMonth(1),
                             icon: Icon(
                               Icons.chevron_right_rounded,
                               color: Colors.white.withValues(alpha: 0.85),
-                              size: 20,
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            splashRadius: 16,
                           ),
                         ],
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 14),
 
+                  // ===========================
+                  // STREAK
+                  // ===========================
                   Row(
                     children: [
                       Text(
-                        '🔥 Current Streak:',
+                        "🔥 Current Streak:",
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.75),
                         ),
                       ),
+
                       const SizedBox(width: 4),
-                      Text(
-                        '12 Days',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: Text(
+                          "${_calendar.streak} Day${_calendar.streak == 1 ? "" : "s"}",
+                          key: ValueKey(_calendar.streak),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 18),
 
-                  // Weekdays
+                  // ===========================
+                  // WEEKDAYS
+                  // ===========================
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: weekdays.map((day) {
                       return Expanded(
                         child: Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              day,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.55),
-                              ),
+                          child: Text(
+                            day,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.55),
                             ),
                           ),
                         ),
@@ -254,76 +298,49 @@ class _StreakCalendarState extends State<StreakCalendar> {
                     }).toList(),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
-                  // Dynamic Grid View
+                  // ===========================
+                  // CALENDAR GRID
+                  // ===========================
+
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.98, end: 1.0)
-                              .animate(animation),
-                          child: child,
+                    duration: const Duration(milliseconds: 250),
+                    child: _loading
+                        ? const SizedBox(
+                      height: 240,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
                         ),
-                      );
-                    },
-                    child: GridView.builder(
+                      ),
+                    )
+                        : GridView.count(
                       key: ValueKey(
-                          'grid-${_currentDate.month}-${_currentDate.year}'),
+                        "${_calendar.month}-${_calendar.year}",
+                      ),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 35,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                        mainAxisSpacing: 4,
-                        crossAxisSpacing: 4,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemBuilder: (context, index) {
-                        if (_currentDate.month == 6 &&
-                            _currentDate.year == 2026) {
-                          if (index < 30) {
-                            final dayNum = index + 1;
-                            final status = _june2026Attendance[dayNum] ??
-                                AttendanceStatus.future;
-                            return AttendanceDay(day: dayNum, status: status);
-                          } else {
-                            final nextMonthDay = index - 29;
-                            return AttendanceDay(
-                              day: nextMonthDay,
-                              status: AttendanceStatus.otherMonth,
-                            );
-                          }
-                        } else {
-                          if (index < 28) {
-                            return AttendanceDay(
-                              day: index + 1,
-                              status: AttendanceStatus.future,
-                            );
-                          } else {
-                            return AttendanceDay(
-                              day: index - 27,
-                              status: AttendanceStatus.otherMonth,
-                            );
-                          }
-                        }
-                      },
+                      crossAxisCount: 7,
+                      mainAxisSpacing: 4,
+                      crossAxisSpacing: 4,
+                      childAspectRatio: 1,
+                      children: _buildCalendarGrid(),
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
 
-                  // Legend Dots
+                  // ===========================
+                  // LEGEND
+                  // ===========================
                   Wrap(
                     spacing: 12,
                     runSpacing: 6,
                     children: [
-                      _buildLegendDot(const Color(0xFF2E7D32), 'Attended'),
-                      _buildLegendDot(const Color(0xFFC62828), 'Missed'),
-                      _buildLegendDot(const Color(0xFFA855F7), 'Today'),
+                      _buildLegendDot(const Color(0xFF2E7D32), "Attended"),
+                      _buildLegendDot(const Color(0xFFC62828), "Missed"),
+                      _buildLegendDot(const Color(0xFFA855F7), "Today"),
                     ],
                   ),
                 ],
@@ -342,12 +359,11 @@ class _StreakCalendarState extends State<StreakCalendar> {
         Container(
           width: 7,
           height: 7,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
+
         const SizedBox(width: 4),
+
         Text(
           label,
           style: GoogleFonts.plusJakartaSans(

@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../models/complaint_model.dart';
+import '../../services/complaint_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,64 +33,19 @@ class SewacApp extends StatelessWidget {
   }
 }
 
-// ============================================================================
-// DATA MODEL & IN-MEMORY DATABASE
-// ============================================================================
-
-enum ComplaintPriority { low, medium, high }
-
-class ComplaintModel {
-  final String id;
-  final String description;
-  final String date;
-  final String time;
-  final String location;
-  final File? photo;
-
-  const ComplaintModel({
-    required this.id,
-    required this.description,
-    required this.date,
-    required this.time,
-    required this.location,
-    this.photo,
-  });
+enum ComplaintPriority {
+  low,
+  medium,
+  high,
 }
 
-// Shared In-Memory List of Complaints (Latest First)
-final List<ComplaintModel> globalComplaintsList = [
-  const ComplaintModel(
-    id: "SEWAC-000121",
-    description: "Missed garbage collection on Sector 4 main street. Bins are overflowing.",
-    date: "25 Jul 2026",
-    time: "09:30 AM",
-    location: "Sector 4, Main Street, Bengaluru",
-    photo: null,
-  ),
-  const ComplaintModel(
-    id: "SEWAC-000118",
-    description: "Public recycling bin near the primary school is damaged.",
-    date: "23 Jul 2026",
-    time: "02:15 PM",
-    location: "Green Avenue Near School, Bengaluru",
-    photo: null,
-  ),
-  const ComplaintModel(
-    id: "SEWAC-000109",
-    description: "Illegal debris dumping behind commercial market plot 42.",
-    date: "20 Jul 2026",
-    time: "11:00 AM",
-    location: "Plot 42, Commercial Market, Bengaluru",
-    photo: null,
-  ),
-];
 
 // ============================================================================
 // MAIN COMPLAINTS PAGE
 // ============================================================================
 
 class ComplaintsPage extends StatefulWidget {
-  const ComplaintsPage({Key? key}) : super(key: key);
+  const ComplaintsPage({super.key});
 
   @override
   State<ComplaintsPage> createState() => _ComplaintsPageState();
@@ -94,50 +53,77 @@ class ComplaintsPage extends StatefulWidget {
 
 class _ComplaintsPageState extends State<ComplaintsPage>
     with TickerProviderStateMixin {
-  static const double _bottomNavOffset = 96.0;
 
-  // In-Memory Location Cache
+  final ComplaintService _complaintService = ComplaintService();
+
+  List<ComplaintModel> _complaints = [];
+
+  bool _isLoadingComplaints = true;
+
+  static const double _bottomNavOffset = 96;
+
   static String? _cachedAddress;
   static double? _cachedLat;
   static double? _cachedLng;
 
-  // Form State
-  final TextEditingController _descriptionController = TextEditingController();
-  final FocusNode _descriptionFocusNode = FocusNode();
-  String _currentLocation = _cachedAddress ?? "Fetching your current location...";
+  final TextEditingController _descriptionController =
+  TextEditingController();
+
+  final FocusNode _descriptionFocusNode =
+  FocusNode();
+
+  final ImagePicker _picker =
+  ImagePicker();
+
+  String _currentLocation =
+      _cachedAddress ??
+          "Fetching your current location...";
+
   double? _latitude = _cachedLat;
   double? _longitude = _cachedLng;
+
   bool _isLocating = false;
-  ComplaintPriority _selectedPriority = ComplaintPriority.medium;
+
   bool _isSubmitting = false;
+
   bool _isSubmitPressed = false;
-  File? _selectedPhoto;
-  final ImagePicker _picker = ImagePicker();
 
-  // Auto ID Generator Counter
-  static int _idCounter = 122;
-
-  // Animations
-  late final AnimationController _staggerController;
-  late final AnimationController _pulseController;
   bool _isDescriptionFocused = false;
+
+  ComplaintPriority _selectedPriority =
+      ComplaintPriority.medium;
+
+  File? _selectedPhoto;
+
+  late final AnimationController _staggerController;
+
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+
     _staggerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(
+        milliseconds: 1000,
+      ),
     );
 
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(
+        milliseconds: 1200,
+      ),
     );
 
-    _descriptionFocusNode.addListener(_onDescriptionFocusChange);
+    _descriptionFocusNode.addListener(
+      _onDescriptionFocusChange,
+    );
 
     _staggerController.forward();
+
+    _loadComplaints();
 
     if (_cachedAddress == null) {
       _refreshLocation();
@@ -148,122 +134,191 @@ class _ComplaintsPageState extends State<ComplaintsPage>
     }
   }
 
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+
+    _descriptionFocusNode.removeListener(
+      _onDescriptionFocusChange,
+    );
+
+    _descriptionFocusNode.dispose();
+
+    _staggerController.dispose();
+
+    _pulseController.dispose();
+
+    super.dispose();
+  }
+
   void _onDescriptionFocusChange() {
-    if (_isDescriptionFocused != _descriptionFocusNode.hasFocus) {
+    if (_isDescriptionFocused !=
+        _descriptionFocusNode.hasFocus) {
       setState(() {
-        _isDescriptionFocused = _descriptionFocusNode.hasFocus;
+        _isDescriptionFocused =
+            _descriptionFocusNode.hasFocus;
       });
     }
   }
 
-  @override
-  void dispose() {
-    _descriptionFocusNode.removeListener(_onDescriptionFocusChange);
-    _descriptionController.dispose();
-    _descriptionFocusNode.dispose();
-    _staggerController.dispose();
-    _pulseController.dispose();
-    super.dispose();
+  Future<void> _loadComplaints() async {
+    try {
+      final complaints =
+      await _complaintService.getComplaints();
+
+      if (!mounted) return;
+
+      setState(() {
+        _complaints = complaints;
+        _isLoadingComplaints = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingComplaints = false;
+      });
+
+      _showSnackBar(
+        "Unable to load complaints.",
+      );
+    }
   }
 
-  Future<void> _refreshLocation({bool forceRefresh = false}) async {
+  Future<void> _refreshLocation({
+    bool forceRefresh = false,
+  }) async {
+
     if (_isLocating) return;
 
-    if (!forceRefresh && _cachedAddress != null) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = _cachedAddress!;
-          _latitude = _cachedLat;
-          _longitude = _cachedLng;
-          _isLocating = false;
-        });
-      }
+    if (!forceRefresh &&
+        _cachedAddress != null) {
+
+      setState(() {
+        _currentLocation =
+        _cachedAddress!;
+
+        _latitude = _cachedLat;
+
+        _longitude = _cachedLng;
+
+        _isLocating = false;
+      });
+
       return;
     }
 
     setState(() {
       _isLocating = true;
-      _currentLocation = "Fetching your current location...";
+
+      _currentLocation =
+      "Fetching your current location...";
     });
-    _pulseController.repeat(reverse: true);
+
+    _pulseController.repeat(
+      reverse: true,
+    );
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (mounted) {
-          setState(() {
-            _currentLocation = "Please enable location services.";
-            _isLocating = false;
-          });
-        }
+
+      bool enabled =
+      await Geolocator
+          .isLocationServiceEnabled();
+
+      if (!enabled) {
+        setState(() {
+          _currentLocation =
+          "Please enable location services.";
+
+          _isLocating = false;
+        });
+
         return;
       }
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          setState(() {
-            _currentLocation = "Location permission unavailable.";
-            _isLocating = false;
-          });
-        }
+      LocationPermission permission =
+      await Geolocator.checkPermission();
+
+      if (permission ==
+          LocationPermission.denied ||
+          permission ==
+              LocationPermission.deniedForever) {
+
+        setState(() {
+          _currentLocation =
+          "Location permission unavailable.";
+
+          _isLocating = false;
+        });
+
         return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 10));
+      Position position =
+      await Geolocator.getCurrentPosition(
+        desiredAccuracy:
+        LocationAccuracy.medium,
+      );
 
       _latitude = position.latitude;
+
       _longitude = position.longitude;
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(
+      final placemarks =
+      await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      if (mounted) {
-        String formattedAddress;
-        if (placemarks.isNotEmpty) {
-          Placemark place = placemarks.first;
-          final List<String> addressParts = [];
-          if (place.street != null && place.street!.isNotEmpty) {
-            addressParts.add(place.street!);
-          }
-          if (place.subLocality != null && place.subLocality!.isNotEmpty) {
-            addressParts.add(place.subLocality!);
-          }
-          if (place.locality != null && place.locality!.isNotEmpty) {
-            addressParts.add(place.locality!);
-          }
+      String address;
 
-          formattedAddress = addressParts.isNotEmpty
-              ? addressParts.join(", ")
-              : "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
-        } else {
-          formattedAddress =
-          "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
-        }
+      if (placemarks.isNotEmpty) {
 
-        _cachedAddress = formattedAddress;
-        _cachedLat = position.latitude;
-        _cachedLng = position.longitude;
+        final p = placemarks.first;
 
-        setState(() {
-          _currentLocation = formattedAddress;
-          _isLocating = false;
-        });
+        address = [
+          p.street,
+          p.subLocality,
+          p.locality,
+        ]
+            .where(
+              (e) =>
+          e != null &&
+              e.isNotEmpty,
+        )
+            .join(", ");
+
+      } else {
+
+        address =
+        "${position.latitude}, ${position.longitude}";
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = "Unable to fetch location";
-          _isLocating = false;
-        });
-      }
+
+      _cachedAddress = address;
+
+      _cachedLat = position.latitude;
+
+      _cachedLng = position.longitude;
+
+      setState(() {
+        _currentLocation = address;
+
+        _isLocating = false;
+      });
+
+    } catch (_) {
+
+      setState(() {
+        _currentLocation =
+        "Unable to fetch location";
+
+        _isLocating = false;
+      });
+
     } finally {
+
       _pulseController.stop();
+
       _pulseController.reset();
     }
   }
@@ -287,132 +342,164 @@ class _ComplaintsPageState extends State<ComplaintsPage>
             : "Photo selected successfully",
         isError: false,
       );
-    } catch (e) {
-      _showSnackBar("Unable to open ${source.name}");
+    } catch (_) {
+      _showSnackBar(
+        "Unable to open ${source.name}",
+      );
     }
   }
 
   Future<void> _submitComplaint() async {
-    final descriptionText = _descriptionController.text.trim();
-    if (descriptionText.isEmpty) {
-      _showSnackBar("Please describe the issue.");
+    final description = _descriptionController.text.trim();
+
+    if (description.isEmpty) {
+      _showSnackBar(
+        "Please describe the issue.",
+      );
       return;
     }
+
+    if (_selectedPhoto == null) {
+      _showSnackBar(
+        "Please attach an image.",
+      );
+      return;
+    }
+
+    if (_latitude == null || _longitude == null) {
+      _showSnackBar(
+        "Unable to detect your location.",
+      );
+      return;
+    }
+
     if (_currentLocation.isEmpty ||
         _currentLocation == "Fetching your current location..." ||
         _currentLocation == "Location permission unavailable." ||
         _currentLocation == "Please enable location services.") {
-      _showSnackBar("Location is required.");
+      _showSnackBar(
+        "Location is required.",
+      );
       return;
     }
 
-    setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    // Generate formatted timestamp
-    final now = DateTime.now();
-    final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    final dateStr = "${now.day} ${months[now.month - 1]} ${now.year}";
-    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
-    final minuteStr = now.minute.toString().padLeft(2, '0');
-    final amPm = now.hour >= 12 ? "PM" : "AM";
-    final timeStr = "${hour.toString().padLeft(2, '0')}:$minuteStr $amPm";
-
-    // Auto-generate Complaint ID
-    final newId = "SEWAC-${_idCounter.toString().padLeft(6, '0')}";
-    _idCounter++;
-
-    // Add new complaint to TOP of list
-    final newComplaint = ComplaintModel(
-      id: newId,
-      description: descriptionText,
-      date: dateStr,
-      time: timeStr,
-      location: _currentLocation,
-      photo: _selectedPhoto,
-    );
-
     setState(() {
-      globalComplaintsList.insert(0, newComplaint);
-      _isSubmitting = false;
+      _isSubmitting = true;
     });
 
-    await _showSuccessBottomSheet();
-    _resetForm();
+    try {
+      final complaint = await _complaintService.createComplaint(
+        image: _selectedPhoto!,
+        description: description,
+        priority: _selectedPriority.name.toUpperCase(),
+        latitude: _latitude!,
+        longitude: _longitude!,
+        address: _currentLocation,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _complaints.insert(0, complaint);
+        _isSubmitting = false;
+      });
+
+      await _showSuccessBottomSheet();
+
+      _resetForm();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      _showSnackBar(
+        e.toString().replaceFirst(
+          "Exception: ",
+          "",
+        ),
+      );
+    }
   }
 
   void _resetForm() {
     _descriptionController.clear();
+
     setState(() {
       _selectedPhoto = null;
       _selectedPriority = ComplaintPriority.medium;
       _isSubmitting = false;
       _isSubmitPressed = false;
     });
-    _refreshLocation(forceRefresh: true);
+
+    _refreshLocation(
+      forceRefresh: true,
+    );
   }
 
-  void _showSnackBar(String message, {bool isError = true}) {
+  void _showSnackBar(
+      String message, {
+        bool isError = true,
+      }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        elevation: 6,
         behavior: SnackBarBehavior.floating,
-        backgroundColor:
-        isError ? const Color(0xFFE53935) : const Color(0xFF2E7D32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 6,
+        backgroundColor: isError
+            ? const Color(0xFFE53935)
+            : const Color(0xFF2E7D32),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         content: Text(
           message,
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
-            fontWeight: FontWeight.w600,
             fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
-
   Future<void> _showSuccessBottomSheet() async {
+
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
-      builder: (context) => const ComplaintSuccessBottomSheet(),
+      backgroundColor:
+      Colors.transparent,
+      barrierColor:
+      Colors.black.withValues(
+        alpha: 0.65,
+      ),
+      builder: (_) =>
+      const ComplaintSuccessBottomSheet(),
     );
   }
 
   void _navigateToViewAllPage() {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 350),
-        reverseTransitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-        const ViewAllComplaintsPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.05, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-              child: child,
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ViewAllComplaintsPage(
+              complaints: _complaints,
             ),
-          );
-        },
       ),
     ).then((_) {
-      // Trigger setState upon returning to ensure synchronized UI
-      setState(() {});
+
+      _loadComplaints();
+
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final bottomInset =
+        MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: const Color(0xFF260548),
@@ -429,113 +516,151 @@ class _ComplaintsPageState extends State<ComplaintsPage>
               Color(0xFF3B0B68),
               Color(0xFF531288),
             ],
-            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
           child: AnimatedPadding(
-            duration: const Duration(milliseconds: 180),
+            duration: const Duration(
+              milliseconds: 180,
+            ),
             curve: Curves.easeOutCubic,
-            padding: EdgeInsets.only(bottom: bottomInset),
+            padding: EdgeInsets.only(
+              bottom: bottomInset,
+            ),
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
+              physics:
+              const BouncingScrollPhysics(),
               padding: const EdgeInsets.only(
-                left: 20.0,
-                right: 20.0,
-                top: 20.0,
+                left: 20,
+                right: 20,
+                top: 20,
                 bottom: _bottomNavOffset,
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 0,
                     child: _buildHeader(),
                   ),
+
                   const SizedBox(height: 28),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 1,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle("Add Photo (Optional)"),
-                        const SizedBox(height: 12),
-                        RepaintBoundary(
-                          child: _buildPhotoUploadCard(),
+                        _buildSectionTitle(
+                          "Add Photo",
                         ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        _buildPhotoUploadCard(),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 28),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 2,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle("Description"),
-                        const SizedBox(height: 12),
-                        RepaintBoundary(
-                          child: _buildDescriptionField(),
+                        _buildSectionTitle(
+                          "Description",
                         ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        _buildDescriptionField(),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 28),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 3,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle("Location"),
-                        const SizedBox(height: 12),
-                        RepaintBoundary(
-                          child: _buildLocationCard(),
+                        _buildSectionTitle(
+                          "Location",
                         ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        _buildLocationCard(),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 28),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 4,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle("Priority Level"),
-                        const SizedBox(height: 12),
-                        RepaintBoundary(
-                          child: _buildPrioritySelector(),
+                        _buildSectionTitle(
+                          "Priority",
                         ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        _buildPrioritySelector(),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 32),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 5,
-                    child: RepaintBoundary(
-                      child: _buildSubmitButton(),
-                    ),
+                    child:
+                    _buildSubmitButton(),
                   ),
+
                   const SizedBox(height: 40),
+
                   _StaggeredAnimatedItem(
-                    controller: _staggerController,
+                    controller:
+                    _staggerController,
                     index: 6,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
                         _buildRecentComplaintsHeader(),
-                        const SizedBox(height: 16),
+                        const SizedBox(
+                          height: 16,
+                        ),
                         _buildRecentComplaintsList(),
                       ],
                     ),
                   ),
+
                 ],
               ),
             ),
@@ -1088,8 +1213,18 @@ class _ComplaintsPageState extends State<ComplaintsPage>
   }
 
   Widget _buildRecentComplaintsList() {
-    final recentItems = globalComplaintsList.take(3).toList();
-    if (recentItems.isEmpty) {
+    if (_isLoadingComplaints) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFC084FC),
+          ),
+        ),
+      );
+    }
+
+    if (_complaints.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
         alignment: Alignment.center,
@@ -1107,13 +1242,17 @@ class _ComplaintsPageState extends State<ComplaintsPage>
       );
     }
 
+    final recentItems = _complaints.take(3).toList();
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: recentItems.length,
       itemBuilder: (context, index) {
         return RepaintBoundary(
-          child: _HomeComplaintCardItem(item: recentItems[index]),
+          child: _HomeComplaintCardItem(
+            item: recentItems[index],
+          ),
         );
       },
     );
@@ -1175,116 +1314,178 @@ class _StaggeredAnimatedItem extends StatelessWidget {
 class _HomeComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
 
-  const _HomeComplaintCardItem({Key? key, required this.item})
-      : super(key: key);
+  const _HomeComplaintCardItem({
+    super.key,
+    required this.item,
+  });
+
+  String get formattedDate {
+    final dt = item.createdAt;
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    final hour =
+    dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+
+    final minute =
+    dt.minute.toString().padLeft(2, "0");
+
+    final ampm =
+    dt.hour >= 12 ? "PM" : "AM";
+
+    return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $ampm";
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.all(14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
-          // Photo Thumbnail or No Image Box
           Container(
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: const Color(0xFF3B0B68),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFC084FC).withValues(alpha: 0.3),
-              ),
+              borderRadius:
+              BorderRadius.circular(12),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: item.photo != null
-                  ? Image.file(
-                item.photo!,
-                fit: BoxFit.cover,
-                width: 48,
-                height: 48,
-              )
-                  : Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported_rounded,
-                      color: Colors.white.withValues(alpha: 0.4),
-                      size: 18,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "No Image",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 7.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+            clipBehavior: Clip.antiAlias,
+            child: item.imageUrl != null
+                ? Image.network(
+              item.imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder:
+                  (_, __, ___) =>
+              const Icon(
+                Icons.image_not_supported,
+                color: Colors.white54,
               ),
+            )
+                : const Icon(
+              Icons.image_not_supported,
+              color: Colors.white54,
             ),
           ),
+
           const SizedBox(width: 12),
-          // ID, Date/Time & Description
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Text(
-                        item.id,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFFC084FC),
+                        "SEWAC-${item.id}",
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: const Color(
+                              0xFFC084FC),
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                          fontWeight:
+                          FontWeight.bold,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
                     Text(
-                      "${item.date} • ${item.time}",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withValues(alpha: 0.45),
+                      formattedDate,
+                      style:
+                      GoogleFonts.plusJakartaSans(
+                        color: Colors.white
+                            .withValues(alpha: .45),
                         fontSize: 10,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 6),
+
                 Text(
                   item.description,
                   maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 12,
-                    height: 1.35,
+                  overflow:
+                  TextOverflow.ellipsis,
+                  style:
+                  GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 12.5,
                   ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Container(
+                      padding:
+                      const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(
+                            0xFFC084FC)
+                            .withValues(alpha: .18),
+                        borderRadius:
+                        BorderRadius.circular(
+                            20),
+                      ),
+                      child: Text(
+                        item.status,
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: const Color(
+                              0xFFC084FC),
+                          fontSize: 10,
+                          fontWeight:
+                          FontWeight.w700,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Text(
+                        item.address,
+                        overflow:
+                        TextOverflow.ellipsis,
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: Colors.white
+                              .withValues(alpha: .6),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1299,19 +1500,41 @@ class _HomeComplaintCardItem extends StatelessWidget {
 // CLEAN "VIEW ALL" COMPLAINTS PAGE (NO FILTERS / NO SEARCH)
 // ============================================================================
 
+
 class ViewAllComplaintsPage extends StatefulWidget {
-  const ViewAllComplaintsPage({Key? key}) : super(key: key);
+  final List<ComplaintModel> complaints;
+
+  const ViewAllComplaintsPage({
+    super.key,
+    required this.complaints,
+  });
 
   @override
-  State<ViewAllComplaintsPage> createState() => _ViewAllComplaintsPageState();
+  State<ViewAllComplaintsPage> createState() =>
+      _ViewAllComplaintsPageState();
 }
 
-class _ViewAllComplaintsPageState extends State<ViewAllComplaintsPage> {
+class _ViewAllComplaintsPageState
+    extends State<ViewAllComplaintsPage> {
+
+  late List<ComplaintModel> _complaints;
+
+  @override
+  void initState() {
+    super.initState();
+    _complaints = List.from(widget.complaints);
+  }
+
+  final ComplaintService _complaintService = ComplaintService();
+
   Future<void> _handleRefresh() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {});
-    }
+    final complaints = await _complaintService.getComplaints();
+
+    if (!mounted) return;
+
+    setState(() {
+      _complaints = complaints;
+    });
   }
 
   @override
@@ -1330,32 +1553,41 @@ class _ViewAllComplaintsPageState extends State<ViewAllComplaintsPage> {
               Color(0xFF3B0B68),
               Color(0xFF531288),
             ],
-            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
+
               _buildAppBar(context),
+
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _handleRefresh,
                   color: const Color(0xFFC084FC),
-                  backgroundColor: const Color(0xFF3B0B68),
-                  child: globalComplaintsList.isEmpty
+                  backgroundColor:
+                  const Color(0xFF3B0B68),
+
+                  child: _complaints.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
+                    physics:
+                    const AlwaysScrollableScrollPhysics(
+                      parent:
+                      BouncingScrollPhysics(),
                     ),
-                    padding: const EdgeInsets.symmetric(
+                    padding:
+                    const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 12,
                     ),
-                    itemCount: globalComplaintsList.length,
-                    itemBuilder: (context, index) {
+                    itemCount:
+                    _complaints.length,
+                    itemBuilder:
+                        (context, index) {
                       return _ViewAllComplaintCardItem(
-                        item: globalComplaintsList[index],
+                        item:
+                        _complaints[index],
                       );
                     },
                   ),
@@ -1370,25 +1602,35 @@ class _ViewAllComplaintsPageState extends State<ViewAllComplaintsPage> {
 
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding:
+      const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
       child: Row(
         children: [
+
           IconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Navigator.pop(context);
+            },
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               color: Colors.white,
-              size: 20,
             ),
           ),
+
           const SizedBox(width: 8),
+
           Expanded(
             child: Text(
               "All Complaints",
-              style: GoogleFonts.plusJakartaSans(
+              style:
+              GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                FontWeight.bold,
               ),
             ),
           ),
@@ -1399,28 +1641,38 @@ class _ViewAllComplaintsPageState extends State<ViewAllComplaintsPage> {
 
   Widget _buildEmptyState() {
     return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Container(
-        height: 300,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_rounded,
-              color: Colors.white.withValues(alpha: 0.35),
-              size: 48,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "No complaints submitted",
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
+      physics:
+      const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: 350,
+        child: Center(
+          child: Column(
+            mainAxisAlignment:
+            MainAxisAlignment.center,
+            children: [
+
+              Icon(
+                Icons.inbox_rounded,
+                size: 52,
+                color: Colors.white
+                    .withValues(alpha: .35),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 14),
+
+              Text(
+                "No complaints available",
+                style:
+                GoogleFonts.plusJakartaSans(
+                  color: Colors.white
+                      .withValues(alpha: .7),
+                  fontSize: 15,
+                  fontWeight:
+                  FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1434,99 +1686,241 @@ class _ViewAllComplaintsPageState extends State<ViewAllComplaintsPage> {
 class _ViewAllComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
 
-  const _ViewAllComplaintCardItem({Key? key, required this.item})
-      : super(key: key);
+  const _ViewAllComplaintCardItem({
+    super.key,
+    required this.item,
+  });
+
+  String get formattedDate {
+    final dt = item.createdAt;
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, "0");
+    final amPm = dt.hour >= 12 ? "PM" : "AM";
+
+    return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $amPm";
+  }
+
+  Color get statusColor {
+    switch (item.status.toUpperCase()) {
+      case "RESOLVED":
+        return const Color(0xFF4CAF50);
+
+      case "IN_PROGRESS":
+        return const Color(0xFFFF9800);
+
+      case "REJECTED":
+        return const Color(0xFFF44336);
+
+      default:
+        return const Color(0xFFC084FC);
+    }
+  }
+
+  Color get priorityColor {
+    switch (item.priority.toUpperCase()) {
+      case "HIGH":
+        return const Color(0xFFE53935);
+
+      case "MEDIUM":
+        return const Color(0xFFFF9800);
+
+      default:
+        return const Color(0xFF66BB6A);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  item.id,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFFC084FC),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "${item.date} • ${item.time}",
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            item.description,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 13,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.location_on_rounded,
-                color: Color(0xFFC084FC),
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  item.location,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 11.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (item.photo != null) ...[
-            const SizedBox(height: 12),
+
+          if (item.imageUrl != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                item.photo!,
-                height: 140,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              child: Image.network(
+                item.imageUrl!,
                 width: double.infinity,
+                height: 180,
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) {
+                  return Container(
+                    height: 180,
+                    color: Colors.black26,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_rounded,
+                      color: Colors.white54,
+                      size: 40,
+                    ),
+                  );
+                },
               ),
             ),
-          ],
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+
+                Row(
+                  children: [
+
+                    Expanded(
+                      child: Text(
+                        "SEWAC-${item.id}",
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFFC084FC),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+
+                    Text(
+                      formattedDate,
+                      style:
+                      GoogleFonts.plusJakartaSans(
+                        color: Colors.white
+                            .withValues(alpha: .45),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                Text(
+                  item.description,
+                  style:
+                  GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+
+                    const Icon(
+                      Icons.location_on_rounded,
+                      size: 16,
+                      color: Color(0xFFC084FC),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    Expanded(
+                      child: Text(
+                        item.address,
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: Colors.white
+                              .withValues(alpha: .65),
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                Row(
+                  children: [
+
+                    Container(
+                      padding:
+                      const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                        priorityColor.withValues(
+                          alpha: .18,
+                        ),
+                        borderRadius:
+                        BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item.priority,
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: priorityColor,
+                          fontSize: 11,
+                          fontWeight:
+                          FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Container(
+                      padding:
+                      const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                        statusColor.withValues(
+                          alpha: .18,
+                        ),
+                        borderRadius:
+                        BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item.status,
+                        style:
+                        GoogleFonts.plusJakartaSans(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight:
+                          FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

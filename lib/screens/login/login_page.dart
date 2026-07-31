@@ -7,6 +7,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sewac_citizen_app/screens/main/main_page.dart';
 
+import 'package:sewac_citizen_app/models/login_response.dart';
+import 'package:sewac_citizen_app/services/auth_service.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -51,6 +54,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isPhoneFocused = false;
   bool _isLoading = false;
   bool _showLocationSuccess = false;
+
+  LoginResponse? _loginResponse;
 
   @override
   void initState() {
@@ -448,49 +453,65 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Future<void> _login() async {
+    print("Phone = '${_phoneController.text}'");
     if (!_validatePhone()) return;
+
+    FocusScope.of(context).unfocus();
 
     setState(() => _isLoading = true);
 
-    bool hasPermission = await _requestLocationPermission();
-    if (!hasPermission) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    try {
+      // Request Permission
+      bool hasPermission = await _requestLocationPermission();
 
-    bool isGpsEnabled = await _checkLocationService();
-    if (!isGpsEnabled) {
-      setState(() => _isLoading = false);
-      return;
-    }
+      if (!hasPermission) return;
 
-    Position? position = await _getCurrentLocation();
-    if (position == null) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to fetch your current location.\nPlease try again.'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Color(0xFFC62828),
-          ),
+      // Check GPS
+      bool gpsEnabled = await _checkLocationService();
+
+      if (!gpsEnabled) return;
+
+      // Fetch Current Location
+      Position? position = await _getCurrentLocation();
+
+      if (position == null) {
+        throw Exception(
+          "Unable to fetch your current location.",
         );
       }
-      return;
-    }
 
-    setState(() {
-      _showLocationSuccess = true;
-    });
-    await _locationSuccessController.forward();
-    await Future.delayed(const Duration(milliseconds: 1000));
-    await _locationSuccessController.reverse();
+      // Backend Login
+      _loginResponse = await AuthService.login(
+        _phoneController.text.trim(),
+      );
 
-    if (mounted) {
+      setState(() {
+        _showLocationSuccess = true;
+      });
+
+      await _locationSuccessController.forward();
+
+      await Future.delayed(
+        const Duration(seconds: 1),
+      );
+
+      await _locationSuccessController.reverse();
+
+      if (!mounted) return;
+
       setState(() {
         _showLocationSuccess = false;
-        _isLoading = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            "Welcome ${_loginResponse!.citizen.personName}",
+          ),
+        ),
+      );
 
       Navigator.pushReplacement(
         context,
@@ -498,6 +519,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           builder: (_) => const MainPage(),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            e.toString().replaceFirst(
+              "Exception: ",
+              "",
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
