@@ -146,11 +146,13 @@ GROUP BY vm.zone;
 `);
 console.log("======================");
   // 2. Fetch today's waste grouped by zone from Main DB
-  const telemetryResult = await mainDb.query(
+  let telemetryResult;
+
+try {
+  telemetryResult = await mainDb.query(
     `
     SELECT
       vm.zone,
-
       COALESCE(
         SUM(
           COALESCE(t.wet_weight_kg,0)
@@ -159,21 +161,24 @@ console.log("======================");
         ),
         0
       ) AS waste
-
     FROM telemetry_logs t
-
     JOIN vehicle_master vm
-  ON vm.vehicle_id = t.vehicle_id
-
+      ON vm.vehicle_id = t.vehicle_id
     WHERE
       t.iot_timestamp >= $1::date
-      AND
-      t.iot_timestamp < ($1::date + interval '1 day')
-
+      AND t.iot_timestamp < ($1::date + interval '1 day')
     GROUP BY vm.zone;
     `,
-    [selectedDate],
+    [selectedDate]
   );
+
+  console.log("Generation trend query succeeded.");
+} catch (err) {
+  console.error("Generation trend query failed:");
+  console.error(err);
+  throw err;
+}
+console.log(telemetryResult.rows);
 
   // 3. Create a map of zone -> waste
   const wasteMap = new Map();
