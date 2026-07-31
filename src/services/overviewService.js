@@ -124,7 +124,27 @@ const getGenerationTrend = async (date) => {
     FROM zone_table
     ORDER BY zone_id;
   `);
-
+console.log("=== OVERVIEW QUERY ===");
+console.log(`
+SELECT
+  vm.zone,
+  COALESCE(
+    SUM(
+      COALESCE(t.wet_weight_kg,0)
+      + COALESCE(t.dry_weight_kg,0)
+      + COALESCE(t.other_weight_kg,0)
+    ),
+    0
+  ) AS waste
+FROM telemetry_logs t
+JOIN vehicle_master vm
+ON vm.vehicle_id = t.vehicle_id
+WHERE
+  t.iot_timestamp >= $1::date
+  AND t.iot_timestamp < ($1::date + interval '1 day')
+GROUP BY vm.zone;
+`);
+console.log("======================");
   // 2. Fetch today's waste grouped by zone from Main DB
   const telemetryResult = await mainDb.query(
     `
