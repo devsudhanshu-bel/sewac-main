@@ -143,7 +143,7 @@ const getGenerationTrend = async (date) => {
     FROM telemetry_logs t
 
     JOIN vehicle_master vm
-      ON vm.id = t.vehicle_id
+  ON vm.vehicle_id = t.vehicle_id
 
     WHERE
       t.iot_timestamp >= $1::date
