@@ -4,25 +4,37 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
-const redisUrl =
-  process.env.REDIS_URL;
-
-
-if (!redisUrl) {
-
-  console.warn(
-    "⚠️ REDIS_URL not found. Using local Redis."
-  );
-
-}
-
-
-
 const redisClient = createClient({
 
-  url:
-    redisUrl ||
-    "redis://localhost:6379"
+  url: process.env.REDIS_URL,
+
+  socket: {
+
+    tls: true,
+
+    reconnectStrategy: (retries)=>{
+
+      if(retries > 10){
+
+        console.error(
+          "❌ Redis reconnect failed"
+        );
+
+        return new Error(
+          "Redis reconnect limit reached"
+        );
+
+      }
+
+
+      return Math.min(
+        retries * 100,
+        3000
+      );
+
+    }
+
+  }
 
 });
 
@@ -32,7 +44,7 @@ const redisClient = createClient({
 
 redisClient.on(
   "connect",
-  () => {
+  ()=>{
 
     console.log(
       "🔴 Redis Connecting..."
@@ -44,10 +56,9 @@ redisClient.on(
 
 
 
-
 redisClient.on(
   "ready",
-  () => {
+  ()=>{
 
     console.log(
       "✅ Redis Ready"
@@ -59,10 +70,9 @@ redisClient.on(
 
 
 
-
 redisClient.on(
   "reconnecting",
-  () => {
+  ()=>{
 
     console.log(
       "🔄 Redis Reconnecting..."
@@ -74,21 +84,22 @@ redisClient.on(
 
 
 
-
 redisClient.on(
   "error",
   (error)=>{
 
 
     console.error(
+
       "❌ Redis Error:",
+
       error.message
+
     );
 
 
   }
 );
-
 
 
 
@@ -113,32 +124,9 @@ redisClient.on(
 export async function connectRedis(){
 
 
-  try{
+  if(!redisClient.isOpen){
 
-
-    if(
-      !redisClient.isOpen
-    ){
-
-      await redisClient.connect();
-
-    }
-
-
-
-  }
-
-  catch(error){
-
-
-    console.error(
-      "❌ Redis Connection Failed:",
-      error.message
-    );
-
-
-    throw error;
-
+    await redisClient.connect();
 
   }
 
