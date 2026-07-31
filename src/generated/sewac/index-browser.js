@@ -135,7 +135,6 @@ exports.Prisma.Telemetry_logsScalarFieldEnum = {
   other_weight_kg: 'other_weight_kg',
   cumulative_weight_kg: 'cumulative_weight_kg',
   driver_name: 'driver_name',
-  vehicle_number: 'vehicle_number',
   vehicle_id: 'vehicle_id',
   firmware_version: 'firmware_version',
   unit_number: 'unit_number',
@@ -160,7 +159,6 @@ exports.Prisma.Vehicle_incidentsScalarFieldEnum = {
 exports.Prisma.Vehicle_masterScalarFieldEnum = {
   id: 'id',
   vehicle_id: 'vehicle_id',
-  vehicle_number: 'vehicle_number',
   vehicle_type: 'vehicle_type',
   city: 'city',
   zone: 'zone',

@@ -1414,7 +1414,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -1439,7 +1438,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -1464,7 +1462,6 @@ export namespace Prisma {
     other_weight_kg: number
     cumulative_weight_kg: number
     driver_name: number
-    vehicle_number: number
     vehicle_id: number
     firmware_version: number
     unit_number: number
@@ -1515,7 +1512,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -1540,7 +1536,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -1565,7 +1560,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -1677,7 +1671,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -1721,7 +1714,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -1746,7 +1738,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -1771,7 +1762,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -1796,7 +1786,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -1806,7 +1795,7 @@ export namespace Prisma {
     err_code?: boolean
   }
 
-  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "citizen_contact" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_number" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "driver_action" | "err_code", ExtArgs["result"]["telemetry_logs"]>
+  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "citizen_contact" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "driver_action" | "err_code", ExtArgs["result"]["telemetry_logs"]>
 
   export type $telemetry_logsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "telemetry_logs"
@@ -1826,7 +1815,6 @@ export namespace Prisma {
       other_weight_kg: Prisma.Decimal | null
       cumulative_weight_kg: Prisma.Decimal | null
       driver_name: string | null
-      vehicle_number: string | null
       vehicle_id: string | null
       firmware_version: string | null
       unit_number: string | null
@@ -2271,7 +2259,6 @@ export namespace Prisma {
     readonly other_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
     readonly cumulative_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
     readonly driver_name: FieldRef<"telemetry_logs", 'String'>
-    readonly vehicle_number: FieldRef<"telemetry_logs", 'String'>
     readonly vehicle_id: FieldRef<"telemetry_logs", 'String'>
     readonly firmware_version: FieldRef<"telemetry_logs", 'String'>
     readonly unit_number: FieldRef<"telemetry_logs", 'String'>
@@ -3843,7 +3830,6 @@ export namespace Prisma {
   export type Vehicle_masterMinAggregateOutputType = {
     id: number | null
     vehicle_id: string | null
-    vehicle_number: string | null
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -3856,7 +3842,6 @@ export namespace Prisma {
   export type Vehicle_masterMaxAggregateOutputType = {
     id: number | null
     vehicle_id: string | null
-    vehicle_number: string | null
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -3869,7 +3854,6 @@ export namespace Prisma {
   export type Vehicle_masterCountAggregateOutputType = {
     id: number
     vehicle_id: number
-    vehicle_number: number
     vehicle_type: number
     city: number
     zone: number
@@ -3892,7 +3876,6 @@ export namespace Prisma {
   export type Vehicle_masterMinAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -3905,7 +3888,6 @@ export namespace Prisma {
   export type Vehicle_masterMaxAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -3918,7 +3900,6 @@ export namespace Prisma {
   export type Vehicle_masterCountAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -4018,7 +3999,6 @@ export namespace Prisma {
   export type Vehicle_masterGroupByOutputType = {
     id: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -4050,7 +4030,6 @@ export namespace Prisma {
   export type vehicle_masterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -4066,7 +4045,6 @@ export namespace Prisma {
   export type vehicle_masterSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -4079,7 +4057,6 @@ export namespace Prisma {
   export type vehicle_masterSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -4092,7 +4069,6 @@ export namespace Prisma {
   export type vehicle_masterSelectScalar = {
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -4102,7 +4078,7 @@ export namespace Prisma {
     created_at?: boolean
   }
 
-  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_number" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at", ExtArgs["result"]["vehicle_master"]>
+  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at", ExtArgs["result"]["vehicle_master"]>
   export type vehicle_masterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicle_incidents?: boolean | vehicle_master$vehicle_incidentsArgs<ExtArgs>
     vehicle_telemetry?: boolean | vehicle_master$vehicle_telemetryArgs<ExtArgs>
@@ -4120,7 +4096,6 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: number
       vehicle_id: string
-      vehicle_number: string
       vehicle_type: string | null
       city: string | null
       zone: string | null
@@ -4555,7 +4530,6 @@ export namespace Prisma {
   interface vehicle_masterFieldRefs {
     readonly id: FieldRef<"vehicle_master", 'Int'>
     readonly vehicle_id: FieldRef<"vehicle_master", 'String'>
-    readonly vehicle_number: FieldRef<"vehicle_master", 'String'>
     readonly vehicle_type: FieldRef<"vehicle_master", 'String'>
     readonly city: FieldRef<"vehicle_master", 'String'>
     readonly zone: FieldRef<"vehicle_master", 'String'>
@@ -8519,7 +8493,6 @@ export namespace Prisma {
     other_weight_kg: 'other_weight_kg',
     cumulative_weight_kg: 'cumulative_weight_kg',
     driver_name: 'driver_name',
-    vehicle_number: 'vehicle_number',
     vehicle_id: 'vehicle_id',
     firmware_version: 'firmware_version',
     unit_number: 'unit_number',
@@ -8550,7 +8523,6 @@ export namespace Prisma {
   export const Vehicle_masterScalarFieldEnum: {
     id: 'id',
     vehicle_id: 'vehicle_id',
-    vehicle_number: 'vehicle_number',
     vehicle_type: 'vehicle_type',
     city: 'city',
     zone: 'zone',
@@ -8743,7 +8715,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
@@ -8768,7 +8739,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrderInput | SortOrder
     cumulative_weight_kg?: SortOrderInput | SortOrder
     driver_name?: SortOrderInput | SortOrder
-    vehicle_number?: SortOrderInput | SortOrder
     vehicle_id?: SortOrderInput | SortOrder
     firmware_version?: SortOrderInput | SortOrder
     unit_number?: SortOrderInput | SortOrder
@@ -8796,7 +8766,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
@@ -8821,7 +8790,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrderInput | SortOrder
     cumulative_weight_kg?: SortOrderInput | SortOrder
     driver_name?: SortOrderInput | SortOrder
-    vehicle_number?: SortOrderInput | SortOrder
     vehicle_id?: SortOrderInput | SortOrder
     firmware_version?: SortOrderInput | SortOrder
     unit_number?: SortOrderInput | SortOrder
@@ -8854,7 +8822,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
@@ -8947,7 +8914,6 @@ export namespace Prisma {
     NOT?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
     id?: IntFilter<"vehicle_master"> | number
     vehicle_id?: StringFilter<"vehicle_master"> | string
-    vehicle_number?: StringFilter<"vehicle_master"> | string
     vehicle_type?: StringNullableFilter<"vehicle_master"> | string | null
     city?: StringNullableFilter<"vehicle_master"> | string | null
     zone?: StringNullableFilter<"vehicle_master"> | string | null
@@ -8962,7 +8928,6 @@ export namespace Prisma {
   export type vehicle_masterOrderByWithRelationInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrderInput | SortOrder
     city?: SortOrderInput | SortOrder
     zone?: SortOrderInput | SortOrder
@@ -8977,7 +8942,6 @@ export namespace Prisma {
   export type vehicle_masterWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     vehicle_id?: string
-    vehicle_number?: string
     AND?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
     OR?: vehicle_masterWhereInput[]
     NOT?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
@@ -8990,12 +8954,11 @@ export namespace Prisma {
     created_at?: DateTimeNullableFilter<"vehicle_master"> | Date | string | null
     vehicle_incidents?: Vehicle_incidentsListRelationFilter
     vehicle_telemetry?: Vehicle_telemetryListRelationFilter
-  }, "id" | "vehicle_id" | "vehicle_number">
+  }, "id" | "vehicle_id">
 
   export type vehicle_masterOrderByWithAggregationInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrderInput | SortOrder
     city?: SortOrderInput | SortOrder
     zone?: SortOrderInput | SortOrder
@@ -9016,7 +8979,6 @@ export namespace Prisma {
     NOT?: vehicle_masterScalarWhereWithAggregatesInput | vehicle_masterScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"vehicle_master"> | number
     vehicle_id?: StringWithAggregatesFilter<"vehicle_master"> | string
-    vehicle_number?: StringWithAggregatesFilter<"vehicle_master"> | string
     vehicle_type?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     city?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     zone?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
@@ -9305,7 +9267,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -9330,7 +9291,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -9354,7 +9314,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9379,7 +9338,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9404,7 +9362,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -9428,7 +9385,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9453,7 +9409,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9545,7 +9500,6 @@ export namespace Prisma {
 
   export type vehicle_masterCreateInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -9560,7 +9514,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -9574,7 +9527,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9589,7 +9541,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9604,7 +9555,6 @@ export namespace Prisma {
   export type vehicle_masterCreateManyInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -9616,7 +9566,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateManyMutationInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9629,7 +9578,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10031,7 +9979,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -10068,7 +10015,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -10093,7 +10039,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -10316,7 +10261,6 @@ export namespace Prisma {
   export type vehicle_masterCountOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -10333,7 +10277,6 @@ export namespace Prisma {
   export type vehicle_masterMaxOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -10346,7 +10289,6 @@ export namespace Prisma {
   export type vehicle_masterMinOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -10941,7 +10883,6 @@ export namespace Prisma {
 
   export type vehicle_masterCreateWithoutVehicle_incidentsInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -10955,7 +10896,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateWithoutVehicle_incidentsInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -10984,7 +10924,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateWithoutVehicle_incidentsInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10998,7 +10937,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateWithoutVehicle_incidentsInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11135,7 +11073,6 @@ export namespace Prisma {
 
   export type vehicle_masterCreateWithoutVehicle_telemetryInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -11149,7 +11086,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateWithoutVehicle_telemetryInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -11178,7 +11114,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateWithoutVehicle_telemetryInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11192,7 +11127,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateWithoutVehicle_telemetryInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
