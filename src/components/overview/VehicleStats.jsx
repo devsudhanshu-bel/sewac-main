@@ -4,14 +4,12 @@ import { gsap } from "gsap";
 
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
-  Legend,
 } from "recharts";
 
 export default function VehicleStats({ vehicleData, trendData }) {
@@ -59,7 +57,19 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
   const chartData =
     trendData?.map((item) => ({
-      zone: item.label,
+      zone:
+        item.label === "Bengaluru East City Corporation"
+          ? "BECC"
+          : item.label === "Bengaluru West City Corporation"
+            ? "BWCC"
+            : item.label === "Bengaluru North City Corporation"
+              ? "BNCC"
+              : item.label === "Bengaluru South City Corporation"
+                ? "BSCC"
+                : item.label === "Bengaluru Central City Corporation"
+                  ? "BCCC"
+                  : item.label,
+      fullName: item.label,
       waste: item.wasteGenerated,
     })) || [];
 
@@ -177,7 +187,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
           <div className="h-[340px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <BarChart
                 data={chartData}
                 margin={{
                   top: 10,
@@ -193,25 +203,28 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   interval={0}
                   tickLine={false}
                   axisLine={false}
-                  height={70}
                   tick={{
-                    fontSize: 11,
-                    fill: "#64748B",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fill: "#475569",
                   }}
                 />
 
                 <YAxis
-                  domain={[0, 10000]}
-                  ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+                  allowDecimals={false}
                   tick={{
-                    fontSize: 11,
-                    fill: "#6B7280",
+                    fontSize: 12,
+                    fill: "#64748B",
                   }}
                   tickLine={false}
                   axisLine={false}
                 />
 
                 <Tooltip
+                  formatter={(value) => [`${value} kg`, "Waste Generated"]}
+                  labelFormatter={(label, payload) =>
+                    payload?.[0]?.payload?.fullName || label
+                  }
                   contentStyle={{
                     borderRadius: 12,
                     border: "1px solid #E5E7EB",
@@ -219,44 +232,13 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
-                <Legend
-                  verticalAlign="top"
-                  align="right"
-                  iconType="circle"
-                  wrapperStyle={{
-                    fontSize: "12px",
-                    paddingBottom: "12px",
-                  }}
-                />
-
-                <ReferenceLine
-                  y={6500}
-                  stroke="#EF4444"
-                  strokeDasharray="6 6"
-                  label={{
-                    value: "Threshold",
-                    position: "right",
-                    fill: "#EF4444",
-                    fontSize: 12,
-                  }}
-                />
-
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="waste"
-                  stroke="#7C3AED"
-                  strokeWidth={4}
-                  dot={{
-                    r: 5,
-                    strokeWidth: 3,
-                    fill: "#fff",
-                  }}
-                  activeDot={{
-                    r: 7,
-                  }}
-                  name="Waste Generated"
+                  fill="#7C3AED"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={55}
                 />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
