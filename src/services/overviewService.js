@@ -2,6 +2,7 @@
 
 const helperDb = require("../config/helperDb");
 const mainDb = require("../config/mainDb");
+const zoneDb = require("../config/zoneDb");
 
 const getSummary = async (date) => {
   const selectedDate = date || new Date().toISOString().split("T")[0];
@@ -116,33 +117,55 @@ const getVehicleSummary = async () => {
 
 const getGenerationTrend = async (date) => {
   const selectedDate = date || new Date().toISOString().split("T")[0];
-  const result = await mainDb.query(`
+
+  // 1. Fetch all 5 zones from Zone DB
+  const zoneResult = await zoneDb.query(`
+    SELECT zone_id, zone_name
+    FROM zone_table
+    ORDER BY zone_id;
+  `);
+
+  // 2. Fetch today's waste grouped by zone from Main DB
+  const telemetryResult = await mainDb.query(
+    `
     SELECT
-vm.zone,
-COALESCE(
-SUM(
-COALESCE(t.wet_weight_kg,0)
-+
-COALESCE(t.dry_weight_kg,0)
-+
-COALESCE(t.other_weight_kg,0)
-),0) AS wasteGenerated
+      vm.zone,
+
+      COALESCE(
+        SUM(
+          COALESCE(t.wet_weight_kg,0)
+          + COALESCE(t.dry_weight_kg,0)
+          + COALESCE(t.other_weight_kg,0)
+        ),
+        0
+      ) AS waste
+
     FROM telemetry_logs t
-    INNER JOIN vehicle_master vm
-ON vm.vehicle_number = t.vehicle_number
 
-WHERE t.iot_timestamp >= $1::date
-AND t.iot_timestamp < ($1::date + INTERVAL '1 day')
+    JOIN vehicle_master vm
+      ON vm.id = t.vehicle_id
 
-GROUP BY vm.zone
-ORDER BY vm.zone;
-  `, [selectedDate]);
+    WHERE
+      t.iot_timestamp >= $1::date
+      AND
+      t.iot_timestamp < ($1::date + interval '1 day')
 
-  return result.rows.map((row) => ({
-    label: row.zone,
+    GROUP BY vm.zone;
+    `,
+    [selectedDate],
+  );
 
-    wasteGenerated: Number(row.wastegenerated),
+  // 3. Create a map of zone -> waste
+  const wasteMap = new Map();
 
+  telemetryResult.rows.forEach((row) => {
+    wasteMap.set(row.zone, Number(row.waste));
+  });
+
+  // 4. Return all zones with 0 if no data exists
+  return zoneResult.rows.map((zone) => ({
+    label: zone.zone_name,
+    wasteGenerated: wasteMap.get(zone.zone_name) || 0,
     threshold: 6500,
   }));
 };
