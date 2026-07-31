@@ -1,114 +1,103 @@
 import sewacPrisma from "../../config/sewacPrisma.js";
 
-class MapRepository {
+/**
+ * Create complaint
+ */
+export const createComplaint = async (data) => {
+  return await sewacPrisma.citizen_complaints.create({
+    data,
+  });
+};
 
-  /**
-   * Used once when server starts.
-   * Loads today's truck telemetry.
-   */
-  async getTodayTelemetry() {
-
-    const startOfDay = new Date();
-
-    startOfDay.setHours(0, 0, 0, 0);
-
-
-    return await sewacPrisma.telemetry_logs.findMany({
-
-      where: {
-        received_at: {
-          gte: startOfDay,
-        },
-
-        vehicle_id: {
-          not: null,
-        },
-
-        latitude: {
-          not: null,
-        },
-
-        longitude: {
-          not: null,
-        },
+/**
+ * Current complaints (not closed)
+ */
+export const getCurrentComplaints = async (phoneNumber) => {
+  console.log("getCurrentComplaints called");
+  return await sewacPrisma.citizen_complaints.findMany({
+    where: {
+      phone_number: phoneNumber,
+      status: {
+        not: "CLOSED",
       },
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+};
 
+/**
+ * Previous complaints (closed)
+ */
+export const getPreviousComplaints = async (phoneNumber) => {
+  return await sewacPrisma.citizen_complaints.findMany({
+    where: {
+      phone_number: phoneNumber,
+      status: "CLOSED",
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+};
 
-      orderBy: [
-        {
-          vehicle_id: "asc",
-        },
-        {
-          received_at: "asc",
-        },
-      ],
+/**
+ * Get complaint by ticket + owner
+ */
+export const getComplaintByTicket = async (
+  ticketNumber,
+  phoneNumber
+) => {
+  return await sewacPrisma.citizen_complaints.findFirst({
+    where: {
+      ticket_number: ticketNumber,
+      phone_number: phoneNumber,
+    },
+  });
+};
 
+/**
+ * Get complaint by ticket only
+ */
+export const getComplaintByTicketOnly = async (ticketNumber) => {
+  return await sewacPrisma.citizen_complaints.findUnique({
+    where: {
+      ticket_number: ticketNumber,
+    },
+  });
+};
 
-      select: {
+/**
+ * Save verification OTP
+ */
+export const updateVerificationOTP = async (
+  id,
+  code,
+  expiresAt
+) => {
+  return await sewacPrisma.citizen_complaints.update({
+    where: { id },
+    data: {
+      verification_code: code,
+      verification_expires_at: expiresAt,
+      status: "OTP_SENT",
+    },
+  });
+};
 
-        id: true,
-
-        vehicle_id: true,
-
-        latitude: true,
-
-        longitude: true,
-
-        received_at: true,
-
-        vehicle_number: true,
-
-        driver_name: true,
-      },
-    });
-  }
-
-
-
-  /**
-   * Called every 2 seconds.
-   * Returns only latest location per truck.
-   */
-  async getLatestTelemetry() {
-
-
-    return await sewacPrisma.$queryRaw`
-
-      SELECT DISTINCT ON (vehicle_id)
-
-        id,
-
-        vehicle_id,
-
-        latitude,
-
-        longitude,
-
-        received_at,
-
-        vehicle_number,
-
-        driver_name
-
-
-      FROM telemetry_logs
-
-
-      WHERE received_at >= CURRENT_DATE
-
-      AND vehicle_id IS NOT NULL
-
-      AND latitude IS NOT NULL
-
-      AND longitude IS NOT NULL
-
-
-      ORDER BY vehicle_id, received_at DESC;
-
-    `;
-  }
-
-}
-
-
-export default new MapRepository();
+/**
+ * Close complaint
+ */
+export const closeComplaint = async (id) => {
+  return await sewacPrisma.citizen_complaints.update({
+    where: { id },
+    data: {
+      status: "CLOSED",
+      closed_at: new Date(),
+      otp_verified: true,
+      verification_code: null,
+      verification_expires_at: null,
+    },
+  });
+};

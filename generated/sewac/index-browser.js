@@ -167,7 +167,6 @@ exports.Prisma.Telemetry_logsScalarFieldEnum = {
   other_weight_kg: 'other_weight_kg',
   cumulative_weight_kg: 'cumulative_weight_kg',
   driver_name: 'driver_name',
-  vehicle_number: 'vehicle_number',
   vehicle_id: 'vehicle_id',
   firmware_version: 'firmware_version',
   unit_number: 'unit_number',
@@ -193,7 +192,6 @@ exports.Prisma.Vehicle_incidentsScalarFieldEnum = {
 exports.Prisma.Vehicle_masterScalarFieldEnum = {
   id: 'id',
   vehicle_id: 'vehicle_id',
-  vehicle_number: 'vehicle_number',
   vehicle_type: 'vehicle_type',
   city: 'city',
   zone: 'zone',
@@ -227,13 +225,16 @@ exports.Prisma.Citizen_complaintsScalarFieldEnum = {
   longitude: 'longitude',
   address: 'address',
   status: 'status',
-  verification_code: 'verification_code',
-  verification_expires_at: 'verification_expires_at',
+  otp_hash: 'otp_hash',
+  otp_expiry: 'otp_expiry',
+  otp_verified: 'otp_verified',
   assigned_to: 'assigned_to',
   remarks: 'remarks',
   created_at: 'created_at',
   updated_at: 'updated_at',
-  closed_at: 'closed_at'
+  closed_at: 'closed_at',
+  verification_code: 'verification_code',
+  verification_expires_at: 'verification_expires_at'
 };
 
 exports.Prisma.SortOrder = {
@@ -264,7 +265,7 @@ exports.CitizenComplaintStatus = exports.$Enums.CitizenComplaintStatus = {
   ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
   READY_FOR_VERIFICATION: 'READY_FOR_VERIFICATION',
-  VERIFICATION_CODE_SENT: 'VERIFICATION_CODE_SENT',
+  OTP_SENT: 'OTP_SENT',
   CLOSED: 'CLOSED'
 };
 

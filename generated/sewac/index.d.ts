@@ -70,7 +70,7 @@ export const CitizenComplaintStatus: {
   ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
   READY_FOR_VERIFICATION: 'READY_FOR_VERIFICATION',
-  VERIFICATION_CODE_SENT: 'VERIFICATION_CODE_SENT',
+  OTP_SENT: 'OTP_SENT',
   CLOSED: 'CLOSED'
 };
 
@@ -3823,7 +3823,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -3848,7 +3847,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -3873,7 +3871,6 @@ export namespace Prisma {
     other_weight_kg: number
     cumulative_weight_kg: number
     driver_name: number
-    vehicle_number: number
     vehicle_id: number
     firmware_version: number
     unit_number: number
@@ -3924,7 +3921,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -3949,7 +3945,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -3974,7 +3969,6 @@ export namespace Prisma {
     other_weight_kg?: true
     cumulative_weight_kg?: true
     driver_name?: true
-    vehicle_number?: true
     vehicle_id?: true
     firmware_version?: true
     unit_number?: true
@@ -4086,7 +4080,6 @@ export namespace Prisma {
     other_weight_kg: Decimal | null
     cumulative_weight_kg: Decimal | null
     driver_name: string | null
-    vehicle_number: string | null
     vehicle_id: string | null
     firmware_version: string | null
     unit_number: string | null
@@ -4130,7 +4123,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -4155,7 +4147,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -4180,7 +4171,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -4205,7 +4195,6 @@ export namespace Prisma {
     other_weight_kg?: boolean
     cumulative_weight_kg?: boolean
     driver_name?: boolean
-    vehicle_number?: boolean
     vehicle_id?: boolean
     firmware_version?: boolean
     unit_number?: boolean
@@ -4216,7 +4205,7 @@ export namespace Prisma {
     driver_action?: boolean
   }
 
-  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_number" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "err_code" | "citizen_contact" | "driver_action", ExtArgs["result"]["telemetry_logs"]>
+  export type telemetry_logsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "iot_timestamp" | "received_at" | "rfid_epc" | "citizen_id" | "waste_type" | "latitude" | "longitude" | "wet_weight_kg" | "dry_weight_kg" | "other_weight_kg" | "cumulative_weight_kg" | "driver_name" | "vehicle_id" | "firmware_version" | "unit_number" | "collection_type" | "remarks" | "err_code" | "citizen_contact" | "driver_action", ExtArgs["result"]["telemetry_logs"]>
 
   export type $telemetry_logsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "telemetry_logs"
@@ -4235,7 +4224,6 @@ export namespace Prisma {
       other_weight_kg: Prisma.Decimal | null
       cumulative_weight_kg: Prisma.Decimal | null
       driver_name: string | null
-      vehicle_number: string | null
       vehicle_id: string | null
       firmware_version: string | null
       unit_number: string | null
@@ -4680,7 +4668,6 @@ export namespace Prisma {
     readonly other_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
     readonly cumulative_weight_kg: FieldRef<"telemetry_logs", 'Decimal'>
     readonly driver_name: FieldRef<"telemetry_logs", 'String'>
-    readonly vehicle_number: FieldRef<"telemetry_logs", 'String'>
     readonly vehicle_id: FieldRef<"telemetry_logs", 'String'>
     readonly firmware_version: FieldRef<"telemetry_logs", 'String'>
     readonly unit_number: FieldRef<"telemetry_logs", 'String'>
@@ -6253,7 +6240,6 @@ export namespace Prisma {
   export type Vehicle_masterMinAggregateOutputType = {
     id: number | null
     vehicle_id: string | null
-    vehicle_number: string | null
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -6266,7 +6252,6 @@ export namespace Prisma {
   export type Vehicle_masterMaxAggregateOutputType = {
     id: number | null
     vehicle_id: string | null
-    vehicle_number: string | null
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -6279,7 +6264,6 @@ export namespace Prisma {
   export type Vehicle_masterCountAggregateOutputType = {
     id: number
     vehicle_id: number
-    vehicle_number: number
     vehicle_type: number
     city: number
     zone: number
@@ -6302,7 +6286,6 @@ export namespace Prisma {
   export type Vehicle_masterMinAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -6315,7 +6298,6 @@ export namespace Prisma {
   export type Vehicle_masterMaxAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -6328,7 +6310,6 @@ export namespace Prisma {
   export type Vehicle_masterCountAggregateInputType = {
     id?: true
     vehicle_id?: true
-    vehicle_number?: true
     vehicle_type?: true
     city?: true
     zone?: true
@@ -6428,7 +6409,6 @@ export namespace Prisma {
   export type Vehicle_masterGroupByOutputType = {
     id: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type: string | null
     city: string | null
     zone: string | null
@@ -6460,7 +6440,6 @@ export namespace Prisma {
   export type vehicle_masterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -6476,7 +6455,6 @@ export namespace Prisma {
   export type vehicle_masterSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -6489,7 +6467,6 @@ export namespace Prisma {
   export type vehicle_masterSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -6502,7 +6479,6 @@ export namespace Prisma {
   export type vehicle_masterSelectScalar = {
     id?: boolean
     vehicle_id?: boolean
-    vehicle_number?: boolean
     vehicle_type?: boolean
     city?: boolean
     zone?: boolean
@@ -6512,7 +6488,7 @@ export namespace Prisma {
     created_at?: boolean
   }
 
-  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_number" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at", ExtArgs["result"]["vehicle_master"]>
+  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at", ExtArgs["result"]["vehicle_master"]>
   export type vehicle_masterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicle_incidents?: boolean | vehicle_master$vehicle_incidentsArgs<ExtArgs>
     vehicle_telemetry?: boolean | vehicle_master$vehicle_telemetryArgs<ExtArgs>
@@ -6530,7 +6506,6 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: number
       vehicle_id: string
-      vehicle_number: string
       vehicle_type: string | null
       city: string | null
       zone: string | null
@@ -6965,7 +6940,6 @@ export namespace Prisma {
   interface vehicle_masterFieldRefs {
     readonly id: FieldRef<"vehicle_master", 'Int'>
     readonly vehicle_id: FieldRef<"vehicle_master", 'String'>
-    readonly vehicle_number: FieldRef<"vehicle_master", 'String'>
     readonly vehicle_type: FieldRef<"vehicle_master", 'String'>
     readonly city: FieldRef<"vehicle_master", 'String'>
     readonly zone: FieldRef<"vehicle_master", 'String'>
@@ -8646,13 +8620,16 @@ export namespace Prisma {
     longitude: number | null
     address: string | null
     status: $Enums.CitizenComplaintStatus | null
-    verification_code: string | null
-    verification_expires_at: Date | null
+    otp_hash: string | null
+    otp_expiry: Date | null
+    otp_verified: boolean | null
     assigned_to: string | null
     remarks: string | null
     created_at: Date | null
     updated_at: Date | null
     closed_at: Date | null
+    verification_code: string | null
+    verification_expires_at: Date | null
   }
 
   export type Citizen_complaintsMaxAggregateOutputType = {
@@ -8667,13 +8644,16 @@ export namespace Prisma {
     longitude: number | null
     address: string | null
     status: $Enums.CitizenComplaintStatus | null
-    verification_code: string | null
-    verification_expires_at: Date | null
+    otp_hash: string | null
+    otp_expiry: Date | null
+    otp_verified: boolean | null
     assigned_to: string | null
     remarks: string | null
     created_at: Date | null
     updated_at: Date | null
     closed_at: Date | null
+    verification_code: string | null
+    verification_expires_at: Date | null
   }
 
   export type Citizen_complaintsCountAggregateOutputType = {
@@ -8688,13 +8668,16 @@ export namespace Prisma {
     longitude: number
     address: number
     status: number
-    verification_code: number
-    verification_expires_at: number
+    otp_hash: number
+    otp_expiry: number
+    otp_verified: number
     assigned_to: number
     remarks: number
     created_at: number
     updated_at: number
     closed_at: number
+    verification_code: number
+    verification_expires_at: number
     _all: number
   }
 
@@ -8723,13 +8706,16 @@ export namespace Prisma {
     longitude?: true
     address?: true
     status?: true
-    verification_code?: true
-    verification_expires_at?: true
+    otp_hash?: true
+    otp_expiry?: true
+    otp_verified?: true
     assigned_to?: true
     remarks?: true
     created_at?: true
     updated_at?: true
     closed_at?: true
+    verification_code?: true
+    verification_expires_at?: true
   }
 
   export type Citizen_complaintsMaxAggregateInputType = {
@@ -8744,13 +8730,16 @@ export namespace Prisma {
     longitude?: true
     address?: true
     status?: true
-    verification_code?: true
-    verification_expires_at?: true
+    otp_hash?: true
+    otp_expiry?: true
+    otp_verified?: true
     assigned_to?: true
     remarks?: true
     created_at?: true
     updated_at?: true
     closed_at?: true
+    verification_code?: true
+    verification_expires_at?: true
   }
 
   export type Citizen_complaintsCountAggregateInputType = {
@@ -8765,13 +8754,16 @@ export namespace Prisma {
     longitude?: true
     address?: true
     status?: true
-    verification_code?: true
-    verification_expires_at?: true
+    otp_hash?: true
+    otp_expiry?: true
+    otp_verified?: true
     assigned_to?: true
     remarks?: true
     created_at?: true
     updated_at?: true
     closed_at?: true
+    verification_code?: true
+    verification_expires_at?: true
     _all?: true
   }
 
@@ -8873,13 +8865,16 @@ export namespace Prisma {
     longitude: number
     address: string
     status: $Enums.CitizenComplaintStatus
-    verification_code: string | null
-    verification_expires_at: Date | null
+    otp_hash: string | null
+    otp_expiry: Date | null
+    otp_verified: boolean
     assigned_to: string | null
     remarks: string | null
     created_at: Date
     updated_at: Date
     closed_at: Date | null
+    verification_code: string | null
+    verification_expires_at: Date | null
     _count: Citizen_complaintsCountAggregateOutputType | null
     _avg: Citizen_complaintsAvgAggregateOutputType | null
     _sum: Citizen_complaintsSumAggregateOutputType | null
@@ -8913,13 +8908,16 @@ export namespace Prisma {
     longitude?: boolean
     address?: boolean
     status?: boolean
-    verification_code?: boolean
-    verification_expires_at?: boolean
+    otp_hash?: boolean
+    otp_expiry?: boolean
+    otp_verified?: boolean
     assigned_to?: boolean
     remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
     closed_at?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
   }, ExtArgs["result"]["citizen_complaints"]>
 
   export type citizen_complaintsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -8934,13 +8932,16 @@ export namespace Prisma {
     longitude?: boolean
     address?: boolean
     status?: boolean
-    verification_code?: boolean
-    verification_expires_at?: boolean
+    otp_hash?: boolean
+    otp_expiry?: boolean
+    otp_verified?: boolean
     assigned_to?: boolean
     remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
     closed_at?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
   }, ExtArgs["result"]["citizen_complaints"]>
 
   export type citizen_complaintsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -8955,13 +8956,16 @@ export namespace Prisma {
     longitude?: boolean
     address?: boolean
     status?: boolean
-    verification_code?: boolean
-    verification_expires_at?: boolean
+    otp_hash?: boolean
+    otp_expiry?: boolean
+    otp_verified?: boolean
     assigned_to?: boolean
     remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
     closed_at?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
   }, ExtArgs["result"]["citizen_complaints"]>
 
   export type citizen_complaintsSelectScalar = {
@@ -8976,16 +8980,19 @@ export namespace Prisma {
     longitude?: boolean
     address?: boolean
     status?: boolean
-    verification_code?: boolean
-    verification_expires_at?: boolean
+    otp_hash?: boolean
+    otp_expiry?: boolean
+    otp_verified?: boolean
     assigned_to?: boolean
     remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
     closed_at?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
   }
 
-  export type citizen_complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ticket_number" | "phone_number" | "title" | "description" | "category" | "image_url" | "latitude" | "longitude" | "address" | "status" | "verification_code" | "verification_expires_at" | "assigned_to" | "remarks" | "created_at" | "updated_at" | "closed_at", ExtArgs["result"]["citizen_complaints"]>
+  export type citizen_complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ticket_number" | "phone_number" | "title" | "description" | "category" | "image_url" | "latitude" | "longitude" | "address" | "status" | "otp_hash" | "otp_expiry" | "otp_verified" | "assigned_to" | "remarks" | "created_at" | "updated_at" | "closed_at" | "verification_code" | "verification_expires_at", ExtArgs["result"]["citizen_complaints"]>
 
   export type $citizen_complaintsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "citizen_complaints"
@@ -9002,13 +9009,16 @@ export namespace Prisma {
       longitude: number
       address: string
       status: $Enums.CitizenComplaintStatus
-      verification_code: string | null
-      verification_expires_at: Date | null
+      otp_hash: string | null
+      otp_expiry: Date | null
+      otp_verified: boolean
       assigned_to: string | null
       remarks: string | null
       created_at: Date
       updated_at: Date
       closed_at: Date | null
+      verification_code: string | null
+      verification_expires_at: Date | null
     }, ExtArgs["result"]["citizen_complaints"]>
     composites: {}
   }
@@ -9443,13 +9453,16 @@ export namespace Prisma {
     readonly longitude: FieldRef<"citizen_complaints", 'Float'>
     readonly address: FieldRef<"citizen_complaints", 'String'>
     readonly status: FieldRef<"citizen_complaints", 'CitizenComplaintStatus'>
-    readonly verification_code: FieldRef<"citizen_complaints", 'String'>
-    readonly verification_expires_at: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly otp_hash: FieldRef<"citizen_complaints", 'String'>
+    readonly otp_expiry: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly otp_verified: FieldRef<"citizen_complaints", 'Boolean'>
     readonly assigned_to: FieldRef<"citizen_complaints", 'String'>
     readonly remarks: FieldRef<"citizen_complaints", 'String'>
     readonly created_at: FieldRef<"citizen_complaints", 'DateTime'>
     readonly updated_at: FieldRef<"citizen_complaints", 'DateTime'>
     readonly closed_at: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly verification_code: FieldRef<"citizen_complaints", 'String'>
+    readonly verification_expires_at: FieldRef<"citizen_complaints", 'DateTime'>
   }
     
 
@@ -9882,7 +9895,6 @@ export namespace Prisma {
     other_weight_kg: 'other_weight_kg',
     cumulative_weight_kg: 'cumulative_weight_kg',
     driver_name: 'driver_name',
-    vehicle_number: 'vehicle_number',
     vehicle_id: 'vehicle_id',
     firmware_version: 'firmware_version',
     unit_number: 'unit_number',
@@ -9914,7 +9926,6 @@ export namespace Prisma {
   export const Vehicle_masterScalarFieldEnum: {
     id: 'id',
     vehicle_id: 'vehicle_id',
-    vehicle_number: 'vehicle_number',
     vehicle_type: 'vehicle_type',
     city: 'city',
     zone: 'zone',
@@ -9954,13 +9965,16 @@ export namespace Prisma {
     longitude: 'longitude',
     address: 'address',
     status: 'status',
-    verification_code: 'verification_code',
-    verification_expires_at: 'verification_expires_at',
+    otp_hash: 'otp_hash',
+    otp_expiry: 'otp_expiry',
+    otp_verified: 'otp_verified',
     assigned_to: 'assigned_to',
     remarks: 'remarks',
     created_at: 'created_at',
     updated_at: 'updated_at',
-    closed_at: 'closed_at'
+    closed_at: 'closed_at',
+    verification_code: 'verification_code',
+    verification_expires_at: 'verification_expires_at'
   };
 
   export type Citizen_complaintsScalarFieldEnum = (typeof Citizen_complaintsScalarFieldEnum)[keyof typeof Citizen_complaintsScalarFieldEnum]
@@ -10308,7 +10322,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
@@ -10333,7 +10346,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrderInput | SortOrder
     cumulative_weight_kg?: SortOrderInput | SortOrder
     driver_name?: SortOrderInput | SortOrder
-    vehicle_number?: SortOrderInput | SortOrder
     vehicle_id?: SortOrderInput | SortOrder
     firmware_version?: SortOrderInput | SortOrder
     unit_number?: SortOrderInput | SortOrder
@@ -10361,7 +10373,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableFilter<"telemetry_logs"> | string | null
@@ -10386,7 +10397,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrderInput | SortOrder
     cumulative_weight_kg?: SortOrderInput | SortOrder
     driver_name?: SortOrderInput | SortOrder
-    vehicle_number?: SortOrderInput | SortOrder
     vehicle_id?: SortOrderInput | SortOrder
     firmware_version?: SortOrderInput | SortOrder
     unit_number?: SortOrderInput | SortOrder
@@ -10419,7 +10429,6 @@ export namespace Prisma {
     other_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: DecimalNullableWithAggregatesFilter<"telemetry_logs"> | Decimal | DecimalJsLike | number | string | null
     driver_name?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
-    vehicle_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     vehicle_id?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     firmware_version?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
     unit_number?: StringNullableWithAggregatesFilter<"telemetry_logs"> | string | null
@@ -10513,7 +10522,6 @@ export namespace Prisma {
     NOT?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
     id?: IntFilter<"vehicle_master"> | number
     vehicle_id?: StringFilter<"vehicle_master"> | string
-    vehicle_number?: StringFilter<"vehicle_master"> | string
     vehicle_type?: StringNullableFilter<"vehicle_master"> | string | null
     city?: StringNullableFilter<"vehicle_master"> | string | null
     zone?: StringNullableFilter<"vehicle_master"> | string | null
@@ -10528,7 +10536,6 @@ export namespace Prisma {
   export type vehicle_masterOrderByWithRelationInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrderInput | SortOrder
     city?: SortOrderInput | SortOrder
     zone?: SortOrderInput | SortOrder
@@ -10543,7 +10550,6 @@ export namespace Prisma {
   export type vehicle_masterWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     vehicle_id?: string
-    vehicle_number?: string
     AND?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
     OR?: vehicle_masterWhereInput[]
     NOT?: vehicle_masterWhereInput | vehicle_masterWhereInput[]
@@ -10556,12 +10562,11 @@ export namespace Prisma {
     created_at?: DateTimeNullableFilter<"vehicle_master"> | Date | string | null
     vehicle_incidents?: Vehicle_incidentsListRelationFilter
     vehicle_telemetry?: Vehicle_telemetryListRelationFilter
-  }, "id" | "vehicle_id" | "vehicle_number">
+  }, "id" | "vehicle_id">
 
   export type vehicle_masterOrderByWithAggregationInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrderInput | SortOrder
     city?: SortOrderInput | SortOrder
     zone?: SortOrderInput | SortOrder
@@ -10582,7 +10587,6 @@ export namespace Prisma {
     NOT?: vehicle_masterScalarWhereWithAggregatesInput | vehicle_masterScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"vehicle_master"> | number
     vehicle_id?: StringWithAggregatesFilter<"vehicle_master"> | string
-    vehicle_number?: StringWithAggregatesFilter<"vehicle_master"> | string
     vehicle_type?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     city?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     zone?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
@@ -10684,13 +10688,16 @@ export namespace Prisma {
     longitude?: FloatFilter<"citizen_complaints"> | number
     address?: StringFilter<"citizen_complaints"> | string
     status?: EnumCitizenComplaintStatusFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
-    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
-    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    otp_hash?: StringNullableFilter<"citizen_complaints"> | string | null
+    otp_expiry?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    otp_verified?: BoolFilter<"citizen_complaints"> | boolean
     assigned_to?: StringNullableFilter<"citizen_complaints"> | string | null
     remarks?: StringNullableFilter<"citizen_complaints"> | string | null
     created_at?: DateTimeFilter<"citizen_complaints"> | Date | string
     updated_at?: DateTimeFilter<"citizen_complaints"> | Date | string
     closed_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
   }
 
   export type citizen_complaintsOrderByWithRelationInput = {
@@ -10705,13 +10712,16 @@ export namespace Prisma {
     longitude?: SortOrder
     address?: SortOrder
     status?: SortOrder
-    verification_code?: SortOrderInput | SortOrder
-    verification_expires_at?: SortOrderInput | SortOrder
+    otp_hash?: SortOrderInput | SortOrder
+    otp_expiry?: SortOrderInput | SortOrder
+    otp_verified?: SortOrder
     assigned_to?: SortOrderInput | SortOrder
     remarks?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     closed_at?: SortOrderInput | SortOrder
+    verification_code?: SortOrderInput | SortOrder
+    verification_expires_at?: SortOrderInput | SortOrder
   }
 
   export type citizen_complaintsWhereUniqueInput = Prisma.AtLeast<{
@@ -10729,13 +10739,16 @@ export namespace Prisma {
     longitude?: FloatFilter<"citizen_complaints"> | number
     address?: StringFilter<"citizen_complaints"> | string
     status?: EnumCitizenComplaintStatusFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
-    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
-    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    otp_hash?: StringNullableFilter<"citizen_complaints"> | string | null
+    otp_expiry?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    otp_verified?: BoolFilter<"citizen_complaints"> | boolean
     assigned_to?: StringNullableFilter<"citizen_complaints"> | string | null
     remarks?: StringNullableFilter<"citizen_complaints"> | string | null
     created_at?: DateTimeFilter<"citizen_complaints"> | Date | string
     updated_at?: DateTimeFilter<"citizen_complaints"> | Date | string
     closed_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
   }, "id" | "ticket_number">
 
   export type citizen_complaintsOrderByWithAggregationInput = {
@@ -10750,13 +10763,16 @@ export namespace Prisma {
     longitude?: SortOrder
     address?: SortOrder
     status?: SortOrder
-    verification_code?: SortOrderInput | SortOrder
-    verification_expires_at?: SortOrderInput | SortOrder
+    otp_hash?: SortOrderInput | SortOrder
+    otp_expiry?: SortOrderInput | SortOrder
+    otp_verified?: SortOrder
     assigned_to?: SortOrderInput | SortOrder
     remarks?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     closed_at?: SortOrderInput | SortOrder
+    verification_code?: SortOrderInput | SortOrder
+    verification_expires_at?: SortOrderInput | SortOrder
     _count?: citizen_complaintsCountOrderByAggregateInput
     _avg?: citizen_complaintsAvgOrderByAggregateInput
     _max?: citizen_complaintsMaxOrderByAggregateInput
@@ -10779,13 +10795,16 @@ export namespace Prisma {
     longitude?: FloatWithAggregatesFilter<"citizen_complaints"> | number
     address?: StringWithAggregatesFilter<"citizen_complaints"> | string
     status?: EnumCitizenComplaintStatusWithAggregatesFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
-    verification_code?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
-    verification_expires_at?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
+    otp_hash?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    otp_expiry?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
+    otp_verified?: BoolWithAggregatesFilter<"citizen_complaints"> | boolean
     assigned_to?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
     remarks?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
     created_at?: DateTimeWithAggregatesFilter<"citizen_complaints"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"citizen_complaints"> | Date | string
     closed_at?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
+    verification_code?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
   }
 
   export type edit_logsCreateInput = {
@@ -11019,7 +11038,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -11044,7 +11062,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -11068,7 +11085,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11093,7 +11109,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11118,7 +11133,6 @@ export namespace Prisma {
     other_weight_kg?: Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: Decimal | DecimalJsLike | number | string | null
     driver_name?: string | null
-    vehicle_number?: string | null
     vehicle_id?: string | null
     firmware_version?: string | null
     unit_number?: string | null
@@ -11142,7 +11156,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11167,7 +11180,6 @@ export namespace Prisma {
     other_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cumulative_weight_kg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     driver_name?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicle_number?: NullableStringFieldUpdateOperationsInput | string | null
     vehicle_id?: NullableStringFieldUpdateOperationsInput | string | null
     firmware_version?: NullableStringFieldUpdateOperationsInput | string | null
     unit_number?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11260,7 +11272,6 @@ export namespace Prisma {
 
   export type vehicle_masterCreateInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -11275,7 +11286,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -11289,7 +11299,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11304,7 +11313,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11319,7 +11327,6 @@ export namespace Prisma {
   export type vehicle_masterCreateManyInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -11331,7 +11338,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateManyMutationInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11344,7 +11350,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11445,13 +11450,16 @@ export namespace Prisma {
     longitude: number
     address: string
     status?: $Enums.CitizenComplaintStatus
-    verification_code?: string | null
-    verification_expires_at?: Date | string | null
+    otp_hash?: string | null
+    otp_expiry?: Date | string | null
+    otp_verified?: boolean
     assigned_to?: string | null
     remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
     closed_at?: Date | string | null
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
   }
 
   export type citizen_complaintsUncheckedCreateInput = {
@@ -11466,13 +11474,16 @@ export namespace Prisma {
     longitude: number
     address: string
     status?: $Enums.CitizenComplaintStatus
-    verification_code?: string | null
-    verification_expires_at?: Date | string | null
+    otp_hash?: string | null
+    otp_expiry?: Date | string | null
+    otp_verified?: boolean
     assigned_to?: string | null
     remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
     closed_at?: Date | string | null
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
   }
 
   export type citizen_complaintsUpdateInput = {
@@ -11486,13 +11497,16 @@ export namespace Prisma {
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
     status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
-    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
-    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    otp_expiry?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_verified?: BoolFieldUpdateOperationsInput | boolean
     assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type citizen_complaintsUncheckedUpdateInput = {
@@ -11507,13 +11521,16 @@ export namespace Prisma {
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
     status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
-    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
-    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    otp_expiry?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_verified?: BoolFieldUpdateOperationsInput | boolean
     assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type citizen_complaintsCreateManyInput = {
@@ -11528,13 +11545,16 @@ export namespace Prisma {
     longitude: number
     address: string
     status?: $Enums.CitizenComplaintStatus
-    verification_code?: string | null
-    verification_expires_at?: Date | string | null
+    otp_hash?: string | null
+    otp_expiry?: Date | string | null
+    otp_verified?: boolean
     assigned_to?: string | null
     remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
     closed_at?: Date | string | null
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
   }
 
   export type citizen_complaintsUpdateManyMutationInput = {
@@ -11548,13 +11568,16 @@ export namespace Prisma {
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
     status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
-    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
-    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    otp_expiry?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_verified?: BoolFieldUpdateOperationsInput | boolean
     assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type citizen_complaintsUncheckedUpdateManyInput = {
@@ -11569,13 +11592,16 @@ export namespace Prisma {
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
     status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
-    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
-    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_hash?: NullableStringFieldUpdateOperationsInput | string | null
+    otp_expiry?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otp_verified?: BoolFieldUpdateOperationsInput | boolean
     assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
     remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -11917,7 +11943,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -11954,7 +11979,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -11979,7 +12003,6 @@ export namespace Prisma {
     other_weight_kg?: SortOrder
     cumulative_weight_kg?: SortOrder
     driver_name?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_id?: SortOrder
     firmware_version?: SortOrder
     unit_number?: SortOrder
@@ -12094,7 +12117,6 @@ export namespace Prisma {
   export type vehicle_masterCountOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -12111,7 +12133,6 @@ export namespace Prisma {
   export type vehicle_masterMaxOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -12124,7 +12145,6 @@ export namespace Prisma {
   export type vehicle_masterMinOrderByAggregateInput = {
     id?: SortOrder
     vehicle_id?: SortOrder
-    vehicle_number?: SortOrder
     vehicle_type?: SortOrder
     city?: SortOrder
     zone?: SortOrder
@@ -12217,6 +12237,11 @@ export namespace Prisma {
     not?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type citizen_complaintsCountOrderByAggregateInput = {
     id?: SortOrder
     ticket_number?: SortOrder
@@ -12229,13 +12254,16 @@ export namespace Prisma {
     longitude?: SortOrder
     address?: SortOrder
     status?: SortOrder
-    verification_code?: SortOrder
-    verification_expires_at?: SortOrder
+    otp_hash?: SortOrder
+    otp_expiry?: SortOrder
+    otp_verified?: SortOrder
     assigned_to?: SortOrder
     remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     closed_at?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
   }
 
   export type citizen_complaintsAvgOrderByAggregateInput = {
@@ -12256,13 +12284,16 @@ export namespace Prisma {
     longitude?: SortOrder
     address?: SortOrder
     status?: SortOrder
-    verification_code?: SortOrder
-    verification_expires_at?: SortOrder
+    otp_hash?: SortOrder
+    otp_expiry?: SortOrder
+    otp_verified?: SortOrder
     assigned_to?: SortOrder
     remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     closed_at?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
   }
 
   export type citizen_complaintsMinOrderByAggregateInput = {
@@ -12277,13 +12308,16 @@ export namespace Prisma {
     longitude?: SortOrder
     address?: SortOrder
     status?: SortOrder
-    verification_code?: SortOrder
-    verification_expires_at?: SortOrder
+    otp_hash?: SortOrder
+    otp_expiry?: SortOrder
+    otp_verified?: SortOrder
     assigned_to?: SortOrder
     remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     closed_at?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
   }
 
   export type citizen_complaintsSumOrderByAggregateInput = {
@@ -12326,6 +12360,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
     _max?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -12502,6 +12544,10 @@ export namespace Prisma {
 
   export type EnumCitizenComplaintStatusFieldUpdateOperationsInput = {
     set?: $Enums.CitizenComplaintStatus
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -12746,6 +12792,11 @@ export namespace Prisma {
     not?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedEnumCitizenComplaintCategoryWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.CitizenComplaintCategory | EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
     in?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
@@ -12782,9 +12833,16 @@ export namespace Prisma {
     _max?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
   }
 
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type vehicle_masterCreateWithoutVehicle_incidentsInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -12798,7 +12856,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateWithoutVehicle_incidentsInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -12827,7 +12884,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateWithoutVehicle_incidentsInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12841,7 +12897,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateWithoutVehicle_incidentsInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12978,7 +13033,6 @@ export namespace Prisma {
 
   export type vehicle_masterCreateWithoutVehicle_telemetryInput = {
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -12992,7 +13046,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedCreateWithoutVehicle_telemetryInput = {
     id?: number
     vehicle_id: string
-    vehicle_number: string
     vehicle_type?: string | null
     city?: string | null
     zone?: string | null
@@ -13021,7 +13074,6 @@ export namespace Prisma {
 
   export type vehicle_masterUpdateWithoutVehicle_telemetryInput = {
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13035,7 +13087,6 @@ export namespace Prisma {
   export type vehicle_masterUncheckedUpdateWithoutVehicle_telemetryInput = {
     id?: IntFieldUpdateOperationsInput | number
     vehicle_id?: StringFieldUpdateOperationsInput | string
-    vehicle_number?: StringFieldUpdateOperationsInput | string
     vehicle_type?: NullableStringFieldUpdateOperationsInput | string | null
     city?: NullableStringFieldUpdateOperationsInput | string | null
     zone?: NullableStringFieldUpdateOperationsInput | string | null

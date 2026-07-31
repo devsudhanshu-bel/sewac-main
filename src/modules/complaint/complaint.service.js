@@ -1,4 +1,6 @@
 import * as repository from "./complaint.repository.js";
+console.log("Repository exports:", Object.keys(repository));
+console.log(repository);
 import { validateComplaint } from "./complaint.validation.js";
 
 import uploadImage from "../../utils/cloudinaryUpload.js";
