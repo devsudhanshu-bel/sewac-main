@@ -160,6 +160,7 @@ disabled:cursor-not-allowed"
 
               try {
                 setLoading(true);
+                
 
                 const response = await fetch(
                   `${API_BASE_URL}/api/behavior/enroll`,

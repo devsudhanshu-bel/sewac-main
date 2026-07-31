@@ -281,20 +281,27 @@ const Login = () => {
 
         if (tempAdmin.role === "WORKER") {
           sessionStorage.setItem("token", tempToken);
+          sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
+
+          sessionStorage.setItem(
+            "permissions",
+            JSON.stringify(data.permissions),
+          );
+
+          window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
+
+          return;
+        }
+        if (data.enrollmentRequired) {
+          sessionStorage.setItem("token", tempToken);
 
           sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
           sessionStorage.setItem(
             "permissions",
-            JSON.stringify(data.permissions)
+            JSON.stringify(data.permissions),
           );
 
-          window.location.href =
-  `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
-
-          return;
-        }
-        if (data.enrollmentRequired) {
           navigate("/behavior-enrollment");
 
           return;
@@ -370,7 +377,7 @@ const Login = () => {
 
           setMessage(
             registration.message ||
-            "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
+              "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
           );
 
           sessionStorage.removeItem("token");
@@ -435,13 +442,9 @@ const Login = () => {
 
         sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-        sessionStorage.setItem(
-          "permissions",
-          JSON.stringify(data.permissions)
-        );
+        sessionStorage.setItem("permissions", JSON.stringify(data.permissions));
 
-        window.location.href =
-  `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
+        window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
       } else {
         setError(data.message || "Invalid credentials");
       }
