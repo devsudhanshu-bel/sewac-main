@@ -130,12 +130,12 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
         <div
           ref={leftCardRef}
-          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm"
+          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm h-[430px] flex flex-col"
         >
           <div className="flex items-center gap-3 mb-6">
             <Truck size={18} className="text-violet-600" />
 
-            <h2 className="text-[18px] font-semibold">VEHICLE DETAILS</h2>
+            <h2 className="text-[18px] font-semibold">VEHICLE FLEET STATUS</h2>
 
             <span className="text-[13px] text-indigo-600 font-medium">
               (All Vehicles Included)
@@ -181,11 +181,11 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
         <div
           ref={rightCardRef}
-          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm"
+          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm h-[430px] flex flex-col"
         >
           <h2 className="text-[18px] font-semibold mb-5">GENERATION TREND</h2>
 
-          <div className="h-[340px]">
+          <div className="flex-1 pt-3">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -203,6 +203,16 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   interval={0}
                   tickLine={false}
                   axisLine={false}
+                  label={{
+                    value: "BBMP Administrative Zones",
+                    position: "insideBottom",
+                    offset: -5,
+                    style: {
+                      fontSize: 13,
+                      fill: "#64748B",
+                      fontWeight: 600,
+                    },
+                  }}
                   tick={{
                     fontSize: 13,
                     fontWeight: 600,
@@ -218,6 +228,17 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                   tickLine={false}
                   axisLine={false}
+                  label={{
+                    value: "Waste Generated (kg)",
+                    angle: -90,
+                    position: "insideLeft",
+                    style: {
+                      textAnchor: "middle",
+                      fontSize: 13,
+                      fill: "#64748B",
+                      fontWeight: 600,
+                    },
+                  }}
                 />
 
                 <Tooltip
