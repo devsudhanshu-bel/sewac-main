@@ -7,7 +7,6 @@ const ROLE_ACCESS = {
     logs: true,
     audit_logs: true,
     edit_logs: true,
-    rag: true,
     users: true,
     settings: true,
 
@@ -24,7 +23,6 @@ const ROLE_ACCESS = {
     logs: true,
     audit_logs: true,
     edit_logs: false,
-    rag: true,
     users: true,
     settings: true,
 
@@ -41,7 +39,6 @@ const ROLE_ACCESS = {
     logs: true,
     audit_logs: false,
     edit_logs: false,
-    rag: false,
     users: false,
     settings: true,
 
