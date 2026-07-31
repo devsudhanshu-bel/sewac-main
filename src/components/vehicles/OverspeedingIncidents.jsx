@@ -151,10 +151,6 @@ export default function OverspeedingIncidents() {
               </th>
 
               <th className="px-4 py-3 text-left text-[13px] font-semibold text-[#233876]">
-                Vehicle No.
-              </th>
-
-              <th className="px-4 py-3 text-left text-[13px] font-semibold text-[#233876]">
                 Driver Name
               </th>
 

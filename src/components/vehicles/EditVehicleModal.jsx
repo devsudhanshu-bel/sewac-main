@@ -6,7 +6,6 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
   const [form, setForm] = useState(
     vehicle || {
       vehicle_id: "",
-      vehicle_number: "",
       vehicle_type: "",
       city: "",
       zone: "",
@@ -83,14 +82,6 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
             name="vehicle_id"
             placeholder="Vehicle ID"
             value={form.vehicle_id}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-          />
-
-          <input
-            name="vehicle_number"
-            placeholder="Vehicle Number"
-            value={form.vehicle_number}
             onChange={handleChange}
             className="border rounded-lg p-3"
           />

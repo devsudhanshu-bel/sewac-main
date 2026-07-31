@@ -5,7 +5,6 @@ import api from "../../api/axios";
 export default function CreateVehicleModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({
     vehicle_id: "",
-    vehicle_number: "",
     vehicle_type: "",
     city: "",
     zone: "",
@@ -52,7 +51,6 @@ export default function CreateVehicleModal({ onClose, onSuccess }) {
     try {
       if (
         !form.vehicle_id ||
-        !form.vehicle_number ||
         !form.vehicle_type ||
         !form.city ||
         !form.zone ||
@@ -88,14 +86,6 @@ export default function CreateVehicleModal({ onClose, onSuccess }) {
             name="vehicle_id"
             placeholder="Vehicle ID"
             value={form.vehicle_id}
-            onChange={handleChange}
-            className="border rounded-lg p-3"
-          />
-
-          <input
-            name="vehicle_number"
-            placeholder="Vehicle Number"
-            value={form.vehicle_number}
             onChange={handleChange}
             className="border rounded-lg p-3"
           />

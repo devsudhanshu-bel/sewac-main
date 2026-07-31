@@ -41,11 +41,7 @@ export default function DeleteVehicleModal({
         <p className="text-center font-semibold mt-2">
           {vehicle.vehicle_id}
         </p>
-
-        <p className="text-center text-gray-500">
-          {vehicle.vehicle_number}
-        </p>
-
+        
         <div className="flex justify-end gap-3 mt-8">
 
           <button

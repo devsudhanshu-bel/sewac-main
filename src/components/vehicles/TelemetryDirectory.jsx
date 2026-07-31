@@ -81,7 +81,6 @@ export default function TelemetryDirectory() {
 
     const rows = telemetry.map((v) => [
       v.vehicle_id,
-      v.vehicle_number,
       v.vehicle_type,
       v.city,
       v.zone,
@@ -140,7 +139,7 @@ export default function TelemetryDirectory() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search by Vehicle ID or Vehicle No..."
+              placeholder="Search by Vehicle ID"
               className="w-full h-12 pl-12 pr-4 border border-gray-300 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6C2BFF] focus:border-[#6C2BFF] transition"
             />
           </div>
@@ -185,7 +184,6 @@ export default function TelemetryDirectory() {
             <tr>
               <th className="w-[40px] px-4 py-4">#</th>
               <th className="w-[70px] px-4 py-4">Vehicle ID</th>
-              <th className="w-[100px] px-4 py-4">Vehicle No.</th>
               <th className="w-[120px] px-4 py-4">Route / Zone</th>
               <th className="w-[120px] px-4 py-4">Last Update</th>
               <th className="w-[120px] px-4 py-4 text-center">Status</th>
@@ -204,10 +202,6 @@ export default function TelemetryDirectory() {
                 </td>
 
                 <td className="w-[140px] px-4 py-4">{vehicle.vehicle_id}</td>
-
-                <td className="w-[180px] px-4 py-4">
-                  {vehicle.vehicle_number}
-                </td>
 
                 <td className="w-[180px] px-4 py-4">{vehicle.zone}</td>
 
