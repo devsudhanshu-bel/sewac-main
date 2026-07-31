@@ -4,48 +4,149 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
+const redisUrl =
+  process.env.REDIS_URL;
+
+
+if (!redisUrl) {
+
+  console.warn(
+    "⚠️ REDIS_URL not found. Using local Redis."
+  );
+
+}
+
+
+
 const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379"
+
+  url:
+    redisUrl ||
+    "redis://localhost:6379"
+
 });
+
+
+
 
 
 redisClient.on(
   "connect",
   () => {
-    console.log("🔴 Redis Connecting...");
+
+    console.log(
+      "🔴 Redis Connecting..."
+    );
+
   }
 );
+
+
+
 
 
 redisClient.on(
   "ready",
   () => {
-    console.log("✅ Redis Ready");
+
+    console.log(
+      "✅ Redis Ready"
+    );
+
   }
 );
+
+
+
+
+
+redisClient.on(
+  "reconnecting",
+  () => {
+
+    console.log(
+      "🔄 Redis Reconnecting..."
+    );
+
+  }
+);
+
+
+
 
 
 redisClient.on(
   "error",
   (error)=>{
+
+
     console.error(
-      "❌ Redis Error",
-      error
+      "❌ Redis Error:",
+      error.message
     );
+
+
   }
 );
 
 
 
+
+
+redisClient.on(
+  "end",
+  ()=>{
+
+    console.log(
+      "🔴 Redis Connection Closed"
+    );
+
+  }
+);
+
+
+
+
+
+
+
 export async function connectRedis(){
 
-  if(!redisClient.isOpen){
 
-    await redisClient.connect();
+  try{
+
+
+    if(
+      !redisClient.isOpen
+    ){
+
+      await redisClient.connect();
+
+    }
+
+
 
   }
 
+  catch(error){
+
+
+    console.error(
+      "❌ Redis Connection Failed:",
+      error.message
+    );
+
+
+    throw error;
+
+
+  }
+
+
 }
+
+
+
 
 
 
