@@ -305,3 +305,42 @@ curl -X POST "http://localhost:5002/api/citizen/complaints" \
     "created_at": "2026-07-28T10:35:42.123Z"
   }
 }
+
+POST "http://localhost:5002/api/citizen/complaint"
+
+ curl.exe -X POST "http://localhost:5002/api/citizen/complaint" `
+>>   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTA1MCwicGhvbmVOdW1iZXIiOiI5OTg2NzYzNjAxIiwiaWF0IjoxNzg1NDMwMTk2LCJleHAiOjE3ODYwMzQ5OTZ9.w5dCoR7YDtYOBML7UmNVpwFQ2zCKKqJ2GEBj2j5XFkY" `
+>>   -F "title=Garbage not collected" `                                    
+>>   -F "description=Garbage has not been collected for the past 3 days." `
+>>   -F "category=MISSED_COLLECTION" `
+>>   -F "latitude=12.9715987" ` 
+>>   -F "longitude=77.5945627" `                 
+>>   -F "address=MG Road, Bengaluru, Karnataka" `
+>>   -F "image=@D:\test_run.png"
+
+http://localhost:5002/api/citizen/complaint/SEWAC-1785430223995
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Complaint details fetched successfully.",
+  "data": {
+    "id": 1,
+    "ticket_number": "SEWAC-1785430223995",
+    "phone_number": "9986763601",
+    "title": "Garbage not collected",
+    "description": "Garbage has not been collected for the past 3 days.",
+    "category": "MISSED_COLLECTION",
+    "image_url": "https://res.cloudinary.com/sewac/image/upload/v1785430218/complaints/n31e4ikbgwhtdpsjtfw5.png",
+    "latitude": 12.9715987,
+    "longitude": 77.5945627,
+    "address": "MG Road, Bengaluru, Karnataka",
+    "status": "PENDING",
+    "verification_code": null,
+    "verification_expires_at": null,
+    "assigned_to": null,
+    "remarks": null,
+    "created_at": "2026-07-30T16:50:24.146Z",
+    "updated_at": "2026-07-30T16:50:24.146Z",
+    "closed_at": null
+  }
+}

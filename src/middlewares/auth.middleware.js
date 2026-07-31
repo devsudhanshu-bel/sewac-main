@@ -1,50 +1,240 @@
 import { verifyToken } from "../utils/jwt.js";
 
-const authMiddleware = (req, res, next) => {
+import { AUTH_MESSAGES } from "../modules/auth/auth.constants.js";
+
+import redisService from "../modules/redis/redis.service.js";
+
+import redisKeys from "../modules/redis/redis.keys.js";
+
+
+
+const authenticateCitizen = async (req, res, next) => {
+
   try {
-    const authHeader = req.headers.authorization;
+
+
+    // =====================================
+    // READ AUTHORIZATION HEADER
+    // =====================================
+
+    const authHeader =
+      req.headers.authorization;
+
+
 
     if (!authHeader) {
+
       return res.status(401).json({
+
         success: false,
-        message: "Authorization header is missing.",
+
+        message: AUTH_MESSAGES.UNAUTHORIZED,
+
         data: null,
+
       });
+
     }
+
+
+
+
+    // =====================================
+    // CHECK BEARER FORMAT
+    // =====================================
 
     if (!authHeader.startsWith("Bearer ")) {
+
+
       return res.status(401).json({
+
         success: false,
-        message: "Invalid authorization format.",
+
+        message: AUTH_MESSAGES.INVALID_TOKEN,
+
         data: null,
+
       });
+
     }
 
-    const token = authHeader.split(" ")[1];
+
+
+
+    const token =
+      authHeader.substring(7);
+
+
 
     if (!token) {
+
+
       return res.status(401).json({
-        success: false,
-        message: "Token is missing.",
-        data: null,
+
+        success:false,
+
+        message:AUTH_MESSAGES.INVALID_TOKEN,
+
+        data:null,
+
       });
+
+
     }
 
-    const decoded = verifyToken(token);
+
+
+
+
+    // =====================================
+    // VERIFY JWT TOKEN
+    // =====================================
+
+    const decoded =
+      verifyToken(token);
+
+
+
+
+
+    const userId =
+      decoded.id;
+
+
+
+    if(!userId){
+
+
+      return res.status(401).json({
+
+        success:false,
+
+        message:AUTH_MESSAGES.INVALID_TOKEN,
+
+        data:null,
+
+      });
+
+
+    }
+
+
+
+
+
+    // =====================================
+    // CHECK REDIS SESSION
+    // =====================================
+
+    const key =
+      redisKeys.authToken(
+        userId
+      );
+
+
+
+    const redisToken =
+      await redisService.get(
+        key
+      );
+
+
+
+
+
+    if(!redisToken){
+
+
+      return res.status(401).json({
+
+        success:false,
+
+        message:"Session expired. Please login again.",
+
+        data:null,
+
+      });
+
+
+    }
+
+
+
+
+
+    // =====================================
+    // VERIFY TOKEN MATCH
+    // =====================================
+
+    if(redisToken !== token){
+
+
+      return res.status(401).json({
+
+        success:false,
+
+        message:"Invalid session.",
+
+        data:null,
+
+      });
+
+
+    }
+
+
+
+
+
+    // =====================================
+    // ATTACH USER DATA
+    // =====================================
+
 
     req.user = {
+
       id: decoded.id,
-      phoneNumber: decoded.phoneNumber,
+
+      phoneNumber:
+        decoded.phoneNumber,
+
+      token,
+
     };
 
+
+
     next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired token.",
-      data: null,
-    });
+
+
+
   }
+
+  catch(error){
+
+
+    console.error(
+      "❌ Authentication Error:",
+      error.message
+    );
+
+
+
+    return res.status(401).json({
+
+      success:false,
+
+      message:AUTH_MESSAGES.INVALID_TOKEN,
+
+      data:null,
+
+    });
+
+
+  }
+
 };
 
-export default authMiddleware;
+
+
+export default authenticateCitizen;

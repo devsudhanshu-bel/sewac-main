@@ -6,16 +6,31 @@ import authMiddleware from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
+/**
+ * Get nearest truck for citizen
+ *
+ * GET /api/citizen/map/nearest
+ *
+ * Query:
+ * latitude
+ * longitude
+ */
 router.get(
-  "/live",
+  "/nearest",
   authMiddleware,
-  mapController.getLiveMap
+  mapController.getNearestTruck
 );
 
+
+/**
+ * Get specific truck details
+ * Mainly for debugging/admin use
+ */
 router.get(
-  "/live/:vehicleId",
+  "/truck/:vehicleId",
   authMiddleware,
   mapController.getTruck
 );
+
 
 export default router;

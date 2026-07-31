@@ -26,7 +26,7 @@ router.use("/stats", statsRoutes);
 /**
  * Citizen Complaint Routes
  */
-router.use("/complaints", complaintRoutes);
+router.use("/complaint", complaintRoutes);
 
 /**
  * Citizen Live Map Routes

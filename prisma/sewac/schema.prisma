@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
-  output   = "../../generated/sewac"
+  output        = "../../generated/sewac"
 }
 
 datasource db {
@@ -115,44 +115,56 @@ model vehicle_telemetry {
   vehicle_master vehicle_master? @relation(fields: [vehicle_id], references: [vehicle_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-enum ComplaintPriority {
-  LOW
-  MEDIUM
-  HIGH
+enum CitizenComplaintCategory {
+  MISSED_COLLECTION
+  OVERFLOWING_BIN
+  ILLEGAL_DUMPING
+  STREET_LITTER
+  DAMAGED_BIN
+  OTHER
 }
 
-enum ComplaintStatus {
+enum CitizenComplaintStatus {
   PENDING
+  ASSIGNED
   IN_PROGRESS
-  RESOLVED
-  REJECTED
+  READY_FOR_VERIFICATION
+  VERIFICATION_CODE_SENT
+  CLOSED
 }
 
-model complaints {
+model citizen_complaints {
   id Int @id @default(autoincrement())
 
-  // Citizen Information
-  phone_number String
+  ticket_number String @unique
 
-  // Complaint Details
-  image_url   String?
-  description String @db.Text
+  phone_number String @db.VarChar(20)
 
-  priority ComplaintPriority
-  status   ComplaintStatus @default(PENDING)
+  title       String                   @db.VarChar(150)
+  description String                   @db.Text
+  category    CitizenComplaintCategory
 
-  // Complaint Location
+  image_url String? @db.Text
+
   latitude  Float
   longitude Float
   address   String @db.Text
 
-  // Timestamps
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  status CitizenComplaintStatus @default(PENDING)
+
+  verification_code       String?   @db.VarChar(6)
+  verification_expires_at DateTime?
+
+  assigned_to String? @db.VarChar(100)
+  remarks     String? @db.Text
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  closed_at  DateTime?
 
   @@index([phone_number])
+  @@index([ticket_number])
   @@index([status])
-  @@index([latitude, longitude])
-
-  @@map("complaints")
+  @@index([created_at])
+  @@map("citizen_complaints")
 }

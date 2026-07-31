@@ -1,54 +1,41 @@
-import { COMPLAINT_MESSAGES } from "./complaint.constants.js";
-
-const VALID_PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
-
-class ComplaintValidation {
-  validateCreateComplaint(
-    file,
+export const validateComplaint = (data) => {
+  const {
+    title,
     description,
-    priority,
+    category,
     latitude,
     longitude,
-    address
-  ) {
-    if (!file) {
-      throw new Error(COMPLAINT_MESSAGES.IMAGE_REQUIRED);
-    }
+    address,
+  } = data;
 
-    if (!description || description.trim() === "") {
-      throw new Error(COMPLAINT_MESSAGES.DESCRIPTION_REQUIRED);
-    }
-
-    if (description.trim().length > 1000) {
-      throw new Error(COMPLAINT_MESSAGES.DESCRIPTION_TOO_LONG);
-    }
-
-    if (!priority) {
-      throw new Error(COMPLAINT_MESSAGES.PRIORITY_REQUIRED);
-    }
-
-    if (!VALID_PRIORITIES.includes(priority.trim().toUpperCase())) {
-      throw new Error(COMPLAINT_MESSAGES.INVALID_PRIORITY);
-    }
-
-    if (latitude === undefined || latitude === null || latitude === "") {
-      throw new Error(COMPLAINT_MESSAGES.LATITUDE_REQUIRED);
-    }
-
-    if (longitude === undefined || longitude === null || longitude === "") {
-      throw new Error(COMPLAINT_MESSAGES.LONGITUDE_REQUIRED);
-    }
-
-    if (isNaN(Number(latitude)) || isNaN(Number(longitude))) {
-      throw new Error(COMPLAINT_MESSAGES.INVALID_COORDINATES);
-    }
-
-    if (!address || address.trim() === "") {
-      throw new Error(COMPLAINT_MESSAGES.ADDRESS_REQUIRED);
-    }
-
-    return true;
+  if (!title || title.trim() === "") {
+    throw new Error("Title is required.");
   }
-}
 
-export default new ComplaintValidation();
+  if (!description || description.trim() === "") {
+    throw new Error("Description is required.");
+  }
+
+  if (!category || category.trim() === "") {
+    throw new Error("Category is required.");
+  }
+
+  if (
+    latitude === undefined ||
+    latitude === null ||
+    longitude === undefined ||
+    longitude === null
+  ) {
+    throw new Error("Latitude and Longitude are required.");
+  }
+
+  if (isNaN(Number(latitude)) || isNaN(Number(longitude))) {
+    throw new Error("Invalid latitude or longitude.");
+  }
+
+  if (!address || address.trim() === "") {
+    throw new Error("Address is required.");
+  }
+
+  return true;
+};

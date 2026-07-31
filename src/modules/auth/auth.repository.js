@@ -20,32 +20,6 @@ class AuthRepository {
       },
     });
   }
-
-  /**
-   * Find citizen by Dry RFID
-   * @param {string} dryRFID
-   * @returns {Promise<Object|null>}
-   */
-  async findCitizenByDryRFID(dryRFID) {
-    return await helperPrisma.master_citizen_data.findFirst({
-      where: {
-        dryRFID,
-      },
-    });
-  }
-
-  /**
-   * Find citizen by Wet RFID
-   * @param {string} wetRFID
-   * @returns {Promise<Object|null>}
-   */
-  async findCitizenByWetRFID(wetRFID) {
-    return await helperPrisma.master_citizen_data.findFirst({
-      where: {
-        wetRFID,
-      },
-    });
-  }
 }
 
 export default new AuthRepository();

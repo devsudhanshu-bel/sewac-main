@@ -215,18 +215,25 @@ exports.Prisma.Vehicle_telemetryScalarFieldEnum = {
   recorded_at: 'recorded_at'
 };
 
-exports.Prisma.ComplaintsScalarFieldEnum = {
+exports.Prisma.Citizen_complaintsScalarFieldEnum = {
   id: 'id',
+  ticket_number: 'ticket_number',
   phone_number: 'phone_number',
-  image_url: 'image_url',
+  title: 'title',
   description: 'description',
-  priority: 'priority',
-  status: 'status',
+  category: 'category',
+  image_url: 'image_url',
   latitude: 'latitude',
   longitude: 'longitude',
   address: 'address',
+  status: 'status',
+  verification_code: 'verification_code',
+  verification_expires_at: 'verification_expires_at',
+  assigned_to: 'assigned_to',
+  remarks: 'remarks',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  closed_at: 'closed_at'
 };
 
 exports.Prisma.SortOrder = {
@@ -243,17 +250,22 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-exports.ComplaintPriority = exports.$Enums.ComplaintPriority = {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH'
+exports.CitizenComplaintCategory = exports.$Enums.CitizenComplaintCategory = {
+  MISSED_COLLECTION: 'MISSED_COLLECTION',
+  OVERFLOWING_BIN: 'OVERFLOWING_BIN',
+  ILLEGAL_DUMPING: 'ILLEGAL_DUMPING',
+  STREET_LITTER: 'STREET_LITTER',
+  DAMAGED_BIN: 'DAMAGED_BIN',
+  OTHER: 'OTHER'
 };
 
-exports.ComplaintStatus = exports.$Enums.ComplaintStatus = {
+exports.CitizenComplaintStatus = exports.$Enums.CitizenComplaintStatus = {
   PENDING: 'PENDING',
+  ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
-  RESOLVED: 'RESOLVED',
-  REJECTED: 'REJECTED'
+  READY_FOR_VERIFICATION: 'READY_FOR_VERIFICATION',
+  VERIFICATION_CODE_SENT: 'VERIFICATION_CODE_SENT',
+  CLOSED: 'CLOSED'
 };
 
 exports.Prisma.ModelName = {
@@ -263,7 +275,7 @@ exports.Prisma.ModelName = {
   vehicle_incidents: 'vehicle_incidents',
   vehicle_master: 'vehicle_master',
   vehicle_telemetry: 'vehicle_telemetry',
-  complaints: 'complaints'
+  citizen_complaints: 'citizen_complaints'
 };
 
 /**

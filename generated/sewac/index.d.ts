@@ -44,42 +44,47 @@ export type vehicle_master = $Result.DefaultSelection<Prisma.$vehicle_masterPayl
  */
 export type vehicle_telemetry = $Result.DefaultSelection<Prisma.$vehicle_telemetryPayload>
 /**
- * Model complaints
+ * Model citizen_complaints
  * 
  */
-export type complaints = $Result.DefaultSelection<Prisma.$complaintsPayload>
+export type citizen_complaints = $Result.DefaultSelection<Prisma.$citizen_complaintsPayload>
 
 /**
  * Enums
  */
 export namespace $Enums {
-  export const ComplaintPriority: {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH'
+  export const CitizenComplaintCategory: {
+  MISSED_COLLECTION: 'MISSED_COLLECTION',
+  OVERFLOWING_BIN: 'OVERFLOWING_BIN',
+  ILLEGAL_DUMPING: 'ILLEGAL_DUMPING',
+  STREET_LITTER: 'STREET_LITTER',
+  DAMAGED_BIN: 'DAMAGED_BIN',
+  OTHER: 'OTHER'
 };
 
-export type ComplaintPriority = (typeof ComplaintPriority)[keyof typeof ComplaintPriority]
+export type CitizenComplaintCategory = (typeof CitizenComplaintCategory)[keyof typeof CitizenComplaintCategory]
 
 
-export const ComplaintStatus: {
+export const CitizenComplaintStatus: {
   PENDING: 'PENDING',
+  ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
-  RESOLVED: 'RESOLVED',
-  REJECTED: 'REJECTED'
+  READY_FOR_VERIFICATION: 'READY_FOR_VERIFICATION',
+  VERIFICATION_CODE_SENT: 'VERIFICATION_CODE_SENT',
+  CLOSED: 'CLOSED'
 };
 
-export type ComplaintStatus = (typeof ComplaintStatus)[keyof typeof ComplaintStatus]
+export type CitizenComplaintStatus = (typeof CitizenComplaintStatus)[keyof typeof CitizenComplaintStatus]
 
 }
 
-export type ComplaintPriority = $Enums.ComplaintPriority
+export type CitizenComplaintCategory = $Enums.CitizenComplaintCategory
 
-export const ComplaintPriority: typeof $Enums.ComplaintPriority
+export const CitizenComplaintCategory: typeof $Enums.CitizenComplaintCategory
 
-export type ComplaintStatus = $Enums.ComplaintStatus
+export type CitizenComplaintStatus = $Enums.CitizenComplaintStatus
 
-export const ComplaintStatus: typeof $Enums.ComplaintStatus
+export const CitizenComplaintStatus: typeof $Enums.CitizenComplaintStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -260,14 +265,14 @@ export class PrismaClient<
   get vehicle_telemetry(): Prisma.vehicle_telemetryDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.complaints`: Exposes CRUD operations for the **complaints** model.
+   * `prisma.citizen_complaints`: Exposes CRUD operations for the **citizen_complaints** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Complaints
-    * const complaints = await prisma.complaints.findMany()
+    * // Fetch zero or more Citizen_complaints
+    * const citizen_complaints = await prisma.citizen_complaints.findMany()
     * ```
     */
-  get complaints(): Prisma.complaintsDelegate<ExtArgs, ClientOptions>;
+  get citizen_complaints(): Prisma.citizen_complaintsDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -715,7 +720,7 @@ export namespace Prisma {
     vehicle_incidents: 'vehicle_incidents',
     vehicle_master: 'vehicle_master',
     vehicle_telemetry: 'vehicle_telemetry',
-    complaints: 'complaints'
+    citizen_complaints: 'citizen_complaints'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -734,7 +739,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "edit_logs" | "plant_master" | "telemetry_logs" | "vehicle_incidents" | "vehicle_master" | "vehicle_telemetry" | "complaints"
+      modelProps: "edit_logs" | "plant_master" | "telemetry_logs" | "vehicle_incidents" | "vehicle_master" | "vehicle_telemetry" | "citizen_complaints"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1182,77 +1187,77 @@ export namespace Prisma {
           }
         }
       }
-      complaints: {
-        payload: Prisma.$complaintsPayload<ExtArgs>
-        fields: Prisma.complaintsFieldRefs
+      citizen_complaints: {
+        payload: Prisma.$citizen_complaintsPayload<ExtArgs>
+        fields: Prisma.citizen_complaintsFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.complaintsFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload> | null
+            args: Prisma.citizen_complaintsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.complaintsFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           findFirst: {
-            args: Prisma.complaintsFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload> | null
+            args: Prisma.citizen_complaintsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.complaintsFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           findMany: {
-            args: Prisma.complaintsFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>[]
+            args: Prisma.citizen_complaintsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>[]
           }
           create: {
-            args: Prisma.complaintsCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           createMany: {
-            args: Prisma.complaintsCreateManyArgs<ExtArgs>
+            args: Prisma.citizen_complaintsCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.complaintsCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>[]
+            args: Prisma.citizen_complaintsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>[]
           }
           delete: {
-            args: Prisma.complaintsDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           update: {
-            args: Prisma.complaintsUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           deleteMany: {
-            args: Prisma.complaintsDeleteManyArgs<ExtArgs>
+            args: Prisma.citizen_complaintsDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.complaintsUpdateManyArgs<ExtArgs>
+            args: Prisma.citizen_complaintsUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: Prisma.complaintsUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>[]
+            args: Prisma.citizen_complaintsUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>[]
           }
           upsert: {
-            args: Prisma.complaintsUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$complaintsPayload>
+            args: Prisma.citizen_complaintsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$citizen_complaintsPayload>
           }
           aggregate: {
-            args: Prisma.ComplaintsAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateComplaints>
+            args: Prisma.Citizen_complaintsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCitizen_complaints>
           }
           groupBy: {
-            args: Prisma.complaintsGroupByArgs<ExtArgs>
-            result: $Utils.Optional<ComplaintsGroupByOutputType>[]
+            args: Prisma.citizen_complaintsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Citizen_complaintsGroupByOutputType>[]
           }
           count: {
-            args: Prisma.complaintsCountArgs<ExtArgs>
-            result: $Utils.Optional<ComplaintsCountAggregateOutputType> | number
+            args: Prisma.citizen_complaintsCountArgs<ExtArgs>
+            result: $Utils.Optional<Citizen_complaintsCountAggregateOutputType> | number
           }
         }
       }
@@ -1358,7 +1363,7 @@ export namespace Prisma {
     vehicle_incidents?: vehicle_incidentsOmit
     vehicle_master?: vehicle_masterOmit
     vehicle_telemetry?: vehicle_telemetryOmit
-    complaints?: complaintsOmit
+    citizen_complaints?: citizen_complaintsOmit
   }
 
   /* Types for Logging */
@@ -8606,450 +8611,534 @@ export namespace Prisma {
 
 
   /**
-   * Model complaints
+   * Model citizen_complaints
    */
 
-  export type AggregateComplaints = {
-    _count: ComplaintsCountAggregateOutputType | null
-    _avg: ComplaintsAvgAggregateOutputType | null
-    _sum: ComplaintsSumAggregateOutputType | null
-    _min: ComplaintsMinAggregateOutputType | null
-    _max: ComplaintsMaxAggregateOutputType | null
+  export type AggregateCitizen_complaints = {
+    _count: Citizen_complaintsCountAggregateOutputType | null
+    _avg: Citizen_complaintsAvgAggregateOutputType | null
+    _sum: Citizen_complaintsSumAggregateOutputType | null
+    _min: Citizen_complaintsMinAggregateOutputType | null
+    _max: Citizen_complaintsMaxAggregateOutputType | null
   }
 
-  export type ComplaintsAvgAggregateOutputType = {
+  export type Citizen_complaintsAvgAggregateOutputType = {
     id: number | null
     latitude: number | null
     longitude: number | null
   }
 
-  export type ComplaintsSumAggregateOutputType = {
+  export type Citizen_complaintsSumAggregateOutputType = {
     id: number | null
     latitude: number | null
     longitude: number | null
   }
 
-  export type ComplaintsMinAggregateOutputType = {
+  export type Citizen_complaintsMinAggregateOutputType = {
     id: number | null
+    ticket_number: string | null
     phone_number: string | null
-    image_url: string | null
+    title: string | null
     description: string | null
-    priority: $Enums.ComplaintPriority | null
-    status: $Enums.ComplaintStatus | null
+    category: $Enums.CitizenComplaintCategory | null
+    image_url: string | null
     latitude: number | null
     longitude: number | null
     address: string | null
+    status: $Enums.CitizenComplaintStatus | null
+    verification_code: string | null
+    verification_expires_at: Date | null
+    assigned_to: string | null
+    remarks: string | null
     created_at: Date | null
     updated_at: Date | null
+    closed_at: Date | null
   }
 
-  export type ComplaintsMaxAggregateOutputType = {
+  export type Citizen_complaintsMaxAggregateOutputType = {
     id: number | null
+    ticket_number: string | null
     phone_number: string | null
-    image_url: string | null
+    title: string | null
     description: string | null
-    priority: $Enums.ComplaintPriority | null
-    status: $Enums.ComplaintStatus | null
+    category: $Enums.CitizenComplaintCategory | null
+    image_url: string | null
     latitude: number | null
     longitude: number | null
     address: string | null
+    status: $Enums.CitizenComplaintStatus | null
+    verification_code: string | null
+    verification_expires_at: Date | null
+    assigned_to: string | null
+    remarks: string | null
     created_at: Date | null
     updated_at: Date | null
+    closed_at: Date | null
   }
 
-  export type ComplaintsCountAggregateOutputType = {
+  export type Citizen_complaintsCountAggregateOutputType = {
     id: number
+    ticket_number: number
     phone_number: number
-    image_url: number
+    title: number
     description: number
-    priority: number
-    status: number
+    category: number
+    image_url: number
     latitude: number
     longitude: number
     address: number
+    status: number
+    verification_code: number
+    verification_expires_at: number
+    assigned_to: number
+    remarks: number
     created_at: number
     updated_at: number
+    closed_at: number
     _all: number
   }
 
 
-  export type ComplaintsAvgAggregateInputType = {
+  export type Citizen_complaintsAvgAggregateInputType = {
     id?: true
     latitude?: true
     longitude?: true
   }
 
-  export type ComplaintsSumAggregateInputType = {
+  export type Citizen_complaintsSumAggregateInputType = {
     id?: true
     latitude?: true
     longitude?: true
   }
 
-  export type ComplaintsMinAggregateInputType = {
+  export type Citizen_complaintsMinAggregateInputType = {
     id?: true
+    ticket_number?: true
     phone_number?: true
-    image_url?: true
+    title?: true
     description?: true
-    priority?: true
-    status?: true
+    category?: true
+    image_url?: true
     latitude?: true
     longitude?: true
     address?: true
+    status?: true
+    verification_code?: true
+    verification_expires_at?: true
+    assigned_to?: true
+    remarks?: true
     created_at?: true
     updated_at?: true
+    closed_at?: true
   }
 
-  export type ComplaintsMaxAggregateInputType = {
+  export type Citizen_complaintsMaxAggregateInputType = {
     id?: true
+    ticket_number?: true
     phone_number?: true
-    image_url?: true
+    title?: true
     description?: true
-    priority?: true
-    status?: true
+    category?: true
+    image_url?: true
     latitude?: true
     longitude?: true
     address?: true
+    status?: true
+    verification_code?: true
+    verification_expires_at?: true
+    assigned_to?: true
+    remarks?: true
     created_at?: true
     updated_at?: true
+    closed_at?: true
   }
 
-  export type ComplaintsCountAggregateInputType = {
+  export type Citizen_complaintsCountAggregateInputType = {
     id?: true
+    ticket_number?: true
     phone_number?: true
-    image_url?: true
+    title?: true
     description?: true
-    priority?: true
-    status?: true
+    category?: true
+    image_url?: true
     latitude?: true
     longitude?: true
     address?: true
+    status?: true
+    verification_code?: true
+    verification_expires_at?: true
+    assigned_to?: true
+    remarks?: true
     created_at?: true
     updated_at?: true
+    closed_at?: true
     _all?: true
   }
 
-  export type ComplaintsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Citizen_complaintsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which complaints to aggregate.
+     * Filter which citizen_complaints to aggregate.
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of complaints to fetch.
+     * Determine the order of citizen_complaints to fetch.
      */
-    orderBy?: complaintsOrderByWithRelationInput | complaintsOrderByWithRelationInput[]
+    orderBy?: citizen_complaintsOrderByWithRelationInput | citizen_complaintsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: complaintsWhereUniqueInput
+    cursor?: citizen_complaintsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` complaints from the position of the cursor.
+     * Take `±n` citizen_complaints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` complaints.
+     * Skip the first `n` citizen_complaints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned complaints
+     * Count returned citizen_complaints
     **/
-    _count?: true | ComplaintsCountAggregateInputType
+    _count?: true | Citizen_complaintsCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: ComplaintsAvgAggregateInputType
+    _avg?: Citizen_complaintsAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: ComplaintsSumAggregateInputType
+    _sum?: Citizen_complaintsSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: ComplaintsMinAggregateInputType
+    _min?: Citizen_complaintsMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: ComplaintsMaxAggregateInputType
+    _max?: Citizen_complaintsMaxAggregateInputType
   }
 
-  export type GetComplaintsAggregateType<T extends ComplaintsAggregateArgs> = {
-        [P in keyof T & keyof AggregateComplaints]: P extends '_count' | 'count'
+  export type GetCitizen_complaintsAggregateType<T extends Citizen_complaintsAggregateArgs> = {
+        [P in keyof T & keyof AggregateCitizen_complaints]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateComplaints[P]>
-      : GetScalarType<T[P], AggregateComplaints[P]>
+        : GetScalarType<T[P], AggregateCitizen_complaints[P]>
+      : GetScalarType<T[P], AggregateCitizen_complaints[P]>
   }
 
 
 
 
-  export type complaintsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: complaintsWhereInput
-    orderBy?: complaintsOrderByWithAggregationInput | complaintsOrderByWithAggregationInput[]
-    by: ComplaintsScalarFieldEnum[] | ComplaintsScalarFieldEnum
-    having?: complaintsScalarWhereWithAggregatesInput
+  export type citizen_complaintsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: citizen_complaintsWhereInput
+    orderBy?: citizen_complaintsOrderByWithAggregationInput | citizen_complaintsOrderByWithAggregationInput[]
+    by: Citizen_complaintsScalarFieldEnum[] | Citizen_complaintsScalarFieldEnum
+    having?: citizen_complaintsScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: ComplaintsCountAggregateInputType | true
-    _avg?: ComplaintsAvgAggregateInputType
-    _sum?: ComplaintsSumAggregateInputType
-    _min?: ComplaintsMinAggregateInputType
-    _max?: ComplaintsMaxAggregateInputType
+    _count?: Citizen_complaintsCountAggregateInputType | true
+    _avg?: Citizen_complaintsAvgAggregateInputType
+    _sum?: Citizen_complaintsSumAggregateInputType
+    _min?: Citizen_complaintsMinAggregateInputType
+    _max?: Citizen_complaintsMaxAggregateInputType
   }
 
-  export type ComplaintsGroupByOutputType = {
+  export type Citizen_complaintsGroupByOutputType = {
     id: number
+    ticket_number: string
     phone_number: string
-    image_url: string | null
+    title: string
     description: string
-    priority: $Enums.ComplaintPriority
-    status: $Enums.ComplaintStatus
+    category: $Enums.CitizenComplaintCategory
+    image_url: string | null
     latitude: number
     longitude: number
     address: string
+    status: $Enums.CitizenComplaintStatus
+    verification_code: string | null
+    verification_expires_at: Date | null
+    assigned_to: string | null
+    remarks: string | null
     created_at: Date
     updated_at: Date
-    _count: ComplaintsCountAggregateOutputType | null
-    _avg: ComplaintsAvgAggregateOutputType | null
-    _sum: ComplaintsSumAggregateOutputType | null
-    _min: ComplaintsMinAggregateOutputType | null
-    _max: ComplaintsMaxAggregateOutputType | null
+    closed_at: Date | null
+    _count: Citizen_complaintsCountAggregateOutputType | null
+    _avg: Citizen_complaintsAvgAggregateOutputType | null
+    _sum: Citizen_complaintsSumAggregateOutputType | null
+    _min: Citizen_complaintsMinAggregateOutputType | null
+    _max: Citizen_complaintsMaxAggregateOutputType | null
   }
 
-  type GetComplaintsGroupByPayload<T extends complaintsGroupByArgs> = Prisma.PrismaPromise<
+  type GetCitizen_complaintsGroupByPayload<T extends citizen_complaintsGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<ComplaintsGroupByOutputType, T['by']> &
+      PickEnumerable<Citizen_complaintsGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof ComplaintsGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof Citizen_complaintsGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], ComplaintsGroupByOutputType[P]>
-            : GetScalarType<T[P], ComplaintsGroupByOutputType[P]>
+              : GetScalarType<T[P], Citizen_complaintsGroupByOutputType[P]>
+            : GetScalarType<T[P], Citizen_complaintsGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type complaintsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type citizen_complaintsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    ticket_number?: boolean
     phone_number?: boolean
-    image_url?: boolean
+    title?: boolean
     description?: boolean
-    priority?: boolean
-    status?: boolean
+    category?: boolean
+    image_url?: boolean
     latitude?: boolean
     longitude?: boolean
     address?: boolean
+    status?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
+    assigned_to?: boolean
+    remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
-  }, ExtArgs["result"]["complaints"]>
+    closed_at?: boolean
+  }, ExtArgs["result"]["citizen_complaints"]>
 
-  export type complaintsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type citizen_complaintsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    ticket_number?: boolean
     phone_number?: boolean
-    image_url?: boolean
+    title?: boolean
     description?: boolean
-    priority?: boolean
-    status?: boolean
+    category?: boolean
+    image_url?: boolean
     latitude?: boolean
     longitude?: boolean
     address?: boolean
+    status?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
+    assigned_to?: boolean
+    remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
-  }, ExtArgs["result"]["complaints"]>
+    closed_at?: boolean
+  }, ExtArgs["result"]["citizen_complaints"]>
 
-  export type complaintsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type citizen_complaintsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    ticket_number?: boolean
     phone_number?: boolean
-    image_url?: boolean
+    title?: boolean
     description?: boolean
-    priority?: boolean
-    status?: boolean
+    category?: boolean
+    image_url?: boolean
     latitude?: boolean
     longitude?: boolean
     address?: boolean
+    status?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
+    assigned_to?: boolean
+    remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
-  }, ExtArgs["result"]["complaints"]>
+    closed_at?: boolean
+  }, ExtArgs["result"]["citizen_complaints"]>
 
-  export type complaintsSelectScalar = {
+  export type citizen_complaintsSelectScalar = {
     id?: boolean
+    ticket_number?: boolean
     phone_number?: boolean
-    image_url?: boolean
+    title?: boolean
     description?: boolean
-    priority?: boolean
-    status?: boolean
+    category?: boolean
+    image_url?: boolean
     latitude?: boolean
     longitude?: boolean
     address?: boolean
+    status?: boolean
+    verification_code?: boolean
+    verification_expires_at?: boolean
+    assigned_to?: boolean
+    remarks?: boolean
     created_at?: boolean
     updated_at?: boolean
+    closed_at?: boolean
   }
 
-  export type complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "phone_number" | "image_url" | "description" | "priority" | "status" | "latitude" | "longitude" | "address" | "created_at" | "updated_at", ExtArgs["result"]["complaints"]>
+  export type citizen_complaintsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ticket_number" | "phone_number" | "title" | "description" | "category" | "image_url" | "latitude" | "longitude" | "address" | "status" | "verification_code" | "verification_expires_at" | "assigned_to" | "remarks" | "created_at" | "updated_at" | "closed_at", ExtArgs["result"]["citizen_complaints"]>
 
-  export type $complaintsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "complaints"
+  export type $citizen_complaintsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "citizen_complaints"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: number
+      ticket_number: string
       phone_number: string
-      image_url: string | null
+      title: string
       description: string
-      priority: $Enums.ComplaintPriority
-      status: $Enums.ComplaintStatus
+      category: $Enums.CitizenComplaintCategory
+      image_url: string | null
       latitude: number
       longitude: number
       address: string
+      status: $Enums.CitizenComplaintStatus
+      verification_code: string | null
+      verification_expires_at: Date | null
+      assigned_to: string | null
+      remarks: string | null
       created_at: Date
       updated_at: Date
-    }, ExtArgs["result"]["complaints"]>
+      closed_at: Date | null
+    }, ExtArgs["result"]["citizen_complaints"]>
     composites: {}
   }
 
-  type complaintsGetPayload<S extends boolean | null | undefined | complaintsDefaultArgs> = $Result.GetResult<Prisma.$complaintsPayload, S>
+  type citizen_complaintsGetPayload<S extends boolean | null | undefined | citizen_complaintsDefaultArgs> = $Result.GetResult<Prisma.$citizen_complaintsPayload, S>
 
-  type complaintsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<complaintsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
-      select?: ComplaintsCountAggregateInputType | true
+  type citizen_complaintsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<citizen_complaintsFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: Citizen_complaintsCountAggregateInputType | true
     }
 
-  export interface complaintsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['complaints'], meta: { name: 'complaints' } }
+  export interface citizen_complaintsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['citizen_complaints'], meta: { name: 'citizen_complaints' } }
     /**
-     * Find zero or one Complaints that matches the filter.
-     * @param {complaintsFindUniqueArgs} args - Arguments to find a Complaints
+     * Find zero or one Citizen_complaints that matches the filter.
+     * @param {citizen_complaintsFindUniqueArgs} args - Arguments to find a Citizen_complaints
      * @example
-     * // Get one Complaints
-     * const complaints = await prisma.complaints.findUnique({
+     * // Get one Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends complaintsFindUniqueArgs>(args: SelectSubset<T, complaintsFindUniqueArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findUnique<T extends citizen_complaintsFindUniqueArgs>(args: SelectSubset<T, citizen_complaintsFindUniqueArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find one Complaints that matches the filter or throw an error with `error.code='P2025'`
+     * Find one Citizen_complaints that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
-     * @param {complaintsFindUniqueOrThrowArgs} args - Arguments to find a Complaints
+     * @param {citizen_complaintsFindUniqueOrThrowArgs} args - Arguments to find a Citizen_complaints
      * @example
-     * // Get one Complaints
-     * const complaints = await prisma.complaints.findUniqueOrThrow({
+     * // Get one Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends complaintsFindUniqueOrThrowArgs>(args: SelectSubset<T, complaintsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findUniqueOrThrow<T extends citizen_complaintsFindUniqueOrThrowArgs>(args: SelectSubset<T, citizen_complaintsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Complaints that matches the filter.
+     * Find the first Citizen_complaints that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsFindFirstArgs} args - Arguments to find a Complaints
+     * @param {citizen_complaintsFindFirstArgs} args - Arguments to find a Citizen_complaints
      * @example
-     * // Get one Complaints
-     * const complaints = await prisma.complaints.findFirst({
+     * // Get one Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends complaintsFindFirstArgs>(args?: SelectSubset<T, complaintsFindFirstArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    findFirst<T extends citizen_complaintsFindFirstArgs>(args?: SelectSubset<T, citizen_complaintsFindFirstArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first Complaints that matches the filter or
+     * Find the first Citizen_complaints that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsFindFirstOrThrowArgs} args - Arguments to find a Complaints
+     * @param {citizen_complaintsFindFirstOrThrowArgs} args - Arguments to find a Citizen_complaints
      * @example
-     * // Get one Complaints
-     * const complaints = await prisma.complaints.findFirstOrThrow({
+     * // Get one Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends complaintsFindFirstOrThrowArgs>(args?: SelectSubset<T, complaintsFindFirstOrThrowArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    findFirstOrThrow<T extends citizen_complaintsFindFirstOrThrowArgs>(args?: SelectSubset<T, citizen_complaintsFindFirstOrThrowArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find zero or more Complaints that matches the filter.
+     * Find zero or more Citizen_complaints that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {citizen_complaintsFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Complaints
-     * const complaints = await prisma.complaints.findMany()
+     * // Get all Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findMany()
      * 
-     * // Get first 10 Complaints
-     * const complaints = await prisma.complaints.findMany({ take: 10 })
+     * // Get first 10 Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const complaintsWithIdOnly = await prisma.complaints.findMany({ select: { id: true } })
+     * const citizen_complaintsWithIdOnly = await prisma.citizen_complaints.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends complaintsFindManyArgs>(args?: SelectSubset<T, complaintsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    findMany<T extends citizen_complaintsFindManyArgs>(args?: SelectSubset<T, citizen_complaintsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
     /**
-     * Create a Complaints.
-     * @param {complaintsCreateArgs} args - Arguments to create a Complaints.
+     * Create a Citizen_complaints.
+     * @param {citizen_complaintsCreateArgs} args - Arguments to create a Citizen_complaints.
      * @example
-     * // Create one Complaints
-     * const Complaints = await prisma.complaints.create({
+     * // Create one Citizen_complaints
+     * const Citizen_complaints = await prisma.citizen_complaints.create({
      *   data: {
-     *     // ... data to create a Complaints
+     *     // ... data to create a Citizen_complaints
      *   }
      * })
      * 
      */
-    create<T extends complaintsCreateArgs>(args: SelectSubset<T, complaintsCreateArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    create<T extends citizen_complaintsCreateArgs>(args: SelectSubset<T, citizen_complaintsCreateArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Create many Complaints.
-     * @param {complaintsCreateManyArgs} args - Arguments to create many Complaints.
+     * Create many Citizen_complaints.
+     * @param {citizen_complaintsCreateManyArgs} args - Arguments to create many Citizen_complaints.
      * @example
-     * // Create many Complaints
-     * const complaints = await prisma.complaints.createMany({
+     * // Create many Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends complaintsCreateManyArgs>(args?: SelectSubset<T, complaintsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends citizen_complaintsCreateManyArgs>(args?: SelectSubset<T, citizen_complaintsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Complaints and returns the data saved in the database.
-     * @param {complaintsCreateManyAndReturnArgs} args - Arguments to create many Complaints.
+     * Create many Citizen_complaints and returns the data saved in the database.
+     * @param {citizen_complaintsCreateManyAndReturnArgs} args - Arguments to create many Citizen_complaints.
      * @example
-     * // Create many Complaints
-     * const complaints = await prisma.complaints.createManyAndReturn({
+     * // Create many Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many Complaints and only return the `id`
-     * const complaintsWithIdOnly = await prisma.complaints.createManyAndReturn({
+     * // Create many Citizen_complaints and only return the `id`
+     * const citizen_complaintsWithIdOnly = await prisma.citizen_complaints.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -9059,28 +9148,28 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends complaintsCreateManyAndReturnArgs>(args?: SelectSubset<T, complaintsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    createManyAndReturn<T extends citizen_complaintsCreateManyAndReturnArgs>(args?: SelectSubset<T, citizen_complaintsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Delete a Complaints.
-     * @param {complaintsDeleteArgs} args - Arguments to delete one Complaints.
+     * Delete a Citizen_complaints.
+     * @param {citizen_complaintsDeleteArgs} args - Arguments to delete one Citizen_complaints.
      * @example
-     * // Delete one Complaints
-     * const Complaints = await prisma.complaints.delete({
+     * // Delete one Citizen_complaints
+     * const Citizen_complaints = await prisma.citizen_complaints.delete({
      *   where: {
-     *     // ... filter to delete one Complaints
+     *     // ... filter to delete one Citizen_complaints
      *   }
      * })
      * 
      */
-    delete<T extends complaintsDeleteArgs>(args: SelectSubset<T, complaintsDeleteArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    delete<T extends citizen_complaintsDeleteArgs>(args: SelectSubset<T, citizen_complaintsDeleteArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Update one Complaints.
-     * @param {complaintsUpdateArgs} args - Arguments to update one Complaints.
+     * Update one Citizen_complaints.
+     * @param {citizen_complaintsUpdateArgs} args - Arguments to update one Citizen_complaints.
      * @example
-     * // Update one Complaints
-     * const complaints = await prisma.complaints.update({
+     * // Update one Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -9090,30 +9179,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends complaintsUpdateArgs>(args: SelectSubset<T, complaintsUpdateArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    update<T extends citizen_complaintsUpdateArgs>(args: SelectSubset<T, citizen_complaintsUpdateArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Delete zero or more Complaints.
-     * @param {complaintsDeleteManyArgs} args - Arguments to filter Complaints to delete.
+     * Delete zero or more Citizen_complaints.
+     * @param {citizen_complaintsDeleteManyArgs} args - Arguments to filter Citizen_complaints to delete.
      * @example
-     * // Delete a few Complaints
-     * const { count } = await prisma.complaints.deleteMany({
+     * // Delete a few Citizen_complaints
+     * const { count } = await prisma.citizen_complaints.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends complaintsDeleteManyArgs>(args?: SelectSubset<T, complaintsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends citizen_complaintsDeleteManyArgs>(args?: SelectSubset<T, citizen_complaintsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Complaints.
+     * Update zero or more Citizen_complaints.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {citizen_complaintsUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Complaints
-     * const complaints = await prisma.complaints.updateMany({
+     * // Update many Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -9123,14 +9212,14 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends complaintsUpdateManyArgs>(args: SelectSubset<T, complaintsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends citizen_complaintsUpdateManyArgs>(args: SelectSubset<T, citizen_complaintsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Complaints and returns the data updated in the database.
-     * @param {complaintsUpdateManyAndReturnArgs} args - Arguments to update many Complaints.
+     * Update zero or more Citizen_complaints and returns the data updated in the database.
+     * @param {citizen_complaintsUpdateManyAndReturnArgs} args - Arguments to update many Citizen_complaints.
      * @example
-     * // Update many Complaints
-     * const complaints = await prisma.complaints.updateManyAndReturn({
+     * // Update many Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -9139,8 +9228,8 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Complaints and only return the `id`
-     * const complaintsWithIdOnly = await prisma.complaints.updateManyAndReturn({
+     * // Update zero or more Citizen_complaints and only return the `id`
+     * const citizen_complaintsWithIdOnly = await prisma.citizen_complaints.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -9153,56 +9242,56 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    updateManyAndReturn<T extends complaintsUpdateManyAndReturnArgs>(args: SelectSubset<T, complaintsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    updateManyAndReturn<T extends citizen_complaintsUpdateManyAndReturnArgs>(args: SelectSubset<T, citizen_complaintsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Create or update one Complaints.
-     * @param {complaintsUpsertArgs} args - Arguments to update or create a Complaints.
+     * Create or update one Citizen_complaints.
+     * @param {citizen_complaintsUpsertArgs} args - Arguments to update or create a Citizen_complaints.
      * @example
-     * // Update or create a Complaints
-     * const complaints = await prisma.complaints.upsert({
+     * // Update or create a Citizen_complaints
+     * const citizen_complaints = await prisma.citizen_complaints.upsert({
      *   create: {
-     *     // ... data to create a Complaints
+     *     // ... data to create a Citizen_complaints
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Complaints we want to update
+     *     // ... the filter for the Citizen_complaints we want to update
      *   }
      * })
      */
-    upsert<T extends complaintsUpsertArgs>(args: SelectSubset<T, complaintsUpsertArgs<ExtArgs>>): Prisma__complaintsClient<$Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    upsert<T extends citizen_complaintsUpsertArgs>(args: SelectSubset<T, citizen_complaintsUpsertArgs<ExtArgs>>): Prisma__citizen_complaintsClient<$Result.GetResult<Prisma.$citizen_complaintsPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
 
     /**
-     * Count the number of Complaints.
+     * Count the number of Citizen_complaints.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsCountArgs} args - Arguments to filter Complaints to count.
+     * @param {citizen_complaintsCountArgs} args - Arguments to filter Citizen_complaints to count.
      * @example
-     * // Count the number of Complaints
-     * const count = await prisma.complaints.count({
+     * // Count the number of Citizen_complaints
+     * const count = await prisma.citizen_complaints.count({
      *   where: {
-     *     // ... the filter for the Complaints we want to count
+     *     // ... the filter for the Citizen_complaints we want to count
      *   }
      * })
     **/
-    count<T extends complaintsCountArgs>(
-      args?: Subset<T, complaintsCountArgs>,
+    count<T extends citizen_complaintsCountArgs>(
+      args?: Subset<T, citizen_complaintsCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], ComplaintsCountAggregateOutputType>
+          : GetScalarType<T['select'], Citizen_complaintsCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Complaints.
+     * Allows you to perform aggregations operations on a Citizen_complaints.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {ComplaintsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {Citizen_complaintsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -9222,13 +9311,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends ComplaintsAggregateArgs>(args: Subset<T, ComplaintsAggregateArgs>): Prisma.PrismaPromise<GetComplaintsAggregateType<T>>
+    aggregate<T extends Citizen_complaintsAggregateArgs>(args: Subset<T, Citizen_complaintsAggregateArgs>): Prisma.PrismaPromise<GetCitizen_complaintsAggregateType<T>>
 
     /**
-     * Group by Complaints.
+     * Group by Citizen_complaints.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {complaintsGroupByArgs} args - Group by arguments.
+     * @param {citizen_complaintsGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -9243,14 +9332,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends complaintsGroupByArgs,
+      T extends citizen_complaintsGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: complaintsGroupByArgs['orderBy'] }
-        : { orderBy?: complaintsGroupByArgs['orderBy'] },
+        ? { orderBy: citizen_complaintsGroupByArgs['orderBy'] }
+        : { orderBy?: citizen_complaintsGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -9299,20 +9388,20 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, complaintsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetComplaintsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, citizen_complaintsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCitizen_complaintsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the complaints model
+   * Fields of the citizen_complaints model
    */
-  readonly fields: complaintsFieldRefs;
+  readonly fields: citizen_complaintsFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for complaints.
+   * The delegate class that acts as a "Promise-like" for citizen_complaints.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__complaintsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__citizen_complaintsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -9340,383 +9429,390 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the complaints model
+   * Fields of the citizen_complaints model
    */
-  interface complaintsFieldRefs {
-    readonly id: FieldRef<"complaints", 'Int'>
-    readonly phone_number: FieldRef<"complaints", 'String'>
-    readonly image_url: FieldRef<"complaints", 'String'>
-    readonly description: FieldRef<"complaints", 'String'>
-    readonly priority: FieldRef<"complaints", 'ComplaintPriority'>
-    readonly status: FieldRef<"complaints", 'ComplaintStatus'>
-    readonly latitude: FieldRef<"complaints", 'Float'>
-    readonly longitude: FieldRef<"complaints", 'Float'>
-    readonly address: FieldRef<"complaints", 'String'>
-    readonly created_at: FieldRef<"complaints", 'DateTime'>
-    readonly updated_at: FieldRef<"complaints", 'DateTime'>
+  interface citizen_complaintsFieldRefs {
+    readonly id: FieldRef<"citizen_complaints", 'Int'>
+    readonly ticket_number: FieldRef<"citizen_complaints", 'String'>
+    readonly phone_number: FieldRef<"citizen_complaints", 'String'>
+    readonly title: FieldRef<"citizen_complaints", 'String'>
+    readonly description: FieldRef<"citizen_complaints", 'String'>
+    readonly category: FieldRef<"citizen_complaints", 'CitizenComplaintCategory'>
+    readonly image_url: FieldRef<"citizen_complaints", 'String'>
+    readonly latitude: FieldRef<"citizen_complaints", 'Float'>
+    readonly longitude: FieldRef<"citizen_complaints", 'Float'>
+    readonly address: FieldRef<"citizen_complaints", 'String'>
+    readonly status: FieldRef<"citizen_complaints", 'CitizenComplaintStatus'>
+    readonly verification_code: FieldRef<"citizen_complaints", 'String'>
+    readonly verification_expires_at: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly assigned_to: FieldRef<"citizen_complaints", 'String'>
+    readonly remarks: FieldRef<"citizen_complaints", 'String'>
+    readonly created_at: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly updated_at: FieldRef<"citizen_complaints", 'DateTime'>
+    readonly closed_at: FieldRef<"citizen_complaints", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * complaints findUnique
+   * citizen_complaints findUnique
    */
-  export type complaintsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter, which complaints to fetch.
+     * Filter, which citizen_complaints to fetch.
      */
-    where: complaintsWhereUniqueInput
+    where: citizen_complaintsWhereUniqueInput
   }
 
   /**
-   * complaints findUniqueOrThrow
+   * citizen_complaints findUniqueOrThrow
    */
-  export type complaintsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter, which complaints to fetch.
+     * Filter, which citizen_complaints to fetch.
      */
-    where: complaintsWhereUniqueInput
+    where: citizen_complaintsWhereUniqueInput
   }
 
   /**
-   * complaints findFirst
+   * citizen_complaints findFirst
    */
-  export type complaintsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter, which complaints to fetch.
+     * Filter, which citizen_complaints to fetch.
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of complaints to fetch.
+     * Determine the order of citizen_complaints to fetch.
      */
-    orderBy?: complaintsOrderByWithRelationInput | complaintsOrderByWithRelationInput[]
+    orderBy?: citizen_complaintsOrderByWithRelationInput | citizen_complaintsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for complaints.
+     * Sets the position for searching for citizen_complaints.
      */
-    cursor?: complaintsWhereUniqueInput
+    cursor?: citizen_complaintsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` complaints from the position of the cursor.
+     * Take `±n` citizen_complaints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` complaints.
+     * Skip the first `n` citizen_complaints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of complaints.
+     * Filter by unique combinations of citizen_complaints.
      */
-    distinct?: ComplaintsScalarFieldEnum | ComplaintsScalarFieldEnum[]
+    distinct?: Citizen_complaintsScalarFieldEnum | Citizen_complaintsScalarFieldEnum[]
   }
 
   /**
-   * complaints findFirstOrThrow
+   * citizen_complaints findFirstOrThrow
    */
-  export type complaintsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter, which complaints to fetch.
+     * Filter, which citizen_complaints to fetch.
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of complaints to fetch.
+     * Determine the order of citizen_complaints to fetch.
      */
-    orderBy?: complaintsOrderByWithRelationInput | complaintsOrderByWithRelationInput[]
+    orderBy?: citizen_complaintsOrderByWithRelationInput | citizen_complaintsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for complaints.
+     * Sets the position for searching for citizen_complaints.
      */
-    cursor?: complaintsWhereUniqueInput
+    cursor?: citizen_complaintsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` complaints from the position of the cursor.
+     * Take `±n` citizen_complaints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` complaints.
+     * Skip the first `n` citizen_complaints.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of complaints.
+     * Filter by unique combinations of citizen_complaints.
      */
-    distinct?: ComplaintsScalarFieldEnum | ComplaintsScalarFieldEnum[]
+    distinct?: Citizen_complaintsScalarFieldEnum | Citizen_complaintsScalarFieldEnum[]
   }
 
   /**
-   * complaints findMany
+   * citizen_complaints findMany
    */
-  export type complaintsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter, which complaints to fetch.
+     * Filter, which citizen_complaints to fetch.
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of complaints to fetch.
+     * Determine the order of citizen_complaints to fetch.
      */
-    orderBy?: complaintsOrderByWithRelationInput | complaintsOrderByWithRelationInput[]
+    orderBy?: citizen_complaintsOrderByWithRelationInput | citizen_complaintsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing complaints.
+     * Sets the position for listing citizen_complaints.
      */
-    cursor?: complaintsWhereUniqueInput
+    cursor?: citizen_complaintsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` complaints from the position of the cursor.
+     * Take `±n` citizen_complaints from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` complaints.
+     * Skip the first `n` citizen_complaints.
      */
     skip?: number
-    distinct?: ComplaintsScalarFieldEnum | ComplaintsScalarFieldEnum[]
+    distinct?: Citizen_complaintsScalarFieldEnum | Citizen_complaintsScalarFieldEnum[]
   }
 
   /**
-   * complaints create
+   * citizen_complaints create
    */
-  export type complaintsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * The data needed to create a complaints.
+     * The data needed to create a citizen_complaints.
      */
-    data: XOR<complaintsCreateInput, complaintsUncheckedCreateInput>
+    data: XOR<citizen_complaintsCreateInput, citizen_complaintsUncheckedCreateInput>
   }
 
   /**
-   * complaints createMany
+   * citizen_complaints createMany
    */
-  export type complaintsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many complaints.
+     * The data used to create many citizen_complaints.
      */
-    data: complaintsCreateManyInput | complaintsCreateManyInput[]
+    data: citizen_complaintsCreateManyInput | citizen_complaintsCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * complaints createManyAndReturn
+   * citizen_complaints createManyAndReturn
    */
-  export type complaintsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelectCreateManyAndReturn<ExtArgs> | null
+    select?: citizen_complaintsSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * The data used to create many complaints.
+     * The data used to create many citizen_complaints.
      */
-    data: complaintsCreateManyInput | complaintsCreateManyInput[]
+    data: citizen_complaintsCreateManyInput | citizen_complaintsCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * complaints update
+   * citizen_complaints update
    */
-  export type complaintsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * The data needed to update a complaints.
+     * The data needed to update a citizen_complaints.
      */
-    data: XOR<complaintsUpdateInput, complaintsUncheckedUpdateInput>
+    data: XOR<citizen_complaintsUpdateInput, citizen_complaintsUncheckedUpdateInput>
     /**
-     * Choose, which complaints to update.
+     * Choose, which citizen_complaints to update.
      */
-    where: complaintsWhereUniqueInput
+    where: citizen_complaintsWhereUniqueInput
   }
 
   /**
-   * complaints updateMany
+   * citizen_complaints updateMany
    */
-  export type complaintsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update complaints.
+     * The data used to update citizen_complaints.
      */
-    data: XOR<complaintsUpdateManyMutationInput, complaintsUncheckedUpdateManyInput>
+    data: XOR<citizen_complaintsUpdateManyMutationInput, citizen_complaintsUncheckedUpdateManyInput>
     /**
-     * Filter which complaints to update
+     * Filter which citizen_complaints to update
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
-     * Limit how many complaints to update.
+     * Limit how many citizen_complaints to update.
      */
     limit?: number
   }
 
   /**
-   * complaints updateManyAndReturn
+   * citizen_complaints updateManyAndReturn
    */
-  export type complaintsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelectUpdateManyAndReturn<ExtArgs> | null
+    select?: citizen_complaintsSelectUpdateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * The data used to update complaints.
+     * The data used to update citizen_complaints.
      */
-    data: XOR<complaintsUpdateManyMutationInput, complaintsUncheckedUpdateManyInput>
+    data: XOR<citizen_complaintsUpdateManyMutationInput, citizen_complaintsUncheckedUpdateManyInput>
     /**
-     * Filter which complaints to update
+     * Filter which citizen_complaints to update
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
-     * Limit how many complaints to update.
+     * Limit how many citizen_complaints to update.
      */
     limit?: number
   }
 
   /**
-   * complaints upsert
+   * citizen_complaints upsert
    */
-  export type complaintsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * The filter to search for the complaints to update in case it exists.
+     * The filter to search for the citizen_complaints to update in case it exists.
      */
-    where: complaintsWhereUniqueInput
+    where: citizen_complaintsWhereUniqueInput
     /**
-     * In case the complaints found by the `where` argument doesn't exist, create a new complaints with this data.
+     * In case the citizen_complaints found by the `where` argument doesn't exist, create a new citizen_complaints with this data.
      */
-    create: XOR<complaintsCreateInput, complaintsUncheckedCreateInput>
+    create: XOR<citizen_complaintsCreateInput, citizen_complaintsUncheckedCreateInput>
     /**
-     * In case the complaints was found with the provided `where` argument, update it with this data.
+     * In case the citizen_complaints was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<complaintsUpdateInput, complaintsUncheckedUpdateInput>
+    update: XOR<citizen_complaintsUpdateInput, citizen_complaintsUncheckedUpdateInput>
   }
 
   /**
-   * complaints delete
+   * citizen_complaints delete
    */
-  export type complaintsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
     /**
-     * Filter which complaints to delete.
+     * Filter which citizen_complaints to delete.
      */
-    where: complaintsWhereUniqueInput
+    where: citizen_complaintsWhereUniqueInput
   }
 
   /**
-   * complaints deleteMany
+   * citizen_complaints deleteMany
    */
-  export type complaintsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which complaints to delete
+     * Filter which citizen_complaints to delete
      */
-    where?: complaintsWhereInput
+    where?: citizen_complaintsWhereInput
     /**
-     * Limit how many complaints to delete.
+     * Limit how many citizen_complaints to delete.
      */
     limit?: number
   }
 
   /**
-   * complaints without action
+   * citizen_complaints without action
    */
-  export type complaintsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type citizen_complaintsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the complaints
+     * Select specific fields to fetch from the citizen_complaints
      */
-    select?: complaintsSelect<ExtArgs> | null
+    select?: citizen_complaintsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the complaints
+     * Omit specific fields from the citizen_complaints
      */
-    omit?: complaintsOmit<ExtArgs> | null
+    omit?: citizen_complaintsOmit<ExtArgs> | null
   }
 
 
@@ -9846,21 +9942,28 @@ export namespace Prisma {
   export type Vehicle_telemetryScalarFieldEnum = (typeof Vehicle_telemetryScalarFieldEnum)[keyof typeof Vehicle_telemetryScalarFieldEnum]
 
 
-  export const ComplaintsScalarFieldEnum: {
+  export const Citizen_complaintsScalarFieldEnum: {
     id: 'id',
+    ticket_number: 'ticket_number',
     phone_number: 'phone_number',
-    image_url: 'image_url',
+    title: 'title',
     description: 'description',
-    priority: 'priority',
-    status: 'status',
+    category: 'category',
+    image_url: 'image_url',
     latitude: 'latitude',
     longitude: 'longitude',
     address: 'address',
+    status: 'status',
+    verification_code: 'verification_code',
+    verification_expires_at: 'verification_expires_at',
+    assigned_to: 'assigned_to',
+    remarks: 'remarks',
     created_at: 'created_at',
-    updated_at: 'updated_at'
+    updated_at: 'updated_at',
+    closed_at: 'closed_at'
   };
 
-  export type ComplaintsScalarFieldEnum = (typeof ComplaintsScalarFieldEnum)[keyof typeof ComplaintsScalarFieldEnum]
+  export type Citizen_complaintsScalarFieldEnum = (typeof Citizen_complaintsScalarFieldEnum)[keyof typeof Citizen_complaintsScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -9956,30 +10059,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'ComplaintPriority'
+   * Reference to a field of type 'CitizenComplaintCategory'
    */
-  export type EnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintPriority'>
+  export type EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CitizenComplaintCategory'>
     
 
 
   /**
-   * Reference to a field of type 'ComplaintPriority[]'
+   * Reference to a field of type 'CitizenComplaintCategory[]'
    */
-  export type ListEnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintPriority[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'ComplaintStatus'
-   */
-  export type EnumComplaintStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'ComplaintStatus[]'
-   */
-  export type ListEnumComplaintStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintStatus[]'>
+  export type ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CitizenComplaintCategory[]'>
     
 
 
@@ -9994,6 +10083,20 @@ export namespace Prisma {
    * Reference to a field of type 'Float[]'
    */
   export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'CitizenComplaintStatus'
+   */
+  export type EnumCitizenComplaintStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CitizenComplaintStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CitizenComplaintStatus[]'
+   */
+  export type ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CitizenComplaintStatus[]'>
     
   /**
    * Deep Input Types
@@ -10566,88 +10669,123 @@ export namespace Prisma {
     recorded_at?: DateTimeNullableWithAggregatesFilter<"vehicle_telemetry"> | Date | string | null
   }
 
-  export type complaintsWhereInput = {
-    AND?: complaintsWhereInput | complaintsWhereInput[]
-    OR?: complaintsWhereInput[]
-    NOT?: complaintsWhereInput | complaintsWhereInput[]
-    id?: IntFilter<"complaints"> | number
-    phone_number?: StringFilter<"complaints"> | string
-    image_url?: StringNullableFilter<"complaints"> | string | null
-    description?: StringFilter<"complaints"> | string
-    priority?: EnumComplaintPriorityFilter<"complaints"> | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFilter<"complaints"> | $Enums.ComplaintStatus
-    latitude?: FloatFilter<"complaints"> | number
-    longitude?: FloatFilter<"complaints"> | number
-    address?: StringFilter<"complaints"> | string
-    created_at?: DateTimeFilter<"complaints"> | Date | string
-    updated_at?: DateTimeFilter<"complaints"> | Date | string
+  export type citizen_complaintsWhereInput = {
+    AND?: citizen_complaintsWhereInput | citizen_complaintsWhereInput[]
+    OR?: citizen_complaintsWhereInput[]
+    NOT?: citizen_complaintsWhereInput | citizen_complaintsWhereInput[]
+    id?: IntFilter<"citizen_complaints"> | number
+    ticket_number?: StringFilter<"citizen_complaints"> | string
+    phone_number?: StringFilter<"citizen_complaints"> | string
+    title?: StringFilter<"citizen_complaints"> | string
+    description?: StringFilter<"citizen_complaints"> | string
+    category?: EnumCitizenComplaintCategoryFilter<"citizen_complaints"> | $Enums.CitizenComplaintCategory
+    image_url?: StringNullableFilter<"citizen_complaints"> | string | null
+    latitude?: FloatFilter<"citizen_complaints"> | number
+    longitude?: FloatFilter<"citizen_complaints"> | number
+    address?: StringFilter<"citizen_complaints"> | string
+    status?: EnumCitizenComplaintStatusFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
+    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    assigned_to?: StringNullableFilter<"citizen_complaints"> | string | null
+    remarks?: StringNullableFilter<"citizen_complaints"> | string | null
+    created_at?: DateTimeFilter<"citizen_complaints"> | Date | string
+    updated_at?: DateTimeFilter<"citizen_complaints"> | Date | string
+    closed_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
   }
 
-  export type complaintsOrderByWithRelationInput = {
+  export type citizen_complaintsOrderByWithRelationInput = {
     id?: SortOrder
+    ticket_number?: SortOrder
     phone_number?: SortOrder
-    image_url?: SortOrderInput | SortOrder
+    title?: SortOrder
     description?: SortOrder
-    priority?: SortOrder
-    status?: SortOrder
+    category?: SortOrder
+    image_url?: SortOrderInput | SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
     address?: SortOrder
+    status?: SortOrder
+    verification_code?: SortOrderInput | SortOrder
+    verification_expires_at?: SortOrderInput | SortOrder
+    assigned_to?: SortOrderInput | SortOrder
+    remarks?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    closed_at?: SortOrderInput | SortOrder
   }
 
-  export type complaintsWhereUniqueInput = Prisma.AtLeast<{
+  export type citizen_complaintsWhereUniqueInput = Prisma.AtLeast<{
     id?: number
-    AND?: complaintsWhereInput | complaintsWhereInput[]
-    OR?: complaintsWhereInput[]
-    NOT?: complaintsWhereInput | complaintsWhereInput[]
-    phone_number?: StringFilter<"complaints"> | string
-    image_url?: StringNullableFilter<"complaints"> | string | null
-    description?: StringFilter<"complaints"> | string
-    priority?: EnumComplaintPriorityFilter<"complaints"> | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFilter<"complaints"> | $Enums.ComplaintStatus
-    latitude?: FloatFilter<"complaints"> | number
-    longitude?: FloatFilter<"complaints"> | number
-    address?: StringFilter<"complaints"> | string
-    created_at?: DateTimeFilter<"complaints"> | Date | string
-    updated_at?: DateTimeFilter<"complaints"> | Date | string
-  }, "id">
+    ticket_number?: string
+    AND?: citizen_complaintsWhereInput | citizen_complaintsWhereInput[]
+    OR?: citizen_complaintsWhereInput[]
+    NOT?: citizen_complaintsWhereInput | citizen_complaintsWhereInput[]
+    phone_number?: StringFilter<"citizen_complaints"> | string
+    title?: StringFilter<"citizen_complaints"> | string
+    description?: StringFilter<"citizen_complaints"> | string
+    category?: EnumCitizenComplaintCategoryFilter<"citizen_complaints"> | $Enums.CitizenComplaintCategory
+    image_url?: StringNullableFilter<"citizen_complaints"> | string | null
+    latitude?: FloatFilter<"citizen_complaints"> | number
+    longitude?: FloatFilter<"citizen_complaints"> | number
+    address?: StringFilter<"citizen_complaints"> | string
+    status?: EnumCitizenComplaintStatusFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
+    verification_code?: StringNullableFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+    assigned_to?: StringNullableFilter<"citizen_complaints"> | string | null
+    remarks?: StringNullableFilter<"citizen_complaints"> | string | null
+    created_at?: DateTimeFilter<"citizen_complaints"> | Date | string
+    updated_at?: DateTimeFilter<"citizen_complaints"> | Date | string
+    closed_at?: DateTimeNullableFilter<"citizen_complaints"> | Date | string | null
+  }, "id" | "ticket_number">
 
-  export type complaintsOrderByWithAggregationInput = {
+  export type citizen_complaintsOrderByWithAggregationInput = {
     id?: SortOrder
+    ticket_number?: SortOrder
     phone_number?: SortOrder
-    image_url?: SortOrderInput | SortOrder
+    title?: SortOrder
     description?: SortOrder
-    priority?: SortOrder
-    status?: SortOrder
+    category?: SortOrder
+    image_url?: SortOrderInput | SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
     address?: SortOrder
+    status?: SortOrder
+    verification_code?: SortOrderInput | SortOrder
+    verification_expires_at?: SortOrderInput | SortOrder
+    assigned_to?: SortOrderInput | SortOrder
+    remarks?: SortOrderInput | SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
-    _count?: complaintsCountOrderByAggregateInput
-    _avg?: complaintsAvgOrderByAggregateInput
-    _max?: complaintsMaxOrderByAggregateInput
-    _min?: complaintsMinOrderByAggregateInput
-    _sum?: complaintsSumOrderByAggregateInput
+    closed_at?: SortOrderInput | SortOrder
+    _count?: citizen_complaintsCountOrderByAggregateInput
+    _avg?: citizen_complaintsAvgOrderByAggregateInput
+    _max?: citizen_complaintsMaxOrderByAggregateInput
+    _min?: citizen_complaintsMinOrderByAggregateInput
+    _sum?: citizen_complaintsSumOrderByAggregateInput
   }
 
-  export type complaintsScalarWhereWithAggregatesInput = {
-    AND?: complaintsScalarWhereWithAggregatesInput | complaintsScalarWhereWithAggregatesInput[]
-    OR?: complaintsScalarWhereWithAggregatesInput[]
-    NOT?: complaintsScalarWhereWithAggregatesInput | complaintsScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"complaints"> | number
-    phone_number?: StringWithAggregatesFilter<"complaints"> | string
-    image_url?: StringNullableWithAggregatesFilter<"complaints"> | string | null
-    description?: StringWithAggregatesFilter<"complaints"> | string
-    priority?: EnumComplaintPriorityWithAggregatesFilter<"complaints"> | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusWithAggregatesFilter<"complaints"> | $Enums.ComplaintStatus
-    latitude?: FloatWithAggregatesFilter<"complaints"> | number
-    longitude?: FloatWithAggregatesFilter<"complaints"> | number
-    address?: StringWithAggregatesFilter<"complaints"> | string
-    created_at?: DateTimeWithAggregatesFilter<"complaints"> | Date | string
-    updated_at?: DateTimeWithAggregatesFilter<"complaints"> | Date | string
+  export type citizen_complaintsScalarWhereWithAggregatesInput = {
+    AND?: citizen_complaintsScalarWhereWithAggregatesInput | citizen_complaintsScalarWhereWithAggregatesInput[]
+    OR?: citizen_complaintsScalarWhereWithAggregatesInput[]
+    NOT?: citizen_complaintsScalarWhereWithAggregatesInput | citizen_complaintsScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"citizen_complaints"> | number
+    ticket_number?: StringWithAggregatesFilter<"citizen_complaints"> | string
+    phone_number?: StringWithAggregatesFilter<"citizen_complaints"> | string
+    title?: StringWithAggregatesFilter<"citizen_complaints"> | string
+    description?: StringWithAggregatesFilter<"citizen_complaints"> | string
+    category?: EnumCitizenComplaintCategoryWithAggregatesFilter<"citizen_complaints"> | $Enums.CitizenComplaintCategory
+    image_url?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    latitude?: FloatWithAggregatesFilter<"citizen_complaints"> | number
+    longitude?: FloatWithAggregatesFilter<"citizen_complaints"> | number
+    address?: StringWithAggregatesFilter<"citizen_complaints"> | string
+    status?: EnumCitizenComplaintStatusWithAggregatesFilter<"citizen_complaints"> | $Enums.CitizenComplaintStatus
+    verification_code?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    verification_expires_at?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
+    assigned_to?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    remarks?: StringNullableWithAggregatesFilter<"citizen_complaints"> | string | null
+    created_at?: DateTimeWithAggregatesFilter<"citizen_complaints"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"citizen_complaints"> | Date | string
+    closed_at?: DateTimeNullableWithAggregatesFilter<"citizen_complaints"> | Date | string | null
   }
 
   export type edit_logsCreateInput = {
@@ -11296,99 +11434,148 @@ export namespace Prisma {
     recorded_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type complaintsCreateInput = {
+  export type citizen_complaintsCreateInput = {
+    ticket_number: string
     phone_number: string
-    image_url?: string | null
+    title: string
     description: string
-    priority: $Enums.ComplaintPriority
-    status?: $Enums.ComplaintStatus
+    category: $Enums.CitizenComplaintCategory
+    image_url?: string | null
     latitude: number
     longitude: number
     address: string
+    status?: $Enums.CitizenComplaintStatus
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
+    assigned_to?: string | null
+    remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
+    closed_at?: Date | string | null
   }
 
-  export type complaintsUncheckedCreateInput = {
+  export type citizen_complaintsUncheckedCreateInput = {
     id?: number
+    ticket_number: string
     phone_number: string
-    image_url?: string | null
+    title: string
     description: string
-    priority: $Enums.ComplaintPriority
-    status?: $Enums.ComplaintStatus
+    category: $Enums.CitizenComplaintCategory
+    image_url?: string | null
     latitude: number
     longitude: number
     address: string
+    status?: $Enums.CitizenComplaintStatus
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
+    assigned_to?: string | null
+    remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
+    closed_at?: Date | string | null
   }
 
-  export type complaintsUpdateInput = {
+  export type citizen_complaintsUpdateInput = {
+    ticket_number?: StringFieldUpdateOperationsInput | string
     phone_number?: StringFieldUpdateOperationsInput | string
-    image_url?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    category?: EnumCitizenComplaintCategoryFieldUpdateOperationsInput | $Enums.CitizenComplaintCategory
+    image_url?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: FloatFieldUpdateOperationsInput | number
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
+    status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type complaintsUncheckedUpdateInput = {
+  export type citizen_complaintsUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
+    ticket_number?: StringFieldUpdateOperationsInput | string
     phone_number?: StringFieldUpdateOperationsInput | string
-    image_url?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    category?: EnumCitizenComplaintCategoryFieldUpdateOperationsInput | $Enums.CitizenComplaintCategory
+    image_url?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: FloatFieldUpdateOperationsInput | number
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
+    status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type complaintsCreateManyInput = {
+  export type citizen_complaintsCreateManyInput = {
     id?: number
+    ticket_number: string
     phone_number: string
-    image_url?: string | null
+    title: string
     description: string
-    priority: $Enums.ComplaintPriority
-    status?: $Enums.ComplaintStatus
+    category: $Enums.CitizenComplaintCategory
+    image_url?: string | null
     latitude: number
     longitude: number
     address: string
+    status?: $Enums.CitizenComplaintStatus
+    verification_code?: string | null
+    verification_expires_at?: Date | string | null
+    assigned_to?: string | null
+    remarks?: string | null
     created_at?: Date | string
     updated_at?: Date | string
+    closed_at?: Date | string | null
   }
 
-  export type complaintsUpdateManyMutationInput = {
+  export type citizen_complaintsUpdateManyMutationInput = {
+    ticket_number?: StringFieldUpdateOperationsInput | string
     phone_number?: StringFieldUpdateOperationsInput | string
-    image_url?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    category?: EnumCitizenComplaintCategoryFieldUpdateOperationsInput | $Enums.CitizenComplaintCategory
+    image_url?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: FloatFieldUpdateOperationsInput | number
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
+    status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type complaintsUncheckedUpdateManyInput = {
+  export type citizen_complaintsUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
+    ticket_number?: StringFieldUpdateOperationsInput | string
     phone_number?: StringFieldUpdateOperationsInput | string
-    image_url?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    priority?: EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-    status?: EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+    category?: EnumCitizenComplaintCategoryFieldUpdateOperationsInput | $Enums.CitizenComplaintCategory
+    image_url?: NullableStringFieldUpdateOperationsInput | string | null
     latitude?: FloatFieldUpdateOperationsInput | number
     longitude?: FloatFieldUpdateOperationsInput | number
     address?: StringFieldUpdateOperationsInput | string
+    status?: EnumCitizenComplaintStatusFieldUpdateOperationsInput | $Enums.CitizenComplaintStatus
+    verification_code?: NullableStringFieldUpdateOperationsInput | string | null
+    verification_expires_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assigned_to?: NullableStringFieldUpdateOperationsInput | string | null
+    remarks?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    closed_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -12005,18 +12192,11 @@ export namespace Prisma {
     battery_health?: SortOrder
   }
 
-  export type EnumComplaintPriorityFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintPriority | EnumComplaintPriorityFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintPriorityFilter<$PrismaModel> | $Enums.ComplaintPriority
-  }
-
-  export type EnumComplaintStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintStatus | EnumComplaintStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintStatusFilter<$PrismaModel> | $Enums.ComplaintStatus
+  export type EnumCitizenComplaintCategoryFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintCategory | EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel> | $Enums.CitizenComplaintCategory
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -12030,78 +12210,96 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type complaintsCountOrderByAggregateInput = {
+  export type EnumCitizenComplaintStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintStatus | EnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
+  }
+
+  export type citizen_complaintsCountOrderByAggregateInput = {
     id?: SortOrder
+    ticket_number?: SortOrder
     phone_number?: SortOrder
-    image_url?: SortOrder
+    title?: SortOrder
     description?: SortOrder
-    priority?: SortOrder
-    status?: SortOrder
+    category?: SortOrder
+    image_url?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
     address?: SortOrder
+    status?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
+    assigned_to?: SortOrder
+    remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    closed_at?: SortOrder
   }
 
-  export type complaintsAvgOrderByAggregateInput = {
+  export type citizen_complaintsAvgOrderByAggregateInput = {
     id?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
   }
 
-  export type complaintsMaxOrderByAggregateInput = {
+  export type citizen_complaintsMaxOrderByAggregateInput = {
     id?: SortOrder
+    ticket_number?: SortOrder
     phone_number?: SortOrder
-    image_url?: SortOrder
+    title?: SortOrder
     description?: SortOrder
-    priority?: SortOrder
-    status?: SortOrder
+    category?: SortOrder
+    image_url?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
     address?: SortOrder
+    status?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
+    assigned_to?: SortOrder
+    remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    closed_at?: SortOrder
   }
 
-  export type complaintsMinOrderByAggregateInput = {
+  export type citizen_complaintsMinOrderByAggregateInput = {
     id?: SortOrder
+    ticket_number?: SortOrder
     phone_number?: SortOrder
-    image_url?: SortOrder
+    title?: SortOrder
     description?: SortOrder
-    priority?: SortOrder
-    status?: SortOrder
+    category?: SortOrder
+    image_url?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
     address?: SortOrder
+    status?: SortOrder
+    verification_code?: SortOrder
+    verification_expires_at?: SortOrder
+    assigned_to?: SortOrder
+    remarks?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
+    closed_at?: SortOrder
   }
 
-  export type complaintsSumOrderByAggregateInput = {
+  export type citizen_complaintsSumOrderByAggregateInput = {
     id?: SortOrder
     latitude?: SortOrder
     longitude?: SortOrder
   }
 
-  export type EnumComplaintPriorityWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintPriority | EnumComplaintPriorityFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintPriorityWithAggregatesFilter<$PrismaModel> | $Enums.ComplaintPriority
+  export type EnumCitizenComplaintCategoryWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintCategory | EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintCategoryWithAggregatesFilter<$PrismaModel> | $Enums.CitizenComplaintCategory
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumComplaintPriorityFilter<$PrismaModel>
-    _max?: NestedEnumComplaintPriorityFilter<$PrismaModel>
-  }
-
-  export type EnumComplaintStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintStatus | EnumComplaintStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintStatusWithAggregatesFilter<$PrismaModel> | $Enums.ComplaintStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumComplaintStatusFilter<$PrismaModel>
-    _max?: NestedEnumComplaintStatusFilter<$PrismaModel>
+    _min?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel>
+    _max?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel>
   }
 
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -12118,6 +12316,16 @@ export namespace Prisma {
     _sum?: NestedFloatFilter<$PrismaModel>
     _min?: NestedFloatFilter<$PrismaModel>
     _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type EnumCitizenComplaintStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintStatus | EnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintStatusWithAggregatesFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
+    _max?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -12280,12 +12488,8 @@ export namespace Prisma {
     update?: XOR<XOR<vehicle_masterUpdateToOneWithWhereWithoutVehicle_telemetryInput, vehicle_masterUpdateWithoutVehicle_telemetryInput>, vehicle_masterUncheckedUpdateWithoutVehicle_telemetryInput>
   }
 
-  export type EnumComplaintPriorityFieldUpdateOperationsInput = {
-    set?: $Enums.ComplaintPriority
-  }
-
-  export type EnumComplaintStatusFieldUpdateOperationsInput = {
-    set?: $Enums.ComplaintStatus
+  export type EnumCitizenComplaintCategoryFieldUpdateOperationsInput = {
+    set?: $Enums.CitizenComplaintCategory
   }
 
   export type FloatFieldUpdateOperationsInput = {
@@ -12294,6 +12498,10 @@ export namespace Prisma {
     decrement?: number
     multiply?: number
     divide?: number
+  }
+
+  export type EnumCitizenComplaintStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CitizenComplaintStatus
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -12524,38 +12732,28 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedEnumComplaintPriorityFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintPriority | EnumComplaintPriorityFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintPriorityFilter<$PrismaModel> | $Enums.ComplaintPriority
+  export type NestedEnumCitizenComplaintCategoryFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintCategory | EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel> | $Enums.CitizenComplaintCategory
   }
 
-  export type NestedEnumComplaintStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintStatus | EnumComplaintStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintStatusFilter<$PrismaModel> | $Enums.ComplaintStatus
+  export type NestedEnumCitizenComplaintStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintStatus | EnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
   }
 
-  export type NestedEnumComplaintPriorityWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintPriority | EnumComplaintPriorityFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintPriority[] | ListEnumComplaintPriorityFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintPriorityWithAggregatesFilter<$PrismaModel> | $Enums.ComplaintPriority
+  export type NestedEnumCitizenComplaintCategoryWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintCategory | EnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintCategory[] | ListEnumCitizenComplaintCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintCategoryWithAggregatesFilter<$PrismaModel> | $Enums.CitizenComplaintCategory
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumComplaintPriorityFilter<$PrismaModel>
-    _max?: NestedEnumComplaintPriorityFilter<$PrismaModel>
-  }
-
-  export type NestedEnumComplaintStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.ComplaintStatus | EnumComplaintStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.ComplaintStatus[] | ListEnumComplaintStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumComplaintStatusWithAggregatesFilter<$PrismaModel> | $Enums.ComplaintStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumComplaintStatusFilter<$PrismaModel>
-    _max?: NestedEnumComplaintStatusFilter<$PrismaModel>
+    _min?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel>
+    _max?: NestedEnumCitizenComplaintCategoryFilter<$PrismaModel>
   }
 
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -12572,6 +12770,16 @@ export namespace Prisma {
     _sum?: NestedFloatFilter<$PrismaModel>
     _min?: NestedFloatFilter<$PrismaModel>
     _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCitizenComplaintStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CitizenComplaintStatus | EnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CitizenComplaintStatus[] | ListEnumCitizenComplaintStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCitizenComplaintStatusWithAggregatesFilter<$PrismaModel> | $Enums.CitizenComplaintStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
+    _max?: NestedEnumCitizenComplaintStatusFilter<$PrismaModel>
   }
 
   export type vehicle_masterCreateWithoutVehicle_incidentsInput = {

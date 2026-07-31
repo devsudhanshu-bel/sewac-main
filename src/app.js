@@ -9,8 +9,11 @@ import routes from "./routes/routes.js";
 const app = express();
 
 /**
+ * =====================================================
  * Middlewares
+ * =====================================================
  */
+
 app.use(cors());
 
 app.use(helmet());
@@ -24,8 +27,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /**
+ * =====================================================
  * Health Check
+ * =====================================================
  */
+
 app.get("/health", (req, res) => {
   return res.status(200).json({
     success: true,
@@ -34,13 +40,19 @@ app.get("/health", (req, res) => {
 });
 
 /**
+ * =====================================================
  * API Routes
+ * =====================================================
  */
+
 app.use("/api/citizen", routes);
 
 /**
+ * =====================================================
  * 404 Handler
+ * =====================================================
  */
+
 app.use((req, res) => {
   return res.status(404).json({
     success: false,
@@ -50,14 +62,18 @@ app.use((req, res) => {
 });
 
 /**
+ * =====================================================
  * Global Error Handler
+ * =====================================================
  */
+
 app.use((err, req, res, next) => {
   console.error(err);
 
-  return res.status(500).json({
+  return res.status(err.status || 500).json({
     success: false,
-    message: "Internal Server Error",
+    message: err.message || "Internal Server Error",
+    data: null,
   });
 });
 
