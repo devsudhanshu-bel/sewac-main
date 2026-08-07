@@ -1,0 +1,50 @@
+generator telemetryClient {
+  provider = "prisma-client-js"
+  output   = "../generated/telemetry"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TELEMETRY_DATABASE_URL")
+}
+
+model MasterTelemetry {
+  id BigInt @id @default(autoincrement())
+
+  iotTimestamp      DateTime?
+  receivedTimestamp DateTime  @default(now())
+
+  rfidEpc String?
+
+  citizenId Int?
+
+  wasteType String?
+
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+
+  wetWeight        Decimal? @db.Decimal(10, 2)
+  dryWeight        Decimal? @db.Decimal(10, 2)
+  otherWeight      Decimal? @db.Decimal(10, 2)
+  cumulativeWeight Decimal? @db.Decimal(10, 2)
+
+  driverName    String?
+  vehicleNumber String?
+
+  firmwareVersion String?
+  unitNumber      String?
+
+  collectionType String?
+
+  remarks String?
+
+  errorCode String?
+
+  citizenContact String?
+
+  driverAction String?
+
+  createdAt DateTime @default(now())
+
+  @@map("master_telemetry")
+}

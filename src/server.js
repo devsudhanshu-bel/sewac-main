@@ -1,6 +1,6 @@
 require("./config/loadEnv");
 const { initRedis } = require("./config/redis");
-
+const initializeTelemetryDB = require("./telemetry/initialize/initializeTelemetryDB");
 const app = require("./app");
 const { loadCitizenCache } = require("./config/citizenCache");
 
@@ -8,9 +8,13 @@ const PORT = process.env.PORT || 5002;
 
 (async () => {
   try {
-await initRedis();
-await loadCitizenCache();
-    // Start the worker ONLY AFTER cache is loaded
+
+    await initRedis();
+
+    await initializeTelemetryDB.initialize();   // ⭐ NEW
+
+    await loadCitizenCache();
+
     require("./services/telemetryQueueService");
 
     app.listen(PORT, () => {
@@ -19,5 +23,6 @@ await loadCitizenCache();
 
   } catch (err) {
     console.error(err);
+    process.exit(1); // ⭐ Don't continue if startup fails
   }
 })();
