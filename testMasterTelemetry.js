@@ -1,7 +1,7 @@
 require("./src/config/loadEnv");
 
 const initializeTelemetryDB = require("./src/telemetry/initialize/initializeTelemetryDB");
-const masterTelemetryService = require("./src/telemetry/services/MasterTelemetryService");
+const telemetryPipelineService=require("./src/telemetry/services/TelemetryPipelineService");
 
 (async () => {
 
@@ -9,7 +9,7 @@ const masterTelemetryService = require("./src/telemetry/services/MasterTelemetry
 
         await initializeTelemetryDB.initialize();
 
-        await masterTelemetryService.processPacket({
+        await telemetryPipelineService.process({
 
             iotTimestamp: new Date(),
 
