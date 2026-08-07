@@ -1,12 +1,12 @@
 const colors = {
   purple: {
-    bg: "bg-[#F5EDFF]",
+    bg: "bg-[#F4ECFF]",
     icon: "text-[#8B3DFF]",
     accent: "text-[#8B3DFF]",
   },
 
   yellow: {
-    bg: "bg-[#FFF7E6]",
+    bg: "bg-[#FFF7E7]",
     icon: "text-[#F5A524]",
     accent: "text-[#F5A524]",
   },
@@ -36,24 +36,24 @@ export default function ComplaintCard({
   return (
     <div
       className="
-        h-[118px]
-        rounded-3xl
+        h-[92px]
+        rounded-2xl
         border
         border-gray-100
         bg-white
-        p-6
-        shadow-[0_10px_30px_rgba(15,23,42,0.05)]
+        px-5
+        py-4
+        shadow-[0_6px_20px_rgba(0,0,0,0.04)]
         transition-all
         duration-300
-        hover:-translate-y-1
-        hover:shadow-[0_14px_35px_rgba(15,23,42,0.08)]
+        hover:shadow-[0_10px_24px_rgba(0,0,0,0.06)]
       "
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4 h-full">
         <div
           className={`
-            w-14
-            h-14
+            w-12
+            h-12
             rounded-2xl
             flex
             items-center
@@ -61,20 +61,22 @@ export default function ComplaintCard({
             ${theme.bg}
           `}
         >
-          <div className={theme.icon}>{icon}</div>
+          <div className={theme.icon}>
+            {icon}
+          </div>
         </div>
 
-        <div className="flex flex-col">
-          <span className="text-[13px] font-medium text-gray-500">
+        <div className="flex flex-col justify-center">
+          <span className="text-[12px] text-gray-500 font-medium">
             {title}
           </span>
 
-          <h2 className="mt-1 text-[36px] leading-none font-bold text-[#16295A]">
+          <h2 className="mt-0.5 text-[28px] font-bold leading-none text-[#16295A]">
             {value}
           </h2>
 
           <span
-            className={`mt-2 text-[13px] font-semibold ${theme.accent}`}
+            className={`mt-1 text-[11px] font-semibold ${theme.accent}`}
           >
             {subtitle}
           </span>
