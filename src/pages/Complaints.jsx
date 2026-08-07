@@ -8,10 +8,22 @@ export default function Complaints() {
     <div className="flex flex-col h-full bg-[#F8F9FC]">
       <Header variant="default" />
 
-      <div className="px-8 py-8 space-y-8">
-        <ComplaintHeader />
+      <div className="flex gap-8 px-8 py-6">
+        {/* ================= LEFT ================= */}
+        <div className="flex-1 min-w-0 space-y-6">
+          <ComplaintHeader />
 
-        <ComplaintKPIs />
+          <ComplaintKPIs />
+
+          {/* Filters */}
+
+          {/* Complaint Table */}
+        </div>
+
+        {/* ================= RIGHT ================= */}
+        <div className="w-[370px] shrink-0">
+          {/* Complaint Details Drawer */}
+        </div>
       </div>
     </div>
   );

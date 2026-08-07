@@ -1,7 +1,7 @@
 import {
   MessageCircleMore,
   Clock3,
-  RefreshCcw,
+ RefreshCcw,
   Check,
 } from "lucide-react";
 
@@ -9,9 +9,9 @@ import ComplaintCard from "./ComplaintCard";
 
 export default function ComplaintKPIs() {
   return (
-    <div className="grid grid-cols-4 gap-5">
+    <div className="grid grid-cols-4 gap-4">
       <ComplaintCard
-        icon={<MessageCircleMore size={22} strokeWidth={2.2} />}
+        icon={<MessageCircleMore size={20} strokeWidth={2.2} />}
         title="Total Complaints"
         value="143"
         subtitle="All time"
@@ -19,7 +19,7 @@ export default function ComplaintKPIs() {
       />
 
       <ComplaintCard
-        icon={<Clock3 size={22} strokeWidth={2.2} />}
+        icon={<Clock3 size={20} strokeWidth={2.2} />}
         title="Pending"
         value="27"
         subtitle="18.9%"
@@ -27,7 +27,7 @@ export default function ComplaintKPIs() {
       />
 
       <ComplaintCard
-        icon={<RefreshCcw size={22} strokeWidth={2.2} />}
+        icon={<RefreshCcw size={20} strokeWidth={2.2} />}
         title="In Progress"
         value="14"
         subtitle="9.8%"
@@ -35,7 +35,7 @@ export default function ComplaintKPIs() {
       />
 
       <ComplaintCard
-        icon={<Check size={22} strokeWidth={2.2} />}
+        icon={<Check size={20} strokeWidth={2.2} />}
         title="Resolved"
         value="102"
         subtitle="71.3%"
