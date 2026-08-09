@@ -152,4 +152,46 @@ class ComplaintService {
     _handleHttpError(response.statusCode, jsonResponse, response.body);
     throw Exception("Failed to create complaint.");
   }
+  /// Fetches the verification OTP for a complaint.
+///
+/// The backend must verify that the authenticated citizen
+/// owns this complaint before returning any OTP.
+Future<Map<String, dynamic>> getComplaintVerification(
+  String ticketNumber,
+) async {
+  final url =
+      ApiConstants.complaintVerification(ticketNumber);
+
+  final response = await ApiClient.get(url);
+
+  dynamic jsonResponse;
+
+  try {
+    jsonResponse = jsonDecode(response.body);
+  } catch (_) {
+    throw Exception(
+      "Invalid response format from server.",
+    );
+  }
+
+  if (response.statusCode == 200 &&
+      jsonResponse["success"] == true) {
+    final data = jsonResponse["data"];
+
+    if (data != null &&
+        data is Map<String, dynamic>) {
+      return data;
+    }
+  }
+
+  _handleHttpError(
+    response.statusCode,
+    jsonResponse,
+    response.body,
+  );
+
+  throw Exception(
+    "Verification information unavailable.",
+  );
+}
 }
