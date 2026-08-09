@@ -157,13 +157,13 @@ class AuthService {
         success: true,
         statusCode: 202,
         message:
-          "New device detected. Please wait 30 minutes before logging in.",
+          "New device detected. Please wait 30 seconds before logging in.",
         data: {
           status: "DEVICE_ENROLLMENT_PENDING",
 
           expiresAt,
 
-          remainingSeconds: 30 * 60,
+          remainingSeconds: 30,
         },
       };
     }
