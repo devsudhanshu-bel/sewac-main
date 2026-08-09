@@ -2,7 +2,8 @@
 
     INPUT:
     {
-        "phonenumber" : "8660916859",
+      "phoneNumber": "9153443581",
+      "deviceId": "DEVICE-A-12345678"
     }
 
     OUTPUT:

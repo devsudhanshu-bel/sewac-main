@@ -1,9 +1,6 @@
-import {
-  AUTH_MESSAGES,
-  PHONE_REGEX,
-} from "./auth.constants.js";
+import { AUTH_MESSAGES, PHONE_REGEX } from "./auth.constants.js";
 
-export const validateLogin = (phoneNumber) => {
+export const validateLogin = (phoneNumber, deviceId) => {
   if (!phoneNumber) {
     return {
       valid: false,
@@ -15,6 +12,18 @@ export const validateLogin = (phoneNumber) => {
     return {
       valid: false,
       message: AUTH_MESSAGES.INVALID_PHONE,
+    };
+  }
+
+  if (
+    !deviceId ||
+    typeof deviceId !== "string" ||
+    deviceId.length < 8 ||
+    deviceId.length > 255
+  ) {
+    return {
+      valid: false,
+      message: "Valid device ID is required.",
     };
   }
 
