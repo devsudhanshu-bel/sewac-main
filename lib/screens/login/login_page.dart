@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -54,6 +55,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool _isPhoneFocused = false;
   bool _isLoading = false;
   bool _showLocationSuccess = false;
+
+  // Device enrollment countdown
+  Timer? _enrollmentTimer;
+  int _remainingSeconds = 0;
+  bool _isEnrollmentPending = false;
 
   LoginResponse? _loginResponse;
 
@@ -234,12 +240,55 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _locationSuccessController.dispose();
     _phoneController.dispose();
     _phoneFocusNode.dispose();
+    _enrollmentTimer?.cancel();
     super.dispose();
   }
 
   bool _validatePhone() {
     return _formKey.currentState?.validate() ?? false;
   }
+
+  void _startEnrollmentCountdown(int seconds) {
+  _enrollmentTimer?.cancel();
+
+  setState(() {
+    _remainingSeconds = seconds;
+    _isEnrollmentPending = true;
+  });
+
+  _enrollmentTimer = Timer.periodic(
+    const Duration(seconds: 1),
+    (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_remainingSeconds <= 1) {
+        timer.cancel();
+
+        setState(() {
+          _remainingSeconds = 0;
+          _isEnrollmentPending = false;
+        });
+
+        return;
+      }
+
+      setState(() {
+        _remainingSeconds--;
+      });
+    },
+  );
+}
+
+String _formatRemainingTime(int seconds) {
+  final minutes = seconds ~/ 60;
+  final secs = seconds % 60;
+
+  return '${minutes.toString().padLeft(2, '0')}:'
+      '${secs.toString().padLeft(2, '0')}';
+}
 
   Future<bool> _requestLocationPermission() async {
     PermissionStatus status = await Permission.location.status;
@@ -520,6 +569,23 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           builder: (_) => const MainPage(),
         ),
       );
+    } on DeviceEnrollmentException catch (e) {
+  if (!mounted) return;
+
+  _startEnrollmentCountdown(
+    e.remainingSeconds,
+  );
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      backgroundColor: Colors.orange,
+      behavior: SnackBarBehavior.floating,
+      content: Text(
+        'New device detected. Please wait '
+        '${_formatRemainingTime(e.remainingSeconds)}.',
+      ),
+    ),
+  );
     } catch (e) {
       if (!mounted) return;
 
@@ -854,13 +920,89 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 child: ScaleTransition(
                                   scale: _buttonScale,
                                   child: PremiumGradientButton(
-                                    text: 'LOGIN TO SEWAC',
-                                    isLoading: _isLoading,
-                                    breathAnimation: _buttonBreathController,
-                                    onPressed: _isLoading ? null : _login,
-                                  ),
+                                          text: _isEnrollmentPending
+                                                ? 'WAIT ${_formatRemainingTime(_remainingSeconds)}'
+                                                : 'LOGIN TO SEWAC',
+                                          isLoading: _isLoading,
+                                          breathAnimation: _buttonBreathController,
+                                          onPressed: _isLoading || _isEnrollmentPending
+                                              ? null
+                                              : _login,
+                                          ),
                                 ),
                               ),
+                              if (_isEnrollmentPending)
+  Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 16,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.6),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.lock_clock_rounded,
+            color: Colors.orange,
+            size: 30,
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'New device detected',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            'Please wait before logging in from this device.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              color: Colors.white.withValues(alpha: 0.75),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            _formatRemainingTime(_remainingSeconds),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: 1.5,
+            ),
+          ),
+
+          Text(
+            'TIME REMAINING',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.6),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
                               const SizedBox(height: 24),
 
                               // --- 6. NEED HELP CARD ---
