@@ -7,6 +7,8 @@ import 'package:sewac_citizen_app/widgets/waste_summary_card.dart';
 import 'package:sewac_citizen_app/screens/login/login_page.dart';
 import 'package:sewac_citizen_app/models/calendar_response.dart';
 import 'package:sewac_citizen_app/services/home_service.dart';
+import 'package:sewac_citizen_app/services/auth_service.dart';
+import 'package:sewac_citizen_app/models/citizen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,13 +30,68 @@ class _HomePageState extends State<HomePage>
   late final Animation<double> _calendarOpacity;
   late final Animation<double> _calendarScale;
 
-  String _userPhone = "+91 XXXXXXXXXX";
+  Citizen? _citizen;
+  bool _isLoadingProfile = true;
 
   CalendarResponse? _calendarData;
 
   bool _isLoadingCalendar = true;
 
   String? _calendarError;
+
+  Widget _buildProfileRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final citizen = await AuthService.getCurrentCitizen();
+
+      if (!mounted) return;
+
+      setState(() {
+        _citizen = citizen;
+        _isLoadingProfile = false;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingProfile = false;
+      });
+    }
+  }
 
   Future<void> _loadCalendar() async {
     try {
@@ -66,8 +123,7 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
-
-    _loadUserSession();
+    _loadProfile();
     _loadCalendar();
 
     _entranceController = AnimationController(
@@ -123,19 +179,7 @@ class _HomePageState extends State<HomePage>
     _entranceController.forward();
   }
 
-  Future<void> _loadUserSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final phone = prefs.getString('user_phone') ??
-        prefs.getString('phoneNumber') ??
-        prefs.getString('phone_number') ??
-        prefs.getString('phone');
 
-    if (phone != null && phone.isNotEmpty) {
-      setState(() {
-        _userPhone = phone.startsWith('+91') ? phone : '+91 $phone';
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -250,21 +294,31 @@ class _HomePageState extends State<HomePage>
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            "Phone Number",
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white.withValues(alpha: 0.55),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          const SizedBox(height: 10),
+
+                          _buildProfileRow(
+                            "Name",
+                            _citizen?.personName ?? "-",
                           ),
-                          Text(
-                            _userPhone,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
+
+                          _buildProfileRow(
+                            "Citizen ID",
+                            _citizen?.id.toString() ?? "-",
+                          ),
+
+                          _buildProfileRow(
+                            "Phone Number",
+                            "+91 ${_citizen?.phoneNumber ?? "-"}",
+                          ),
+
+                          _buildProfileRow(
+                            "Wet RFID",
+                            _citizen?.wetSlno ?? "-",
+                          ),
+
+                          _buildProfileRow(
+                            "Dry RFID",
+                            _citizen?.drySlno ?? "-",
                           ),
                         ],
                       ),
@@ -385,16 +439,19 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _performLogout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    try {
+      await AuthService.logout();
+    } catch (_) {
+      // Ignore network errors during logout to allow local session clearing
+    } finally {
+      if (!context.mounted) return;
 
-    if (!context.mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-    );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+      );
+    }
   }
 
   @override
@@ -427,8 +484,6 @@ class _HomePageState extends State<HomePage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-
                 // 1. REFINED HEADER SECTION
                 AnimatedBuilder(
                   animation: _headerOpacity,
@@ -518,8 +573,6 @@ class _HomePageState extends State<HomePage>
 
                 const SizedBox(height: 16),
 
-
-
                 // 2. SUMMARY CARDS SECTION
                 AnimatedBuilder(
                   animation: _cardsOpacity,
@@ -548,41 +601,35 @@ class _HomePageState extends State<HomePage>
                     ),
                   )
                       : Row(
-                      children: [
-                        Expanded(
-                          child: WasteSummaryCard(
-                            title: "Dry Waste Collection",
-                            completed:
-                            _calendarData?.dry.completed ?? 0,
-                            total:
-                            _calendarData?.dry.total ?? 0,
-                            subtitle: "Collections this month",
-                            icon: Icons.local_shipping_rounded,
-                            accentColor: const Color(0xFFFF9800),
-                          ),
+                    children: [
+                      Expanded(
+                        child: WasteSummaryCard(
+                          title: "Dry Waste Collection",
+                          completed:
+                          _calendarData?.dry.completed ?? 0,
+                          total: _calendarData?.dry.total ?? 0,
+                          subtitle: "Collections this month",
+                          icon: Icons.local_shipping_rounded,
+                          accentColor: const Color(0xFFFF9800),
                         ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child: WasteSummaryCard(
-                            title: "Wet Waste Collection",
-                            completed:
-                            _calendarData?.wet.completed ?? 0,
-                            total:
-                            _calendarData?.wet.total ?? 0,
-                            subtitle: "Collections this month",
-                            icon: Icons.water_drop_rounded,
-                            accentColor: const Color(0xFF4CAF50),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: WasteSummaryCard(
+                          title: "Wet Waste Collection",
+                          completed:
+                          _calendarData?.wet.completed ?? 0,
+                          total: _calendarData?.wet.total ?? 0,
+                          subtitle: "Collections this month",
+                          icon: Icons.water_drop_rounded,
+                          accentColor: const Color(0xFF4CAF50),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
 
                 const SizedBox(height: 16),
-
-
 
                 // 3. STREAK CALENDAR SECTION
                 AnimatedBuilder(
@@ -611,8 +658,6 @@ class _HomePageState extends State<HomePage>
                     calendarData: _calendarData!,
                   ),
                 ),
-
-
               ],
             ),
           ),
@@ -620,8 +665,6 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
-
-
 
   Widget _buildCollectionTypeBadge(bool isBoth, {required Key key}) {
     if (isBoth) {
@@ -674,7 +717,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 }
-
 
 // ============================================================================
 // PROFILE ICON BUTTON WITH GLASSMORPHISM & ANIMATIONS

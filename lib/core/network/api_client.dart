@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../storage/token_storage.dart';
 
@@ -17,6 +18,7 @@ class ApiClient {
 
     return {
       "Content-Type": "application/json",
+      "Accept": "application/json",
       if (token != null && token.isNotEmpty)
         "Authorization": "Bearer $token",
     };
@@ -26,9 +28,23 @@ class ApiClient {
     final token = await TokenStorage.getToken();
 
     return {
+      "Accept": "application/json",
       if (token != null && token.isNotEmpty)
         "Authorization": "Bearer $token",
     };
+  }
+
+  /// Helper to determine image MIME type from file extension
+  static MediaType _getMediaType(String filePath) {
+    final ext = filePath.toLowerCase().split('.').last;
+    if (ext == 'png') {
+      return MediaType('image', 'png');
+    } else if (ext == 'webp') {
+      return MediaType('image', 'webp');
+    } else if (ext == 'heic' || ext == 'heif') {
+      return MediaType('image', 'heic');
+    }
+    return MediaType('image', 'jpeg');
   }
 
   /// ==========================================================
@@ -62,13 +78,15 @@ class ApiClient {
     );
 
     request.headers.addAll(await _multipartHeaders());
-
     request.fields.addAll(fields);
+
+    final mediaType = _getMediaType(file.path);
 
     request.files.add(
       await http.MultipartFile.fromPath(
         fileField,
         file.path,
+        contentType: mediaType,
       ),
     );
 

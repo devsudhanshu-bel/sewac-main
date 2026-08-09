@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +16,7 @@ void main() {
 }
 
 class SewacApp extends StatelessWidget {
-  const SewacApp({Key? key}) : super(key: key);
+  const SewacApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +31,6 @@ class SewacApp extends StatelessWidget {
     );
   }
 }
-
-enum ComplaintPriority {
-  low,
-  medium,
-  high,
-}
-
 
 // ============================================================================
 // MAIN COMPLAINTS PAGE
@@ -90,10 +82,18 @@ class _ComplaintsPageState extends State<ComplaintsPage>
 
   bool _isDescriptionFocused = false;
 
-  ComplaintPriority _selectedPriority =
-      ComplaintPriority.medium;
-
   File? _selectedPhoto;
+
+  String? _selectedCategoryKey;
+
+  final Map<String, String> _categoryMap = {
+    "Missed Collection": "MISSED_COLLECTION",
+    "Overflowing Bin": "OVERFLOWING_BIN",
+    "Illegal Dumping": "ILLEGAL_DUMPING",
+    "Street Litter": "STREET_LITTER",
+    "Damaged Bin": "DAMAGED_BIN",
+    "Other": "OTHER",
+  };
 
   late final AnimationController _staggerController;
 
@@ -163,8 +163,7 @@ class _ComplaintsPageState extends State<ComplaintsPage>
 
   Future<void> _loadComplaints() async {
     try {
-      final complaints =
-      await _complaintService.getComplaints();
+      final complaints = await _complaintService.getComplaints();
 
       if (!mounted) return;
 
@@ -256,8 +255,9 @@ class _ComplaintsPageState extends State<ComplaintsPage>
 
       Position position =
       await Geolocator.getCurrentPosition(
-        desiredAccuracy:
-        LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
 
       _latitude = position.latitude;
@@ -350,18 +350,25 @@ class _ComplaintsPageState extends State<ComplaintsPage>
   }
 
   Future<void> _submitComplaint() async {
+    if (_selectedPhoto == null) {
+      _showSnackBar(
+        "Please attach an image.",
+      );
+      return;
+    }
+
+    if (_selectedCategoryKey == null || _selectedCategoryKey!.isEmpty) {
+      _showSnackBar(
+        "Please select a complaint category.",
+      );
+      return;
+    }
+
     final description = _descriptionController.text.trim();
 
     if (description.isEmpty) {
       _showSnackBar(
         "Please describe the issue.",
-      );
-      return;
-    }
-
-    if (_selectedPhoto == null) {
-      _showSnackBar(
-        "Please attach an image.",
       );
       return;
     }
@@ -391,7 +398,8 @@ class _ComplaintsPageState extends State<ComplaintsPage>
       final complaint = await _complaintService.createComplaint(
         image: _selectedPhoto!,
         description: description,
-        priority: _selectedPriority.name.toUpperCase(),
+        category: _selectedCategoryKey!,
+        priority: "MEDIUM",
         latitude: _latitude!,
         longitude: _longitude!,
         address: _currentLocation,
@@ -428,7 +436,7 @@ class _ComplaintsPageState extends State<ComplaintsPage>
 
     setState(() {
       _selectedPhoto = null;
-      _selectedPriority = ComplaintPriority.medium;
+      _selectedCategoryKey = null;
       _isSubmitting = false;
       _isSubmitPressed = false;
     });
@@ -463,6 +471,7 @@ class _ComplaintsPageState extends State<ComplaintsPage>
       ),
     );
   }
+
   Future<void> _showSuccessBottomSheet() async {
 
     await showModalBottomSheet(
@@ -489,11 +498,7 @@ class _ComplaintsPageState extends State<ComplaintsPage>
               complaints: _complaints,
             ),
       ),
-    ).then((_) {
-
-      _loadComplaints();
-
-    });
+    );
   }
 
   @override
@@ -580,12 +585,12 @@ class _ComplaintsPageState extends State<ComplaintsPage>
                       CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle(
-                          "Description",
+                          "Category",
                         ),
                         const SizedBox(
                           height: 12,
                         ),
-                        _buildDescriptionField(),
+                        _buildCategoryDropdown(),
                       ],
                     ),
                   ),
@@ -601,12 +606,12 @@ class _ComplaintsPageState extends State<ComplaintsPage>
                       CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle(
-                          "Location",
+                          "Description",
                         ),
                         const SizedBox(
                           height: 12,
                         ),
-                        _buildLocationCard(),
+                        _buildDescriptionField(),
                       ],
                     ),
                   ),
@@ -622,12 +627,12 @@ class _ComplaintsPageState extends State<ComplaintsPage>
                       CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle(
-                          "Priority",
+                          "Location",
                         ),
                         const SizedBox(
                           height: 12,
                         ),
-                        _buildPrioritySelector(),
+                        _buildLocationCard(),
                       ],
                     ),
                   ),
@@ -878,6 +883,75 @@ class _ComplaintsPageState extends State<ComplaintsPage>
     );
   }
 
+  Widget _buildCategoryDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _selectedCategoryKey != null
+              ? const Color(0xFFC084FC)
+              : Colors.white.withValues(alpha: 0.14),
+          width: _selectedCategoryKey != null ? 1.5 : 1.0,
+        ),
+        boxShadow: _selectedCategoryKey != null
+            ? [
+          BoxShadow(
+            color: const Color(0xFFA855F7).withValues(alpha: 0.25),
+            blurRadius: 10,
+            spreadRadius: 1,
+          )
+        ]
+            : const [],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedCategoryKey,
+          hint: Text(
+            "Select complaint category",
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          isExpanded: true,
+          dropdownColor: const Color(0xFF3B0B68),
+          borderRadius: BorderRadius.circular(20),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFFC084FC),
+            size: 24,
+          ),
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
+          items: _categoryMap.entries.map((entry) {
+            return DropdownMenuItem<String>(
+              value: entry.value,
+              child: Text(
+                entry.key,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedCategoryKey = newValue;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildDescriptionField() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1017,84 +1091,6 @@ class _ComplaintsPageState extends State<ComplaintsPage>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPrioritySelector() {
-    return Row(
-      children: ComplaintPriority.values.map((priority) {
-        final isSelected = _selectedPriority == priority;
-        final label =
-            priority.name[0].toUpperCase() + priority.name.substring(1);
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: AnimatedScale(
-              scale: isSelected ? 1.03 : 1.0,
-              duration: const Duration(milliseconds: 180),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? const LinearGradient(
-                    colors: [Color(0xFFC084FC), Color(0xFFA855F7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                      : null,
-                  color:
-                  isSelected ? null : Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isSelected
-                        ? Colors.white.withValues(alpha: 0.3)
-                        : Colors.white.withValues(alpha: 0.14),
-                    width: isSelected ? 1.2 : 1.0,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                    BoxShadow(
-                      color:
-                      const Color(0xFFA855F7).withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    )
-                  ]
-                      : const [],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      if (_selectedPriority != priority) {
-                        setState(() {
-                          _selectedPriority = priority;
-                        });
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(24),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      child: Center(
-                        child: Text(
-                          label,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
@@ -1308,6 +1304,227 @@ class _StaggeredAnimatedItem extends StatelessWidget {
 }
 
 // ============================================================================
+// COMPACT VERIFICATION CODE INFORMATION PANEL (VIEW ALL PAGE)
+// ============================================================================
+
+class _VerificationCodeSection extends StatelessWidget {
+  final String verificationCode;
+
+  const _VerificationCodeSection({
+    super.key,
+    required this.verificationCode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final digits = verificationCode.split('');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.12),
+            height: 1,
+            thickness: 1,
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFC084FC).withValues(alpha: 0.20),
+              width: 0.8,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.verified_user_rounded,
+                    color: Color(0xFFC084FC),
+                    size: 13,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    "Verification Code",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFFC084FC),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: digits.map((digit) {
+                  return Container(
+                    width: 28,
+                    height: 34,
+                    margin: const EdgeInsets.only(right: 5),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFC084FC),
+                          Color(0xFFA855F7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFA855F7).withValues(alpha: 0.25),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      digit,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Share this code with the SEWAC worker.",
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white.withValues(alpha: 0.50),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// COMPACT RECENT COMPLAINT VERIFICATION CODE SECTION
+// ============================================================================
+
+class _RecentVerificationCodeSection extends StatelessWidget {
+  final String verificationCode;
+
+  const _RecentVerificationCodeSection({
+    super.key,
+    required this.verificationCode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final digits = verificationCode.split('');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.12),
+            height: 1,
+            thickness: 1,
+          ),
+        ),
+        Row(
+          children: [
+            const Icon(
+              Icons.lock_outline_rounded,
+              color: Color(0xFFC084FC),
+              size: 13,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              "Verification Code",
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFC084FC),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: digits.map((digit) {
+            return Container(
+              width: 30,
+              height: 36,
+              margin: const EdgeInsets.only(right: 6),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFC084FC),
+                    Color(0xFFA855F7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  width: 0.8,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFA855F7).withValues(alpha: 0.25),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                digit,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Waiting for citizen verification",
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
 // NON-CLICKABLE RECENT COMPLAINT PREVIEW CARD (HOME PAGE)
 // ============================================================================
 
@@ -1315,7 +1532,6 @@ class _HomeComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
 
   const _HomeComplaintCardItem({
-    super.key,
     required this.item,
   });
 
@@ -1349,6 +1565,11 @@ class _HomeComplaintCardItem extends StatelessWidget {
     return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $ampm";
   }
 
+  bool get showVerificationCode =>
+      item.status.toUpperCase() == "IN_PROGRESS" &&
+          item.verificationCode != null &&
+          item.verificationCode!.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1361,133 +1582,134 @@ class _HomeComplaintCardItem extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.12),
         ),
       ),
-      child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3B0B68),
-              borderRadius:
-              BorderRadius.circular(12),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: item.imageUrl != null
-                ? Image.network(
-              item.imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, __, ___) =>
-              const Icon(
-                Icons.image_not_supported,
-                color: Colors.white54,
-              ),
-            )
-                : const Icon(
-              Icons.image_not_supported,
-              color: Colors.white54,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "SEWAC-${item.id}",
-                        style:
-                        GoogleFonts.plusJakartaSans(
-                          color: const Color(
-                              0xFFC084FC),
-                          fontSize: 13,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      formattedDate,
-                      style:
-                      GoogleFonts.plusJakartaSans(
-                        color: Colors.white
-                            .withValues(alpha: .45),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B0B68),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  item.description,
-                  maxLines: 2,
-                  overflow:
-                  TextOverflow.ellipsis,
-                  style:
-                  GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 12.5,
+                clipBehavior: Clip.antiAlias,
+                child: item.imageUrl != null
+                    ? Image.network(
+                  item.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.image_not_supported,
+                    color: Colors.white54,
                   ),
+                )
+                    : const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.white54,
                 ),
-
-                const SizedBox(height: 8),
-
-                Row(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding:
-                      const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(
-                            0xFFC084FC)
-                            .withValues(alpha: .18),
-                        borderRadius:
-                        BorderRadius.circular(
-                            20),
-                      ),
-                      child: Text(
-                        item.status,
-                        style:
-                        GoogleFonts.plusJakartaSans(
-                          color: const Color(
-                              0xFFC084FC),
-                          fontSize: 10,
-                          fontWeight:
-                          FontWeight.w700,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.ticketNumber ?? "SEWAC-${item.id}",
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFC084FC),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
+                        Text(
+                          formattedDate,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withValues(alpha: .45),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 12.5,
                       ),
                     ),
-
-                    const SizedBox(width: 8),
-
-                    Expanded(
-                      child: Text(
-                        item.address,
-                        overflow:
-                        TextOverflow.ellipsis,
-                        style:
-                        GoogleFonts.plusJakartaSans(
-                          color: Colors.white
-                              .withValues(alpha: .6),
-                          fontSize: 10,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC084FC).withValues(alpha: .18),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            item.status,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFC084FC),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.address,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withValues(alpha: .6),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.08),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: showVerificationCode
+                  ? _RecentVerificationCodeSection(
+                key: ValueKey("verif_recent_${item.id}"),
+                verificationCode: item.verificationCode!,
+              )
+                  : const SizedBox.shrink(key: ValueKey("empty_verif_recent")),
             ),
           ),
         ],
@@ -1499,7 +1721,6 @@ class _HomeComplaintCardItem extends StatelessWidget {
 // ============================================================================
 // CLEAN "VIEW ALL" COMPLAINTS PAGE (NO FILTERS / NO SEARCH)
 // ============================================================================
-
 
 class ViewAllComplaintsPage extends StatefulWidget {
   final List<ComplaintModel> complaints;
@@ -1518,6 +1739,7 @@ class _ViewAllComplaintsPageState
     extends State<ViewAllComplaintsPage> {
 
   late List<ComplaintModel> _complaints;
+  final ComplaintService _complaintService = ComplaintService();
 
   @override
   void initState() {
@@ -1525,16 +1747,14 @@ class _ViewAllComplaintsPageState
     _complaints = List.from(widget.complaints);
   }
 
-  final ComplaintService _complaintService = ComplaintService();
-
   Future<void> _handleRefresh() async {
-    final complaints = await _complaintService.getComplaints();
-
-    if (!mounted) return;
-
-    setState(() {
-      _complaints = complaints;
-    });
+    try {
+      final complaints = await _complaintService.getComplaints();
+      if (!mounted) return;
+      setState(() {
+        _complaints = complaints;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -1687,7 +1907,6 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
 
   const _ViewAllComplaintCardItem({
-    super.key,
     required this.item,
   });
 
@@ -1732,18 +1951,10 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
     }
   }
 
-  Color get priorityColor {
-    switch (item.priority.toUpperCase()) {
-      case "HIGH":
-        return const Color(0xFFE53935);
-
-      case "MEDIUM":
-        return const Color(0xFFFF9800);
-
-      default:
-        return const Color(0xFF66BB6A);
-    }
-  }
+  bool get showVerificationCode =>
+      item.status.toUpperCase() == "IN_PROGRESS" &&
+          item.verificationCode != null &&
+          item.verificationCode!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1797,7 +2008,7 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
 
                     Expanded(
                       child: Text(
-                        "SEWAC-${item.id}",
+                        item.ticketNumber ?? "SEWAC-${item.id}",
                         style:
                         GoogleFonts.plusJakartaSans(
                           color: const Color(0xFFC084FC),
@@ -1871,34 +2082,6 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color:
-                        priorityColor.withValues(
-                          alpha: .18,
-                        ),
-                        borderRadius:
-                        BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        item.priority,
-                        style:
-                        GoogleFonts.plusJakartaSans(
-                          color: priorityColor,
-                          fontSize: 11,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Container(
-                      padding:
-                      const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
                         statusColor.withValues(
                           alpha: .18,
                         ),
@@ -1918,6 +2101,34 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.08),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: showVerificationCode
+                        ? _VerificationCodeSection(
+                      key: ValueKey("verif_view_all_${item.id}"),
+                      verificationCode: item.verificationCode!,
+                    )
+                        : const SizedBox.shrink(key: ValueKey("empty_verif_view_all")),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1932,7 +2143,7 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
 // ============================================================================
 
 class ComplaintSuccessBottomSheet extends StatefulWidget {
-  const ComplaintSuccessBottomSheet({Key? key}) : super(key: key);
+  const ComplaintSuccessBottomSheet({super.key});
 
   @override
   State<ComplaintSuccessBottomSheet> createState() =>

@@ -81,9 +81,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
+    // Total duration = Original 4500ms travel time + 2500ms pause time
     _truckAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4500),
+      duration: const Duration(milliseconds: 7000),
     )..repeat();
 
     _buttonBreathController = AnimationController(
@@ -1293,11 +1294,44 @@ class GarbageTruckAnimationPainter extends CustomPainter {
 
     _drawPulsingLocationPin(canvas, width * 0.84, roadY - 26, pinPulse);
 
-    double truckX = (progress * (width + 100)) - 50;
-    double bounceY = math.sin(progress * math.pi * 16) * 1.5;
+    double targetPinX = (width * 0.84) - 34;
+    double startTruckX = -50.0;
+    double endTruckX = width + 50.0;
+
+    double totalDistance = endTruckX - startTruckX;
+    double distanceToPin = targetPinX - startTruckX;
+    double distanceRatio = (distanceToPin / totalDistance).clamp(0.0, 1.0);
+
+    // 4500ms original speed logic across 7000ms total loop duration:
+    // p1: Time taken to reach pin at original speed
+    // p2: Time when pause ends and truck resumes moving
+    double p1 = (4500.0 * distanceRatio) / 7000.0;
+    double p2 = p1 + (2500.0 / 7000.0);
+
+    double truckX;
+    bool isMoving;
+    double wheelProgress;
+
+    if (progress < p1) {
+      double t = progress / p1;
+      truckX = startTruckX + (targetPinX - startTruckX) * t;
+      isMoving = true;
+      wheelProgress = progress * (7000.0 / 4500.0);
+    } else if (progress <= p2) {
+      truckX = targetPinX;
+      isMoving = false;
+      wheelProgress = 0.0;
+    } else {
+      double t = (progress - p2) / (1.0 - p2);
+      truckX = targetPinX + (endTruckX - targetPinX) * t;
+      isMoving = true;
+      wheelProgress = (p1 + (progress - p2)) * (7000.0 / 4500.0);
+    }
+
+    double bounceY = isMoving ? math.sin(progress * math.pi * 16) * 1.5 : 0.0;
     double currentTruckY = roadY - 32 + bounceY;
 
-    if (truckX > 15) {
+    if (isMoving && truckX > 15) {
       final dustPaint = Paint()
         ..color = Colors.white.withValues(alpha: 0.28)
         ..strokeWidth = 1.8;
@@ -1343,8 +1377,8 @@ class GarbageTruckAnimationPainter extends CustomPainter {
     canvas.drawRect(
         Rect.fromLTWH(truckX + 25, currentTruckY + 10, 7, 7), windowPaint);
 
-    _drawRotatingWheel(canvas, truckX - 3, currentTruckY + 26, progress);
-    _drawRotatingWheel(canvas, truckX + 26, currentTruckY + 26, progress);
+    _drawRotatingWheel(canvas, truckX - 3, currentTruckY + 26, wheelProgress);
+    _drawRotatingWheel(canvas, truckX + 26, currentTruckY + 26, wheelProgress);
   }
 
   void _drawCitySilhouette(Canvas canvas, double width, double roadY) {

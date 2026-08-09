@@ -8,6 +8,36 @@ class VehicleTrackingService {
   VehicleTrackingService();
 
   //==========================================================
+  // GET NEAREST VEHICLE
+  //==========================================================
+
+  Future<VehicleLocation> getNearestVehicle(
+      double latitude,
+      double longitude,
+      ) async {
+    final url = ApiConstants.nearestVehicle(latitude, longitude);
+
+    print("==================================");
+    print("GET URL: $url");
+
+    final response = await ApiClient.get(url);
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+    print("==================================");
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to fetch nearest vehicle.");
+    }
+
+    final body = jsonDecode(response.body);
+
+    return VehicleLocation.fromJson(
+      body["data"],
+    );
+  }
+
+  //==========================================================
   // GET ALL LIVE VEHICLES
   //==========================================================
 
