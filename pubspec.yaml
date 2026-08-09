@@ -17,6 +17,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
 
+  # Device identification
+  device_info_plus: ^12.2.0
+
   # =========================
   # Maps & Location
   # =========================
