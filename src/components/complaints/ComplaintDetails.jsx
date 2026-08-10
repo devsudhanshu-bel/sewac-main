@@ -12,7 +12,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-export default function ComplaintDetails({ complaint }) {
+export default function ComplaintDetails({ complaint, onRequestVerification }) {
   return (
     <div
       className="
@@ -33,6 +33,7 @@ export default function ComplaintDetails({ complaint }) {
         </h2>
 
         <button
+          type="button"
           className="
             w-7
             h-7
@@ -54,6 +55,7 @@ export default function ComplaintDetails({ complaint }) {
 
       <div className="h-[calc(100%-65px)] overflow-y-auto px-5 py-4">
         {/* ================= TICKET ================= */}
+
         <div className="mb-4">
           <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
             Ticket Number
@@ -89,8 +91,11 @@ export default function ComplaintDetails({ complaint }) {
             </span>
           </div>
         </div>
+
         <div className="border-b border-gray-100 mb-4" />
+
         {/* ================= TITLE ================= */}
+
         <div className="flex gap-2.5 mb-4">
           <Tag size={14} className="text-gray-500 mt-0.5 shrink-0" />
 
@@ -102,7 +107,9 @@ export default function ComplaintDetails({ complaint }) {
             </p>
           </div>
         </div>
+
         {/* ================= CATEGORY ================= */}
+
         <div className="flex gap-2.5 mb-4">
           <FolderOpen size={14} className="text-gray-500 mt-0.5 shrink-0" />
 
@@ -114,7 +121,9 @@ export default function ComplaintDetails({ complaint }) {
             </p>
           </div>
         </div>
+
         {/* ================= PHONE ================= */}
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2.5">
             <Phone size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -131,6 +140,7 @@ export default function ComplaintDetails({ complaint }) {
           </div>
 
           <button
+            type="button"
             className="
               w-8
               h-8
@@ -148,7 +158,9 @@ export default function ComplaintDetails({ complaint }) {
             <Phone size={14} />
           </button>
         </div>
+
         {/* ================= ADDRESS ================= */}
+
         <div className="flex gap-2.5 mb-4">
           <MapPin size={14} className="text-gray-500 mt-0.5 shrink-0" />
 
@@ -160,7 +172,9 @@ export default function ComplaintDetails({ complaint }) {
             </p>
           </div>
         </div>
+
         {/* ================= COORDINATES ================= */}
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2.5">
             <Map size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -177,6 +191,7 @@ export default function ComplaintDetails({ complaint }) {
           </div>
 
           <button
+            type="button"
             className="
               w-8
               h-8
@@ -194,7 +209,9 @@ export default function ComplaintDetails({ complaint }) {
             <Map size={14} />
           </button>
         </div>
+
         {/* ================= IMAGE ================= */}
+
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-2">
             <ImageIcon size={14} className="text-gray-500" />
@@ -205,40 +222,65 @@ export default function ComplaintDetails({ complaint }) {
           </div>
 
           <div className="relative">
-            <img
-              src={complaint?.image_url || ""}
-              alt={complaint?.title || "Complaint"}
-              className="
-                w-full
-                h-[145px]
-                rounded-xl
-                object-cover
-              "
-            />
+            {complaint?.image_url ? (
+              <img
+                src={complaint.image_url}
+                alt={complaint?.title || "Complaint"}
+                className="
+                  w-full
+                  h-[145px]
+                  rounded-xl
+                  object-cover
+                "
+              />
+            ) : (
+              <div
+                className="
+                  w-full
+                  h-[145px]
+                  rounded-xl
+                  bg-gray-50
+                  border
+                  border-gray-100
+                  flex
+                  items-center
+                  justify-center
+                  text-[11px]
+                  text-gray-400
+                "
+              >
+                No complaint image
+              </div>
+            )}
 
-            <button
-              className="
-                absolute
-                bottom-2
-                right-2
-                w-8
-                h-8
-                rounded-lg
-                bg-white
-                shadow-md
-                flex
-                items-center
-                justify-center
-                text-violet-600
-                hover:scale-105
-                transition
-              "
-            >
-              <Expand size={14} />
-            </button>
+            {complaint?.image_url && (
+              <button
+                type="button"
+                className="
+                  absolute
+                  bottom-2
+                  right-2
+                  w-8
+                  h-8
+                  rounded-lg
+                  bg-white
+                  shadow-md
+                  flex
+                  items-center
+                  justify-center
+                  text-violet-600
+                  hover:scale-105
+                  transition
+                "
+              >
+                <Expand size={14} />
+              </button>
+            )}
           </div>
         </div>
+
         {/* ================= DESCRIPTION ================= */}
+
         <div className="flex gap-2.5 mb-4">
           <FileText size={14} className="text-gray-500 mt-0.5 shrink-0" />
 
@@ -252,7 +294,9 @@ export default function ComplaintDetails({ complaint }) {
             </p>
           </div>
         </div>
+
         {/* ================= ASSIGNED TO ================= */}
+
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
             <UserRound size={14} className="text-gray-500" />
@@ -266,37 +310,40 @@ export default function ComplaintDetails({ complaint }) {
             value={complaint?.assigned_to || ""}
             onChange={(e) => {
               console.log("Selected assignee:", e.target.value);
-              // Backend update endpoint will be connected later.
             }}
             disabled={!complaint}
             className="
-      w-full
-      h-9
-      rounded-lg
-      border
-      border-gray-200
-      bg-white
-      px-3
-      text-[11px]
-      text-gray-600
-      outline-none
-      focus:border-violet-400
-      focus:ring-2
-      focus:ring-violet-100
-      disabled:bg-gray-50
-      disabled:text-gray-400
-    "
+              w-full
+              h-9
+              rounded-lg
+              border
+              border-gray-200
+              bg-white
+              px-3
+              text-[11px]
+              text-gray-600
+              outline-none
+              focus:border-violet-400
+              focus:ring-2
+              focus:ring-violet-100
+              disabled:bg-gray-50
+              disabled:text-gray-400
+            "
           >
             <option value="">
               {complaint ? "Unassigned" : "Select Assignee"}
             </option>
 
             <option value="ramesh">Ramesh K.</option>
+
             <option value="suresh">Suresh M.</option>
+
             <option value="mahesh">Mahesh T.</option>
           </select>
         </div>
+
         {/* ================= STATUS ================= */}
+
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
             <ClipboardList size={14} className="text-gray-500" />
@@ -308,26 +355,25 @@ export default function ComplaintDetails({ complaint }) {
             value={complaint?.status || ""}
             onChange={(e) => {
               console.log("Selected status:", e.target.value);
-              // Backend status update endpoint will be connected later.
             }}
             disabled={!complaint}
             className="
-      w-full
-      h-9
-      rounded-lg
-      border
-      border-gray-200
-      bg-white
-      px-3
-      text-[11px]
-      text-[#16295A]
-      outline-none
-      focus:border-violet-400
-      focus:ring-2
-      focus:ring-violet-100
-      disabled:bg-gray-50
-      disabled:text-gray-400
-    "
+              w-full
+              h-9
+              rounded-lg
+              border
+              border-gray-200
+              bg-white
+              px-3
+              text-[11px]
+              text-[#16295A]
+              outline-none
+              focus:border-violet-400
+              focus:ring-2
+              focus:ring-violet-100
+              disabled:bg-gray-50
+              disabled:text-gray-400
+            "
           >
             <option value="" disabled>
               Select Status
@@ -348,7 +394,9 @@ export default function ComplaintDetails({ complaint }) {
             <option value="CLOSED">Closed</option>
           </select>
         </div>
+
         {/* ================= REMARKS ================= */}
+
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
             <FileText size={14} className="text-gray-500" />
@@ -360,53 +408,54 @@ export default function ComplaintDetails({ complaint }) {
             value={complaint?.remarks || ""}
             onChange={(e) => {
               console.log("Remarks:", e.target.value);
-              // Backend update endpoint will be connected later.
             }}
             disabled={!complaint}
             placeholder={
               complaint ? "Add remarks..." : "Select a complaint first..."
             }
             className="
-      w-full
-      h-[58px]
-      resize-none
-      rounded-lg
-      border
-      border-gray-200
-      px-3
-      py-2
-      text-[11px]
-      text-[#16295A]
-      outline-none
-      placeholder:text-gray-400
-      focus:border-violet-400
-      focus:ring-2
-      focus:ring-violet-100
-      disabled:bg-gray-50
-      disabled:text-gray-400
-    "
+              w-full
+              h-[58px]
+              resize-none
+              rounded-lg
+              border
+              border-gray-200
+              px-3
+              py-2
+              text-[11px]
+              text-[#16295A]
+              outline-none
+              placeholder:text-gray-400
+              focus:border-violet-400
+              focus:ring-2
+              focus:ring-violet-100
+              disabled:bg-gray-50
+              disabled:text-gray-400
+            "
           />
         </div>
+
         {/* ================= ACTIONS ================= */}
+
         <div className="flex justify-end gap-2 pt-1 pb-2">
           <button
             type="button"
             disabled={!complaint}
             className="
-      h-8
-      px-4
-      rounded-lg
-      border
-      border-gray-200
-      bg-white
-      text-[11px]
-      font-semibold
-      text-gray-600
-      hover:bg-gray-50
-      transition
-      disabled:opacity-50
-      disabled:cursor-not-allowed
-    "
+              h-8
+              px-4
+              rounded-lg
+              border
+              border-gray-200
+              bg-white
+              text-[11px]
+              font-semibold
+              text-gray-600
+              hover:bg-gray-50
+              transition
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+            "
           >
             Cancel
           </button>
@@ -419,30 +468,53 @@ export default function ComplaintDetails({ complaint }) {
                 "Save Changes clicked for:",
                 complaint?.ticket_number,
               );
-
-              // IMPORTANT:
-              // We will connect this to the Admin complaint
-              // update endpoint after the backend PUT/PATCH
-              // route is implemented.
             }}
             className="
-      h-8
-      px-4
-      rounded-lg
-      bg-gradient-to-r
-      from-violet-600
-      to-fuchsia-600
-      text-white
-      text-[11px]
-      font-semibold
-      shadow-sm
-      hover:opacity-95
-      transition
-      disabled:opacity-50
-      disabled:cursor-not-allowed
-    "
+              h-8
+              px-4
+              rounded-lg
+              bg-gradient-to-r
+              from-violet-600
+              to-fuchsia-600
+              text-white
+              text-[11px]
+              font-semibold
+              shadow-sm
+              hover:opacity-95
+              transition
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+            "
           >
             Save Changes
+          </button>
+        </div>
+
+        {/* ================= VERIFICATION ================= */}
+
+        <div className="border-t border-gray-100 mt-2 pt-4">
+          <button
+            type="button"
+            disabled={!complaint || !complaint.ticket_number}
+            onClick={() => onRequestVerification?.()}
+            className="
+              w-full
+              h-9
+              rounded-lg
+              bg-gradient-to-r
+              from-violet-600
+              to-fuchsia-600
+              text-white
+              text-[11px]
+              font-semibold
+              shadow-sm
+              hover:opacity-95
+              transition
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+            "
+          >
+            Request Verification OTP
           </button>
         </div>
       </div>

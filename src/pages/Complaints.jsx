@@ -120,6 +120,45 @@ export default function Complaints() {
     }
   };
 
+  const requestVerification = async () => {
+    if (!selectedComplaint?.ticket_number) {
+      return;
+    }
+
+    try {
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error("Admin authentication token not found.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints/${selectedComplaint.ticket_number}/request-verification`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Failed to request verification.");
+      }
+
+      console.log("Verification OTP requested:", result);
+
+      alert("OTP sent successfully to the citizen.");
+    } catch (err) {
+      console.error("Request verification error:", err);
+
+      alert(err.message || "Unable to request verification OTP.");
+    }
+  };
+
   useEffect(() => {
     fetchComplaints(1);
     fetchKPIs();
@@ -148,7 +187,7 @@ export default function Complaints() {
         </div>
 
         <div className="w-[370px] shrink-0">
-          <ComplaintDetails complaint={selectedComplaint} />
+          <ComplaintDetails complaint={selectedComplaint} onRequestVerification={requestVerification} />
         </div>
       </div>
     </div>
