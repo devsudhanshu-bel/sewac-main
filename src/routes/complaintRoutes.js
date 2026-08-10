@@ -5,16 +5,30 @@ const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
-/**
- * POST /:ticketNumber/request-verification
+/*
+ * GET all complaints
+ */
+router.get("/", authMiddleware, complaintController.getComplaints);
+
+/*
+ * GET complaint KPIs
  *
- * Admin requests OTP verification for a complaint.
- *
- * The controller:
- * - gets ticketNumber from params
- * - gets admin ID from req.user.id
- * - generates the OTP in the service
- * - sends/stores it through Citizen Backend
+ * IMPORTANT:
+ * This must come BEFORE /:ticketNumber
+ */
+router.get("/kpis", authMiddleware, complaintController.getComplaintKPIs);
+
+/*
+ * GET complaint details
+ */
+router.get(
+  "/:ticketNumber",
+  authMiddleware,
+  complaintController.getComplaintByTicket,
+);
+
+/*
+ * Request verification OTP
  */
 router.post(
   "/:ticketNumber/request-verification",
@@ -22,29 +36,13 @@ router.post(
   complaintController.requestVerification,
 );
 
-/**
- * POST /:ticketNumber/verify
- *
- * Admin submits the OTP received from the citizen.
- *
- * The controller:
- * - gets ticketNumber from params
- * - gets OTP from req.body
- * - gets admin ID from req.user.id
- * - verifies OTP
- * - closes complaint
+/*
+ * Verify OTP
  */
 router.post(
   "/:ticketNumber/verify",
   authMiddleware,
   complaintController.verifyOTP,
 );
-
-router.get("/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "Complaint routes are mounted.",
-  });
-});
 
 module.exports = router;
