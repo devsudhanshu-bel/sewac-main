@@ -4,7 +4,7 @@ import {
   Truck,
   Factory,
   FileText,
-  Bot,
+  MessageCircle,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -42,9 +42,9 @@ const menuItems = [
     icon: FileText,
   },
   {
-    name: "AI Agent",
-    path: "/dashboard/admin/ai",
-    icon: Bot,
+    name: "Complaints",
+    path: "/dashboard/admin/complaints",
+    icon: MessageCircle,
   },
   {
     name: "Users",
@@ -67,7 +67,9 @@ export default function Sidebar() {
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace("https://app-authentication-frontend.onrender.com");
+    window.location.replace(
+      "https://app-authentication-frontend.onrender.com"
+    );
   };
 
   useLayoutEffect(() => {
@@ -152,23 +154,18 @@ export default function Sidebar() {
       className="
         relative
         w-[240px]
-        min-h-screen
+        h-screen
+        shrink-0
         overflow-hidden
-        border-r
-        border-fuchsia-400/20
         bg-gradient-to-b
-        from-[#4C1D95]
-        via-[#6D28D9]
-        to-[#DB2777]
-        flex
-        flex-col
-        opacity-0
+        from-violet-700
+        via-purple-600
+        to-pink-500
       "
     >
-      {/* Decorative Background */}
+      {/* ================= DECORATIVE BACKGROUND ================= */}
 
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-
         <div
           className="
             absolute
@@ -194,12 +191,12 @@ export default function Sidebar() {
             blur-[140px]
           "
         />
-
       </div>
 
-      <div className="relative z-10 flex flex-col h-full">
+      {/* ================= CONTENT ================= */}
 
-        {/* Logo */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* ================= LOGO ================= */}
 
         <div
           ref={logoRef}
@@ -218,7 +215,7 @@ export default function Sidebar() {
           />
         </div>
 
-        {/* Navigation */}
+        {/* ================= NAVIGATION ================= */}
 
         <nav
           ref={navRef}
@@ -226,12 +223,6 @@ export default function Sidebar() {
         >
           {menuItems.map((item) => {
             const Icon = item.icon;
-
-            const handleLogout = () => {
-              sessionStorage.clear();
-
-              window.location.replace("https://app-authentication-frontend.onrender.com");
-            };
 
             return (
               <NavLink
@@ -250,8 +241,9 @@ export default function Sidebar() {
                   transition-all
                   duration-300
 
-                  ${isActive
-                    ? `
+                  ${
+                    isActive
+                      ? `
                         bg-gradient-to-r
                         from-fuchsia-500
                         via-purple-500
@@ -261,7 +253,7 @@ export default function Sidebar() {
                         shadow-fuchsia-900/40
                         scale-[1.02]
                       `
-                    : `
+                      : `
                         text-violet-100/85
                         hover:bg-white/10
                         hover:text-white
@@ -269,13 +261,17 @@ export default function Sidebar() {
                         hover:shadow-lg
                       `
                   }
-                  `
+                `
                 }
               >
                 <Icon
                   size={18}
                   strokeWidth={2}
-                  className="transition-transform duration-300 group-hover:scale-110"
+                  className="
+                    transition-transform
+                    duration-300
+                    group-hover:scale-110
+                  "
                 />
 
                 <span className="text-[14px] font-medium tracking-wide">
@@ -286,7 +282,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Logout */}
+        {/* ================= LOGOUT ================= */}
 
         <div
           ref={logoutRef}
@@ -295,41 +291,38 @@ export default function Sidebar() {
           <button
             onClick={handleLogout}
             className="
-    group
-    w-full
-    h-12
-    rounded-2xl
-    bg-white/10
-    border
-    border-white/10
-    backdrop-blur-md
-    flex
-    items-center
-    justify-center
-    gap-2
-    text-violet-100
-    font-medium
-    transition-all
-    duration-300
-    hover:bg-white/20
-    hover:text-white
-    hover:scale-[1.02]
-    hover:shadow-xl
-    hover:shadow-fuchsia-900/20
-  "
+              group
+              w-full
+              h-12
+              rounded-2xl
+              bg-white/10
+              border
+              border-white/10
+              backdrop-blur-md
+              flex
+              items-center
+              justify-center
+              gap-2
+              text-violet-100
+              font-medium
+              transition-all
+              duration-300
+              hover:bg-white/20
+              hover:text-white
+              hover:scale-[1.02]
+              hover:shadow-xl
+              hover:shadow-fuchsia-900/20
+            "
           >
             <LogOut
               size={17}
-              strokeWidth={2}
-              className="transition-transform duration-300 group-hover:-translate-x-1"
+              className="transition-transform duration-300 group-hover:scale-110"
             />
 
             Logout
           </button>
         </div>
-
       </div>
-
     </aside>
   );
 }
