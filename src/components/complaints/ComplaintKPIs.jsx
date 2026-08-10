@@ -7,13 +7,13 @@ import {
 
 import ComplaintCard from "./ComplaintCard";
 
-export default function ComplaintKPIs() {
+export default function ComplaintKPIs({ kpis = {}}) {
   return (
     <div className="grid grid-cols-4 gap-4">
       <ComplaintCard
         icon={<MessageCircleMore size={20} strokeWidth={2.2} />}
         title="Total Complaints"
-        value="143"
+        value={kpis.total ?? 0}
         subtitle="All time"
         color="purple"
       />
@@ -21,24 +21,21 @@ export default function ComplaintKPIs() {
       <ComplaintCard
         icon={<Clock3 size={20} strokeWidth={2.2} />}
         title="Pending"
-        value="27"
-        subtitle="18.9%"
+        value={kpis.pending ?? 0}
         color="yellow"
       />
 
       <ComplaintCard
         icon={<RefreshCcw size={20} strokeWidth={2.2} />}
         title="In Progress"
-        value="14"
-        subtitle="9.8%"
+        value={kpis.inProgress ?? 0}
         color="blue"
       />
 
       <ComplaintCard
         icon={<Check size={20} strokeWidth={2.2} />}
         title="Resolved"
-        value="102"
-        subtitle="71.3%"
+        value={kpis.closed ?? 0}
         color="green"
       />
     </div>

@@ -11,6 +11,15 @@ export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [kpis, setKpis] = useState({
+    total: 0,
+    pending: 0,
+    assigned: 0,
+    inProgress: 0,
+    readyForVerification: 0,
+    otpSent: 0,
+    closed: 0,
+  });
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   const [pagination, setPagination] = useState({
@@ -73,8 +82,47 @@ export default function Complaints() {
     }
   };
 
+  const fetchKPIs = async () => {
+    try {
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error("Admin authentication token not found.");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/complaints/kpis`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Failed to fetch complaint KPIs.");
+      }
+
+      setKpis(
+        result.data || {
+          total: 0,
+          pending: 0,
+          assigned: 0,
+          inProgress: 0,
+          readyForVerification: 0,
+          otpSent: 0,
+          closed: 0,
+        },
+      );
+    } catch (err) {
+      console.error("Fetch complaint KPIs error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchComplaints(1);
+    fetchKPIs();
   }, []);
 
   return (
@@ -85,7 +133,7 @@ export default function Complaints() {
         <div className="flex-1 min-w-0 space-y-5">
           <ComplaintHeader />
 
-          <ComplaintKPIs />
+          <ComplaintKPIs kpis={kpis} />
 
           <ComplaintFilters />
 
