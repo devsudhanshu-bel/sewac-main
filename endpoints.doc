@@ -319,6 +319,8 @@ POST "http://localhost:5002/api/citizen/complaint"
 >>   -F "address=MG Road, Bengaluru, Karnataka" `
 >>   -F "image=@D:\test_run.png"
 
+GET /api/citizen/complaint
+
 http://localhost:5002/api/citizen/complaint/SEWAC-1785430223995
 {
   "success": true,
@@ -345,3 +347,16 @@ http://localhost:5002/api/citizen/complaint/SEWAC-1785430223995
     "closed_at": null
   }
 }
+
+store otp: POST /api/internal/complaints/:ticketNumber/request-verification
+body: {
+  "otp": "482931",
+  "expiresAt": "2026-08-09T18:00:00.000Z"
+}
+
+verify otp and close complaint POST /api/internal/complaints/:ticketNumber/verify
+{
+  "otp": "482931"
+}
+
+internal health check: GET /api/internal/health

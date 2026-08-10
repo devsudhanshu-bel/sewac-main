@@ -79,10 +79,7 @@ export const getCitizenComplaints = async (phoneNumber) => {
 /**
  * Get complaint details
  */
-export const getComplaintDetails = async ({
-  ticketNumber,
-  phoneNumber,
-}) => {
+export const getComplaintDetails = async ({ ticketNumber, phoneNumber }) => {
   if (!ticketNumber) {
     throw new Error("Ticket number is required.");
   }
@@ -93,7 +90,7 @@ export const getComplaintDetails = async ({
 
   const complaint = await repository.getComplaintByTicket(
     ticketNumber,
-    phoneNumber
+    phoneNumber,
   );
 
   if (!complaint) {
@@ -120,7 +117,7 @@ export const generateVerificationOTP = async ({
 
   const complaint = await repository.getComplaintByTicket(
     ticketNumber,
-    phoneNumber
+    phoneNumber,
   );
 
   if (!complaint) {
@@ -134,13 +131,13 @@ export const generateVerificationOTP = async ({
   const verificationCode = generateOTP(OTP_LENGTH);
 
   const verificationExpiresAt = new Date(
-    Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000
+    Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
   );
 
   await repository.updateVerificationOTP(
     complaint.id,
     verificationCode,
-    verificationExpiresAt
+    verificationExpiresAt,
   );
 
   return {
@@ -154,10 +151,7 @@ export const generateVerificationOTP = async ({
 /**
  * Verify OTP and close complaint
  */
-export const verifyOTPAndCloseComplaint = async ({
-  ticketNumber,
-  otp,
-}) => {
+export const verifyOTPAndCloseComplaint = async ({ ticketNumber, otp }) => {
   if (!ticketNumber) {
     throw new Error("Ticket number is required.");
   }
@@ -166,9 +160,7 @@ export const verifyOTPAndCloseComplaint = async ({
     throw new Error("OTP is required.");
   }
 
-  const complaint = await repository.getComplaintByTicketOnly(
-    ticketNumber
-  );
+  const complaint = await repository.getComplaintByTicketOnly(ticketNumber);
 
   if (!complaint) {
     throw new Error("Complaint not found.");
@@ -190,14 +182,209 @@ export const verifyOTPAndCloseComplaint = async ({
     throw new Error("Invalid OTP.");
   }
 
-  const closedComplaint = await repository.closeComplaint(
-    complaint.id
-  );
+  const closedComplaint = await repository.closeComplaint(complaint.id);
 
   return {
     ticketNumber: closedComplaint.ticket_number,
     status: closedComplaint.status,
     closedAt: closedComplaint.closed_at,
     message: "Complaint closed successfully.",
+  };
+};
+
+export const internalAuth = (req, res, next) => {
+  const expectedSecret = process.env.CITIZEN_INTERNAL_API_SECRET;
+
+  const providedSecret = req.headers["x-internal-secret"];
+
+  if (!expectedSecret) {
+    console.error("CITIZEN_INTERNAL_API_SECRET is not configured.");
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal API is not configured.",
+    });
+  }
+
+  if (!providedSecret || providedSecret !== expectedSecret) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized internal request.",
+    });
+  }
+
+  next();
+};
+
+/**
+ * Verify OTP received from Admin Backend
+ * and close the complaint.
+ */
+export const verifyInternalOTPAndCloseComplaint = async ({
+  ticketNumber,
+  otp,
+}) => {
+  if (!ticketNumber) {
+    throw new Error("Ticket number is required.");
+  }
+
+  if (!otp) {
+    throw new Error("OTP is required.");
+  }
+
+  if (!/^\d{6}$/.test(String(otp))) {
+    throw new Error("OTP must be a 6-digit number.");
+  }
+
+  const complaint = await repository.getComplaintByTicketOnly(ticketNumber);
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  if (complaint.status === "CLOSED") {
+    throw new Error("Complaint has already been closed.");
+  }
+
+  if (complaint.status !== "READY_FOR_VERIFICATION") {
+    throw new Error("Complaint is not ready for verification.");
+  }
+
+  if (!complaint.verification_code) {
+    throw new Error("No OTP has been generated for this complaint.");
+  }
+
+  if (
+    !complaint.verification_expires_at ||
+    complaint.verification_expires_at < new Date()
+  ) {
+    throw new Error("OTP has expired.");
+  }
+
+  if (complaint.verification_code !== String(otp)) {
+    throw new Error("Invalid OTP.");
+  }
+
+  const closedComplaint = await repository.closeComplaint(complaint.id);
+
+  return {
+    ticketNumber: closedComplaint.ticket_number,
+    status: closedComplaint.status,
+    closedAt: closedComplaint.closed_at,
+    message: "Complaint closed successfully.",
+  };
+};
+
+export const storeInternalVerificationOTP = async ({
+  ticketNumber,
+  otp,
+  expiresAt,
+}) => {
+  if (!ticketNumber) {
+    throw new Error("Ticket number is required.");
+  }
+
+  if (!otp) {
+    throw new Error("OTP is required.");
+  }
+
+  if (!expiresAt) {
+    throw new Error("OTP expiry is required.");
+  }
+
+  if (!/^\d{6}$/.test(String(otp))) {
+    throw new Error("OTP must be a 6-digit number.");
+  }
+
+  const complaint = await repository.getComplaintByTicketOnly(ticketNumber);
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  if (complaint.status === "CLOSED") {
+    throw new Error("This complaint has already been closed.");
+  }
+
+  if (complaint.status !== "READY_FOR_VERIFICATION") {
+    throw new Error("Complaint is not ready for verification.");
+  }
+
+  const verificationExpiresAt = new Date(expiresAt);
+
+  if (Number.isNaN(verificationExpiresAt.getTime())) {
+    throw new Error("Invalid OTP expiry time.");
+  }
+
+  await repository.updateVerificationOTP(
+    complaint.id,
+    String(otp),
+    verificationExpiresAt,
+  );
+
+  return {
+    ticketNumber: complaint.ticket_number,
+    status: complaint.status,
+    expiresAt: verificationExpiresAt,
+  };
+};
+
+/**
+ * Get verification OTP for the authenticated citizen.
+ *
+ * IMPORTANT:
+ * The complaint must belong to the authenticated citizen.
+ */
+export const getComplaintVerification = async ({
+  ticketNumber,
+  phoneNumber,
+}) => {
+  if (!ticketNumber) {
+    throw new Error("Ticket number is required.");
+  }
+
+  if (!phoneNumber) {
+    throw new Error("Phone number is required.");
+  }
+
+  const complaint = await repository.getComplaintByTicketOnly(ticketNumber);
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  // SECURITY: make sure this complaint belongs
+  // to the logged-in citizen.
+  if (complaint.phone_number !== phoneNumber) {
+    throw new Error("Complaint not found.");
+  }
+
+  if (complaint.status === "CLOSED") {
+    throw new Error("This complaint has already been closed.");
+  }
+
+  if (complaint.status !== "READY_FOR_VERIFICATION") {
+    throw new Error("Complaint is not ready for verification.");
+  }
+
+  if (!complaint.verification_code) {
+    throw new Error("Verification OTP has not been generated yet.");
+  }
+
+  if (
+    !complaint.verification_expires_at ||
+    complaint.verification_expires_at < new Date()
+  ) {
+    throw new Error("Verification OTP has expired.");
+  }
+
+  return {
+    ticketNumber: complaint.ticket_number,
+
+    otp: complaint.verification_code,
+
+    expiresAt: complaint.verification_expires_at,
+
+    status: complaint.status,
   };
 };

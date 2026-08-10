@@ -14,13 +14,11 @@ export const createComplaint = async (req, res, next) => {
       user: req.user,
     });
 
-    return res.status(201).json(
-      new ApiResponse(
-        201,
-        "Complaint registered successfully.",
-        complaint
-      )
-    );
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(201, "Complaint registered successfully.", complaint),
+      );
   } catch (error) {
     next(error);
   }
@@ -32,16 +30,14 @@ export const createComplaint = async (req, res, next) => {
 export const getCitizenComplaints = async (req, res, next) => {
   try {
     const complaints = await complaintService.getCitizenComplaints(
-      req.user.phoneNumber
+      req.user.phoneNumber,
     );
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        "Complaints fetched successfully.",
-        complaints
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, "Complaints fetched successfully.", complaints),
+      );
   } catch (error) {
     next(error);
   }
@@ -57,13 +53,15 @@ export const getComplaintDetails = async (req, res, next) => {
       phoneNumber: req.user.phoneNumber,
     });
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        "Complaint details fetched successfully.",
-        complaint
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          "Complaint details fetched successfully.",
+          complaint,
+        ),
+      );
   } catch (error) {
     next(error);
   }
@@ -79,13 +77,15 @@ export const generateVerificationOTP = async (req, res, next) => {
       phoneNumber: req.user.phoneNumber,
     });
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        "Verification OTP generated successfully.",
-        response
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          "Verification OTP generated successfully.",
+          response,
+        ),
+      );
   } catch (error) {
     next(error);
   }
@@ -102,13 +102,32 @@ export const verifyOTPAndCloseComplaint = async (req, res, next) => {
       otp: req.body.otp,
     });
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        "Complaint closed successfully.",
-        response
-      )
-    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, "Complaint closed successfully.", response));
+  } catch (error) {
+    next(error);
+  }
+};
+/**
+ * Get verification OTP for the logged-in citizen
+ */
+export const getComplaintVerification = async (req, res, next) => {
+  try {
+    const response = await complaintService.getComplaintVerification({
+      ticketNumber: req.params.ticketNumber,
+      phoneNumber: req.user.phoneNumber,
+    });
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          "Verification information fetched successfully.",
+          response,
+        ),
+      );
   } catch (error) {
     next(error);
   }

@@ -5,6 +5,7 @@ import compression from "compression";
 import morgan from "morgan";
 
 import routes from "./routes/routes.js";
+import internalRoutes from "./routes/internal.routes.js";
 
 const app = express();
 
@@ -46,7 +47,7 @@ app.get("/health", (req, res) => {
  */
 
 app.use("/api/citizen", routes);
-
+app.use("/api/internal", internalRoutes);
 /**
  * =====================================================
  * 404 Handler

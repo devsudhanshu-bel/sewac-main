@@ -45,10 +45,7 @@ export const getPreviousComplaints = async (phoneNumber) => {
 /**
  * Get complaint by ticket + owner
  */
-export const getComplaintByTicket = async (
-  ticketNumber,
-  phoneNumber
-) => {
+export const getComplaintByTicket = async (ticketNumber, phoneNumber) => {
   return await sewacPrisma.citizen_complaints.findFirst({
     where: {
       ticket_number: ticketNumber,
@@ -71,17 +68,13 @@ export const getComplaintByTicketOnly = async (ticketNumber) => {
 /**
  * Save verification OTP
  */
-export const updateVerificationOTP = async (
-  id,
-  code,
-  expiresAt
-) => {
+export const updateVerificationOTP = async (id, code, expiresAt) => {
   return await sewacPrisma.citizen_complaints.update({
     where: { id },
     data: {
       verification_code: code,
       verification_expires_at: expiresAt,
-      status: "OTP_SENT",
+      otp_verified: false,
     },
   });
 };

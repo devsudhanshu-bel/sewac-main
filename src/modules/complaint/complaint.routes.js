@@ -21,18 +21,14 @@ router.post(
   "/",
   authMiddleware,
   upload.single("image"),
-  complaintController.createComplaint
+  complaintController.createComplaint,
 );
 
 /**
  * GET /api/citizen/complaint
  * Fetch all complaints of the logged-in citizen
  */
-router.get(
-  "/",
-  authMiddleware,
-  complaintController.getCitizenComplaints
-);
+router.get("/", authMiddleware, complaintController.getCitizenComplaints);
 
 /**
  * GET /api/citizen/complaint/:ticketNumber
@@ -41,7 +37,18 @@ router.get(
 router.get(
   "/:ticketNumber",
   authMiddleware,
-  complaintController.getComplaintDetails
+  complaintController.getComplaintDetails,
+);
+
+/**
+ * GET /api/citizen/complaint/:ticketNumber/verification
+ *
+ * Get the OTP generated for complaint verification.
+ */
+router.get(
+  "/:ticketNumber/verification",
+  authMiddleware,
+  complaintController.getComplaintVerification,
 );
 
 /**
@@ -51,7 +58,7 @@ router.get(
 router.post(
   "/:ticketNumber/generate-otp",
   authMiddleware,
-  complaintController.generateVerificationOTP
+  complaintController.generateVerificationOTP,
 );
 
 /**
@@ -61,7 +68,7 @@ router.post(
 router.post(
   "/:ticketNumber/verify-otp",
   authMiddleware,
-  complaintController.verifyOTPAndCloseComplaint
+  complaintController.verifyOTPAndCloseComplaint,
 );
 
 export default router;
