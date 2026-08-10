@@ -53,7 +53,14 @@ export default function Calendar({
   const triggerRef = useRef(null);
 
   /* =========================================================
-     SYNC WITH PARENT VALUE
+     POPUP POSITION
+  ========================================================= */
+
+  const [popupStyle, setPopupStyle] =
+    useState({});
+
+  /* =========================================================
+     SYNC WITH PARENT
   ========================================================= */
 
   useEffect(() => {
@@ -62,6 +69,99 @@ export default function Calendar({
       setCurrentMonth(value);
     }
   }, [value]);
+
+  /* =========================================================
+     CALCULATE POPUP POSITION
+  ========================================================= */
+
+  function updatePopupPosition() {
+    if (!triggerRef.current) return;
+
+    const rect =
+      triggerRef.current.getBoundingClientRect();
+
+    const popupWidth = 360;
+
+    const gap = 12;
+
+    /*
+      Keep popup inside the viewport.
+    */
+
+    let left =
+      rect.right - popupWidth;
+
+    /*
+      Prevent going outside left edge.
+    */
+
+    if (left < 12) {
+      left = 12;
+    }
+
+    /*
+      Prevent going outside right edge.
+    */
+
+    if (
+      left + popupWidth >
+      window.innerWidth - 12
+    ) {
+      left =
+        window.innerWidth -
+        popupWidth -
+        12;
+    }
+
+    setPopupStyle({
+      position: "fixed",
+      top: `${rect.bottom + gap}px`,
+      left: `${left}px`,
+      width: `${popupWidth}px`,
+    });
+  }
+
+  /* =========================================================
+     OPEN / RESIZE / SCROLL POSITIONING
+  ========================================================= */
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    updatePopupPosition();
+
+    const handleResize = () => {
+      updatePopupPosition();
+    };
+
+    const handleScroll = () => {
+      updatePopupPosition();
+    };
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      true
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        true
+      );
+    };
+  }, [open]);
 
   /* =========================================================
      POPUP ANIMATION
@@ -74,28 +174,38 @@ export default function Calendar({
       popupRef.current,
       {
         opacity: 0,
-        y: 14,
+        y: 12,
         scale: 0.96,
       },
       {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.32,
+        duration: 0.28,
         ease: "power4.out",
       }
     );
   }, [open]);
 
   /* =========================================================
-     CLOSE WHEN CLICKING OUTSIDE
+     OUTSIDE CLICK
   ========================================================= */
 
   useEffect(() => {
-    function outside(e) {
+    function handleOutsideClick(e) {
+      const clickedTrigger =
+        triggerRef.current?.contains(
+          e.target
+        );
+
+      const clickedPopup =
+        popupRef.current?.contains(
+          e.target
+        );
+
       if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target)
+        !clickedTrigger &&
+        !clickedPopup
       ) {
         setOpen(false);
       }
@@ -103,19 +213,19 @@ export default function Calendar({
 
     window.addEventListener(
       "mousedown",
-      outside
+      handleOutsideClick
     );
 
     return () => {
       window.removeEventListener(
         "mousedown",
-        outside
+        handleOutsideClick
       );
     };
   }, []);
 
   /* =========================================================
-     MONTH NAVIGATION
+     PREVIOUS MONTH
   ========================================================= */
 
   function goPrevious() {
@@ -124,6 +234,10 @@ export default function Calendar({
     );
   }
 
+  /* =========================================================
+     NEXT MONTH
+  ========================================================= */
+
   function goNext() {
     setCurrentMonth((prev) =>
       nextMonth(prev)
@@ -131,7 +245,7 @@ export default function Calendar({
   }
 
   /* =========================================================
-     SELECT DATE
+     SELECT DAY
   ========================================================= */
 
   function selectDay(day) {
@@ -146,6 +260,7 @@ export default function Calendar({
     const now = new Date();
 
     setSelectedDate(now);
+
     setCurrentMonth(now);
   }
 
@@ -164,7 +279,8 @@ export default function Calendar({
   ========================================================= */
 
   function cancel() {
-    const resetDate = value ?? new Date();
+    const resetDate =
+      value ?? new Date();
 
     setSelectedDate(resetDate);
 
@@ -197,9 +313,14 @@ export default function Calendar({
 
       <button
         ref={triggerRef}
-        onClick={() =>
-          setOpen(!open)
-        }
+        type="button"
+        onClick={() => {
+          if (!open) {
+            updatePopupPosition();
+          }
+
+          setOpen(!open);
+        }}
         className="
           group
           h-10
@@ -233,15 +354,17 @@ export default function Calendar({
             items-center
             justify-center
             shadow-md
+            shrink-0
           "
         >
           <CalendarDays
             size={15}
+            strokeWidth={2}
             className="text-white"
           />
         </div>
 
-        {/* Date */}
+        {/* Selected Date */}
 
         <span
           className="
@@ -270,23 +393,19 @@ export default function Calendar({
       {open && (
         <div
           ref={popupRef}
+          style={popupStyle}
           className="
-            absolute
-            right-0
-            top-full
-            mt-3
-            w-[360px]
             rounded-[26px]
             bg-white
             border
             border-violet-100
             shadow-[0_30px_80px_rgba(15,23,42,0.18)]
             overflow-hidden
-            z-[9999]
+            z-[99999]
           "
         >
           {/* =================================================
-              HEADER
+              CALENDAR TOP AREA
           ================================================= */}
 
           <div className="relative">
@@ -299,21 +418,23 @@ export default function Calendar({
             {/* =================================================
                 CLOSE BUTTON
 
-                Positioned INSIDE the calendar header area
-                so it stays aligned with the popup.
+                IMPORTANT:
+                This is positioned relative to the
+                calendar popup header, NOT the page/header.
             ================================================= */}
 
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() =>
+                setOpen(false)
+              }
               aria-label="Close calendar"
               className="
                 absolute
-                top-1/2
+                top-4
                 right-4
-                -translate-y-1/2
-                w-8
-                h-8
+                w-9
+                h-9
                 rounded-xl
                 bg-white
                 border
@@ -321,16 +442,17 @@ export default function Calendar({
                 flex
                 items-center
                 justify-center
-                shadow-sm
+                shadow-[0_3px_10px_rgba(15,23,42,0.08)]
                 hover:bg-violet-50
                 hover:border-violet-200
+                hover:scale-[1.03]
                 transition-all
-                duration-300
-                z-20
+                duration-200
+                z-[100]
               "
             >
               <X
-                size={15}
+                size={16}
                 strokeWidth={2}
                 className="text-violet-500"
               />
@@ -338,11 +460,11 @@ export default function Calendar({
           </div>
 
           {/* =================================================
-              DAYS
+              WEEK DAYS + CALENDAR
           ================================================= */}
 
           <div className="px-5 pt-4 pb-1">
-            {/* Weekday Header */}
+            {/* Weekday Names */}
 
             <div
               className="
@@ -369,7 +491,7 @@ export default function Calendar({
               ))}
             </div>
 
-            {/* Calendar Grid */}
+            {/* Calendar Weeks */}
 
             <div className="space-y-1">
               {weeks.map(
@@ -432,7 +554,7 @@ export default function Calendar({
               justify-between
             "
           >
-            {/* Today */}
+            {/* TODAY */}
 
             <button
               type="button"
@@ -453,10 +575,16 @@ export default function Calendar({
               {TODAY_LABEL}
             </button>
 
-            {/* Right Actions */}
+            {/* RIGHT ACTIONS */}
 
-            <div className="flex items-center gap-2">
-              {/* Cancel */}
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              {/* CANCEL */}
 
               <button
                 type="button"
@@ -479,7 +607,7 @@ export default function Calendar({
                 {CANCEL_LABEL}
               </button>
 
-              {/* Apply */}
+              {/* APPLY */}
 
               <button
                 type="button"
