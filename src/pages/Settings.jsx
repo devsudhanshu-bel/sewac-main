@@ -3,10 +3,6 @@
 import ProfileCard from "../components/settings/ProfileCard";
 import PersonalInfoForm from "../components/settings/PersonalInfoForm";
 import ChangePasswordCard from "../components/settings/ChangePasswordCard";
-import PreferencesCard from "../components/settings/PreferencesCard";
-import RecentActivity from "../components/settings/RecentActivity";
-import ActiveSessions from "../components/settings/ActiveSessions";
-import QuickActions from "../components/settings/QuickActions";
 
 export default function Settings() {
   return (
@@ -52,47 +48,25 @@ export default function Settings() {
           "
         >
           {/* =================================================
-              LEFT / CENTER CONTENT
+              LEFT / CENTER
           ================================================= */}
 
-          <div className="flex flex-col gap-6">
-            {/* ===============================================
-                PROFILE + PERSONAL INFORMATION
-            =============================================== */}
+          <div
+            className="
+              grid
+              grid-cols-[260px_minmax(0,1fr)]
+              gap-6
+              items-start
+            "
+          >
+            {/* Profile */}
 
-            <div
-              className="
-                grid
-                grid-cols-[260px_minmax(0,1fr)]
-                gap-6
-                items-start
-              "
-            >
-              {/* Profile */}
+            <ProfileCard />
 
-              <ProfileCard />
+            {/* Personal Information */}
 
-              {/* Personal Information */}
-
-              <div className="pl-4">
-                <PersonalInfoForm />
-              </div>
-            </div>
-
-            {/* ===============================================
-                ACTIVITY + SESSIONS
-            =============================================== */}
-
-            <div
-              className="
-                grid
-                grid-cols-2
-                gap-6
-              "
-            >
-              <RecentActivity />
-
-              <ActiveSessions />
+            <div className="pl-4">
+              <PersonalInfoForm />
             </div>
           </div>
 
@@ -100,18 +74,8 @@ export default function Settings() {
               RIGHT SIDEBAR
           ================================================= */}
 
-          <div
-            className="
-              flex
-              flex-col
-              gap-6
-            "
-          >
+          <div>
             <ChangePasswordCard />
-
-            <PreferencesCard />
-
-            <QuickActions />
           </div>
         </div>
       </div>
