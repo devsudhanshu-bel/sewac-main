@@ -1,23 +1,87 @@
 import Header from "../components/layouts/Header";
-
+import { useEffect, useState } from "react";
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
 import ComplaintFilters from "../components/complaints/ComplaintFilters";
 import ComplaintTable from "../components/complaints/ComplaintTable";
 import ComplaintDetails from "../components/complaints/ComplaintDetails";
+const API_BASE_URL = "http://localhost:5003";
 
 export default function Complaints() {
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+
+  const getAdminToken = () => {
+    // IMPORTANT:
+    // Replace this with your existing Admin auth storage key
+    // once we confirm it.
+    return sessionStorage.getItem("token");
+  };
+
+  const fetchComplaints = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error("Admin authentication token not found.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints?page=${page}&limit=10`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Failed to fetch complaints.");
+      }
+
+      setComplaints(result.data?.items || []);
+
+      setPagination(
+        result.data?.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
+      );
+    } catch (err) {
+      console.error("Fetch complaints error:", err);
+      setError(err.message || "Unable to fetch complaints.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComplaints(1);
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-[#F8F9FC]">
-      {/* ================= HEADER ================= */}
-
       <Header variant="default" />
 
-      {/* ================= PAGE CONTENT ================= */}
-
       <div className="flex gap-6 px-8 py-6">
-        {/* ================= LEFT ================= */}
-
         <div className="flex-1 min-w-0 space-y-5">
           <ComplaintHeader />
 
@@ -25,13 +89,18 @@ export default function Complaints() {
 
           <ComplaintFilters />
 
-          <ComplaintTable />
+          <ComplaintTable
+            complaints={complaints}
+            loading={loading}
+            error={error}
+            pagination={pagination}
+            onPageChange={fetchComplaints}
+            onSelectComplaint={setSelectedComplaint}
+          />
         </div>
 
-        {/* ================= RIGHT ================= */}
-
         <div className="w-[370px] shrink-0">
-          <ComplaintDetails />
+          <ComplaintDetails complaint={selectedComplaint} />
         </div>
       </div>
     </div>

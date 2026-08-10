@@ -1,77 +1,4 @@
-import {
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
-
-const complaints = [
-  {
-    ticket: "CMP-20260731-001",
-    category: "Solid Waste",
-    categoryColor: "purple",
-    title: "Garbage Overflow near Bus Stop",
-    phone: "9876543210",
-    location: "Ward 23",
-    status: "Pending",
-    statusColor: "yellow",
-    assignedTo: "-",
-    date: "31 Jul 2026",
-    time: "10:45 AM",
-  },
-  {
-    ticket: "CMP-20260731-002",
-    category: "Drainage",
-    categoryColor: "blue",
-    title: "Water Logging at Main Road",
-    phone: "9988776655",
-    location: "Ward 45",
-    status: "In Progress",
-    statusColor: "blue",
-    assignedTo: "Ramesh K.",
-    date: "31 Jul 2026",
-    time: "09:30 AM",
-  },
-  {
-    ticket: "CMP-20260731-003",
-    category: "Road",
-    categoryColor: "orange",
-    title: "Pothole on Ibbalur Road",
-    phone: "9123456780",
-    location: "Ward 23",
-    status: "Resolved",
-    statusColor: "green",
-    assignedTo: "Suresh M.",
-    date: "30 Jul 2026",
-    time: "04:20 PM",
-  },
-  {
-    ticket: "CMP-20260730-015",
-    category: "Street Light",
-    categoryColor: "yellow",
-    title: "Street Light Not Working",
-    phone: "9900112233",
-    location: "Ward 67",
-    status: "Pending",
-    statusColor: "yellow",
-    assignedTo: "-",
-    date: "30 Jul 2026",
-    time: "11:15 AM",
-  },
-  {
-    ticket: "CMP-20260730-014",
-    category: "Solid Waste",
-    categoryColor: "purple",
-    title: "Irregular Waste Collection",
-    phone: "9881122334",
-    location: "Ward 12",
-    status: "In Progress",
-    statusColor: "blue",
-    assignedTo: "Mahesh T.",
-    date: "30 Jul 2026",
-    time: "10:02 AM",
-  },
-];
+import { Eye, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 const categoryStyles = {
   purple: "bg-[#F3E8FF] text-[#7C3AED]",
@@ -86,7 +13,14 @@ const statusStyles = {
   green: "bg-[#E4F8EE] text-[#20A66A]",
 };
 
-export default function ComplaintTable() {
+export default function ComplaintTable({
+  complaints = [],
+  loading = false,
+  error = "",
+  pagination = {},
+  onPageChange,
+  onSelectComplaint,
+}) {
   return (
     <div
       className="
@@ -149,134 +83,160 @@ export default function ComplaintTable() {
           {/* ================= BODY ================= */}
 
           <tbody>
-            {complaints.map((complaint) => (
-              <tr
-                key={complaint.ticket}
-                className="
-                  h-[58px]
-                  border-b
-                  border-gray-100
-                  hover:bg-[#FAF8FF]
-                  transition-colors
-                "
-              >
-                {/* Ticket */}
-
-                <td className="px-3">
-                  <span className="text-[10px] font-semibold text-[#16295A] whitespace-nowrap">
-                    {complaint.ticket}
-                  </span>
-                </td>
-
-                {/* Category */}
-
-                <td className="px-3">
-                  <span
-                    className={`
-                      inline-flex
-                      items-center
-                      px-2
-                      py-1
-                      rounded-md
-                      text-[9px]
-                      font-semibold
-                      whitespace-nowrap
-                      ${categoryStyles[complaint.categoryColor]}
-                    `}
-                  >
-                    {complaint.category}
-                  </span>
-                </td>
-
-                {/* Title */}
-
-                <td className="px-3 max-w-[150px]">
-                  <span className="block text-[10px] font-medium leading-4 text-[#16295A]">
-                    {complaint.title}
-                  </span>
-                </td>
-
-                {/* Phone */}
-
-                <td className="px-3">
-                  <span className="text-[10px] text-[#16295A] whitespace-nowrap">
-                    {complaint.phone}
-                  </span>
-                </td>
-
-                {/* Location */}
-
-                <td className="px-3">
-                  <span className="text-[10px] text-[#16295A] whitespace-nowrap">
-                    {complaint.location}
-                  </span>
-                </td>
-
-                {/* Status */}
-
-                <td className="px-3">
-                  <span
-                    className={`
-                      inline-flex
-                      items-center
-                      px-2
-                      py-1
-                      rounded-md
-                      text-[9px]
-                      font-semibold
-                      whitespace-nowrap
-                      ${statusStyles[complaint.statusColor]}
-                    `}
-                  >
-                    {complaint.status}
-                  </span>
-                </td>
-
-                {/* Assigned */}
-
-                <td className="px-3">
-                  <span className="text-[10px] text-[#16295A] whitespace-nowrap">
-                    {complaint.assignedTo}
-                  </span>
-                </td>
-
-                {/* Created */}
-
-                <td className="px-3">
-                  <div className="text-[10px] text-[#16295A] leading-4 whitespace-nowrap">
-                    <div>{complaint.date}</div>
-                    <div className="text-gray-500">
-                      {complaint.time}
-                    </div>
-                  </div>
-                </td>
-
-                {/* Action */}
-
-                <td className="px-3 text-center">
-                  <button
-                    className="
-                      w-7
-                      h-7
-                      rounded-lg
-                      border
-                      border-violet-200
-                      bg-white
-                      text-violet-600
-                      flex
-                      items-center
-                      justify-center
-                      mx-auto
-                      hover:bg-violet-50
-                      hover:border-violet-300
-                      transition
-                    "
-                  >
-                    <Eye size={14} strokeWidth={2} />
-                  </button>
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="py-10 text-center text-[11px] text-gray-500"
+                >
+                  Loading complaints...
                 </td>
               </tr>
-            ))}
+            ) : error ? (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="py-10 text-center text-[11px] text-red-500"
+                >
+                  {error}
+                </td>
+              </tr>
+            ) : complaints.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={9}
+                  className="py-10 text-center text-[11px] text-gray-500"
+                >
+                  No complaints found.
+                </td>
+              </tr>
+            ) : (
+              complaints.map((complaint) => (
+                <tr
+                  key={complaint.ticket_number}
+                  className="
+          h-[58px]
+          border-b
+          border-gray-100
+          hover:bg-[#FAF8FF]
+          transition-colors
+        "
+                >
+                  {/* Ticket */}
+                  <td className="px-3">
+                    <span className="text-[10px] font-semibold text-[#16295A] whitespace-nowrap">
+                      {complaint.ticket_number}
+                    </span>
+                  </td>
+
+                  {/* Category */}
+                  <td className="px-3">
+                    <span
+                      className="
+              inline-flex
+              items-center
+              px-2
+              py-1
+              rounded-md
+              text-[9px]
+              font-semibold
+              whitespace-nowrap
+              bg-gray-100
+              text-gray-700
+            "
+                    >
+                      {complaint.category || "—"}
+                    </span>
+                  </td>
+
+                  {/* Title */}
+                  <td className="px-3 max-w-[150px]">
+                    <span className="block text-[10px] font-medium leading-4 text-[#16295A]">
+                      {complaint.title || "—"}
+                    </span>
+                  </td>
+
+                  {/* Phone */}
+                  <td className="px-3">
+                    <span className="text-[10px] text-[#16295A] whitespace-nowrap">
+                      {complaint.phone_number || "—"}
+                    </span>
+                  </td>
+
+                  {/* Location */}
+                  <td className="px-3">
+                    <span
+                      className="text-[10px] text-[#16295A]"
+                      title={complaint.address || ""}
+                    >
+                      {complaint.address || "—"}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-3">
+                    <span
+                      className="
+              inline-flex
+              items-center
+              px-2
+              py-1
+              rounded-md
+              text-[9px]
+              font-semibold
+              whitespace-nowrap
+              bg-gray-100
+              text-gray-700
+            "
+                    >
+                      {complaint.status || "—"}
+                    </span>
+                  </td>
+
+                  {/* Assigned */}
+                  <td className="px-3">
+                    <span className="text-[10px] text-[#16295A] whitespace-nowrap">
+                      {complaint.assigned_to || "Unassigned"}
+                    </span>
+                  </td>
+
+                  {/* Created */}
+                  <td className="px-3">
+                    <div className="text-[10px] text-[#16295A] leading-4 whitespace-nowrap">
+                      {complaint.created_at
+                        ? new Date(complaint.created_at).toLocaleDateString()
+                        : "—"}
+                    </div>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => onSelectComplaint?.(complaint)}
+                      className="
+              w-7
+              h-7
+              rounded-lg
+              border
+              border-violet-200
+              bg-white
+              text-violet-600
+              flex
+              items-center
+              justify-center
+              mx-auto
+              hover:bg-violet-50
+              hover:border-violet-300
+              transition
+            "
+                    >
+                      <Eye size={14} strokeWidth={2} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -288,10 +248,7 @@ export default function ComplaintTable() {
 
         <p className="text-[10px] text-gray-500">
           Showing 1 to 5 of{" "}
-          <span className="font-medium text-[#16295A]">
-            143
-          </span>{" "}
-          complaints
+          <span className="font-medium text-[#16295A]">143</span> complaints
         </p>
 
         {/* Pagination */}
@@ -322,7 +279,6 @@ export default function ComplaintTable() {
               "
             >
               5
-
               <ChevronDown size={12} />
             </button>
           </div>
@@ -396,9 +352,7 @@ export default function ComplaintTable() {
 
           {/* Dots */}
 
-          <span className="px-1 text-[10px] text-gray-400">
-            ...
-          </span>
+          <span className="px-1 text-[10px] text-gray-400">...</span>
 
           {/* Page 29 */}
 
