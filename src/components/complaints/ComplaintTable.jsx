@@ -240,150 +240,93 @@ export default function ComplaintTable({
           </tbody>
         </table>
       </div>
-
       {/* ================= PAGINATION ================= */}
 
       <div className="h-[58px] px-4 flex items-center justify-between">
         {/* Result Count */}
 
         <p className="text-[10px] text-gray-500">
-          Showing 1 to 5 of{" "}
-          <span className="font-medium text-[#16295A]">143</span> complaints
+          Showing{" "}
+          <span className="font-medium text-[#16295A]">
+            {pagination.total === 0
+              ? 0
+              : (pagination.page - 1) * pagination.limit + 1}
+          </span>{" "}
+          to{" "}
+          <span className="font-medium text-[#16295A]">
+            {Math.min(pagination.page * pagination.limit, pagination.total)}
+          </span>{" "}
+          of{" "}
+          <span className="font-medium text-[#16295A]">{pagination.total}</span>{" "}
+          complaints
         </p>
 
         {/* Pagination */}
 
         <div className="flex items-center gap-1.5">
-          {/* Rows per page */}
-
-          <div className="flex items-center gap-2 mr-3">
-            <span className="text-[10px] text-gray-500 whitespace-nowrap">
-              Rows per page:
-            </span>
-
-            <button
-              className="
-                h-8
-                min-w-[48px]
-                px-2
-                rounded-lg
-                border
-                border-gray-200
-                bg-white
-                flex
-                items-center
-                justify-between
-                gap-2
-                text-[10px]
-                text-[#16295A]
-              "
-            >
-              5
-              <ChevronDown size={12} />
-            </button>
-          </div>
-
           {/* Previous */}
 
           <button
-            disabled
-            className="
-              w-7
-              h-7
-              rounded-lg
-              flex
-              items-center
-              justify-center
-              text-gray-300
-            "
+            type="button"
+            disabled={pagination.page <= 1}
+            onClick={() => onPageChange?.(pagination.page - 1)}
+            className={`
+        w-7
+        h-7
+        rounded-lg
+        flex
+        items-center
+        justify-center
+        transition
+        ${
+          pagination.page <= 1
+            ? "text-gray-300 cursor-not-allowed"
+            : "text-[#16295A] hover:bg-violet-50"
+        }
+      `}
           >
             <ChevronLeft size={14} />
           </button>
 
-          {/* Page 1 */}
+          {/* Current Page */}
 
           <button
+            type="button"
             className="
-              w-7
-              h-7
-              rounded-lg
-              bg-gradient-to-r
-              from-violet-600
-              to-fuchsia-600
-              text-white
-              text-[10px]
-              font-semibold
-            "
+        w-7
+        h-7
+        rounded-lg
+        bg-gradient-to-r
+        from-violet-600
+        to-fuchsia-600
+        text-white
+        text-[10px]
+        font-semibold
+      "
           >
-            1
-          </button>
-
-          {/* Page 2 */}
-
-          <button
-            className="
-              w-7
-              h-7
-              rounded-lg
-              text-[10px]
-              text-[#16295A]
-              hover:bg-violet-50
-              transition
-            "
-          >
-            2
-          </button>
-
-          {/* Page 3 */}
-
-          <button
-            className="
-              w-7
-              h-7
-              rounded-lg
-              text-[10px]
-              text-[#16295A]
-              hover:bg-violet-50
-              transition
-            "
-          >
-            3
-          </button>
-
-          {/* Dots */}
-
-          <span className="px-1 text-[10px] text-gray-400">...</span>
-
-          {/* Page 29 */}
-
-          <button
-            className="
-              w-7
-              h-7
-              rounded-lg
-              text-[10px]
-              text-[#16295A]
-              hover:bg-violet-50
-              transition
-            "
-          >
-            29
+            {pagination.page || 1}
           </button>
 
           {/* Next */}
 
           <button
-            className="
-              w-7
-              h-7
-              rounded-lg
-              flex
-              items-center
-              justify-center
-              text-[#16295A]
-              hover:bg-violet-50
-              transition
-            "
+            type="button"
+            disabled={pagination.page >= pagination.totalPages}
+            onClick={() => onPageChange?.(pagination.page + 1)}
+            className={`
+        w-7
+        h-7
+        rounded-lg
+        flex
+        items-center
+        justify-center
+        transition
+        ${
+          pagination.page >= pagination.totalPages
+            ? "text-gray-300 cursor-not-allowed"
+            : "text-[#16295A] hover:bg-violet-50"
+        }
+      `}
           >
             <ChevronRight size={14} />
           </button>
