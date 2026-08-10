@@ -126,7 +126,6 @@ exports.Prisma.Telemetry_logsScalarFieldEnum = {
   received_at: 'received_at',
   rfid_epc: 'rfid_epc',
   citizen_id: 'citizen_id',
-  citizen_contact: 'citizen_contact',
   waste_type: 'waste_type',
   latitude: 'latitude',
   longitude: 'longitude',
@@ -140,8 +139,9 @@ exports.Prisma.Telemetry_logsScalarFieldEnum = {
   unit_number: 'unit_number',
   collection_type: 'collection_type',
   remarks: 'remarks',
-  driver_action: 'driver_action',
-  err_code: 'err_code'
+  err_code: 'err_code',
+  citizen_contact: 'citizen_contact',
+  driver_action: 'driver_action'
 };
 
 exports.Prisma.Vehicle_incidentsScalarFieldEnum = {
@@ -212,6 +212,30 @@ exports.Prisma.Edit_logsScalarFieldEnum = {
   success: 'success'
 };
 
+exports.Prisma.Citizen_complaintsScalarFieldEnum = {
+  id: 'id',
+  ticket_number: 'ticket_number',
+  phone_number: 'phone_number',
+  title: 'title',
+  description: 'description',
+  category: 'category',
+  image_url: 'image_url',
+  latitude: 'latitude',
+  longitude: 'longitude',
+  address: 'address',
+  status: 'status',
+  otp_hash: 'otp_hash',
+  otp_expiry: 'otp_expiry',
+  otp_verified: 'otp_verified',
+  assigned_to: 'assigned_to',
+  remarks: 'remarks',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  closed_at: 'closed_at',
+  verification_code: 'verification_code',
+  verification_expires_at: 'verification_expires_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -226,7 +250,23 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
+exports.CitizenComplaintCategory = exports.$Enums.CitizenComplaintCategory = {
+  MISSED_COLLECTION: 'MISSED_COLLECTION',
+  OVERFLOWING_BIN: 'OVERFLOWING_BIN',
+  ILLEGAL_DUMPING: 'ILLEGAL_DUMPING',
+  STREET_LITTER: 'STREET_LITTER',
+  DAMAGED_BIN: 'DAMAGED_BIN',
+  OTHER: 'OTHER'
+};
 
+exports.CitizenComplaintStatus = exports.$Enums.CitizenComplaintStatus = {
+  PENDING: 'PENDING',
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  READY_FOR_VERIFICATION: 'READY_FOR_VERIFICATION',
+  OTP_SENT: 'OTP_SENT',
+  CLOSED: 'CLOSED'
+};
 
 exports.Prisma.ModelName = {
   telemetry_logs: 'telemetry_logs',
@@ -234,7 +274,8 @@ exports.Prisma.ModelName = {
   vehicle_master: 'vehicle_master',
   vehicle_telemetry: 'vehicle_telemetry',
   plant_master: 'plant_master',
-  edit_logs: 'edit_logs'
+  edit_logs: 'edit_logs',
+  citizen_complaints: 'citizen_complaints'
 };
 
 /**

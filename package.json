@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "postinstall": "npx prisma generate && npx prisma generate --schema=prisma/telemetry.schema.prisma"
+    "postinstall": "npx prisma generate --schema=prisma/sewac.schema.prisma && npx prisma generate --schema=prisma/telemetry.schema.prisma && npx prisma generate --schema=prisma/cmads.schema.prisma && npx prisma generate --schema=prisma/helper.schema.prisma && npx prisma generate --schema=prisma/zone.schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
@@ -15,6 +15,7 @@
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
+    "node-cron": "^4.6.0",
     "pg": "^8.21.0",
     "redis": "^6.1.0"
   },

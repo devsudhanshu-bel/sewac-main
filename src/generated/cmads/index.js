@@ -252,7 +252,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Innovatives\\sewac-admin-backend\\src\\generated\\cmads",
+      "value": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\src\\generated\\cmads",
       "fromEnvVar": null
     },
     "config": {
@@ -270,7 +270,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Innovatives\\sewac-admin-backend\\prisma\\cmads.schema.prisma",
+    "sourceFilePath": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\prisma\\cmads.schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

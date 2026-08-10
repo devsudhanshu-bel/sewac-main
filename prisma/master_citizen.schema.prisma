@@ -1,0 +1,28 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/master_citizen"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MASTER_CITIZEN_DATABASE_URL")
+}
+
+
+// =====================================================
+// CITY MASTER TABLE
+// =====================================================
+
+model city_table {
+  city_id         Int       @id @default(autoincrement())
+  city_name       String    @unique @db.VarChar(100)
+  geo_boundary    Json?
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+
+  // Name of the dynamically-created city table.
+  // Example: bangalore_city
+  city_table_name String?   @db.VarChar(150)
+
+  @@map("city")
+}

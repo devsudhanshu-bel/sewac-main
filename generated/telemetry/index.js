@@ -148,7 +148,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Project\\sewac-main\\generated\\telemetry",
+      "value": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\generated\\telemetry",
       "fromEnvVar": null
     },
     "config": {
@@ -162,7 +162,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Project\\sewac-main\\prisma\\telemetry.schema.prisma",
+    "sourceFilePath": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\prisma\\telemetry.schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -176,6 +176,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

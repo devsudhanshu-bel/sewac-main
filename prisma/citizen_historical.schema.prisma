@@ -1,0 +1,170 @@
+generator citizenHistoricalClient {
+  provider = "prisma-client-js"
+  output   = "../src/generated/citizenHistorical"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CITIZEN_HISTORICAL_DATABASE_URL")
+}
+
+
+// =====================================================
+// CITIZEN HISTORY SYNC STATE
+// =====================================================
+//
+// Stores the processing checkpoint for the historical
+// data worker.
+//
+// This allows the worker to resume safely after:
+// - server restart
+// - crash
+// - deployment
+// - database failure
+//
+// =====================================================
+
+model CitizenHistorySyncState {
+  id                       Int      @id @default(autoincrement())
+
+  lastProcessedDate        DateTime? @db.Date
+  lastProcessedVehicle     String?
+  lastProcessedTelemetryId BigInt?
+
+  updatedAt                DateTime  @updatedAt
+
+  @@map("citizen_history_sync_state")
+}
+
+
+// =====================================================
+// VEHICLE DAILY WARD TRACKING
+// =====================================================
+//
+// Stores the Ward movement of every vehicle for a
+// particular processing day.
+//
+// Example:
+//
+// 2026-08-09
+// KA01AB1234 -> Ward 174
+// KA01AB1234 -> Ward 175
+// KA05CD5678 -> Ward 178
+//
+// This is an operational/index table.
+// Detailed historical telemetry will live inside
+// monthly Ward tables.
+// =====================================================
+
+model VehicleDailyWardTracking {
+  id BigInt @id @default(autoincrement())
+
+  trackingDate DateTime @db.Date
+
+  vehicleNumber String
+
+  // ---------------------------------------------------
+  // Administrative hierarchy
+  // ---------------------------------------------------
+
+  cityId     Int?
+  zoneId     Int?
+  divisionId Int?
+  wardId     Int?
+  wardNo     Int?
+
+  // ---------------------------------------------------
+  // Vehicle movement segment
+  // ---------------------------------------------------
+
+  firstSeenAt DateTime
+  lastSeenAt  DateTime
+
+  packetCount Int @default(0)
+
+  // ---------------------------------------------------
+  // Audit timestamps
+  // ---------------------------------------------------
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ---------------------------------------------------
+  // Indexes
+  // ---------------------------------------------------
+
+  @@index([trackingDate])
+  @@index([vehicleNumber])
+  @@index([trackingDate, vehicleNumber])
+  @@index([trackingDate, wardNo])
+
+  @@map("vehicle_daily_ward_tracking")
+}
+
+
+// =====================================================
+// CITIZEN HISTORY PROCESSING ERRORS
+// =====================================================
+//
+// Records packets that could not be processed.
+//
+// Examples:
+//
+// - Invalid GPS
+// - GPS outside city
+// - Ward boundary not found
+// - RFID not found
+// - Citizen not found
+// - Historical table creation failure
+// - Historical insert failure
+//
+// These records allow retry/reconciliation later.
+// =====================================================
+
+model CitizenHistoryProcessingError {
+  id BigInt @id @default(autoincrement())
+
+  // ---------------------------------------------------
+  // Source telemetry information
+  // ---------------------------------------------------
+
+  telemetryId BigInt?
+
+  processingDate DateTime @db.Date
+
+  vehicleNumber String?
+
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+
+  rfidEpc String?
+
+  // ---------------------------------------------------
+  // Error information
+  // ---------------------------------------------------
+
+  errorType    String
+  errorMessage String
+
+  retryCount Int @default(0)
+
+  resolved Boolean @default(false)
+
+  // ---------------------------------------------------
+  // Timestamps
+  // ---------------------------------------------------
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ---------------------------------------------------
+  // Indexes
+  // ---------------------------------------------------
+
+  @@index([processingDate])
+  @@index([telemetryId])
+  @@index([vehicleNumber])
+  @@index([resolved])
+
+  @@map("citizen_history_processing_errors")
+}

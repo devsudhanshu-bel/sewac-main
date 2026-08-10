@@ -1,0 +1,33 @@
+CITY
+POST   /api/master-citizen/cities
+GET    /api/master-citizen/cities
+GET    /api/master-citizen/cities/:cityId
+
+
+ZONE
+POST   /api/master-citizen/cities/:cityId/zones
+GET    /api/master-citizen/cities/:cityId/zones
+GET    /api/master-citizen/cities/:cityId/zones/:zoneId
+PATCH  /api/master-citizen/cities/:cityId/zones/:zoneId
+DELETE /api/master-citizen/cities/:cityId/zones/:zoneId
+
+
+DIVISION
+POST   /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
+GET    /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
+GET    /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
+PATCH  /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
+DELETE /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
+
+
+WARD
+POST   /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
+GET    /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
+GET    /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
+PATCH  /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
+DELETE /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
+
+
+SYNC
+POST   /api/master-citizen/sync
+POST   /api/master-citizen/sync/ward/:wardId

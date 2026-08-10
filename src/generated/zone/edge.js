@@ -173,7 +173,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Innovatives\\sewac-admin-backend\\src\\generated\\zone",
+      "value": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\src\\generated\\zone",
       "fromEnvVar": null
     },
     "config": {
@@ -191,7 +191,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Innovatives\\sewac-admin-backend\\prisma\\zone.schema.prisma",
+    "sourceFilePath": "C:\\Projects\\SEWAC\\sewac-backend-finale\\sewac-main\\prisma\\zone.schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

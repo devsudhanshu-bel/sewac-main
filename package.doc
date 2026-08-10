@@ -1,0 +1,7 @@
+Node-Cron is a Node.js scheduling library used to execute functions automatically at predefined times or intervals. In the SEWAC system, Node-Cron is used to automatically trigger the Master Citizen synchronization process once every week, without requiring manual API execution.
+
+SEWAC Configuration: The synchronization is scheduled to run every Sunday at 2:00 AM IST (Asia/Kolkata). It invokes the existing syncAllCitizens() service, which retrieves citizen data from the SEWAC Helper database and synchronizes it into the appropriate Ward tables.
+
+Purpose: Automates periodic data synchronization while avoiding the need for manual intervention.
+
+RAY CASTING ALGORITHM!

@@ -1,68 +1,113 @@
 require("./src/config/loadEnv");
 
 const initializeTelemetryDB = require("./src/telemetry/initialize/initializeTelemetryDB");
-const telemetryPipelineService=require("./src/telemetry/services/TelemetryPipelineService");
+const telemetryPipelineService = require("./src/telemetry/services/TelemetryPipelineService");
 
 (async () => {
+  try {
+    await initializeTelemetryDB.initialize();
 
-    try {
+    await telemetryPipelineService.process({
 
-        await initializeTelemetryDB.initialize();
+      // =====================================================
+      // TIMESTAMPS
+      // =====================================================
 
-        await telemetryPipelineService.process({
+      iotTimestamp: new Date(),
 
-            iotTimestamp: new Date(),
+      receivedTimestamp: new Date(),
 
-            receivedTimestamp: new Date(),
 
-            rfidEpc: "300833B2DDD9014000000001",
+      // =====================================================
+      // CITIZEN / RFID
+      // =====================================================
 
-            citizenId: 1,
+      rfidEpc: "E200470600106026083B0113",
 
-            wasteType: "WET",
+      citizenId: 1,
 
-            latitude: 12.971598,
+      citizenContact: "9876543210",
 
-            longitude: 77.594566,
 
-            wetWeight: 5,
+      // =====================================================
+      // WASTE
+      // =====================================================
 
-            dryWeight: 2,
+      wasteType: "WET",
 
-            otherWeight: 0,
+      wetWeight: 5,
 
-            cumulativeWeight: 7,
+      dryWeight: 2,
 
-            driverName: "Rajesh",
+      otherWeight: 0,
 
-            vehicleNumber: "KA01AB1234",
+      cumulativeWeight: 7,
 
-            firmwareVersion: "1.0.0",
 
-            unitNumber: "UNIT001",
+      // =====================================================
+      // GPS
+      // =====================================================
+      //
+      // Ward 101 - Test Ward A11
+      //
+      // Bangalore
+      //   ↓
+      // Test Zone A
+      //   ↓
+      // Test Division A1
+      //   ↓
+      // Ward 101
+      //
+      // =====================================================
 
-            collectionType: "Door",
+      latitude: 12.8975,
 
-            remarks: "OK",
+      longitude: 77.5875,
 
-            errorCode: null,
 
-            citizenContact: "9876543210",
+      // =====================================================
+      // VEHICLE
+      // =====================================================
 
-            driverAction: "Collected"
+      vehicleNumber: "KA01AB1234",
 
-        });
+      driverName: "Rajesh",
 
-        console.log("TEST PASSED");
+      unitNumber: "UNIT001",
 
-    } catch (err) {
+      firmwareVersion: "1.0.0",
 
-        console.error(err);
 
-    } finally {
+      // =====================================================
+      // COLLECTION
+      // =====================================================
 
-        process.exit();
+      collectionType: "Door",
 
-    }
+      remarks: "OK",
 
+      errorCode: null,
+
+      driverAction: "Collected"
+
+    });
+
+    console.log("");
+    console.log("==================================");
+    console.log("TEST PASSED");
+    console.log("==================================");
+
+  } catch (err) {
+
+    console.error("");
+    console.error("==================================");
+    console.error("TEST FAILED");
+    console.error("==================================");
+    console.error(err);
+
+  } finally {
+
+    process.exit();
+
+  }
 })();
