@@ -144,6 +144,7 @@ export default function Complaints() {
       );
 
       const result = await response.json();
+      console.log("Verification response:", response.status, result);
 
       if (!response.ok || result.success !== true) {
         throw new Error(result.message || "Failed to request verification.");
@@ -187,7 +188,10 @@ export default function Complaints() {
         </div>
 
         <div className="w-[370px] shrink-0">
-          <ComplaintDetails complaint={selectedComplaint} onRequestVerification={requestVerification} />
+          <ComplaintDetails
+            complaint={selectedComplaint}
+            onRequestVerification={requestVerification}
+          />
         </div>
       </div>
     </div>
