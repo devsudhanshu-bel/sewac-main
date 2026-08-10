@@ -2,6 +2,8 @@ import Header from "../components/layouts/Header";
 
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
+import ComplaintFilters from "../components/complaints/ComplaintFilters";
+import ComplaintTable from "../components/complaints/ComplaintTable";
 import ComplaintDetails from "../components/complaints/ComplaintDetails";
 
 export default function Complaints() {
@@ -16,14 +18,14 @@ export default function Complaints() {
       <div className="flex gap-6 px-8 py-6">
         {/* ================= LEFT ================= */}
 
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex-1 min-w-0 space-y-5">
           <ComplaintHeader />
 
           <ComplaintKPIs />
 
-          {/* Filters will go here */}
+          <ComplaintFilters />
 
-          {/* Complaint Table will go here */}
+          <ComplaintTable />
         </div>
 
         {/* ================= RIGHT ================= */}
