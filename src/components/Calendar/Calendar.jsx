@@ -47,9 +47,7 @@ export default function Calendar({
   ========================================================= */
 
   const wrapperRef = useRef(null);
-
   const popupRef = useRef(null);
-
   const triggerRef = useRef(null);
 
   /* =========================================================
@@ -60,7 +58,7 @@ export default function Calendar({
     useState({});
 
   /* =========================================================
-     SYNC WITH PARENT
+     SYNC WITH PARENT VALUE
   ========================================================= */
 
   useEffect(() => {
@@ -81,36 +79,32 @@ export default function Calendar({
       triggerRef.current.getBoundingClientRect();
 
     const popupWidth = 360;
-
-    const gap = 12;
-
-    /*
-      Keep popup inside the viewport.
-    */
+    const gap = 10;
+    const viewportPadding = 12;
 
     let left =
       rect.right - popupWidth;
 
     /*
-      Prevent going outside left edge.
-    */
-
-    if (left < 12) {
-      left = 12;
+     * Keep popup inside the left side
+     * of the viewport.
+     */
+    if (left < viewportPadding) {
+      left = viewportPadding;
     }
 
     /*
-      Prevent going outside right edge.
-    */
-
+     * Keep popup inside the right side
+     * of the viewport.
+     */
     if (
       left + popupWidth >
-      window.innerWidth - 12
+      window.innerWidth - viewportPadding
     ) {
       left =
         window.innerWidth -
         popupWidth -
-        12;
+        viewportPadding;
     }
 
     setPopupStyle({
@@ -122,7 +116,7 @@ export default function Calendar({
   }
 
   /* =========================================================
-     OPEN / RESIZE / SCROLL POSITIONING
+     POPUP POSITIONING
   ========================================================= */
 
   useLayoutEffect(() => {
@@ -174,8 +168,8 @@ export default function Calendar({
       popupRef.current,
       {
         opacity: 0,
-        y: 12,
-        scale: 0.96,
+        y: 10,
+        scale: 0.97,
       },
       {
         opacity: 1,
@@ -225,7 +219,7 @@ export default function Calendar({
   }, []);
 
   /* =========================================================
-     PREVIOUS MONTH
+     MONTH NAVIGATION
   ========================================================= */
 
   function goPrevious() {
@@ -234,10 +228,6 @@ export default function Calendar({
     );
   }
 
-  /* =========================================================
-     NEXT MONTH
-  ========================================================= */
-
   function goNext() {
     setCurrentMonth((prev) =>
       nextMonth(prev)
@@ -245,7 +235,7 @@ export default function Calendar({
   }
 
   /* =========================================================
-     SELECT DAY
+     SELECT DATE
   ========================================================= */
 
   function selectDay(day) {
@@ -260,7 +250,6 @@ export default function Calendar({
     const now = new Date();
 
     setSelectedDate(now);
-
     setCurrentMonth(now);
   }
 
@@ -319,7 +308,7 @@ export default function Calendar({
             updatePopupPosition();
           }
 
-          setOpen(!open);
+          setOpen((prev) => !prev);
         }}
         className="
           group
@@ -364,7 +353,7 @@ export default function Calendar({
           />
         </div>
 
-        {/* Selected Date */}
+        {/* Date */}
 
         <span
           className="
@@ -405,7 +394,7 @@ export default function Calendar({
           "
         >
           {/* =================================================
-              CALENDAR TOP AREA
+              CALENDAR HEADER
           ================================================= */}
 
           <div className="relative">
@@ -418,9 +407,8 @@ export default function Calendar({
             {/* =================================================
                 CLOSE BUTTON
 
-                IMPORTANT:
-                This is positioned relative to the
-                calendar popup header, NOT the page/header.
+                The header reserves space on the right
+                so this never overlaps the next button.
             ================================================= */}
 
             <button
@@ -460,12 +448,10 @@ export default function Calendar({
           </div>
 
           {/* =================================================
-              WEEK DAYS + CALENDAR
+              WEEK DAYS
           ================================================= */}
 
           <div className="px-5 pt-4 pb-1">
-            {/* Weekday Names */}
-
             <div
               className="
                 grid
@@ -491,7 +477,9 @@ export default function Calendar({
               ))}
             </div>
 
-            {/* Calendar Weeks */}
+            {/* =================================================
+                CALENDAR GRID
+            ================================================= */}
 
             <div className="space-y-1">
               {weeks.map(
@@ -554,7 +542,7 @@ export default function Calendar({
               justify-between
             "
           >
-            {/* TODAY */}
+            {/* Today */}
 
             <button
               type="button"
@@ -575,7 +563,7 @@ export default function Calendar({
               {TODAY_LABEL}
             </button>
 
-            {/* RIGHT ACTIONS */}
+            {/* Actions */}
 
             <div
               className="
@@ -584,8 +572,6 @@ export default function Calendar({
                 gap-2
               "
             >
-              {/* CANCEL */}
-
               <button
                 type="button"
                 onClick={cancel}
@@ -606,8 +592,6 @@ export default function Calendar({
               >
                 {CANCEL_LABEL}
               </button>
-
-              {/* APPLY */}
 
               <button
                 type="button"
