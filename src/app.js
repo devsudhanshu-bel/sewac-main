@@ -221,7 +221,7 @@ app.use(
     credentials:
       true,
 
-  })
+  }),
 );
 
 

@@ -4,7 +4,7 @@ const initializeTelemetryDB = require("./telemetry/initialize/initializeTelemetr
 const app = require("./app");
 const { loadCitizenCache } = require("./config/citizenCache");
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5003;
 
 (async () => {
   try {
