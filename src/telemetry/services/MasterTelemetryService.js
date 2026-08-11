@@ -1,139 +1,137 @@
+const telemetryDb = require("../../config/telemetryDb");
 const queries = require("../queries/query");
-const hierarchyManager = require("../managers/HierarchyManager");
 
-function toRawDate(value) {
-  if (!value) return null;
+// =====================================================
+// TABLE CREATION CACHE
+// =====================================================
 
-  if (value instanceof Date) {
-    return value.toISOString();
+const createdMetadataTables = new Set();
+const metadataTableCreationPromises = new Map();
+
+class MetadataManager {
+  // =====================================================
+  // GENERIC TABLE ENSURER
+  // =====================================================
+
+  async ensureTable(tableName, createQuery) {
+    // Fast path
+    if (createdMetadataTables.has(tableName)) {
+      return tableName;
+    }
+
+    // Another worker is already creating it
+    if (metadataTableCreationPromises.has(tableName)) {
+      await metadataTableCreationPromises.get(tableName);
+      return tableName;
+    }
+
+    const creationPromise = (async () => {
+      try {
+        await telemetryDb.$executeRawUnsafe(createQuery(tableName));
+
+        createdMetadataTables.add(tableName);
+      } finally {
+        metadataTableCreationPromises.delete(tableName);
+      }
+    })();
+
+    metadataTableCreationPromises.set(tableName, creationPromise);
+
+    await creationPromise;
+
+    return tableName;
   }
 
-  return value;
-}
+  // =====================================================
+  // DAY
+  // =====================================================
 
-class MasterTelemetryService {
-  async processPacket(tx, packet, vehicleTable) {
-    console.log("==================================");
-    console.log("Processing Telemetry Packet");
-    console.log("==================================");
+  getDayTableName(date = new Date()) {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
 
-    console.log("Vehicle Table :", vehicleTable);
+    return `day_${dd}${mm}${yyyy}`;
+  }
 
-    // =====================================================
-    // STEP 1 - Calculate current packet weight
-    // =====================================================
+  async ensureDayTable(date = new Date()) {
+    const tableName = this.getDayTableName(date);
 
-    const currentWeight =
-      Number(packet.wetWeight || 0) +
-      Number(packet.dryWeight || 0) +
-      Number(packet.otherWeight || 0);
+    return this.ensureTable(tableName, queries.createDayTable);
+  }
 
-    // =====================================================
-    // STEP 2 - Update vehicle cumulative weight
-    // =====================================================
+  // =====================================================
+  // WEEK
+  // =====================================================
 
-    const cumulativeResult = await tx.$queryRawUnsafe(
-      queries.updateVehicleCumulative(),
-      packet.vehicleNumber,
-      currentWeight,
-    );
+  getWeekTableName(date = new Date()) {
+    const year = date.getFullYear();
 
-    const cumulativeWeight = Number(cumulativeResult[0].cumulative_weight);
+    const start = new Date(year, 0, 1);
 
-    console.log(
-      "Vehicle Cumulative Weight :",
-      packet.vehicleNumber,
-      cumulativeWeight,
-    );
+    const days = Math.floor((date - start) / (24 * 60 * 60 * 1000));
 
-    // =====================================================
-    // STEP 3 - Insert into master_telemetry
-    // =====================================================
+    const week = Math.ceil((days + start.getDay() + 1) / 7);
 
+    return `week_${week}_${year}`;
+  }
+
+  async ensureWeekTable(date = new Date()) {
+    const tableName = this.getWeekTableName(date);
+
+    return this.ensureTable(tableName, queries.createWeekTable);
+  }
+
+  // =====================================================
+  // MONTH
+  // =====================================================
+
+  getMonthTableName(date = new Date()) {
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+
+    const yyyy = date.getFullYear();
+
+    return `month_${mm}${yyyy}`;
+  }
+
+  async ensureMonthTable(date = new Date()) {
+    const tableName = this.getMonthTableName(date);
+
+    return this.ensureTable(tableName, queries.createMonthTable);
+  }
+
+  // =====================================================
+  // YEAR
+  // =====================================================
+
+  getYearTableName(date = new Date()) {
+    return `year_${date.getFullYear()}`;
+  }
+
+  async ensureYearTable(date = new Date()) {
+    const tableName = this.getYearTableName(date);
+
+    return this.ensureTable(tableName, queries.createYearTable);
+  }
+
+  // =====================================================
+  // HIERARCHY REGISTRATION
+  // =====================================================
+
+  async registerHierarchy(
+    tx,
+    { dayTable, weekTable, monthTable, yearTable, vehicleNumber, vehicleTable },
+  ) {
     await tx.$executeRawUnsafe(
-      queries.insertMasterTelemetry(),
+      queries.registerHierarchy(dayTable, weekTable, monthTable, yearTable),
 
-      toRawDate(packet.iotTimestamp),
-      toRawDate(packet.receivedTimestamp),
-      packet.rfidEpc,
-      packet.citizenId,
-      packet.wasteType,
-      packet.latitude,
-      packet.longitude,
-      packet.wetWeight,
-      packet.dryWeight,
-      packet.otherWeight,
-      cumulativeWeight,
-      packet.driverName,
-      packet.vehicleNumber,
-      packet.firmwareVersion,
-      packet.unitNumber,
-      packet.collectionType,
-      packet.remarks,
-      packet.errorCode,
-      packet.citizenContact,
-      packet.driverAction,
-    );
-
-    console.log("Inserted into master_telemetry");
-
-    // =====================================================
-    // STEP 4 - Insert into vehicle daily table
-    // =====================================================
-
-    await tx.$executeRawUnsafe(
-      queries.insertVehicleTelemetry(vehicleTable),
-
-      toRawDate(packet.iotTimestamp),
-      toRawDate(packet.receivedTimestamp),
-      packet.rfidEpc,
-      packet.citizenId,
-      packet.wasteType,
-      packet.latitude,
-      packet.longitude,
-      packet.wetWeight,
-      packet.dryWeight,
-      packet.otherWeight,
-      cumulativeWeight,
-      packet.driverName,
-      packet.vehicleNumber,
-      packet.firmwareVersion,
-      packet.unitNumber,
-      packet.collectionType,
-      packet.remarks,
-      packet.errorCode,
-      packet.citizenContact,
-      packet.driverAction,
-    );
-
-    console.log("Inserted into Vehicle Table");
-
-    // =====================================================
-    // STEP 5 - Update hierarchy
-    // =====================================================
-
-    const hierarchy = await hierarchyManager.process(
-      tx,
-      packet.receivedTimestamp || new Date(),
-      packet.vehicleNumber,
+      vehicleNumber,
       vehicleTable,
+      dayTable,
+      weekTable,
+      monthTable,
     );
-
-    console.log("Hierarchy Updated :", hierarchy);
-
-    // =====================================================
-    // STEP 6 - Maintain Master FIFO
-    // =====================================================
-
-    await tx.$executeRawUnsafe(queries.maintainMasterFIFO());
-
-    console.log("Master FIFO Maintained");
-
-    return {
-      vehicleTable,
-      cumulativeWeight,
-    };
   }
 }
 
-module.exports = new MasterTelemetryService();
+module.exports = new MetadataManager();

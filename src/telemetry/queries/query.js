@@ -277,6 +277,37 @@ DO UPDATE SET
 RETURNING cumulative_weight;
 `;
 
+const registerHierarchy = (dayTable, weekTable, monthTable, yearTable) => `
+INSERT INTO "${dayTable}" (
+    vehicle_number,
+    vehicle_table_name
+)
+VALUES ($1, $2)
+ON CONFLICT (vehicle_number)
+DO NOTHING;
+
+INSERT INTO "${weekTable}" (
+    day_table_name
+)
+VALUES ($3)
+ON CONFLICT (day_table_name)
+DO NOTHING;
+
+INSERT INTO "${monthTable}" (
+    week_table_name
+)
+VALUES ($4)
+ON CONFLICT (week_table_name)
+DO NOTHING;
+
+INSERT INTO "${yearTable}" (
+    month_table_name
+)
+VALUES ($5)
+ON CONFLICT (month_table_name)
+DO NOTHING;
+`;
+
 module.exports = {
   createVehicleTelemetryTable,
   insertMasterTelemetry,
@@ -292,4 +323,5 @@ module.exports = {
   registerMonthInYearTable,
   createVehicleCumulativeTable,
   updateVehicleCumulative,
+  registerHierarchy,
 };
