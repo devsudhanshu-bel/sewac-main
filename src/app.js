@@ -47,6 +47,9 @@ const permissionRoutes =
 const redisRoutes =
   require("./routes/redisRoutes");
 
+const complaintRoutes =
+  require("./routes/complaintRoutes");
+
 
 // =====================================================
 // CITIZEN HISTORICAL PROCESSING
@@ -221,7 +224,7 @@ app.use(
     credentials:
       true,
 
-  })
+  }),
 );
 
 
@@ -321,6 +324,11 @@ app.use(
   redisRoutes
 );
 
+
+app.use(
+  "/api/complaints",
+  complaintRoutes
+);
 
 // =====================================================
 // CITIZEN HISTORICAL PROCESSING
