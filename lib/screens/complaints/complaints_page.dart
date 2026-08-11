@@ -161,28 +161,61 @@ class _ComplaintsPageState extends State<ComplaintsPage>
     }
   }
 
-  Future<void> _loadComplaints() async {
-    try {
-      final complaints = await _complaintService.getComplaints();
+Future<void> _loadComplaints() async {
+  try {
+    final complaints = await _complaintService.getComplaints();
 
-      if (!mounted) return;
+    final updatedComplaints = await Future.wait(
+      complaints.map((complaint) async {
+        final ticketNumber = complaint.ticketNumber;
 
-      setState(() {
-        _complaints = complaints;
-        _isLoadingComplaints = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
+        if (ticketNumber == null ||
+            ticketNumber.isEmpty ||
+            complaint.status.toUpperCase() != "OTP_SENT") {
+          return complaint;
+        }
 
-      setState(() {
-        _isLoadingComplaints = false;
-      });
+        try {
+          final verification =
+              await _complaintService.getComplaintVerification(
+            ticketNumber,
+          );
 
-      _showSnackBar(
-        "Unable to load complaints.",
-      );
-    }
+          final code = verification["verification_code"] ??
+              verification["verificationCode"];
+
+          final expiresAtRaw =
+              verification["verification_expires_at"] ??
+              verification["verificationExpiresAt"];
+
+          return complaint.copyWith(
+            verificationCode: code?.toString(),
+            verificationExpiresAt: expiresAtRaw != null
+                ? DateTime.tryParse(expiresAtRaw.toString())
+                : null,
+          );
+        } catch (_) {
+          return complaint;
+        }
+      }),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _complaints = updatedComplaints;
+      _isLoadingComplaints = false;
+    });
+  } catch (_) {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingComplaints = false;
+    });
+
+    _showSnackBar("Unable to load complaints.");
   }
+}
 
   Future<void> _refreshLocation({
     bool forceRefresh = false,
@@ -1565,10 +1598,10 @@ class _HomeComplaintCardItem extends StatelessWidget {
     return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $ampm";
   }
 
-  bool get showVerificationCode =>
-      item.status.toUpperCase() == "IN_PROGRESS" &&
-          item.verificationCode != null &&
-          item.verificationCode!.isNotEmpty;
+bool get showVerificationCode =>
+    item.status.toUpperCase() == "OTP_SENT" &&
+        item.verificationCode != null &&
+        item.verificationCode!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1748,14 +1781,56 @@ class _ViewAllComplaintsPageState
   }
 
   Future<void> _handleRefresh() async {
-    try {
-      final complaints = await _complaintService.getComplaints();
-      if (!mounted) return;
-      setState(() {
-        _complaints = complaints;
-      });
-    } catch (_) {}
+  try {
+    final complaints =
+        await _loadComplaintsWithVerification();
+
+    if (!mounted) return;
+
+    setState(() {
+      _complaints = complaints;
+    });
+  } catch (_) {
+    // Keep existing complaints if refresh fails.
   }
+}
+
+  Future<List<ComplaintModel>> _loadComplaintsWithVerification() async {
+  final complaints = await _complaintService.getComplaints();
+
+  return Future.wait(
+    complaints.map((complaint) async {
+      final ticketNumber = complaint.ticketNumber;
+
+      if (ticketNumber == null ||
+          ticketNumber.isEmpty ||
+          complaint.status.toUpperCase() != "OTP_SENT") {
+        return complaint;
+      }
+
+      try {
+        final verification =
+            await _complaintService.getComplaintVerification(ticketNumber);
+
+        final code = verification["verification_code"] ??
+            verification["verificationCode"];
+
+        final expiresAtRaw =
+            verification["verification_expires_at"] ??
+            verification["verificationExpiresAt"];
+
+        return complaint.copyWith(
+          verificationCode: code?.toString(),
+          verificationExpiresAt: expiresAtRaw != null
+              ? DateTime.tryParse(expiresAtRaw.toString())
+              : null,
+        );
+      } catch (_) {
+        return complaint;
+      }
+    }),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1951,10 +2026,10 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
     }
   }
 
-  bool get showVerificationCode =>
-      item.status.toUpperCase() == "IN_PROGRESS" &&
-          item.verificationCode != null &&
-          item.verificationCode!.isNotEmpty;
+bool get showVerificationCode =>
+    item.status.toUpperCase() == "OTP_SENT" &&
+        item.verificationCode != null &&
+        item.verificationCode!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
