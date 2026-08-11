@@ -1,27 +1,36 @@
-const telemetryDb = require("../../config/telemetryDb");
-const tableManager = require("../managers/TableManager");
 const queries = require("../queries/query");
 const hierarchyManager = require("../managers/HierarchyManager");
 
+function toRawDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return value;
+}
+
 class MasterTelemetryService {
-  async processPacket(tx, packet) {
+  async processPacket(tx, packet, vehicleTable) {
     console.log("==================================");
     console.log("Processing Telemetry Packet");
     console.log("==================================");
 
-    // Step 1 - Ensure Vehicle Table
-    const vehicleTable = await tableManager.ensureVehicleTable(
-      packet.vehicleNumber,
-      packet.receivedTimestamp || new Date(),
-    );
-
     console.log("Vehicle Table :", vehicleTable);
 
-    // Step 2 - Update Vehicle Cumulative Weight
+    // =====================================================
+    // STEP 1 - Calculate current packet weight
+    // =====================================================
+
     const currentWeight =
       Number(packet.wetWeight || 0) +
       Number(packet.dryWeight || 0) +
       Number(packet.otherWeight || 0);
+
+    // =====================================================
+    // STEP 2 - Update vehicle cumulative weight
+    // =====================================================
 
     const cumulativeResult = await tx.$queryRawUnsafe(
       queries.updateVehicleCumulative(),
@@ -37,12 +46,15 @@ class MasterTelemetryService {
       cumulativeWeight,
     );
 
-    // Step 3 - Insert into Master Telemetry
+    // =====================================================
+    // STEP 3 - Insert into master_telemetry
+    // =====================================================
+
     await tx.$executeRawUnsafe(
       queries.insertMasterTelemetry(),
 
-      packet.iotTimestamp,
-      packet.receivedTimestamp,
+      toRawDate(packet.iotTimestamp),
+      toRawDate(packet.receivedTimestamp),
       packet.rfidEpc,
       packet.citizenId,
       packet.wasteType,
@@ -65,12 +77,15 @@ class MasterTelemetryService {
 
     console.log("Inserted into master_telemetry");
 
-    // Step 4 - Insert into Vehicle Daily Table
+    // =====================================================
+    // STEP 4 - Insert into vehicle daily table
+    // =====================================================
+
     await tx.$executeRawUnsafe(
       queries.insertVehicleTelemetry(vehicleTable),
 
-      packet.iotTimestamp,
-      packet.receivedTimestamp,
+      toRawDate(packet.iotTimestamp),
+      toRawDate(packet.receivedTimestamp),
       packet.rfidEpc,
       packet.citizenId,
       packet.wasteType,
@@ -92,25 +107,31 @@ class MasterTelemetryService {
     );
 
     console.log("Inserted into Vehicle Table");
+
+    // =====================================================
+    // STEP 5 - Update hierarchy
+    // =====================================================
+
     const hierarchy = await hierarchyManager.process(
       tx,
-
       packet.receivedTimestamp || new Date(),
-
       packet.vehicleNumber,
-
       vehicleTable,
     );
 
     console.log("Hierarchy Updated :", hierarchy);
 
-    // Step 5 - Maintain Master FIFO (1000 packets)
+    // =====================================================
+    // STEP 6 - Maintain Master FIFO
+    // =====================================================
+
     await tx.$executeRawUnsafe(queries.maintainMasterFIFO());
 
     console.log("Master FIFO Maintained");
 
     return {
       vehicleTable,
+      cumulativeWeight,
     };
   }
 }
