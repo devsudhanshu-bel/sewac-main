@@ -5,10 +5,20 @@ function toRawDate(value) {
   if (!value) return null;
 
   if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return null;
+    }
+
     return value.toISOString();
   }
 
-  return value;
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
 }
 
 class MasterTelemetryService {

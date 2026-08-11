@@ -1,10 +1,81 @@
 const insertTelemetryLog = require("./telemetry/insertTelemetryLog");
 const { citizenCache } = require("../config/citizenCache");
-
 const { getConsumerClient } = require("../config/redis");
+
+// =====================================================
+// WORKER CONFIGURATION
+// =====================================================
+
+const WORKER_COUNT = 8;
+
+// =====================================================
+// PER-VEHICLE LOCKS
+// =====================================================
+//
+// Important:
+//
+// We DO NOT globally lock telemetry processing.
+//
+// Different vehicles can continue processing in parallel.
+//
+// Only packets belonging to the SAME vehicle are serialized.
+//
+// This prevents concurrent updates to:
+//     vehicle_cumulative
+//
+// from fighting over the same PostgreSQL row.
+//
+// =====================================================
+
+const vehicleLocks = new Map();
+
+/**
+ * Execute a task sequentially for a specific vehicle.
+ *
+ * Example:
+ *
+ * KA05AB1234:
+ *   P1 → P2 → P3 → P4
+ *
+ * KA05AB1235:
+ *   P1 → P2
+ *
+ * Both vehicles can still run concurrently.
+ */
+function runForVehicle(vehicleId, task) {
+  const vehicleKey = String(vehicleId || "UNKNOWN");
+
+  const previous = vehicleLocks.get(vehicleKey) || Promise.resolve();
+
+  const current = previous.catch(() => {}).then(task);
+
+  vehicleLocks.set(vehicleKey, current);
+
+  // Cleanup the lock after this task finishes.
+  current.finally(() => {
+    if (vehicleLocks.get(vehicleKey) === current) {
+      vehicleLocks.delete(vehicleKey);
+    }
+  });
+
+  return current;
+}
+
+// =====================================================
+// PROCESS ONE TELEMETRY PACKET
+// =====================================================
 
 const processTelemetryQueue = async () => {
   const redisClient = getConsumerClient();
+
+  // ---------------------------------------------------
+  // Atomically move packet:
+  //
+  // telemetry_queue
+  //        ↓
+  // telemetry_processing_queue
+  //
+  // ---------------------------------------------------
 
   const payloadString = await redisClient.blMove(
     "telemetry_queue",
@@ -14,7 +85,9 @@ const processTelemetryQueue = async () => {
     0,
   );
 
-  if (!payloadString) return;
+  if (!payloadString) {
+    return;
+  }
 
   const payload = JSON.parse(payloadString);
 
@@ -34,6 +107,10 @@ const processTelemetryQueue = async () => {
     errCode,
   } = payload;
 
+  // ===================================================
+  // DETERMINE COLLECTION TYPE
+  // ===================================================
+
   const isAuto =
     remarks === "O" &&
     !rfidNumber?.startsWith("E") &&
@@ -41,7 +118,9 @@ const processTelemetryQueue = async () => {
 
   let citizenId = null;
   let citizenContact = null;
+
   let wasteType = "MIXED";
+
   let wetWeightKg = 0;
   let dryWeightKg = 0;
   let otherWeightKg = 0;
@@ -52,26 +131,42 @@ const processTelemetryQueue = async () => {
   let finalCollectionType;
   let finalRfidNumber;
 
+  // ===================================================
+  // AUTO COLLECTION
+  // ===================================================
+
   if (isAuto) {
     finalRemarks = "O";
+
     finalCollectionType = "AUTO";
+
     finalRfidNumber = rfidNumber;
+
     otherWeightKg = Number(weight);
 
     driverAction = 1;
-  } else {
+  }
+
+  // ===================================================
+  // MANUAL COLLECTION
+  // ===================================================
+  else {
     const cachedData = citizenCache.get(rfidNumber);
 
     if (!cachedData) {
-      throw new Error("Citizen not found");
+      throw new Error(`Citizen not found for RFID: ${rfidNumber}`);
     }
 
     citizenId = cachedData.citizen.id;
+
     citizenContact = cachedData.citizen.contactNumber;
+
     wasteType = cachedData.wasteType;
 
     finalRemarks = wasteType === "WET" ? "W" : "D";
+
     finalCollectionType = "MANUAL";
+
     finalRfidNumber = rfidNumber;
 
     if (wasteType === "WET") {
@@ -83,32 +178,73 @@ const processTelemetryQueue = async () => {
     driverAction = 0;
   }
 
+  // ===================================================
+  // PROCESS PACKET
+  // ===================================================
+
   try {
     console.log("Inserting telemetry into telemetry_logs...");
 
-    await insertTelemetryLog({
-      iotTimestamp,
-      driverName,
-      vehicleId,
-      rfidNumber: finalRfidNumber,
-      latitude,
-      longitude,
-      wetWeightKg,
-      dryWeightKg,
-      otherWeightKg,
-      cumulativeWeightKg: 0,
-      firmwareVersion,
-      unitNumber,
-      collectionType: finalCollectionType,
-      remarks: finalRemarks,
-      driverAction,
-      errCode,
-      citizenId,
-      citizenContact,
-      wasteType,
+    /*
+     * IMPORTANT:
+     *
+     * Only packets belonging to the SAME vehicle
+     * are serialized.
+     *
+     * Different vehicles remain fully concurrent.
+     */
+
+    await runForVehicle(vehicleId, async () => {
+      await insertTelemetryLog({
+        iotTimestamp,
+
+        driverName,
+
+        vehicleId,
+
+        rfidNumber: finalRfidNumber,
+
+        latitude,
+
+        longitude,
+
+        wetWeightKg,
+
+        dryWeightKg,
+
+        otherWeightKg,
+
+        /*
+         * The actual cumulative value is calculated
+         * atomically inside the telemetry pipeline.
+         */
+        cumulativeWeightKg: 0,
+
+        firmwareVersion,
+
+        unitNumber,
+
+        collectionType: finalCollectionType,
+
+        remarks: finalRemarks,
+
+        driverAction,
+
+        errCode,
+
+        citizenId,
+
+        citizenContact,
+
+        wasteType,
+      });
     });
 
     console.log("Telemetry inserted successfully.");
+
+    // =================================================
+    // ACK / REMOVE FROM PROCESSING QUEUE
+    // =================================================
 
     await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
 
@@ -120,14 +256,24 @@ const processTelemetryQueue = async () => {
       }`,
     );
   } catch (err) {
+    // ===================================================
+    // FAILURE
+    // ===================================================
+
     console.error("\n========== QUEUE ERROR ==========");
+
     console.error(err);
 
     try {
-      // Put the failed packet back into the main queue
+      /*
+       * IMPORTANT:
+       *
+       * The packet is returned to the main queue
+       * ONLY after the processing attempt fails.
+       */
+
       await redisClient.lPush("telemetry_queue", payloadString);
 
-      // Remove only this packet from the processing queue
       await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
 
       console.log("♻️ Failed packet returned to telemetry_queue for retry.");
@@ -136,6 +282,10 @@ const processTelemetryQueue = async () => {
     }
   }
 };
+
+// =====================================================
+// RECOVER PROCESSING QUEUE
+// =====================================================
 
 async function recoverProcessingQueue() {
   const redisClient = getConsumerClient();
@@ -150,7 +300,9 @@ async function recoverProcessingQueue() {
       "LEFT",
     );
 
-    if (!moved) break;
+    if (!moved) {
+      break;
+    }
 
     console.log("Recovered one telemetry packet.");
   }
@@ -158,7 +310,9 @@ async function recoverProcessingQueue() {
   console.log("Telemetry recovery completed.");
 }
 
-const WORKER_COUNT = 8;
+// =====================================================
+// WORKER
+// =====================================================
 
 console.log(`Telemetry Queue Worker Started - ${WORKER_COUNT} workers`);
 
@@ -176,6 +330,10 @@ async function startWorker(workerId) {
   }
 }
 
+// =====================================================
+// START ALL WORKERS
+// =====================================================
+
 (async function startWorkers() {
   await recoverProcessingQueue();
 
@@ -187,6 +345,10 @@ async function startWorker(workerId) {
 
   await Promise.all(workers);
 })();
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
   processTelemetryQueue,
