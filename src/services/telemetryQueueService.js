@@ -1,8 +1,4 @@
-const getLatestCumulativeWeight = require("./telemetry/getLatestCumulativeWeight");
 const insertTelemetryLog = require("./telemetry/insertTelemetryLog");
-const updateVehicleTelemetry = require("./telemetry/updateVehicleTelemetry");
-const checkVehicleIncident = require("./telemetry/checkVehicleIncident");
-const updatePlantStatistics = require("./telemetry/updatePlantStatistics");
 const { citizenCache } = require("../config/citizenCache");
 
 const { getConsumerClient } = require("../config/redis");
@@ -23,7 +19,6 @@ const processTelemetryQueue = async () => {
   const payload = JSON.parse(payloadString);
 
   console.log("\n========== NEW TELEMETRY ==========");
-  console.log("Queue payload:", payload);
 
   const {
     rfidNumber,
@@ -67,8 +62,6 @@ const processTelemetryQueue = async () => {
   } else {
     const cachedData = citizenCache.get(rfidNumber);
 
-    console.log("Citizen found in cache:", cachedData);
-
     if (!cachedData) {
       throw new Error("Citizen not found");
     }
@@ -76,8 +69,6 @@ const processTelemetryQueue = async () => {
     citizenId = cachedData.citizen.id;
     citizenContact = cachedData.citizen.contactNumber;
     wasteType = cachedData.wasteType;
-
-    console.log("Citizen Contact:", citizenContact);
 
     finalRemarks = wasteType === "WET" ? "W" : "D";
     finalCollectionType = "MANUAL";
@@ -94,11 +85,6 @@ const processTelemetryQueue = async () => {
 
   try {
     console.log("Inserting telemetry into telemetry_logs...");
-    const previousCumulativeWeightKg = await getLatestCumulativeWeight();
-
-    const currentWeightKg = Number(weight || 0);
-
-    const cumulativeWeightKg = previousCumulativeWeightKg + currentWeightKg;
 
     await insertTelemetryLog({
       iotTimestamp,
@@ -110,7 +96,7 @@ const processTelemetryQueue = async () => {
       wetWeightKg,
       dryWeightKg,
       otherWeightKg,
-      cumulativeWeightKg,
+      cumulativeWeightKg: 0,
       firmwareVersion,
       unitNumber,
       collectionType: finalCollectionType,
@@ -120,22 +106,6 @@ const processTelemetryQueue = async () => {
       citizenId,
       citizenContact,
       wasteType,
-    });
-
-    await updateVehicleTelemetry({
-      vehicleId,
-      latitude,
-      longitude,
-    });
-
-    await checkVehicleIncident({
-      vehicleId,
-      errCode,
-    });
-
-    await updatePlantStatistics({
-      vehicleId,
-      cumulativeWeightKg,
     });
 
     console.log("Telemetry inserted successfully.");
@@ -164,7 +134,7 @@ const processTelemetryQueue = async () => {
     } catch (retryErr) {
       console.error("❌ FAILED TO REQUEUE PACKET:", retryErr);
     }
-  } 
+  }
 };
 
 async function recoverProcessingQueue() {
@@ -188,20 +158,34 @@ async function recoverProcessingQueue() {
   console.log("Telemetry recovery completed.");
 }
 
-console.log("Telemetry Queue Worker Started");
+const WORKER_COUNT = 8;
 
-(async function startWorker() {
-  await recoverProcessingQueue();
+console.log(`Telemetry Queue Worker Started - ${WORKER_COUNT} workers`);
+
+async function startWorker(workerId) {
+  console.log(`Telemetry Worker ${workerId} started`);
 
   while (true) {
     try {
       await processTelemetryQueue();
     } catch (err) {
-      console.error("Worker Error:", err);
+      console.error(`Telemetry Worker ${workerId} Error:`, err);
 
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
+}
+
+(async function startWorkers() {
+  await recoverProcessingQueue();
+
+  const workers = [];
+
+  for (let i = 1; i <= WORKER_COUNT; i++) {
+    workers.push(startWorker(i));
+  }
+
+  await Promise.all(workers);
 })();
 
 module.exports = {

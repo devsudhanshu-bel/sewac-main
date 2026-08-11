@@ -262,6 +262,21 @@ CREATE TABLE IF NOT EXISTS vehicle_cumulative (
 );
 `;
 
+const updateVehicleCumulative = () => `
+INSERT INTO vehicle_cumulative (
+    vehicle_number,
+    cumulative_weight,
+    updated_at
+)
+VALUES ($1, $2, CURRENT_TIMESTAMP)
+ON CONFLICT (vehicle_number)
+DO UPDATE SET
+    cumulative_weight =
+        vehicle_cumulative.cumulative_weight + EXCLUDED.cumulative_weight,
+    updated_at = CURRENT_TIMESTAMP
+RETURNING cumulative_weight;
+`;
+
 module.exports = {
   createVehicleTelemetryTable,
   insertMasterTelemetry,
@@ -276,4 +291,5 @@ module.exports = {
   registerWeekInMonthTable,
   registerMonthInYearTable,
   createVehicleCumulativeTable,
+  updateVehicleCumulative,
 };

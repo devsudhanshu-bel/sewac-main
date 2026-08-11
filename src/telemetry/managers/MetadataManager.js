@@ -1,5 +1,7 @@
 const telemetryDb = require("../../config/telemetryDb");
 const queries = require("../queries/query");
+const createdDayTables = new Set();
+const createdWeekTables = new Set();
 
 class MetadataManager {
   getDayTableName(date = new Date()) {
@@ -43,21 +45,17 @@ class MetadataManager {
 
     return `week_${week}_${year}`;
   }
-async ensureWeekTable(date = new Date()) {
-
+  async ensureWeekTable(date = new Date()) {
     const tableName = this.getWeekTableName(date);
 
     if (!createdWeekTables.has(tableName)) {
+      await telemetryDb.$executeRawUnsafe(queries.createWeekTable(tableName));
 
-        await telemetryDb.$executeRawUnsafe(
-            queries.createWeekTable(tableName)
-        );
-
-        createdWeekTables.add(tableName);
+      createdWeekTables.add(tableName);
     }
 
     return tableName;
-}
+  }
   getMonthTableName(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, "0");
 

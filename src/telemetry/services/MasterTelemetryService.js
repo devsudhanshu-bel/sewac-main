@@ -17,6 +17,26 @@ class MasterTelemetryService {
 
     console.log("Vehicle Table :", vehicleTable);
 
+    // Step 2 - Update Vehicle Cumulative Weight
+    const currentWeight =
+      Number(packet.wetWeight || 0) +
+      Number(packet.dryWeight || 0) +
+      Number(packet.otherWeight || 0);
+
+    const cumulativeResult = await tx.$queryRawUnsafe(
+      queries.updateVehicleCumulative(),
+      packet.vehicleNumber,
+      currentWeight,
+    );
+
+    const cumulativeWeight = Number(cumulativeResult[0].cumulative_weight);
+
+    console.log(
+      "Vehicle Cumulative Weight :",
+      packet.vehicleNumber,
+      cumulativeWeight,
+    );
+
     // Step 3 - Insert into Master Telemetry
     await tx.$executeRawUnsafe(
       queries.insertMasterTelemetry(),
@@ -31,7 +51,7 @@ class MasterTelemetryService {
       packet.wetWeight,
       packet.dryWeight,
       packet.otherWeight,
-      packet.cumulativeWeight,
+      cumulativeWeight,
       packet.driverName,
       packet.vehicleNumber,
       packet.firmwareVersion,
@@ -59,7 +79,7 @@ class MasterTelemetryService {
       packet.wetWeight,
       packet.dryWeight,
       packet.otherWeight,
-      packet.cumulativeWeight,
+      cumulativeWeight,
       packet.driverName,
       packet.vehicleNumber,
       packet.firmwareVersion,
