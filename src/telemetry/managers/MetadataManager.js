@@ -13,7 +13,11 @@ class MetadataManager {
   async ensureDayTable(date = new Date()) {
     const tableName = this.getDayTableName(date);
 
-    await telemetryDb.$executeRawUnsafe(queries.createDayTable(tableName));
+    if (!createdDayTables.has(tableName)) {
+      await telemetryDb.$executeRawUnsafe(queries.createDayTable(tableName));
+
+      createdDayTables.add(tableName);
+    }
 
     return tableName;
   }
@@ -39,13 +43,21 @@ class MetadataManager {
 
     return `week_${week}_${year}`;
   }
-  async ensureWeekTable(date = new Date()) {
+async ensureWeekTable(date = new Date()) {
+
     const tableName = this.getWeekTableName(date);
 
-    await telemetryDb.$executeRawUnsafe(queries.createWeekTable(tableName));
+    if (!createdWeekTables.has(tableName)) {
+
+        await telemetryDb.$executeRawUnsafe(
+            queries.createWeekTable(tableName)
+        );
+
+        createdWeekTables.add(tableName);
+    }
 
     return tableName;
-  }
+}
   getMonthTableName(date = new Date()) {
     const mm = String(date.getMonth() + 1).padStart(2, "0");
 

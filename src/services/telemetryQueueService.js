@@ -3,60 +3,46 @@ const insertTelemetryLog = require("./telemetry/insertTelemetryLog");
 const updateVehicleTelemetry = require("./telemetry/updateVehicleTelemetry");
 const checkVehicleIncident = require("./telemetry/checkVehicleIncident");
 const updatePlantStatistics = require("./telemetry/updatePlantStatistics");
-const {
-  citizenCache,
-  activeScans,
-} = require("../config/citizenCache");
+const { citizenCache } = require("../config/citizenCache");
 
 const { getConsumerClient } = require("../config/redis");
 
 const processTelemetryQueue = async () => {
   const redisClient = getConsumerClient();
 
-const payloadString = await redisClient.blMove(
-  "telemetry_queue",
-  "telemetry_processing_queue",
-  "RIGHT",
-  "LEFT",
-  0
-);
+  const payloadString = await redisClient.blMove(
+    "telemetry_queue",
+    "telemetry_processing_queue",
+    "RIGHT",
+    "LEFT",
+    0,
+  );
 
-if (!payloadString) return;
+  if (!payloadString) return;
 
-const payload = JSON.parse(payloadString);
+  const payload = JSON.parse(payloadString);
 
   console.log("\n========== NEW TELEMETRY ==========");
   console.log("Queue payload:", payload);
 
   const {
-  rfidNumber,
-  iotTimestamp,
-  driverName,
-  vehicleId,
-  latitude,
-  longitude,
-  weight = 0,
-  firmwareVersion,
-  unitNumber,
-  remarks,
-  errCode,
-} = payload;
+    rfidNumber,
+    iotTimestamp,
+    driverName,
+    vehicleId,
+    latitude,
+    longitude,
+    weight = 0,
+    firmwareVersion,
+    unitNumber,
+    remarks,
+    errCode,
+  } = payload;
 
-
-
-const isAuto =
-  remarks === "O" &&
-  !rfidNumber?.startsWith("E") &&
-  unitNumber === "SEWAC_01_HF";
-
-
-  if (!isAuto && activeScans.has(rfidNumber)) {
-    return;
-  }
-
-  if (!isAuto) {
-    activeScans.add(rfidNumber);
-  }
+  const isAuto =
+    remarks === "O" &&
+    !rfidNumber?.startsWith("E") &&
+    unitNumber === "SEWAC_01_HF";
 
   let citizenId = null;
   let citizenContact = null;
@@ -72,14 +58,13 @@ const isAuto =
   let finalRfidNumber;
 
   if (isAuto) {
-  finalRemarks = "O";
-  finalCollectionType = "AUTO";
-  finalRfidNumber = rfidNumber;
-  otherWeightKg = Number(weight);
+    finalRemarks = "O";
+    finalCollectionType = "AUTO";
+    finalRfidNumber = rfidNumber;
+    otherWeightKg = Number(weight);
 
-  driverAction = 1;
-} 
-  else {
+    driverAction = 1;
+  } else {
     const cachedData = citizenCache.get(rfidNumber);
 
     console.log("Citizen found in cache:", cachedData);
@@ -99,25 +84,21 @@ const isAuto =
     finalRfidNumber = rfidNumber;
 
     if (wasteType === "WET") {
-  wetWeightKg = Number(weight);
-} else {
-  dryWeightKg = Number(weight);
-}
+      wetWeightKg = Number(weight);
+    } else {
+      dryWeightKg = Number(weight);
+    }
 
-driverAction = 0;
+    driverAction = 0;
   }
-
-
 
   try {
     console.log("Inserting telemetry into telemetry_logs...");
     const previousCumulativeWeightKg = await getLatestCumulativeWeight();
 
-const currentWeightKg =
-  Number(weight || 0);
+    const currentWeightKg = Number(weight || 0);
 
-const cumulativeWeightKg =
-  previousCumulativeWeightKg + currentWeightKg;
+    const cumulativeWeightKg = previousCumulativeWeightKg + currentWeightKg;
 
     await insertTelemetryLog({
       iotTimestamp,
@@ -159,39 +140,44 @@ const cumulativeWeightKg =
 
     console.log("Telemetry inserted successfully.");
 
-    await redisClient.lRem("telemetry_processing_queue",1,payloadString);
+    await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
 
-console.log("Removed packet from processing queue.");
+    console.log("Removed packet from processing queue.");
 
     console.log(
       `Telemetry recorded successfully for ${
         isAuto ? "AUTO" : finalRfidNumber
-      }`
+      }`,
     );
-  }
-  catch (err) {
-  console.error("\n========== QUEUE ERROR ==========", err);
-}
-  finally {
-    if (!isAuto) {
-      activeScans.delete(rfidNumber);
+  } catch (err) {
+    console.error("\n========== QUEUE ERROR ==========");
+    console.error(err);
+
+    try {
+      // Put the failed packet back into the main queue
+      await redisClient.lPush("telemetry_queue", payloadString);
+
+      // Remove only this packet from the processing queue
+      await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
+
+      console.log("♻️ Failed packet returned to telemetry_queue for retry.");
+    } catch (retryErr) {
+      console.error("❌ FAILED TO REQUEUE PACKET:", retryErr);
     }
-  }
+  } 
 };
 
 async function recoverProcessingQueue() {
   const redisClient = getConsumerClient();
 
-  console.log(
-    "Checking telemetry_processing_queue for pending packets..."
-  );
+  console.log("Checking telemetry_processing_queue for pending packets...");
 
   while (true) {
     const moved = await redisClient.lMove(
       "telemetry_processing_queue",
       "telemetry_queue",
       "RIGHT",
-      "LEFT"
+      "LEFT",
     );
 
     if (!moved) break;
@@ -213,9 +199,7 @@ console.log("Telemetry Queue Worker Started");
     } catch (err) {
       console.error("Worker Error:", err);
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 5000)
-      );
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 })();

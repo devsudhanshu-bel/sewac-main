@@ -1,5 +1,6 @@
 const telemetryDb = require("../../config/telemetryDb");
 const queries = require("../queries/query");
+const createdVehicleTables = new Set();
 
 class TableManager {
   getVehicleTableName(vehicleNumber, packetDate = new Date()) {
@@ -13,9 +14,13 @@ class TableManager {
   async ensureVehicleTable(vehicleNumber, packetDate = new Date()) {
     const tableName = this.getVehicleTableName(vehicleNumber, packetDate);
 
-    await telemetryDb.$executeRawUnsafe(
-      queries.createVehicleTelemetryTable(tableName),
-    );
+    if (!createdVehicleTables.has(tableName)) {
+      await telemetryDb.$executeRawUnsafe(
+        queries.createVehicleTelemetryTable(tableName),
+      );
+
+      createdVehicleTables.add(tableName);
+    }
 
     return tableName;
   }

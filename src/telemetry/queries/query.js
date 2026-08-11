@@ -254,6 +254,14 @@ ON CONFLICT (month_table_name)
 DO NOTHING;
 `;
 
+const createVehicleCumulativeTable = () => `
+CREATE TABLE IF NOT EXISTS vehicle_cumulative (
+    vehicle_number VARCHAR(50) PRIMARY KEY,
+    cumulative_weight DECIMAL(12,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`;
+
 module.exports = {
   createVehicleTelemetryTable,
   insertMasterTelemetry,
@@ -267,4 +275,5 @@ module.exports = {
   registerDayInWeekTable,
   registerWeekInMonthTable,
   registerMonthInYearTable,
+  createVehicleCumulativeTable,
 };
