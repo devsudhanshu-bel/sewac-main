@@ -1,11 +1,6 @@
 const telemetryDb = require("../../config/telemetryDb");
 const queries = require("../queries/query");
 
-// Keeps track of tables already created during this Node process.
-const createdVehicleTables = new Set();
-
-// Prevents multiple workers from simultaneously creating
-// the same vehicle/day table.
 const vehicleTableCreationPromises = new Map();
 
 class TableManager {
@@ -20,26 +15,28 @@ class TableManager {
   async ensureVehicleTable(vehicleNumber, packetDate = new Date()) {
     const tableName = this.getVehicleTableName(vehicleNumber, packetDate);
 
-    // Already created by this Node process.
-    if (createdVehicleTables.has(tableName)) {
-      return tableName;
-    }
+    // -------------------------------------------------
+    // Another worker is already creating this table.
+    // Wait for that operation instead of creating again.
+    // -------------------------------------------------
 
-    // Another worker is currently creating it.
     if (vehicleTableCreationPromises.has(tableName)) {
       await vehicleTableCreationPromises.get(tableName);
-
       return tableName;
     }
 
-    // Only one worker reaches the actual CREATE TABLE operation.
+    // -------------------------------------------------
+    // PostgreSQL is the source of truth.
+    //
+    // CREATE TABLE IF NOT EXISTS makes this safe even
+    // when the table already exists.
+    // -------------------------------------------------
+
     const creationPromise = (async () => {
       try {
         await telemetryDb.$executeRawUnsafe(
           queries.createVehicleTelemetryTable(tableName),
         );
-
-        createdVehicleTables.add(tableName);
 
         console.log(`Dynamic Vehicle Table Ready: ${tableName}`);
       } finally {
