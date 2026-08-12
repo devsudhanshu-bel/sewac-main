@@ -92,9 +92,9 @@ const TEST_CONFIGS = {
   1: {
     name: "BASELINE",
 
-    minDelaySeconds: 5,
+    minDelaySeconds: 0.5,
 
-    maxDelaySeconds: 12,
+    maxDelaySeconds: 1,
 
     description: "Low traffic randomized simulation",
   },
