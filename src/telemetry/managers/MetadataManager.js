@@ -2,16 +2,15 @@ const telemetryDb = require("../../config/telemetryDb");
 const queries = require("../queries/query");
 
 // =====================================================
-// TABLE CREATION CACHE
+// TABLE CREATION PROMISES
 // =====================================================
+//
+// PostgreSQL is the source of truth.
+//
+// These promises only prevent multiple workers from
+// simultaneously issuing CREATE TABLE for the same table.
+//
 
-const createdDayTables = new Set();
-const createdWeekTables = new Set();
-const createdMonthTables = new Set();
-const createdYearTables = new Set();
-
-// Prevent multiple workers from creating the same table
-// simultaneously during the first packet of a period.
 const tableCreationPromises = new Map();
 
 class MetadataManager {
@@ -19,25 +18,32 @@ class MetadataManager {
   // GENERIC TABLE CREATION
   // =====================================================
 
-  async ensureTable(tableName, createQuery, cacheSet) {
-    // Fast path:
-    // table was already created during this process.
-    if (cacheSet.has(tableName)) {
-      return tableName;
-    }
-
+  async ensureTable(tableName, createQuery) {
+    // ---------------------------------------------------
     // Another worker is already creating this table.
+    // Wait for that exact operation.
+    // ---------------------------------------------------
+
     if (tableCreationPromises.has(tableName)) {
       await tableCreationPromises.get(tableName);
 
       return tableName;
     }
 
+    // ---------------------------------------------------
+    // PostgreSQL performs the actual existence check.
+    //
+    // createQuery() MUST use:
+    //
+    // CREATE TABLE IF NOT EXISTS
+    //
+    // ---------------------------------------------------
+
     const creationPromise = (async () => {
       try {
         await telemetryDb.$executeRawUnsafe(createQuery(tableName));
 
-        cacheSet.add(tableName);
+        console.log(`Hierarchy table ready: ${tableName}`);
       } finally {
         tableCreationPromises.delete(tableName);
       }
@@ -67,15 +73,11 @@ class MetadataManager {
   async ensureDayTable(date = new Date()) {
     const tableName = this.getDayTableName(date);
 
-    return this.ensureTable(
-      tableName,
-      queries.createDayTable,
-      createdDayTables,
-    );
+    return this.ensureTable(tableName, queries.createDayTable);
   }
 
   // =====================================================
-  // VEHICLE → DAY REGISTRATION
+  // VEHICLE → DAY
   // =====================================================
 
   async registerVehicleInDayTable(tx, dayTable, vehicleNumber, vehicleTable) {
@@ -105,11 +107,7 @@ class MetadataManager {
   async ensureWeekTable(date = new Date()) {
     const tableName = this.getWeekTableName(date);
 
-    return this.ensureTable(
-      tableName,
-      queries.createWeekTable,
-      createdWeekTables,
-    );
+    return this.ensureTable(tableName, queries.createWeekTable);
   }
 
   // =====================================================
@@ -127,11 +125,7 @@ class MetadataManager {
   async ensureMonthTable(date = new Date()) {
     const tableName = this.getMonthTableName(date);
 
-    return this.ensureTable(
-      tableName,
-      queries.createMonthTable,
-      createdMonthTables,
-    );
+    return this.ensureTable(tableName, queries.createMonthTable);
   }
 
   // =====================================================
@@ -145,11 +139,7 @@ class MetadataManager {
   async ensureYearTable(date = new Date()) {
     const tableName = this.getYearTableName(date);
 
-    return this.ensureTable(
-      tableName,
-      queries.createYearTable,
-      createdYearTables,
-    );
+    return this.ensureTable(tableName, queries.createYearTable);
   }
 
   // =====================================================
@@ -187,18 +177,6 @@ class MetadataManager {
 
   // =====================================================
   // COMPLETE HIERARCHY REGISTRATION
-  // =====================================================
-  //
-  // IMPORTANT:
-  // Do NOT combine these four INSERT statements
-  // into one SQL string.
-  //
-  // Prisma uses prepared statements and PostgreSQL
-  // rejects multiple commands in one prepared statement.
-  //
-  // Each operation is therefore executed separately
-  // using the SAME transaction client (`tx`).
-  //
   // =====================================================
 
   async registerHierarchy(
