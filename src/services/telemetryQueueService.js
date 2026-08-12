@@ -2,97 +2,19 @@ const insertTelemetryLog = require("./telemetry/insertTelemetryLog");
 const { citizenCache } = require("../config/citizenCache");
 const { getConsumerClient } = require("../config/redis");
 
-// =====================================================
-// WORKER CONFIGURATION
-// =====================================================
-
-const WORKER_COUNT = 8;
+const vehicleProcessorManager = require("../telemetry/services/VehicleProcessorManager");
 
 // =====================================================
-// PER-VEHICLE LOCKS
-// =====================================================
-//
-// Important:
-//
-// We DO NOT globally lock telemetry processing.
-//
-// Different vehicles can continue processing in parallel.
-//
-// Only packets belonging to the SAME vehicle are serialized.
-//
-// This prevents concurrent updates to:
-//     vehicle_cumulative
-//
-// from fighting over the same PostgreSQL row.
-//
+// CONFIGURATION
 // =====================================================
 
-const vehicleLocks = new Map();
-
-/**
- * Execute a task sequentially for a specific vehicle.
- *
- * Example:
- *
- * KA05AB1234:
- *   P1 → P2 → P3 → P4
- *
- * KA05AB1235:
- *   P1 → P2
- *
- * Both vehicles can still run concurrently.
- */
-function runForVehicle(vehicleId, task) {
-  const vehicleKey = String(vehicleId || "UNKNOWN");
-
-  const previous = vehicleLocks.get(vehicleKey) || Promise.resolve();
-
-  const current = previous.catch(() => {}).then(task);
-
-  vehicleLocks.set(vehicleKey, current);
-
-  // Cleanup the lock after this task finishes.
-  current.finally(() => {
-    if (vehicleLocks.get(vehicleKey) === current) {
-      vehicleLocks.delete(vehicleKey);
-    }
-  });
-
-  return current;
-}
+const DISPATCHER_COUNT = 4;
 
 // =====================================================
-// PROCESS ONE TELEMETRY PACKET
+// BUILD TELEMETRY PROCESSING TASK
 // =====================================================
 
-const processTelemetryQueue = async () => {
-  const redisClient = getConsumerClient();
-
-  // ---------------------------------------------------
-  // Atomically move packet:
-  //
-  // telemetry_queue
-  //        ↓
-  // telemetry_processing_queue
-  //
-  // ---------------------------------------------------
-
-  const payloadString = await redisClient.blMove(
-    "telemetry_queue",
-    "telemetry_processing_queue",
-    "RIGHT",
-    "LEFT",
-    0,
-  );
-
-  if (!payloadString) {
-    return;
-  }
-
-  const payload = JSON.parse(payloadString);
-
-  console.log("\n========== NEW TELEMETRY ==========");
-
+function buildProcessingTask(payload) {
   const {
     rfidNumber,
     iotTimestamp,
@@ -108,7 +30,7 @@ const processTelemetryQueue = async () => {
   } = payload;
 
   // ===================================================
-  // DETERMINE COLLECTION TYPE
+  // COLLECTION TYPE
   // ===================================================
 
   const isAuto =
@@ -179,22 +101,15 @@ const processTelemetryQueue = async () => {
   }
 
   // ===================================================
-  // PROCESS PACKET
+  // RETURN PROCESSING TASK
   // ===================================================
 
-  try {
-    console.log("Inserting telemetry into telemetry_logs...");
+  return {
+    vehicleId,
 
-    /*
-     * IMPORTANT:
-     *
-     * Only packets belonging to the SAME vehicle
-     * are serialized.
-     *
-     * Different vehicles remain fully concurrent.
-     */
+    execute: async () => {
+      console.log(`Processing vehicle ${vehicleId}`);
 
-    await runForVehicle(vehicleId, async () => {
       await insertTelemetryLog({
         iotTimestamp,
 
@@ -215,8 +130,8 @@ const processTelemetryQueue = async () => {
         otherWeightKg,
 
         /*
-         * The actual cumulative value is calculated
-         * atomically inside the telemetry pipeline.
+         * Cumulative value is calculated inside
+         * the PostgreSQL transaction.
          */
         cumulativeWeightKg: 0,
 
@@ -238,50 +153,120 @@ const processTelemetryQueue = async () => {
 
         wasteType,
       });
-    });
 
-    console.log("Telemetry inserted successfully.");
+      console.log(`Vehicle ${vehicleId} packet committed`);
+    },
+  };
+}
 
-    // =================================================
-    // ACK / REMOVE FROM PROCESSING QUEUE
-    // =================================================
+// =====================================================
+// PROCESS ONE REDIS PACKET
+// =====================================================
 
+async function processTelemetryQueue() {
+  const redisClient = getConsumerClient();
+
+  // ===================================================
+  // MOVE PACKET TO PROCESSING QUEUE
+  // ===================================================
+
+  const payloadString = await redisClient.blMove(
+    "telemetry_queue",
+    "telemetry_processing_queue",
+    "RIGHT",
+    "LEFT",
+    0,
+  );
+
+  if (!payloadString) {
+    return false;
+  }
+
+  let payload;
+
+  try {
+    payload = JSON.parse(payloadString);
+  } catch (err) {
+    console.error("❌ Invalid telemetry JSON:", err);
+
+    // Invalid packet cannot be processed.
     await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
 
-    console.log("Removed packet from processing queue.");
+    return true;
+  }
 
-    console.log(
-      `Telemetry recorded successfully for ${
-        isAuto ? "AUTO" : finalRfidNumber
-      }`,
-    );
+  console.log("\n========== NEW TELEMETRY ==========");
+
+  console.log("Vehicle:", payload.vehicleId);
+
+  try {
+    // =================================================
+    // CREATE VEHICLE TASK
+    // =================================================
+
+    const task = buildProcessingTask(payload);
+
+    // =================================================
+    // QUEUE INTO VEHICLE FIFO
+    // =================================================
+
+    vehicleProcessorManager.enqueue(task.vehicleId, async () => {
+      try {
+        await task.execute();
+
+        // =============================================
+        // ACK ONLY AFTER DATABASE COMMIT
+        // =============================================
+
+        await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
+
+        console.log(`✅ ACK vehicle ${task.vehicleId}`);
+      } catch (err) {
+        console.error(`❌ Vehicle processing failed [${task.vehicleId}]`, err);
+
+        // =============================================
+        // RETRY
+        // =============================================
+
+        try {
+          await redisClient.lPush("telemetry_queue", payloadString);
+
+          await redisClient.lRem(
+            "telemetry_processing_queue",
+            1,
+            payloadString,
+          );
+
+          console.log(`♻️ Packet requeued [${task.vehicleId}]`);
+        } catch (retryErr) {
+          console.error("❌ FAILED TO REQUEUE PACKET:", retryErr);
+        }
+      }
+    });
+
+    return true;
   } catch (err) {
-    // ===================================================
-    // FAILURE
-    // ===================================================
-
-    console.error("\n========== QUEUE ERROR ==========");
+    console.error("\n========== DISPATCH ERROR ==========");
 
     console.error(err);
 
-    try {
-      /*
-       * IMPORTANT:
-       *
-       * The packet is returned to the main queue
-       * ONLY after the processing attempt fails.
-       */
+    // =================================================
+    // DISPATCH FAILURE → REQUEUE
+    // =================================================
 
+    try {
       await redisClient.lPush("telemetry_queue", payloadString);
 
       await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
 
-      console.log("♻️ Failed packet returned to telemetry_queue for retry.");
+      console.log("♻️ Dispatch failed, packet requeued.");
     } catch (retryErr) {
       console.error("❌ FAILED TO REQUEUE PACKET:", retryErr);
     }
+
+    return true;
   }
-};
+}
 
 // =====================================================
 // RECOVER PROCESSING QUEUE
@@ -311,19 +296,21 @@ async function recoverProcessingQueue() {
 }
 
 // =====================================================
-// WORKER
+// DISPATCHER
 // =====================================================
 
-console.log(`Telemetry Queue Worker Started - ${WORKER_COUNT} workers`);
-
-async function startWorker(workerId) {
-  console.log(`Telemetry Worker ${workerId} started`);
+async function startDispatcher(dispatcherId) {
+  console.log(`Telemetry Dispatcher ${dispatcherId} started`);
 
   while (true) {
     try {
-      await processTelemetryQueue();
+      const processed = await processTelemetryQueue();
+
+      if (!processed) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
     } catch (err) {
-      console.error(`Telemetry Worker ${workerId} Error:`, err);
+      console.error(`Dispatcher ${dispatcherId} error:`, err);
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
@@ -331,19 +318,21 @@ async function startWorker(workerId) {
 }
 
 // =====================================================
-// START ALL WORKERS
+// START SYSTEM
 // =====================================================
 
-(async function startWorkers() {
+console.log(`Telemetry Dispatcher Started - ${DISPATCHER_COUNT} dispatchers`);
+
+(async function startDispatchers() {
   await recoverProcessingQueue();
 
-  const workers = [];
+  const dispatchers = [];
 
-  for (let i = 1; i <= WORKER_COUNT; i++) {
-    workers.push(startWorker(i));
+  for (let i = 1; i <= DISPATCHER_COUNT; i++) {
+    dispatchers.push(startDispatcher(i));
   }
 
-  await Promise.all(workers);
+  await Promise.all(dispatchers);
 })();
 
 // =====================================================
