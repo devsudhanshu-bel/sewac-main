@@ -16,7 +16,6 @@ class MetadataManager {
     await tx.$executeRawUnsafe(createQuery(tableName));
 
     console.log(`Hierarchy table ready: ${tableName}`);
-
     return tableName;
   }
 

@@ -20,7 +20,7 @@ class HierarchyManager {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  async getHierarchyTables(packetDate) {
+  async getHierarchyTables(tx, packetDate) {
     const cacheKey = this.getCacheKey(packetDate);
 
     // Fast path
@@ -39,7 +39,10 @@ class HierarchyManager {
 
         const weekTable = await metadataManager.ensureWeekTable(tx, packetDate);
 
-        const monthTable = await metadataManager.ensureMonthTable(tx, packetDate);
+        const monthTable = await metadataManager.ensureMonthTable(
+          tx,
+          packetDate,
+        );
 
         const yearTable = await metadataManager.ensureYearTable(tx, packetDate);
 
