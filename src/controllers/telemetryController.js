@@ -1,45 +1,41 @@
-const {
-  citizenCache,
-} = require("../config/citizenCache");
+const { randomUUID } = require("crypto");
+const { citizenCache } = require("../config/citizenCache");
 const { getProducerClient } = require("../config/redis");
 
 const recordTelemetry = async (req, res) => {
   try {
     const {
-  rfidNumber,
-  iotTimestamp,
-  driverName,
-  vehicleId,
-  latitude,
-  longitude,
-  weight,
-  firmwareVersion,
-  unitNumber,
-  remarks,
-  errCode,
-} = req.query;
+      rfidNumber,
+      iotTimestamp,
+      driverName,
+      vehicleId,
+      latitude,
+      longitude,
+      weight,
+      firmwareVersion,
+      unitNumber,
+      remarks,
+      errCode,
+    } = req.query;
 
-// Determine collection type
-const isManual =
-  remarks === "" &&
-  rfidNumber?.startsWith("E") &&
-  unitNumber === "SEWAC_01_UHF";
+    const isManual =
+      remarks === "" &&
+      rfidNumber?.startsWith("E") &&
+      unitNumber === "SEWAC_01_UHF";
 
-const isAuto =
-  remarks === "O" &&
-  !rfidNumber?.startsWith("E") &&
-  unitNumber === "SEWAC_01_HF";
+    const isAuto =
+      remarks === "O" &&
+      !rfidNumber?.startsWith("E") &&
+      unitNumber === "SEWAC_01_HF";
 
-// Validate payload
-if (!isAuto && !isManual) {
-  return res.status(400).json({
-    success: false,
-    message:
-  "Invalid telemetry payload. Check RFID format, unitNumber and remarks.",
-  });
-}
+    if (!isAuto && !isManual) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid telemetry payload. Check RFID format, unitNumber and remarks.",
+      });
+    }
 
-    // Mandatory telemetry fields
     if (!iotTimestamp || !vehicleId) {
       return res.status(400).json({
         success: false,
@@ -47,12 +43,12 @@ if (!isAuto && !isManual) {
       });
     }
 
-    // Manual collection validation
     if (!isAuto) {
       if (!rfidNumber?.startsWith("E")) {
         return res.status(400).json({
           success: false,
-          message: "Valid UHF RFID is required for citizen collection.",
+          message:
+            "Valid UHF RFID is required for citizen collection.",
         });
       }
 
@@ -64,42 +60,51 @@ if (!isAuto && !isManual) {
       }
     }
 
-  const payload = {
-  rfidNumber,
-  iotTimestamp,
-  driverName,
-  vehicleId,
-  latitude,
-  longitude,
-  weight,
-  firmwareVersion,
-  unitNumber,
-  remarks,
-  errCode,
-};
+    const payload = {
+      rfidNumber,
+      iotTimestamp,
+      driverName,
+      vehicleId,
+      latitude,
+      longitude,
+      weight,
+      firmwareVersion,
+      unitNumber,
+      remarks,
+      errCode,
+    };
+
+    // Every accepted HTTP request becomes a unique scheduler job.
+    const job = {
+      queueId: randomUUID(),
+      payload,
+    };
 
     const redisClient = getProducerClient();
 
     await redisClient.lPush(
       "telemetry_queue",
-      JSON.stringify(payload)
+      JSON.stringify(job),
     );
 
-    console.log("✅ Telemetry queued in Redis");
+    const queueLength = await redisClient.lLen("telemetry_queue");
+
+    console.log(
+      `✅ Telemetry queued | job=${job.queueId} | vehicle=${vehicleId}`,
+    );
 
     return res.status(200).json({
       success: true,
       status: "QUEUED",
       message: "Telemetry accepted and queued successfully.",
-
-      queueLength: await redisClient.lLen("telemetry_queue"),
-
+      queueLength,
+      queueId: job.queueId,
       queuedTelemetry: payload,
-
       cacheLookup: isAuto ? null : citizenCache.has(rfidNumber),
     });
-
   } catch (error) {
+    console.error("Telemetry queue error:", error);
+
     return res.status(500).json({
       success: false,
       message: error.message,

@@ -53,22 +53,17 @@ const { randomInt, randomUUID } = require("crypto");
 //
 // =====================================================
 
-
 // =====================================================
 // API
 // =====================================================
 
-const API_URL =
-  "https://sewac-main.onrender.com/api/iot/telemetry/record";
-
+const API_URL = "https://sewac-main.onrender.com/api/iot/telemetry/record";
 
 // =====================================================
 // SIMULATION DURATION
 // =====================================================
 
-const SIMULATION_DURATION_MS =
-  10 * 60 * 1000;
-
+const SIMULATION_DURATION_MS =  60 * 1000;
 
 // =====================================================
 // TEST NUMBER
@@ -81,11 +76,7 @@ const SIMULATION_DURATION_MS =
 //
 // =====================================================
 
-const TEST_NUMBER =
-  Number(
-    process.env.TEST_NUMBER || 1
-  );
-
+const TEST_NUMBER = Number(process.env.TEST_NUMBER || 1);
 
 // =====================================================
 // TEST CONFIGURATION
@@ -98,90 +89,58 @@ const TEST_NUMBER =
 // =====================================================
 
 const TEST_CONFIGS = {
-
   1: {
-    name:
-      "BASELINE",
+    name: "BASELINE",
 
-    minDelaySeconds:
-      5,
+    minDelaySeconds: 5,
 
-    maxDelaySeconds:
-      12,
+    maxDelaySeconds: 12,
 
-    description:
-      "Low traffic randomized simulation",
+    description: "Low traffic randomized simulation",
   },
-
 
   2: {
-    name:
-      "MODERATE",
+    name: "MODERATE",
 
-    minDelaySeconds:
-      3,
+    minDelaySeconds: 3,
 
-    maxDelaySeconds:
-      8,
+    maxDelaySeconds: 8,
 
-    description:
-      "Moderate randomized traffic",
+    description: "Moderate randomized traffic",
   },
-
 
   3: {
-    name:
-      "HEAVY",
+    name: "HEAVY",
 
-    minDelaySeconds:
-      2,
+    minDelaySeconds: 2,
 
-    maxDelaySeconds:
-      6,
+    maxDelaySeconds: 6,
 
-    description:
-      "Heavy randomized traffic",
+    description: "Heavy randomized traffic",
   },
-
 
   4: {
-    name:
-      "VERY_HEAVY",
+    name: "VERY_HEAVY",
 
-    minDelaySeconds:
-      1,
+    minDelaySeconds: 1,
 
-    maxDelaySeconds:
-      4,
+    maxDelaySeconds: 4,
 
-    description:
-      "Very heavy randomized traffic",
+    description: "Very heavy randomized traffic",
   },
-
 
   5: {
-    name:
-      "MAXIMUM_STRESS",
+    name: "MAXIMUM_STRESS",
 
-    minDelaySeconds:
-      0.5,
+    minDelaySeconds: 0.5,
 
-    maxDelaySeconds:
-      2.5,
+    maxDelaySeconds: 2.5,
 
-    description:
-      "Maximum randomized packet pressure",
+    description: "Maximum randomized packet pressure",
   },
-
 };
 
-
-const TEST_CONFIG =
-  TEST_CONFIGS[
-    TEST_NUMBER
-  ] ||
-  TEST_CONFIGS[1];
-
+const TEST_CONFIG = TEST_CONFIGS[TEST_NUMBER] || TEST_CONFIGS[1];
 
 // =====================================================
 // VEHICLES
@@ -194,535 +153,260 @@ const TEST_CONFIG =
 // =====================================================
 
 const VEHICLES = [
-
   {
-    vehicleId:
-      "KA05AB1234",
+    vehicleId: "KA05AB1234",
 
-    wardNo:
-      1,
+    wardNo: 1,
 
-    csv:
-      "ward_1.csv",
+    csv: "ward_1.csv",
 
-    driverName:
-      "Ramesh",
+    driverName: "Ramesh",
 
-    unitNumber:
-      "SEWAC_01_UHF",
+    unitNumber: "SEWAC_01_UHF",
 
-    firmwareVersion:
-      "v0.1.0",
+    firmwareVersion: "v0.1.0",
   },
 
-
   {
-    vehicleId:
-      "KA05AB1235",
+    vehicleId: "KA05AB1235",
 
-    wardNo:
-      2,
+    wardNo: 2,
 
-    csv:
-      "ward_2.csv",
+    csv: "ward_2.csv",
 
-    driverName:
-      "Suresh",
+    driverName: "Suresh",
 
-    unitNumber:
-      "SEWAC_01_UHF",
+    unitNumber: "SEWAC_01_UHF",
 
-    firmwareVersion:
-      "v0.1.0",
+    firmwareVersion: "v0.1.0",
   },
 
-
   {
-    vehicleId:
-      "KA05AB1236",
+    vehicleId: "KA05AB1236",
 
-    wardNo:
-      20,
+    wardNo: 20,
 
-    csv:
-      "ward_20.csv",
+    csv: "ward_20.csv",
 
-    driverName:
-      "Mahesh",
+    driverName: "Mahesh",
 
-    unitNumber:
-      "SEWAC_01_UHF",
+    unitNumber: "SEWAC_01_UHF",
 
-    firmwareVersion:
-      "v0.1.0",
+    firmwareVersion: "v0.1.0",
   },
-
 ];
-
 
 // =====================================================
 // CSV DATA DIRECTORY
 // =====================================================
 
-const DATA_DIRECTORY =
-  path.join(
-    __dirname,
-    "data"
-  );
-
+const DATA_DIRECTORY = path.join(__dirname, "data");
 
 // =====================================================
 // STATISTICS
 // =====================================================
 
 const statistics = {
+  startedAt: null,
 
-  startedAt:
-    null,
+  finishedAt: null,
 
-  finishedAt:
-    null,
+  totalPackets: 0,
 
-  totalPackets:
-    0,
+  successfulPackets: 0,
 
-  successfulPackets:
-    0,
+  failedPackets: 0,
 
-  failedPackets:
-    0,
-
-  vehicles:
-    {},
-
+  vehicles: {},
 };
-
 
 // =====================================================
 // INITIALIZE VEHICLE STATISTICS
 // =====================================================
 
-for (
-  const vehicle of VEHICLES
-) {
+for (const vehicle of VEHICLES) {
+  statistics.vehicles[vehicle.vehicleId] = {
+    packetsSent: 0,
 
-  statistics.vehicles[
-    vehicle.vehicleId
-  ] = {
+    packetsSuccessful: 0,
 
-    packetsSent:
-      0,
+    packetsFailed: 0,
 
-    packetsSuccessful:
-      0,
+    lastRFID: null,
 
-    packetsFailed:
-      0,
+    lastLatitude: null,
 
-    lastRFID:
-      null,
+    lastLongitude: null,
 
-    lastLatitude:
-      null,
+    firstPacketAt: null,
 
-    lastLongitude:
-      null,
-
-    firstPacketAt:
-      null,
-
-    lastPacketAt:
-      null,
-
+    lastPacketAt: null,
   };
-
 }
-
 
 // =====================================================
 // CSV PARSER
 // =====================================================
 
-function parseCSVLine(
-  line
-) {
-
+function parseCSVLine(line) {
   const result = [];
 
-  let current =
-    "";
+  let current = "";
 
-  let insideQuotes =
-    false;
+  let insideQuotes = false;
 
+  for (let i = 0; i < line.length; i++) {
+    const character = line[i];
 
-  for (
-    let i = 0;
-    i < line.length;
-    i++
-  ) {
-
-    const character =
-      line[i];
-
-
-    if (
-      character === '"'
-    ) {
-
-      insideQuotes =
-        !insideQuotes;
+    if (character === '"') {
+      insideQuotes = !insideQuotes;
 
       continue;
-
     }
 
+    if (character === "," && !insideQuotes) {
+      result.push(current);
 
-    if (
-      character === "," &&
-      !insideQuotes
-    ) {
-
-      result.push(
-        current
-      );
-
-      current =
-        "";
+      current = "";
 
       continue;
-
     }
 
-
-    current +=
-      character;
-
+    current += character;
   }
 
-
-  result.push(
-    current
-  );
-
+  result.push(current);
 
   return result;
-
 }
-
 
 // =====================================================
 // LOAD CSV
 // =====================================================
 
-function loadCSV(
-  filename
-) {
+function loadCSV(filename) {
+  const filePath = path.join(DATA_DIRECTORY, filename);
 
-  const filePath =
-    path.join(
-      DATA_DIRECTORY,
-      filename
-    );
-
-
-  if (
-    !fs.existsSync(
-      filePath
-    )
-  ) {
-
-    throw new Error(
-      `CSV file not found: ${filePath}`
-    );
-
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`CSV file not found: ${filePath}`);
   }
 
+  const content = fs.readFileSync(filePath, "utf8");
 
-  const content =
-    fs.readFileSync(
-      filePath,
-      "utf8"
-    );
+  const lines = content.split(/\r?\n/).filter((line) => line.trim());
 
-
-  const lines =
-    content
-      .split(/\r?\n/)
-      .filter(
-        line =>
-          line.trim()
-      );
-
-
-  if (
-    lines.length < 2
-  ) {
-
-    throw new Error(
-      `CSV file is empty: ${filename}`
-    );
-
+  if (lines.length < 2) {
+    throw new Error(`CSV file is empty: ${filename}`);
   }
 
-
-  const headers =
-    parseCSVLine(
-      lines[0]
-    ).map(
-      header =>
-        header.trim()
-    );
-
+  const headers = parseCSVLine(lines[0]).map((header) => header.trim());
 
   const records = [];
 
-
-  for (
-    let i = 1;
-    i < lines.length;
-    i++
-  ) {
-
-    const values =
-      parseCSVLine(
-        lines[i]
-      );
-
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
 
     const record = {};
 
-
-    for (
-      let j = 0;
-      j < headers.length;
-      j++
-    ) {
-
-      record[
-        headers[j]
-      ] =
-        values[j] ?? "";
-
+    for (let j = 0; j < headers.length; j++) {
+      record[headers[j]] = values[j] ?? "";
     }
 
-
-    records.push(
-      record
-    );
-
+    records.push(record);
   }
 
-
   return records;
-
 }
-
 
 // =====================================================
 // LOAD CITIZEN DATA
 // =====================================================
 
 function loadVehicleData() {
-
-  console.log(
-    "Loading citizen CSV data..."
-  );
+  console.log("Loading citizen CSV data...");
 
   console.log("");
 
+  for (const vehicle of VEHICLES) {
+    const records = loadCSV(vehicle.csv);
 
-  for (
-    const vehicle of VEHICLES
-  ) {
-
-    const records =
-      loadCSV(
-        vehicle.csv
-      );
-
-
-    if (
-      records.length === 0
-    ) {
-
-      throw new Error(
-        `No citizens found for Ward ${vehicle.wardNo}`
-      );
-
+    if (records.length === 0) {
+      throw new Error(`No citizens found for Ward ${vehicle.wardNo}`);
     }
 
+    vehicle.citizens = records
+      .map((citizen) => ({
+        dryRFID: String(citizen.dryRFID || "").trim(),
 
-    vehicle.citizens =
-      records
-        .map(
-          citizen => ({
+        wetRFID: String(citizen.wetRFID || "").trim(),
 
-            dryRFID:
-              String(
-                citizen.dryRFID || ""
-              ).trim(),
+        drySlno: String(citizen.drySlno || "").trim(),
 
-            wetRFID:
-              String(
-                citizen.wetRFID || ""
-              ).trim(),
+        wetSlno: String(citizen.wetSlno || "").trim(),
 
-            drySlno:
-              String(
-                citizen.drySlno || ""
-              ).trim(),
+        latitude: Number(citizen.lat),
 
-            wetSlno:
-              String(
-                citizen.wetSlno || ""
-              ).trim(),
+        longitude: Number(citizen.lng),
 
-            latitude:
-              Number(
-                citizen.lat
-              ),
+        personName: String(citizen.personName || "").trim(),
+      }))
+      .filter((citizen) => {
+        const hasRFID = citizen.dryRFID || citizen.wetRFID;
 
-            longitude:
-              Number(
-                citizen.lng
-              ),
+        const validLatitude = Number.isFinite(citizen.latitude);
 
-            personName:
-              String(
-                citizen.personName || ""
-              ).trim(),
+        const validLongitude = Number.isFinite(citizen.longitude);
 
-          })
-        )
-        .filter(
-          citizen => {
+        return Boolean(hasRFID) && validLatitude && validLongitude;
+      });
 
-            const hasRFID =
-              citizen.dryRFID ||
-              citizen.wetRFID;
-
-            const validLatitude =
-              Number.isFinite(
-                citizen.latitude
-              );
-
-            const validLongitude =
-              Number.isFinite(
-                citizen.longitude
-              );
-
-
-            return (
-              Boolean(hasRFID) &&
-              validLatitude &&
-              validLongitude
-            );
-
-          }
-        );
-
-
-    if (
-      vehicle.citizens.length === 0
-    ) {
-
-      throw new Error(
-        `No valid citizens found for Ward ${vehicle.wardNo}`
-      );
-
+    if (vehicle.citizens.length === 0) {
+      throw new Error(`No valid citizens found for Ward ${vehicle.wardNo}`);
     }
-
 
     console.log(
       `${vehicle.vehicleId} -> ` +
-      `Ward ${vehicle.wardNo} -> ` +
-      `${vehicle.citizens.length} citizens`
+        `Ward ${vehicle.wardNo} -> ` +
+        `${vehicle.citizens.length} citizens`,
     );
-
   }
 
-
   console.log("");
-
 }
-
 
 // =====================================================
 // RANDOM FLOAT
 // =====================================================
 
-function randomFloat(
-  min,
-  max
-) {
-
-  return (
-    Math.random() *
-    (
-      max - min
-    ) +
-    min
-  );
-
+function randomFloat(min, max) {
+  return Math.random() * (max - min) + min;
 }
-
 
 // =====================================================
 // RANDOM INDEX
 // =====================================================
 
-function randomIndex(
-  length
-) {
-
-  return randomInt(
-    0,
-    length
-  );
-
+function randomIndex(length) {
+  return randomInt(0, length);
 }
-
 
 // =====================================================
 // RANDOM DELAY
 // =====================================================
 
-function randomDelay(
-  minSeconds,
-  maxSeconds
-) {
-
-  return Math.round(
-    randomFloat(
-      minSeconds,
-      maxSeconds
-    ) * 1000
-  );
-
+function randomDelay(minSeconds, maxSeconds) {
+  return Math.round(randomFloat(minSeconds, maxSeconds) * 1000);
 }
-
 
 // =====================================================
 // RANDOM CITIZEN
 // =====================================================
 
-function chooseCitizen(
-  vehicle
-) {
+function chooseCitizen(vehicle) {
+  const index = randomIndex(vehicle.citizens.length);
 
-  const index =
-    randomIndex(
-      vehicle.citizens.length
-    );
-
-
-  return vehicle.citizens[
-    index
-  ];
-
+  return vehicle.citizens[index];
 }
-
 
 // =====================================================
 // SELECT RFID
@@ -738,90 +422,41 @@ function chooseCitizen(
 //
 // =====================================================
 
-function chooseRFID(
-  citizen
-) {
-
+function chooseRFID(citizen) {
   const validRFIDs = [];
 
+  if (citizen.dryRFID && citizen.dryRFID.startsWith("E")) {
+    validRFIDs.push({
+      rfid: citizen.dryRFID,
 
-  if (
-    citizen.dryRFID &&
-    citizen.dryRFID.startsWith("E")
-  ) {
-
-    validRFIDs.push(
-      {
-        rfid:
-          citizen.dryRFID,
-
-        serial:
-          citizen.drySlno,
-      }
-    );
-
+      serial: citizen.drySlno,
+    });
   }
 
+  if (citizen.wetRFID && citizen.wetRFID.startsWith("E")) {
+    validRFIDs.push({
+      rfid: citizen.wetRFID,
 
-  if (
-    citizen.wetRFID &&
-    citizen.wetRFID.startsWith("E")
-  ) {
-
-    validRFIDs.push(
-      {
-        rfid:
-          citizen.wetRFID,
-
-        serial:
-          citizen.wetSlno,
-      }
-    );
-
+      serial: citizen.wetSlno,
+    });
   }
 
-
-  if (
-    validRFIDs.length === 0
-  ) {
-
-    throw new Error(
-      "Citizen does not contain a valid E-prefixed RFID"
-    );
-
+  if (validRFIDs.length === 0) {
+    throw new Error("Citizen does not contain a valid E-prefixed RFID");
   }
 
-
-  return validRFIDs[
-    randomIndex(
-      validRFIDs.length
-    )
-  ];
-
+  return validRFIDs[randomIndex(validRFIDs.length)];
 }
-
 
 // =====================================================
 // RANDOM WEIGHT
 // =====================================================
 
 function generateWeight() {
+  const weight = randomFloat(0.5, 12);
 
-  const weight =
-    randomFloat(
-      0.5,
-      12
-    );
-
-
-  return Number(
-    weight.toFixed(
-      2
-    )
-  );
-
+  return Number(weight.toFixed(2));
 }
-
 
 // =====================================================
 // ERROR CODE
@@ -836,60 +471,30 @@ function generateWeight() {
 // =====================================================
 
 function generateErrorCode() {
-
-  if (
-    TEST_NUMBER === 1
-  ) {
-
+  if (TEST_NUMBER === 1) {
     return "R0L0G0D0C1";
-
   }
 
+  const probability = Math.random();
 
-  const probability =
-    Math.random();
-
-
-  if (
-    probability < 0.90
-  ) {
-
+  if (probability < 0.9) {
     return "R0L0G0D0C1";
-
   }
 
-
-  if (
-    probability < 0.94
-  ) {
-
+  if (probability < 0.94) {
     return "R1L0G0D0C1";
-
   }
 
-
-  if (
-    probability < 0.97
-  ) {
-
+  if (probability < 0.97) {
     return "R0L1G0D0C1";
-
   }
 
-
-  if (
-    probability < 0.985
-  ) {
-
+  if (probability < 0.985) {
     return "R0L0G1D0C1";
-
   }
-
 
   return "R1L1G0D0C1";
-
 }
-
 
 // =====================================================
 // REMARKS
@@ -912,11 +517,8 @@ function generateErrorCode() {
 // =====================================================
 
 function generateRemarks() {
-
   return "";
-
 }
-
 
 // =====================================================
 // CREATE TELEMETRY PACKET
@@ -938,21 +540,10 @@ function generateRemarks() {
 //
 // =====================================================
 
-function createPacket(
-  vehicle
-) {
+function createPacket(vehicle) {
+  const citizen = chooseCitizen(vehicle);
 
-  const citizen =
-    chooseCitizen(
-      vehicle
-    );
-
-
-  const rfid =
-    chooseRFID(
-      citizen
-    );
-
+  const rfid = chooseRFID(citizen);
 
   // -----------------------------------------------
   // SMALL GPS MOVEMENT
@@ -964,87 +555,46 @@ function createPacket(
   // movement less perfectly static.
   //
 
-  const latitudeNoise =
-    randomFloat(
-      -0.000005,
-      0.000005
-    );
+  const latitudeNoise = randomFloat(-0.000005, 0.000005);
 
+  const longitudeNoise = randomFloat(-0.000005, 0.000005);
 
-  const longitudeNoise =
-    randomFloat(
-      -0.000005,
-      0.000005
-    );
+  const latitude = Number((citizen.latitude + latitudeNoise).toFixed(7));
 
-
-  const latitude =
-    Number(
-      (
-        citizen.latitude +
-        latitudeNoise
-      ).toFixed(
-        7
-      )
-    );
-
-
-  const longitude =
-    Number(
-      (
-        citizen.longitude +
-        longitudeNoise
-      ).toFixed(
-        7
-      )
-    );
-
+  const longitude = Number((citizen.longitude + longitudeNoise).toFixed(7));
 
   // -----------------------------------------------
   // TIMESTAMP
   // -----------------------------------------------
 
-  const iotTimestamp =
-    new Date()
-      .toISOString();
-
+  const iotTimestamp = new Date().toISOString();
 
   // -----------------------------------------------
   // WEIGHT
   // -----------------------------------------------
 
-  const weight =
-    generateWeight();
-
+  const weight = generateWeight();
 
   // -----------------------------------------------
   // REMARKS
   // -----------------------------------------------
 
-  const remarks =
-    generateRemarks();
-
+  const remarks = generateRemarks();
 
   // -----------------------------------------------
   // ERROR CODE
   // -----------------------------------------------
 
-  const errCode =
-    generateErrorCode();
-
+  const errCode = generateErrorCode();
 
   return {
-
-    rfidNumber:
-      rfid.rfid,
+    rfidNumber: rfid.rfid,
 
     iotTimestamp,
 
-    driverName:
-      vehicle.driverName,
+    driverName: vehicle.driverName,
 
-    vehicleId:
-      vehicle.vehicleId,
+    vehicleId: vehicle.vehicleId,
 
     latitude,
 
@@ -1052,20 +602,15 @@ function createPacket(
 
     weight,
 
-    firmwareVersion:
-      vehicle.firmwareVersion,
+    firmwareVersion: vehicle.firmwareVersion,
 
-    unitNumber:
-      vehicle.unitNumber,
+    unitNumber: vehicle.unitNumber,
 
     remarks,
 
     errCode,
-
   };
-
 }
-
 
 // =====================================================
 // BUILD URL
@@ -1082,79 +627,28 @@ function createPacket(
 //
 // =====================================================
 
-function buildRequestURL(
-  packet
-) {
+function buildRequestURL(packet) {
+  const url = new URL(API_URL);
 
-  const url =
-    new URL(
-      API_URL
-    );
+  const params = new URLSearchParams();
 
+  params.set("rfidNumber", packet.rfidNumber);
 
-  const params =
-    new URLSearchParams();
+  params.set("iotTimestamp", packet.iotTimestamp);
 
+  params.set("driverName", packet.driverName);
 
-  params.set(
-    "rfidNumber",
-    packet.rfidNumber
-  );
+  params.set("vehicleId", packet.vehicleId);
 
+  params.set("latitude", String(packet.latitude));
 
-  params.set(
-    "iotTimestamp",
-    packet.iotTimestamp
-  );
+  params.set("longitude", String(packet.longitude));
 
+  params.set("weight", String(packet.weight));
 
-  params.set(
-    "driverName",
-    packet.driverName
-  );
+  params.set("firmwareVersion", packet.firmwareVersion);
 
-
-  params.set(
-    "vehicleId",
-    packet.vehicleId
-  );
-
-
-  params.set(
-    "latitude",
-    String(
-      packet.latitude
-    )
-  );
-
-
-  params.set(
-    "longitude",
-    String(
-      packet.longitude
-    )
-  );
-
-
-  params.set(
-    "weight",
-    String(
-      packet.weight
-    )
-  );
-
-
-  params.set(
-    "firmwareVersion",
-    packet.firmwareVersion
-  );
-
-
-  params.set(
-    "unitNumber",
-    packet.unitNumber
-  );
-
+  params.set("unitNumber", packet.unitNumber);
 
   // IMPORTANT:
   //
@@ -1164,147 +658,83 @@ function buildRequestURL(
   //
   // exactly as required by the manual API.
 
-  params.set(
-    "remarks",
-    packet.remarks
-  );
+  params.set("remarks", packet.remarks);
 
+  params.set("errCode", packet.errCode);
 
-  params.set(
-    "errCode",
-    packet.errCode
-  );
-
-
-  url.search =
-    params.toString();
-
+  url.search = params.toString();
 
   return url;
-
 }
-
 
 // =====================================================
 // SEND PACKET
 // =====================================================
 
-async function sendPacket(
-  vehicle,
-  packet
-) {
+async function sendPacket(vehicle, packet) {
+  const url = buildRequestURL(packet);
 
-  const url =
-    buildRequestURL(
-      packet
-    );
-
-
-  const stats =
-    statistics.vehicles[
-      vehicle.vehicleId
-    ];
-
+  const stats = statistics.vehicles[vehicle.vehicleId];
 
   stats.packetsSent++;
 
   statistics.totalPackets++;
 
-
-  if (
-    !stats.firstPacketAt
-  ) {
-
-    stats.firstPacketAt =
-      new Date();
-
+  if (!stats.firstPacketAt) {
+    stats.firstPacketAt = new Date();
   }
 
-
-  stats.lastPacketAt =
-    new Date();
-
+  stats.lastPacketAt = new Date();
 
   try {
+    const response = await fetch(url, {
+      method: "GET",
 
-    const response =
-      await fetch(
-        url,
-        {
+      headers: {
+        Accept: "application/json",
 
-          method:
-            "GET",
+        "User-Agent": "SEWAC-Stress-Simulator",
+      },
+    });
 
-          headers: {
-
-            Accept:
-              "application/json",
-
-            "User-Agent":
-              "SEWAC-Stress-Simulator",
-
-          },
-
-        }
-      );
-
-
-    const responseText =
-      await response.text();
-
+    const responseText = await response.text();
 
     // =============================================
     // SUCCESS
     // =============================================
 
-    if (
-      response.ok
-    ) {
-
+    if (response.ok) {
       stats.packetsSuccessful++;
 
       statistics.successfulPackets++;
 
+      stats.lastRFID = packet.rfidNumber;
 
-      stats.lastRFID =
-        packet.rfidNumber;
+      stats.lastLatitude = packet.latitude;
 
-      stats.lastLatitude =
-        packet.latitude;
-
-      stats.lastLongitude =
-        packet.longitude;
-
+      stats.lastLongitude = packet.longitude;
 
       console.log(
         `[${new Date().toISOString()}] ` +
-        `${vehicle.vehicleId} ` +
-        `WARD=${vehicle.wardNo} ` +
-        `RFID=${packet.rfidNumber} ` +
-        `LAT=${packet.latitude} ` +
-        `LNG=${packet.longitude} ` +
-        `WEIGHT=${packet.weight}kg ` +
-        `UNIT=${packet.unitNumber} ` +
-        `REMARKS="${packet.remarks}" ` +
-        `STATUS=${response.status}`
+          `${vehicle.vehicleId} ` +
+          `WARD=${vehicle.wardNo} ` +
+          `RFID=${packet.rfidNumber} ` +
+          `LAT=${packet.latitude} ` +
+          `LNG=${packet.longitude} ` +
+          `WEIGHT=${packet.weight}kg ` +
+          `UNIT=${packet.unitNumber} ` +
+          `REMARKS="${packet.remarks}" ` +
+          `STATUS=${response.status}`,
       );
 
-
       return {
+        success: true,
 
-        success:
-          true,
+        status: response.status,
 
-        status:
-          response.status,
-
-        body:
-          responseText,
-
+        body: responseText,
       };
-
     }
-
 
     // =============================================
     // FAILURE
@@ -1314,141 +744,77 @@ async function sendPacket(
 
     statistics.failedPackets++;
 
-
     console.error("");
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
-    console.error(
-      "TELEMETRY PACKET FAILED"
-    );
+    console.error("TELEMETRY PACKET FAILED");
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
-    console.error(
-      `Vehicle     : ${vehicle.vehicleId}`
-    );
+    console.error(`Vehicle     : ${vehicle.vehicleId}`);
 
-    console.error(
-      `Ward        : ${vehicle.wardNo}`
-    );
+    console.error(`Ward        : ${vehicle.wardNo}`);
 
-    console.error(
-      `RFID        : ${packet.rfidNumber}`
-    );
+    console.error(`RFID        : ${packet.rfidNumber}`);
 
-    console.error(
-      `Unit        : ${packet.unitNumber}`
-    );
+    console.error(`Unit        : ${packet.unitNumber}`);
 
-    console.error(
-      `Remarks     : ${packet.remarks}`
-    );
+    console.error(`Remarks     : ${packet.remarks}`);
 
-    console.error(
-      `Error Code  : ${packet.errCode}`
-    );
+    console.error(`Error Code  : ${packet.errCode}`);
 
-    console.error(
-      `Status      : ${response.status}`
-    );
+    console.error(`Status      : ${response.status}`);
 
-    console.error(
-      `Response    : ${responseText}`
-    );
+    console.error(`Response    : ${responseText}`);
 
-    console.error(
-      `URL         : ${url.toString()}`
-    );
+    console.error(`URL         : ${url.toString()}`);
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
     console.error("");
-
 
     return {
+      success: false,
 
-      success:
-        false,
+      status: response.status,
 
-      status:
-        response.status,
-
-      body:
-        responseText,
-
+      body: responseText,
     };
-
-  } catch (
-    error
-  ) {
-
+  } catch (error) {
     stats.packetsFailed++;
 
     statistics.failedPackets++;
 
-
     console.error("");
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
-    console.error(
-      "REQUEST ERROR"
-    );
+    console.error("REQUEST ERROR");
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
-    console.error(
-      `Vehicle : ${vehicle.vehicleId}`
-    );
+    console.error(`Vehicle : ${vehicle.vehicleId}`);
 
-    console.error(
-      `Ward    : ${vehicle.wardNo}`
-    );
+    console.error(`Ward    : ${vehicle.wardNo}`);
 
-    console.error(
-      `RFID    : ${packet.rfidNumber}`
-    );
+    console.error(`RFID    : ${packet.rfidNumber}`);
 
-    console.error(
-      `Error   : ${error.message}`
-    );
+    console.error(`Error   : ${error.message}`);
 
-    console.error(
-      `URL     : ${url.toString()}`
-    );
+    console.error(`URL     : ${url.toString()}`);
 
-    console.error(
-      "==============================================="
-    );
+    console.error("===============================================");
 
     console.error("");
-
 
     return {
+      success: false,
 
-      success:
-        false,
-
-      error:
-        error.message,
-
+      error: error.message,
     };
-
   }
-
 }
-
 
 // =====================================================
 // VEHICLE LOOP
@@ -1472,285 +838,158 @@ async function sendPacket(
 //
 // =====================================================
 
-async function runVehicle(
-  vehicle,
-  stopTime
-) {
+async function runVehicle(vehicle, stopTime) {
+  console.log(`${vehicle.vehicleId} simulation started`);
 
-  console.log(
-    `${vehicle.vehicleId} simulation started`
-  );
-
-
-  while (
-    Date.now() <
-    stopTime
-  ) {
-
+  while (Date.now() < stopTime) {
     // -----------------------------------------------
     // RANDOM WAIT
     // -----------------------------------------------
 
-    const delay =
-      randomDelay(
-        TEST_CONFIG.minDelaySeconds,
-        TEST_CONFIG.maxDelaySeconds
-      );
-
-
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          delay
-        )
+    const delay = randomDelay(
+      TEST_CONFIG.minDelaySeconds,
+      TEST_CONFIG.maxDelaySeconds,
     );
 
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
     // -----------------------------------------------
     // STOP CHECK
     // -----------------------------------------------
 
-    if (
-      Date.now() >=
-      stopTime
-    ) {
-
+    if (Date.now() >= stopTime) {
       break;
-
     }
-
 
     // -----------------------------------------------
     // CREATE PACKET
     // -----------------------------------------------
 
-    const packet =
-      createPacket(
-        vehicle
-      );
-
+    const packet = createPacket(vehicle);
 
     // -----------------------------------------------
     // SEND PACKET
     // -----------------------------------------------
 
-    await sendPacket(
-      vehicle,
-      packet
-    );
-
+    await sendPacket(vehicle, packet);
   }
 
-
-  console.log(
-    `${vehicle.vehicleId} simulation stopped`
-  );
-
+  console.log(`${vehicle.vehicleId} simulation stopped`);
 }
-
 
 // =====================================================
 // PRINT SUMMARY
 // =====================================================
 
 function printSummary() {
+  console.log("");
+
+  console.log("=================================================");
+
+  console.log("SIMULATION COMPLETE");
+
+  console.log("=================================================");
 
   console.log("");
 
-  console.log(
-    "================================================="
-  );
+  console.log(`Test Number      : ${TEST_NUMBER}`);
 
-  console.log(
-    "SIMULATION COMPLETE"
-  );
+  console.log(`Test Name        : ${TEST_CONFIG.name}`);
 
-  console.log(
-    "================================================="
-  );
-
-  console.log("");
-
-  console.log(
-    `Test Number      : ${TEST_NUMBER}`
-  );
-
-  console.log(
-    `Test Name        : ${TEST_CONFIG.name}`
-  );
-
-  console.log(
-    `Duration         : 10 minutes`
-  );
+  console.log(`Duration         : 10 minutes`);
 
   console.log(
     `Random Delay     : ` +
-    `${TEST_CONFIG.minDelaySeconds}s - ` +
-    `${TEST_CONFIG.maxDelaySeconds}s`
+      `${TEST_CONFIG.minDelaySeconds}s - ` +
+      `${TEST_CONFIG.maxDelaySeconds}s`,
   );
 
-  console.log(
-    `Total Packets    : ${statistics.totalPackets}`
-  );
+  console.log(`Total Packets    : ${statistics.totalPackets}`);
 
-  console.log(
-    `Successful       : ${statistics.successfulPackets}`
-  );
+  console.log(`Successful       : ${statistics.successfulPackets}`);
 
-  console.log(
-    `Failed           : ${statistics.failedPackets}`
-  );
+  console.log(`Failed           : ${statistics.failedPackets}`);
 
   console.log("");
 
+  for (const vehicle of VEHICLES) {
+    const stats = statistics.vehicles[vehicle.vehicleId];
 
-  for (
-    const vehicle of VEHICLES
-  ) {
+    console.log("-------------------------------------------------");
 
-    const stats =
-      statistics.vehicles[
-        vehicle.vehicleId
-      ];
+    console.log(`Vehicle : ${vehicle.vehicleId}`);
 
+    console.log(`Ward    : ${vehicle.wardNo}`);
 
-    console.log(
-      "-------------------------------------------------"
-    );
+    console.log(`Unit    : ${vehicle.unitNumber}`);
 
+    console.log(`Packets : ${stats.packetsSent}`);
 
-    console.log(
-      `Vehicle : ${vehicle.vehicleId}`
-    );
+    console.log(`Success : ${stats.packetsSuccessful}`);
 
-    console.log(
-      `Ward    : ${vehicle.wardNo}`
-    );
+    console.log(`Failed  : ${stats.packetsFailed}`);
 
-    console.log(
-      `Unit    : ${vehicle.unitNumber}`
-    );
-
-    console.log(
-      `Packets : ${stats.packetsSent}`
-    );
-
-    console.log(
-      `Success : ${stats.packetsSuccessful}`
-    );
-
-    console.log(
-      `Failed  : ${stats.packetsFailed}`
-    );
-
-    console.log(
-      `Last RFID : ${
-        stats.lastRFID ||
-        "N/A"
-      }`
-    );
+    console.log(`Last RFID : ${stats.lastRFID || "N/A"}`);
 
     console.log(
       `Last Position : ` +
-      `${stats.lastLatitude ?? "N/A"}, ` +
-      `${stats.lastLongitude ?? "N/A"}`
+        `${stats.lastLatitude ?? "N/A"}, ` +
+        `${stats.lastLongitude ?? "N/A"}`,
     );
-
   }
-
 
   console.log("");
 
-  console.log(
-    "================================================="
-  );
-
+  console.log("=================================================");
 }
-
 
 // =====================================================
 // MAIN
 // =====================================================
 
 async function main() {
-
   try {
+    console.log("");
+
+    console.log("=================================================");
+
+    console.log("SEWAC RANDOMIZED VEHICLE STRESS SIMULATION");
+
+    console.log("=================================================");
 
     console.log("");
 
-    console.log(
-      "================================================="
-    );
+    console.log(`Test       : ${TEST_NUMBER}`);
 
-    console.log(
-      "SEWAC RANDOMIZED VEHICLE STRESS SIMULATION"
-    );
+    console.log(`Scenario   : ${TEST_CONFIG.name}`);
 
-    console.log(
-      "================================================="
-    );
+    console.log(`Description: ${TEST_CONFIG.description}`);
 
-    console.log("");
-
-    console.log(
-      `Test       : ${TEST_NUMBER}`
-    );
-
-    console.log(
-      `Scenario   : ${TEST_CONFIG.name}`
-    );
-
-    console.log(
-      `Description: ${TEST_CONFIG.description}`
-    );
-
-    console.log(
-      `Duration   : 10 minutes`
-    );
+    console.log(`Duration   : 10 minutes`);
 
     console.log(
       `Delay      : ` +
-      `${TEST_CONFIG.minDelaySeconds}s - ` +
-      `${TEST_CONFIG.maxDelaySeconds}s`
+        `${TEST_CONFIG.minDelaySeconds}s - ` +
+        `${TEST_CONFIG.maxDelaySeconds}s`,
     );
 
     console.log("");
 
-    console.log(
-      "Telemetry Mode:"
-    );
+    console.log("Telemetry Mode:");
 
-    console.log(
-      "  MANUAL / UHF"
-    );
+    console.log("  MANUAL / UHF");
 
-    console.log(
-      "  unitNumber = SEWAC_01_UHF"
-    );
+    console.log("  unitNumber = SEWAC_01_UHF");
 
-    console.log(
-      '  remarks = ""'
-    );
+    console.log('  remarks = ""');
 
     console.log("");
 
-    console.log(
-      "Vehicles:"
-    );
+    console.log("Vehicles:");
 
-
-    for (
-      const vehicle of VEHICLES
-    ) {
-
-      console.log(
-        `  ${vehicle.vehicleId} -> ` +
-        `Ward ${vehicle.wardNo}`
-      );
-
+    for (const vehicle of VEHICLES) {
+      console.log(`  ${vehicle.vehicleId} -> ` + `Ward ${vehicle.wardNo}`);
     }
-
 
     console.log("");
 
@@ -1760,96 +999,53 @@ async function main() {
 
     loadVehicleData();
 
-
     // -----------------------------------------------
     // START TIMER
     // -----------------------------------------------
 
-    statistics.startedAt =
-      new Date();
+    statistics.startedAt = new Date();
 
+    const stopTime = Date.now() + SIMULATION_DURATION_MS;
 
-    const stopTime =
-      Date.now() +
-      SIMULATION_DURATION_MS;
+    console.log("=================================================");
 
+    console.log("SIMULATION STARTED");
 
-    console.log(
-      "================================================="
-    );
-
-    console.log(
-      "SIMULATION STARTED"
-    );
-
-    console.log(
-      "================================================="
-    );
+    console.log("=================================================");
 
     console.log("");
-
 
     // -----------------------------------------------
     // RUN THREE VEHICLES CONCURRENTLY
     // -----------------------------------------------
 
-    await Promise.all(
-
-      VEHICLES.map(
-        vehicle =>
-          runVehicle(
-            vehicle,
-            stopTime
-          )
-      )
-
-    );
-
+    await Promise.all(VEHICLES.map((vehicle) => runVehicle(vehicle, stopTime)));
 
     // -----------------------------------------------
     // FINISH
     // -----------------------------------------------
 
-    statistics.finishedAt =
-      new Date();
-
+    statistics.finishedAt = new Date();
 
     printSummary();
+  } catch (error) {
+    console.error("");
 
-  } catch (
-    error
-  ) {
+    console.error("=================================================");
+
+    console.error("SIMULATION FAILED");
+
+    console.error("=================================================");
 
     console.error("");
 
-    console.error(
-      "================================================="
-    );
-
-    console.error(
-      "SIMULATION FAILED"
-    );
-
-    console.error(
-      "================================================="
-    );
+    console.error(error);
 
     console.error("");
 
-    console.error(
-      error
-    );
-
-    console.error("");
-
-    process.exit(
-      1
-    );
-
+    process.exit(1);
   }
-
 }
-
 
 // =====================================================
 // START

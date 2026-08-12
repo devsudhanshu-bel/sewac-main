@@ -1,20 +1,31 @@
-const insertTelemetryLog = require("./telemetry/insertTelemetryLog");
+const {
+  createDispatcherClient,
+  getProducerClient,
+} = require("../config/redis");
+
 const { citizenCache } = require("../config/citizenCache");
-const { getConsumerClient } = require("../config/redis");
 
 const vehicleProcessorManager = require("../telemetry/services/VehicleProcessorManager");
 
 // =====================================================
-// CONFIGURATION
+// CONFIG
 // =====================================================
 
 const DISPATCHER_COUNT = 4;
 
+const GLOBAL_QUEUE = "telemetry_queue";
+
+const GLOBAL_PROCESSING_QUEUE = "telemetry_processing_queue";
+
 // =====================================================
-// BUILD TELEMETRY PROCESSING TASK
+// BUILD TELEMETRY PACKET
 // =====================================================
 
-function buildProcessingTask(payload) {
+function buildTelemetryPacket(payload) {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Invalid telemetry payload.");
+  }
+
   const {
     rfidNumber,
     iotTimestamp,
@@ -29,14 +40,45 @@ function buildProcessingTask(payload) {
     errCode,
   } = payload;
 
-  // ===================================================
+  // =================================================
+  // BASIC VALIDATION
+  // =================================================
+
+  if (!vehicleId) {
+    throw new Error("Telemetry packet missing vehicleId.");
+  }
+
+  if (!iotTimestamp) {
+    throw new Error("Telemetry packet missing iotTimestamp.");
+  }
+
+  if (!unitNumber) {
+    throw new Error("Telemetry packet missing unitNumber.");
+  }
+
+  // =================================================
   // COLLECTION TYPE
-  // ===================================================
+  // =================================================
+
+  const isManual =
+    remarks === "" &&
+    typeof rfidNumber === "string" &&
+    rfidNumber.startsWith("E") &&
+    unitNumber === "SEWAC_01_UHF";
 
   const isAuto =
     remarks === "O" &&
-    !rfidNumber?.startsWith("E") &&
+    typeof rfidNumber === "string" &&
+    !rfidNumber.startsWith("E") &&
     unitNumber === "SEWAC_01_HF";
+
+  if (!isAuto && !isManual) {
+    throw new Error("Invalid telemetry payload.");
+  }
+
+  // =================================================
+  // VALUES
+  // =================================================
 
   let citizenId = null;
   let citizenContact = null;
@@ -53,9 +95,9 @@ function buildProcessingTask(payload) {
   let finalCollectionType;
   let finalRfidNumber;
 
-  // ===================================================
-  // AUTO COLLECTION
-  // ===================================================
+  // =================================================
+  // AUTO
+  // =================================================
 
   if (isAuto) {
     finalRemarks = "O";
@@ -69,9 +111,9 @@ function buildProcessingTask(payload) {
     driverAction = 1;
   }
 
-  // ===================================================
-  // MANUAL COLLECTION
-  // ===================================================
+  // =================================================
+  // MANUAL
+  // =================================================
   else {
     const cachedData = citizenCache.get(rfidNumber);
 
@@ -100,79 +142,71 @@ function buildProcessingTask(payload) {
     driverAction = 0;
   }
 
-  // ===================================================
-  // RETURN PROCESSING TASK
-  // ===================================================
+  // =================================================
+  // SERIALIZABLE PACKET
+  // =================================================
+  //
+  // THIS OBJECT is what enters the vehicle FIFO.
+  //
+  // No functions.
+  // No callbacks.
+  // No execute().
+  //
+  // =================================================
 
   return {
-    vehicleId,
+    rfidNumber: finalRfidNumber,
 
-    execute: async () => {
-      console.log(`Processing vehicle ${vehicleId}`);
+    iotTimestamp,
 
-      await insertTelemetryLog({
-        iotTimestamp,
+    driverName,
 
-        driverName,
+    vehicleId: String(vehicleId),
 
-        vehicleId,
+    latitude,
 
-        rfidNumber: finalRfidNumber,
+    longitude,
 
-        latitude,
+    wetWeightKg,
 
-        longitude,
+    dryWeightKg,
 
-        wetWeightKg,
+    otherWeightKg,
 
-        dryWeightKg,
+    cumulativeWeightKg: 0,
 
-        otherWeightKg,
+    firmwareVersion,
 
-        /*
-         * Cumulative value is calculated inside
-         * the PostgreSQL transaction.
-         */
-        cumulativeWeightKg: 0,
+    unitNumber,
 
-        firmwareVersion,
+    collectionType: finalCollectionType,
 
-        unitNumber,
+    remarks: finalRemarks,
 
-        collectionType: finalCollectionType,
+    driverAction,
 
-        remarks: finalRemarks,
+    errCode,
 
-        driverAction,
+    citizenId,
 
-        errCode,
+    citizenContact,
 
-        citizenId,
-
-        citizenContact,
-
-        wasteType,
-      });
-
-      console.log(`Vehicle ${vehicleId} packet committed`);
-    },
+    wasteType,
   };
 }
 
 // =====================================================
-// PROCESS ONE REDIS PACKET
+// PROCESS ONE GLOBAL QUEUE PACKET
 // =====================================================
 
-async function processTelemetryQueue() {
-  const redisClient = getConsumerClient();
+async function processTelemetryQueue(dispatcherId, redis) {
+  // =================================================
+  // ATOMIC GLOBAL FIFO → PROCESSING
+  // =================================================
 
-  // ===================================================
-  // MOVE PACKET TO PROCESSING QUEUE
-  // ===================================================
-
-  const payloadString = await redisClient.blMove(
-    "telemetry_queue",
-    "telemetry_processing_queue",
+  const payloadString = await redis.blMove(
+    GLOBAL_QUEUE,
+    GLOBAL_PROCESSING_QUEUE,
     "RIGHT",
     "LEFT",
     0,
@@ -182,6 +216,10 @@ async function processTelemetryQueue() {
     return false;
   }
 
+  // =================================================
+  // PARSE
+  // =================================================
+
   let payload;
 
   try {
@@ -189,60 +227,69 @@ async function processTelemetryQueue() {
   } catch (err) {
     console.error("❌ Invalid telemetry JSON:", err);
 
-    // Invalid packet cannot be processed.
-    await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
+    await redis.lRem(GLOBAL_PROCESSING_QUEUE, 1, payloadString);
 
     return true;
   }
 
+  // =====================================================
+  // UNWRAP QUEUED JOB
+  // =====================================================
+  //
+  // The HTTP controller stores:
+  // {
+  //   jobId,
+  //   payload
+  // }
+  //
+  // The vehicle processor must receive ONLY the
+  // actual telemetry payload.
+  //
+  // =====================================================
+
+  const job =
+    payload &&
+    typeof payload === "object" &&
+    payload.payload &&
+    typeof payload.payload === "object"
+      ? payload
+      : null;
+
+  const telemetryPayload = job ? job.payload : payload;
+
+  const jobId = job?.jobId || null;
+
   console.log("\n========== NEW TELEMETRY ==========");
 
-  console.log("Vehicle:", payload.vehicleId);
+  console.log("Job:", jobId || "legacy");
+
+  console.log("Vehicle:", telemetryPayload?.vehicleId);
 
   try {
-    // =================================================
-    // CREATE VEHICLE TASK
-    // =================================================
+    const packet = buildTelemetryPacket(telemetryPayload);
 
-    const task = buildProcessingTask(payload);
+    const vehicleId = String(packet.vehicleId);
 
     // =================================================
-    // QUEUE INTO VEHICLE FIFO
+    // VEHICLE FIFO
     // =================================================
 
-    vehicleProcessorManager.enqueue(task.vehicleId, async () => {
-      try {
-        await task.execute();
+    await vehicleProcessorManager.enqueue(vehicleId, packet);
 
-        // =============================================
-        // ACK ONLY AFTER DATABASE COMMIT
-        // =============================================
+    // =================================================
+    // GLOBAL ACK
+    //
+    // The packet now exists in:
+    //
+    // telemetry_vehicle_queue:<vehicle>
+    //
+    // so the temporary global processing copy
+    // can safely disappear.
+    // =================================================
 
-        await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
+    await redis.lRem(GLOBAL_PROCESSING_QUEUE, 1, payloadString);
 
-        console.log(`✅ ACK vehicle ${task.vehicleId}`);
-      } catch (err) {
-        console.error(`❌ Vehicle processing failed [${task.vehicleId}]`, err);
-
-        // =============================================
-        // RETRY
-        // =============================================
-
-        try {
-          await redisClient.lPush("telemetry_queue", payloadString);
-
-          await redisClient.lRem(
-            "telemetry_processing_queue",
-            1,
-            payloadString,
-          );
-
-          console.log(`♻️ Packet requeued [${task.vehicleId}]`);
-        } catch (retryErr) {
-          console.error("❌ FAILED TO REQUEUE PACKET:", retryErr);
-        }
-      }
-    });
+    console.log(`📦 Routed vehicle ${vehicleId}`);
 
     return true;
   } catch (err) {
@@ -251,13 +298,13 @@ async function processTelemetryQueue() {
     console.error(err);
 
     // =================================================
-    // DISPATCH FAILURE → REQUEUE
+    // GLOBAL RETRY
     // =================================================
 
     try {
-      await redisClient.lPush("telemetry_queue", payloadString);
+      await redis.lRem(GLOBAL_PROCESSING_QUEUE, 1, payloadString);
 
-      await redisClient.lRem("telemetry_processing_queue", 1, payloadString);
+      await redis.rPush(GLOBAL_QUEUE, payloadString);
 
       console.log("♻️ Dispatch failed, packet requeued.");
     } catch (retryErr) {
@@ -269,18 +316,18 @@ async function processTelemetryQueue() {
 }
 
 // =====================================================
-// RECOVER PROCESSING QUEUE
+// GLOBAL RECOVERY
 // =====================================================
 
 async function recoverProcessingQueue() {
-  const redisClient = getConsumerClient();
+  const redis = getProducerClient();
 
   console.log("Checking telemetry_processing_queue for pending packets...");
 
   while (true) {
-    const moved = await redisClient.lMove(
-      "telemetry_processing_queue",
-      "telemetry_queue",
+    const moved = await redis.lMove(
+      GLOBAL_PROCESSING_QUEUE,
+      GLOBAL_QUEUE,
       "RIGHT",
       "LEFT",
     );
@@ -300,39 +347,72 @@ async function recoverProcessingQueue() {
 // =====================================================
 
 async function startDispatcher(dispatcherId) {
+  console.log(`Telemetry Dispatcher ${dispatcherId} starting...`);
+
+  const redis = await createDispatcherClient(dispatcherId);
+
   console.log(`Telemetry Dispatcher ${dispatcherId} started`);
 
-  while (true) {
-    try {
-      const processed = await processTelemetryQueue();
+  try {
+    while (true) {
+      try {
+        const processed = await processTelemetryQueue(dispatcherId, redis);
 
-      if (!processed) {
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        if (!processed) {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+      } catch (err) {
+        console.error(`Dispatcher ${dispatcherId} error:`, err);
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
+    }
+  } finally {
+    try {
+      await redis.quit();
     } catch (err) {
-      console.error(`Dispatcher ${dispatcherId} error:`, err);
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.error(
+        `Failed to close Dispatcher ${dispatcherId} Redis connection:`,
+        err.message,
+      );
     }
   }
 }
 
 // =====================================================
-// START SYSTEM
+// START
 // =====================================================
 
 console.log(`Telemetry Dispatcher Started - ${DISPATCHER_COUNT} dispatchers`);
 
 (async function startDispatchers() {
-  await recoverProcessingQueue();
+  try {
+    // -------------------------------------------------
+    // GLOBAL RECOVERY FIRST
+    // -------------------------------------------------
 
-  const dispatchers = [];
+    await recoverProcessingQueue();
 
-  for (let i = 1; i <= DISPATCHER_COUNT; i++) {
-    dispatchers.push(startDispatcher(i));
+    // -------------------------------------------------
+    // VEHICLE RECOVERY SECOND
+    // -------------------------------------------------
+
+    await vehicleProcessorManager.recover();
+
+    // -------------------------------------------------
+    // START DISPATCHERS
+    // -------------------------------------------------
+
+    const dispatchers = [];
+
+    for (let i = 1; i <= DISPATCHER_COUNT; i++) {
+      dispatchers.push(startDispatcher(i));
+    }
+
+    await Promise.all(dispatchers);
+  } catch (err) {
+    console.error("❌ Telemetry dispatcher startup failed:", err);
   }
-
-  await Promise.all(dispatchers);
 })();
 
 // =====================================================
@@ -341,4 +421,5 @@ console.log(`Telemetry Dispatcher Started - ${DISPATCHER_COUNT} dispatchers`);
 
 module.exports = {
   processTelemetryQueue,
+  recoverProcessingQueue,
 };
