@@ -35,13 +35,13 @@ class HierarchyManager {
 
     const promise = (async () => {
       try {
-        const dayTable = await metadataManager.ensureDayTable(packetDate);
+        const dayTable = await metadataManager.ensureDayTable(tx, packetDate);
 
-        const weekTable = await metadataManager.ensureWeekTable(packetDate);
+        const weekTable = await metadataManager.ensureWeekTable(tx, packetDate);
 
-        const monthTable = await metadataManager.ensureMonthTable(packetDate);
+        const monthTable = await metadataManager.ensureMonthTable(tx, packetDate);
 
-        const yearTable = await metadataManager.ensureYearTable(packetDate);
+        const yearTable = await metadataManager.ensureYearTable(tx, packetDate);
 
         const hierarchy = {
           dayTable,

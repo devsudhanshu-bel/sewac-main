@@ -6,52 +6,16 @@ const queries = require("../queries/query");
 // =====================================================
 //
 // PostgreSQL is the source of truth.
-//
-// These promises only prevent multiple workers from
-// simultaneously issuing CREATE TABLE for the same table.
-//
-
-const tableCreationPromises = new Map();
 
 class MetadataManager {
   // =====================================================
   // GENERIC TABLE CREATION
   // =====================================================
 
-  async ensureTable(tableName, createQuery) {
-    // ---------------------------------------------------
-    // Another worker is already creating this table.
-    // Wait for that exact operation.
-    // ---------------------------------------------------
+  async ensureTable(tx, tableName, createQuery) {
+    await tx.$executeRawUnsafe(createQuery(tableName));
 
-    if (tableCreationPromises.has(tableName)) {
-      await tableCreationPromises.get(tableName);
-
-      return tableName;
-    }
-
-    // ---------------------------------------------------
-    // PostgreSQL performs the actual existence check.
-    //
-    // createQuery() MUST use:
-    //
-    // CREATE TABLE IF NOT EXISTS
-    //
-    // ---------------------------------------------------
-
-    const creationPromise = (async () => {
-      try {
-        await telemetryDb.$executeRawUnsafe(createQuery(tableName));
-
-        console.log(`Hierarchy table ready: ${tableName}`);
-      } finally {
-        tableCreationPromises.delete(tableName);
-      }
-    })();
-
-    tableCreationPromises.set(tableName, creationPromise);
-
-    await creationPromise;
+    console.log(`Hierarchy table ready: ${tableName}`);
 
     return tableName;
   }
@@ -70,10 +34,10 @@ class MetadataManager {
     return `day_${dd}${mm}${yyyy}`;
   }
 
-  async ensureDayTable(date = new Date()) {
+  async ensureDayTable(tx, date = new Date()) {
     const tableName = this.getDayTableName(date);
 
-    return this.ensureTable(tableName, queries.createDayTable);
+    return this.ensureTable(tx, tableName, queries.createDayTable);
   }
 
   // =====================================================
@@ -104,10 +68,10 @@ class MetadataManager {
     return `week_${week}_${year}`;
   }
 
-  async ensureWeekTable(date = new Date()) {
+  async ensureWeekTable(tx, date = new Date()) {
     const tableName = this.getWeekTableName(date);
 
-    return this.ensureTable(tableName, queries.createWeekTable);
+    return this.ensureTable(tx, tableName, queries.createWeekTable);
   }
 
   // =====================================================
@@ -122,10 +86,10 @@ class MetadataManager {
     return `month_${mm}${yyyy}`;
   }
 
-  async ensureMonthTable(date = new Date()) {
+  async ensureMonthTable(tx, date = new Date()) {
     const tableName = this.getMonthTableName(date);
 
-    return this.ensureTable(tableName, queries.createMonthTable);
+    return this.ensureTable(tx, tableName, queries.createMonthTable);
   }
 
   // =====================================================
@@ -136,10 +100,10 @@ class MetadataManager {
     return `year_${date.getFullYear()}`;
   }
 
-  async ensureYearTable(date = new Date()) {
+  async ensureYearTable(tx, date = new Date()) {
     const tableName = this.getYearTableName(date);
 
-    return this.ensureTable(tableName, queries.createYearTable);
+    return this.ensureTable(tx, tableName, queries.createYearTable);
   }
 
   // =====================================================
