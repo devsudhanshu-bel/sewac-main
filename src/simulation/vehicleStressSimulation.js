@@ -63,7 +63,7 @@ const API_URL = "https://sewac-main.onrender.com/api/iot/telemetry/record";
 // SIMULATION DURATION
 // =====================================================
 
-const SIMULATION_DURATION_MS =  60 * 1000;
+const SIMULATION_DURATION_MS =  10 * 60 * 1000;
 
 // =====================================================
 // TEST NUMBER
