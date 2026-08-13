@@ -4,6 +4,10 @@
  * ==========================================================
  */
 
+// ==========================================================
+// VEHICLE TELEMETRY TABLE
+// ==========================================================
+
 const createVehicleTelemetryTable = (tableName) => `
 CREATE TABLE IF NOT EXISTS "${tableName}" (
 
@@ -54,6 +58,19 @@ CREATE TABLE IF NOT EXISTS "${tableName}" (
 );
 `;
 
+// ==========================================================
+// MASTER TELEMETRY BUFFER
+// ==========================================================
+//
+// IMPORTANT:
+// This INSERT happens OUTSIDE the final transaction.
+//
+// Every new packet starts as PROCESSING.
+//
+// RETURNING id gives us the buffer row ID so we can later
+// mark it COMPLETED or FAILED.
+// ==========================================================
+
 const insertMasterTelemetry = () => `
 INSERT INTO master_telemetry (
 
@@ -76,30 +93,58 @@ INSERT INTO master_telemetry (
     "remarks",
     "errorCode",
     "citizenContact",
-    "driverAction"
+    "driverAction",
+    "processing_status"
 
 )
 VALUES (
+
     $1::timestamp,
     $2::timestamp,
-    $3,$4,$5,
-    $6,$7,$8,$9,$10,
-    $11,$12,$13,$14,$15,
-    $16,$17,$18,$19,$20
-);
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    NULL,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17,
+    $18,
+    $19,
+    'PROCESSING'
+
+)
+RETURNING id;
 `;
 
-const maintainMasterFIFO = () => `
-DELETE FROM master_telemetry
-WHERE id IN (
+// ==========================================================
+// UPDATE MASTER CUMULATIVE WEIGHT
+// ==========================================================
+//
+// This happens INSIDE the final transaction.
+//
+// If the transaction fails, this update rolls back.
+// The master row itself remains because it was created
+// before the transaction.
+// ==========================================================
 
-    SELECT id
-    FROM master_telemetry
-    ORDER BY "receivedTimestamp" DESC
-    OFFSET 1000
-
-);
+const updateMasterTelemetryCumulative = () => `
+UPDATE master_telemetry
+SET cumulativeWeight = $1
+WHERE id = $2;
 `;
+
+// ==========================================================
+// VEHICLE TELEMETRY
+// ==========================================================
 
 const insertVehicleTelemetry = (tableName) => `
 INSERT INTO "${tableName}" (
@@ -130,13 +175,31 @@ VALUES (
 
     $1::timestamp,
     $2::timestamp,
-    $3,$4,$5,
-    $6,$7,$8,$9,$10,
-    $11,$12,$13,$14,$15,
-    $16,$17,$18,$19,$20
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17,
+    $18,
+    $19,
+    $20
 
 );
 `;
+
+// ==========================================================
+// DAY TABLE
+// ==========================================================
 
 const createDayTable = (tableName) => `
 CREATE TABLE IF NOT EXISTS "${tableName}" (
@@ -172,6 +235,10 @@ ON CONFLICT (vehicle_number)
 DO NOTHING;
 `;
 
+// ==========================================================
+// WEEK TABLE
+// ==========================================================
+
 const createWeekTable = (tableName) => `
 CREATE TABLE IF NOT EXISTS "${tableName}" (
 
@@ -199,6 +266,10 @@ ON CONFLICT (day_table_name)
 
 DO NOTHING;
 `;
+
+// ==========================================================
+// MONTH TABLE
+// ==========================================================
 
 const createMonthTable = (tableName) => `
 CREATE TABLE IF NOT EXISTS "${tableName}" (
@@ -228,6 +299,10 @@ ON CONFLICT (week_table_name)
 DO NOTHING;
 `;
 
+// ==========================================================
+// YEAR TABLE
+// ==========================================================
+
 const createYearTable = (tableName) => `
 CREATE TABLE IF NOT EXISTS "${tableName}" (
 
@@ -256,10 +331,16 @@ ON CONFLICT (month_table_name)
 DO NOTHING;
 `;
 
+// ==========================================================
+// VEHICLE CUMULATIVE
+// ==========================================================
+
 const createVehicleCumulativeTable = () => `
 CREATE TABLE IF NOT EXISTS vehicle_cumulative (
     vehicle_number VARCHAR(50) PRIMARY KEY,
+
     cumulative_weight DECIMAL(12,2) NOT NULL DEFAULT 0,
+
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 `;
@@ -270,51 +351,119 @@ INSERT INTO vehicle_cumulative (
     cumulative_weight,
     updated_at
 )
-VALUES ($1, $2, CURRENT_TIMESTAMP)
+
+VALUES (
+    $1,
+    $2,
+    CURRENT_TIMESTAMP
+)
+
 ON CONFLICT (vehicle_number)
+
 DO UPDATE SET
+
     cumulative_weight =
-        vehicle_cumulative.cumulative_weight + EXCLUDED.cumulative_weight,
+        vehicle_cumulative.cumulative_weight
+        + EXCLUDED.cumulative_weight,
+
     updated_at = CURRENT_TIMESTAMP
+
 RETURNING cumulative_weight;
 `;
 
-const registerHierarchy = (dayTable, weekTable, monthTable, yearTable) => `
-INSERT INTO "${dayTable}" (
-    vehicle_number,
-    vehicle_table_name
-)
-VALUES ($1, $2)
-ON CONFLICT (vehicle_number)
-DO NOTHING;
+// ==========================================================
+// MASTER BUFFER STATUS
+// ==========================================================
 
-INSERT INTO "${weekTable}" (
-    day_table_name
-)
-VALUES ($3)
-ON CONFLICT (day_table_name)
-DO NOTHING;
+const addMasterTelemetryStatusColumn = () => `
+ALTER TABLE master_telemetry
 
-INSERT INTO "${monthTable}" (
-    week_table_name
-)
-VALUES ($4)
-ON CONFLICT (week_table_name)
-DO NOTHING;
-
-INSERT INTO "${yearTable}" (
-    month_table_name
-)
-VALUES ($5)
-ON CONFLICT (month_table_name)
-DO NOTHING;
+ADD COLUMN IF NOT EXISTS
+processing_status VARCHAR(20)
+DEFAULT 'COMPLETED';
 `;
+
+const createMasterTelemetryStatusIndex = () => `
+CREATE INDEX IF NOT EXISTS
+idx_master_telemetry_status_received
+
+ON master_telemetry (
+    processing_status,
+    "receivedTimestamp"
+);
+`;
+
+// ==========================================================
+// MASTER BUFFER STATUS UPDATES
+// ==========================================================
+
+const markMasterTelemetryCompleted = () => `
+UPDATE master_telemetry
+
+SET processing_status = 'COMPLETED'
+
+WHERE id = $1;
+`;
+
+const markMasterTelemetryFailed = () => `
+UPDATE master_telemetry
+
+SET processing_status = 'FAILED'
+
+WHERE id = $1;
+`;
+
+// ==========================================================
+// MASTER BUFFER CLEANUP
+// ==========================================================
+//
+// POLICY:
+//
+// Buffer reaches >= 2,000 rows
+//        ↓
+// Delete oldest 1,000 COMPLETED rows
+//
+// PROCESSING → NEVER DELETE
+// FAILED     → NEVER DELETE
+// COMPLETED  → ELIGIBLE
+//
+// receivedTimestamp + id gives deterministic ordering.
+// ==========================================================
+
+const cleanupCompletedMasterTelemetry = () => `
+DELETE FROM master_telemetry
+
+WHERE id IN (
+
+    SELECT id
+
+    FROM master_telemetry
+
+    WHERE processing_status = 'COMPLETED'
+
+    ORDER BY
+        "receivedTimestamp" ASC,
+        id ASC
+
+    LIMIT 1000
+
+)
+
+AND (
+    SELECT COUNT(*)
+    FROM master_telemetry
+) >= 2000;
+`;
+
+// ==========================================================
+// EXPORTS
+// ==========================================================
 
 module.exports = {
   createVehicleTelemetryTable,
   insertMasterTelemetry,
+  updateMasterTelemetryCumulative,
   insertVehicleTelemetry,
-  maintainMasterFIFO,
   createDayTable,
   createWeekTable,
   createMonthTable,
@@ -325,5 +474,9 @@ module.exports = {
   registerMonthInYearTable,
   createVehicleCumulativeTable,
   updateVehicleCumulative,
-  registerHierarchy,
+  addMasterTelemetryStatusColumn,
+  createMasterTelemetryStatusIndex,
+  markMasterTelemetryCompleted,
+  markMasterTelemetryFailed,
+  cleanupCompletedMasterTelemetry,
 };

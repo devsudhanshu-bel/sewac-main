@@ -3,8 +3,26 @@ const queries = require("../queries/query");
 
 class InitializeTelemetryDB {
   async initialize() {
-    await telemetryDb.$executeRawUnsafe(queries.createVehicleCumulativeTable());
     console.log("Initializing Telemetry Database...");
+
+    // ================================================
+    // VEHICLE CUMULATIVE TABLE
+    // ================================================
+
+    await telemetryDb.$executeRawUnsafe(queries.createVehicleCumulativeTable());
+
+    // ================================================
+    // MASTER TELEMETRY STATUS
+    // ================================================
+
+    await telemetryDb.$executeRawUnsafe(
+      queries.addMasterTelemetryStatusColumn(),
+    );
+
+    await telemetryDb.$executeRawUnsafe(
+      queries.createMasterTelemetryStatusIndex(),
+    );
+
     console.log("Telemetry Database Initialized Successfully.");
   }
 }
