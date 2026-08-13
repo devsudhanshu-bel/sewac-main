@@ -34,16 +34,12 @@ function toRawDate(value) {
 
 class MasterTelemetryService {
   // ======================================================
-  // STEP 1
-  // CREATE BUFFER ROW
+  // CREATE BUFFER PACKET
   // ======================================================
   //
-  // IMPORTANT:
-  // This is intentionally OUTSIDE the final transaction.
+  // OUTSIDE final transaction.
   //
-  // Therefore if final processing fails, this row survives
-  // and can be marked FAILED.
-  //
+  // Therefore FAILED packets survive rollback.
   // ======================================================
 
   async createBufferPacket(packet) {
@@ -55,42 +51,61 @@ class MasterTelemetryService {
     const result = await telemetryDb.$queryRawUnsafe(
       queries.insertMasterTelemetry(),
 
+      // $1
       toRawDate(packet.iotTimestamp),
 
+      // $2
       toRawDate(packet.receivedTimestamp || new Date()),
 
+      // $3
       packet.rfidEpc,
 
+      // $4
       packet.citizenId,
 
+      // $5
       packet.wasteType,
 
+      // $6
       packet.latitude,
 
+      // $7
       packet.longitude,
 
+      // $8
       packet.wetWeight,
 
+      // $9
       packet.dryWeight,
 
+      // $10
       packet.otherWeight,
 
+      // $11
       packet.driverName,
 
+      // $12
       packet.vehicleNumber,
 
+      // $13
       packet.firmwareVersion,
 
+      // $14
       packet.unitNumber,
 
+      // $15
       packet.collectionType,
 
+      // $16
       packet.remarks,
 
+      // $17
       packet.errorCode,
 
+      // $18
       packet.citizenContact,
 
+      // $19
       packet.driverAction,
     );
 
@@ -104,23 +119,7 @@ class MasterTelemetryService {
   }
 
   // ======================================================
-  // STEP 2
-  // FINAL TELEMETRY PROCESSING
-  // ======================================================
-  //
-  // EVERYTHING HERE runs inside the transaction created
-  // by TelemetryPipelineService.
-  //
-  // If anything fails:
-  //
-  // vehicle cumulative → ROLLBACK
-  // master cumulative  → ROLLBACK
-  // vehicle table      → ROLLBACK
-  // hierarchy          → ROLLBACK
-  //
-  // BUT the original master buffer row remains because
-  // it was created BEFORE this transaction.
-  //
+  // FINAL DATABASE PROCESSING
   // ======================================================
 
   async processPacket(tx, packet, vehicleTable, masterTelemetryId) {
@@ -133,7 +132,8 @@ class MasterTelemetryService {
     console.log("Master Buffer ID :", masterTelemetryId);
 
     // ==================================================
-    // STEP 1 - CURRENT PACKET WEIGHT
+    // STEP 1
+    // CURRENT PACKET WEIGHT
     // ==================================================
 
     const currentWeight =
@@ -144,7 +144,8 @@ class MasterTelemetryService {
     console.log("Current Packet Weight :", currentWeight);
 
     // ==================================================
-    // STEP 2 - ATOMIC VEHICLE CUMULATIVE
+    // STEP 2
+    // VEHICLE CUMULATIVE
     // ==================================================
 
     const cumulativeResult = await tx.$queryRawUnsafe(
@@ -164,7 +165,8 @@ class MasterTelemetryService {
     );
 
     // ==================================================
-    // STEP 3 - UPDATE MASTER BUFFER CUMULATIVE
+    // STEP 3
+    // UPDATE MASTER BUFFER CUMULATIVE
     // ==================================================
 
     await tx.$executeRawUnsafe(
@@ -178,7 +180,8 @@ class MasterTelemetryService {
     console.log("Master telemetry cumulative updated");
 
     // ==================================================
-    // STEP 4 - VEHICLE DAILY TELEMETRY
+    // STEP 4
+    // INSERT VEHICLE TELEMETRY
     // ==================================================
 
     await tx.$executeRawUnsafe(
@@ -228,7 +231,8 @@ class MasterTelemetryService {
     console.log("Inserted into Vehicle Table");
 
     // ==================================================
-    // STEP 5 - HIERARCHY
+    // STEP 5
+    // HIERARCHY
     // ==================================================
 
     const hierarchy = await hierarchyManager.process(
@@ -244,7 +248,7 @@ class MasterTelemetryService {
     console.log("Hierarchy Updated :", hierarchy);
 
     // ==================================================
-    // FINAL RESULT
+    // RETURN
     // ==================================================
 
     return {
@@ -257,7 +261,7 @@ class MasterTelemetryService {
   }
 
   // ======================================================
-  // MARK MASTER ROW COMPLETED
+  // MARK COMPLETED
   // ======================================================
 
   async markCompleted(masterTelemetryId) {
@@ -267,11 +271,11 @@ class MasterTelemetryService {
       masterTelemetryId,
     );
 
-    console.log(`Master telemetry completed | id=${masterTelemetryId}`);
+    console.log(`Master telemetry COMPLETED | id=${masterTelemetryId}`);
   }
 
   // ======================================================
-  // MARK MASTER ROW FAILED
+  // MARK FAILED
   // ======================================================
 
   async markFailed(masterTelemetryId) {
@@ -285,17 +289,17 @@ class MasterTelemetryService {
   }
 
   // ======================================================
-  // CLEANUP COMPLETED BUFFER
+  // CLEANUP
   // ======================================================
 
   async cleanupCompletedBuffer() {
-    const result = await telemetryDb.$executeRawUnsafe(
+    const deleted = await telemetryDb.$executeRawUnsafe(
       queries.cleanupCompletedMasterTelemetry(),
     );
 
-    console.log(`Master telemetry cleanup executed | deleted=${result}`);
+    console.log(`Master telemetry cleanup | deleted=${deleted}`);
 
-    return result;
+    return deleted;
   }
 }
 

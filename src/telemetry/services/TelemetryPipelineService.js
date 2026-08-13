@@ -2,33 +2,11 @@ const telemetryDb = require("../../config/telemetryDb");
 const masterTelemetryService = require("./MasterTelemetryService");
 const tableManager = require("../managers/TableManager");
 
-// ==========================================================
-// TELEMETRY PIPELINE SERVICE
-// ==========================================================
-//
-// MASTER TELEMETRY
-//       ↓
-// PROCESSING
-//       ↓
-// FINAL DATABASE TRANSACTION
-//       ↓
-// ┌───────────────┐
-// │               │
-// SUCCESS       FAILURE
-// │               │
-// ▼               ▼
-// COMPLETED      FAILED
-// │               │
-// ▼               └── retained
-// CLEANUP
-//
-// ==========================================================
-
 class TelemetryPipelineService {
   async process(packet) {
     // ==================================================
     // STEP 1
-    // ENSURE VEHICLE TABLE EXISTS
+    // ENSURE VEHICLE TABLE
     // ==================================================
 
     const vehicleTable = await tableManager.ensureVehicleTable(
@@ -44,12 +22,10 @@ class TelemetryPipelineService {
     // CREATE MASTER BUFFER ROW
     // ==================================================
     //
-    // IMPORTANT:
+    // This is OUTSIDE the transaction.
     //
-    // This is OUTSIDE the final transaction.
-    //
-    // Therefore the row survives a transaction
-    // rollback.
+    // Therefore a failed packet remains in
+    // master_telemetry.
     //
     // ==================================================
 
@@ -63,8 +39,10 @@ class TelemetryPipelineService {
     // FINAL DATABASE TRANSACTION
     // ==================================================
 
+    let result;
+
     try {
-      const result = await telemetryDb.$transaction(
+      result = await telemetryDb.$transaction(
         async (tx) => {
           console.log("");
           console.log("========================================");
@@ -73,7 +51,7 @@ class TelemetryPipelineService {
 
           console.log("========================================");
 
-          const pipelineResult = await masterTelemetryService.processPacket(
+          return await masterTelemetryService.processPacket(
             tx,
 
             packet,
@@ -82,11 +60,6 @@ class TelemetryPipelineService {
 
             masterTelemetryId,
           );
-
-          console.log("");
-          console.log("PIPELINE TRANSACTION READY TO COMMIT");
-
-          return pipelineResult;
         },
 
         {
@@ -95,39 +68,10 @@ class TelemetryPipelineService {
           timeout: 10000,
         },
       );
-
-      // ==============================================
-      // STEP 4
-      // TRANSACTION SUCCESS
-      // ==============================================
-
-      await masterTelemetryService.markCompleted(masterTelemetryId);
-
-      // ==============================================
-      // STEP 5
-      // CLEANUP
-      // ==============================================
-      //
-      // Only COMPLETED packets can be deleted.
-      //
-      // FAILED and PROCESSING packets remain.
-      //
-      // ==============================================
-
-      await masterTelemetryService.cleanupCompletedBuffer();
-
-      console.log("");
-      console.log("========================================");
-
-      console.log("TELEMETRY PIPELINE COMPLETED");
-
-      console.log("========================================");
-
-      return result;
     } catch (error) {
-      // ==============================================
-      // TRANSACTION FAILED
-      // ==============================================
+      // =================================================
+      // FINAL TRANSACTION FAILED
+      // =================================================
 
       console.error("");
       console.error("========================================");
@@ -138,40 +82,69 @@ class TelemetryPipelineService {
 
       console.error(error);
 
-      // ==============================================
-      // IMPORTANT
-      // ==============================================
+      // =================================================
+      // IMPORTANT:
       //
-      // The transaction has already rolled back.
+      // Transaction already rolled back.
       //
-      // The master buffer row still exists because
-      // it was created BEFORE the transaction.
-      //
-      // Mark it FAILED.
-      //
-      // ==============================================
+      // Master buffer row survives because it was
+      // created BEFORE the transaction.
+      // =================================================
 
       try {
         await masterTelemetryService.markFailed(masterTelemetryId);
       } catch (statusError) {
-        console.error(
-          "❌ Failed to mark master telemetry as FAILED:",
-          statusError,
-        );
+        console.error("❌ Could not mark master packet FAILED:", statusError);
       }
 
-      // ==============================================
-      // Re-throw
-      // ==============================================
-      //
-      // VehicleProcessorManager will receive the
-      // failure and perform its existing Redis
-      // requeue logic.
-      //
-      // ==============================================
+      // Send error back to VehicleProcessorManager
+      // so existing Redis requeue logic can execute.
 
       throw error;
     }
+
+    // ==================================================
+    // STEP 4
+    // FINAL TRANSACTION SUCCESSFUL
+    // ==================================================
+
+    try {
+      await masterTelemetryService.markCompleted(masterTelemetryId);
+    } catch (statusError) {
+      console.error(
+        "❌ Transaction succeeded but COMPLETED status update failed:",
+        statusError,
+      );
+
+      // IMPORTANT:
+      // Do NOT mark this packet FAILED because the
+      // final transaction already committed.
+      //
+      // Leave it PROCESSING for recovery/inspection.
+
+      throw statusError;
+    }
+
+    // ==================================================
+    // STEP 5
+    // CLEANUP
+    // ==================================================
+
+    await masterTelemetryService.cleanupCompletedBuffer();
+
+    // ==================================================
+    // STEP 6
+    // SUCCESS
+    // ==================================================
+
+    console.log("");
+    console.log("========================================");
+
+    console.log("TELEMETRY PIPELINE COMPLETED");
+
+    console.log("========================================");
+
+    return result;
   }
 }
 

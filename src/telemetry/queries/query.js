@@ -59,16 +59,18 @@ CREATE TABLE IF NOT EXISTS "${tableName}" (
 `;
 
 // ==========================================================
-// MASTER TELEMETRY BUFFER
+// MASTER TELEMETRY BUFFER INSERT
 // ==========================================================
 //
 // IMPORTANT:
-// This INSERT happens OUTSIDE the final transaction.
 //
-// Every new packet starts as PROCESSING.
+// cumulativeWeight is intentionally inserted as NULL.
 //
-// RETURNING id gives us the buffer row ID so we can later
-// mark it COMPLETED or FAILED.
+// It is calculated inside the final transaction and then
+// updated using the returned master telemetry ID.
+//
+// processing_status starts as PROCESSING.
+//
 // ==========================================================
 
 const insertMasterTelemetry = () => `
@@ -109,7 +111,9 @@ VALUES (
     $8,
     $9,
     $10,
+
     NULL,
+
     $11,
     $12,
     $13,
@@ -122,23 +126,19 @@ VALUES (
     'PROCESSING'
 
 )
+
 RETURNING id;
 `;
 
 // ==========================================================
 // UPDATE MASTER CUMULATIVE WEIGHT
 // ==========================================================
-//
-// This happens INSIDE the final transaction.
-//
-// If the transaction fails, this update rolls back.
-// The master row itself remains because it was created
-// before the transaction.
-// ==========================================================
 
 const updateMasterTelemetryCumulative = () => `
 UPDATE master_telemetry
-SET cumulativeWeight = $1
+
+SET "cumulativeWeight" = $1
+
 WHERE id = $2;
 `;
 
@@ -150,48 +150,86 @@ const insertVehicleTelemetry = (tableName) => `
 INSERT INTO "${tableName}" (
 
     iotTimestamp,
+
     receivedTimestamp,
+
     rfidEpc,
+
     citizenId,
+
     wasteType,
+
     latitude,
+
     longitude,
+
     wetWeight,
+
     dryWeight,
+
     otherWeight,
+
     cumulativeWeight,
+
     driverName,
+
     vehicleNumber,
+
     firmwareVersion,
+
     unitNumber,
+
     collectionType,
+
     remarks,
+
     errorCode,
+
     citizenContact,
+
     driverAction
 
 )
 VALUES (
 
     $1::timestamp,
+
     $2::timestamp,
+
     $3,
+
     $4,
+
     $5,
+
     $6,
+
     $7,
+
     $8,
+
     $9,
+
     $10,
+
     $11,
+
     $12,
+
     $13,
+
     $14,
+
     $15,
+
     $16,
+
     $17,
+
     $18,
+
     $19,
+
     $20
 
 );
@@ -332,30 +370,41 @@ DO NOTHING;
 `;
 
 // ==========================================================
-// VEHICLE CUMULATIVE
+// VEHICLE CUMULATIVE TABLE
 // ==========================================================
 
 const createVehicleCumulativeTable = () => `
 CREATE TABLE IF NOT EXISTS vehicle_cumulative (
+
     vehicle_number VARCHAR(50) PRIMARY KEY,
 
-    cumulative_weight DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cumulative_weight DECIMAL(12,2)
+    NOT NULL DEFAULT 0,
 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
 );
 `;
 
 const updateVehicleCumulative = () => `
 INSERT INTO vehicle_cumulative (
+
     vehicle_number,
+
     cumulative_weight,
+
     updated_at
+
 )
 
 VALUES (
+
     $1,
+
     $2,
+
     CURRENT_TIMESTAMP
+
 )
 
 ON CONFLICT (vehicle_number)
@@ -372,7 +421,7 @@ RETURNING cumulative_weight;
 `;
 
 // ==========================================================
-// MASTER BUFFER STATUS
+// MASTER TELEMETRY STATUS COLUMN
 // ==========================================================
 
 const addMasterTelemetryStatusColumn = () => `
@@ -383,18 +432,42 @@ processing_status VARCHAR(20)
 DEFAULT 'COMPLETED';
 `;
 
+// ==========================================================
+// MASTER TELEMETRY CUMULATIVE COLUMN
+// ==========================================================
+//
+// Your current database already has this column.
+// IF NOT EXISTS makes this safe for fresh deployments too.
+//
+// IMPORTANT: column name is camelCase, therefore quoted.
+// ==========================================================
+
+const addMasterTelemetryCumulativeColumn = () => `
+ALTER TABLE master_telemetry
+
+ADD COLUMN IF NOT EXISTS
+"cumulativeWeight" DECIMAL(10,2);
+`;
+
+// ==========================================================
+// MASTER TELEMETRY INDEX
+// ==========================================================
+
 const createMasterTelemetryStatusIndex = () => `
 CREATE INDEX IF NOT EXISTS
 idx_master_telemetry_status_received
 
 ON master_telemetry (
+
     processing_status,
+
     "receivedTimestamp"
+
 );
 `;
 
 // ==========================================================
-// MASTER BUFFER STATUS UPDATES
+// MARK COMPLETED
 // ==========================================================
 
 const markMasterTelemetryCompleted = () => `
@@ -404,6 +477,10 @@ SET processing_status = 'COMPLETED'
 
 WHERE id = $1;
 `;
+
+// ==========================================================
+// MARK FAILED
+// ==========================================================
 
 const markMasterTelemetryFailed = () => `
 UPDATE master_telemetry
@@ -417,17 +494,14 @@ WHERE id = $1;
 // MASTER BUFFER CLEANUP
 // ==========================================================
 //
-// POLICY:
-//
-// Buffer reaches >= 2,000 rows
+// TOTAL BUFFER >= 2000
 //        ↓
-// Delete oldest 1,000 COMPLETED rows
+// DELETE OLDEST 1000 COMPLETED
 //
-// PROCESSING → NEVER DELETE
-// FAILED     → NEVER DELETE
-// COMPLETED  → ELIGIBLE
+// PROCESSING → KEEP
+// FAILED     → KEEP
+// COMPLETED  → DELETE ELIGIBLE
 //
-// receivedTimestamp + id gives deterministic ordering.
 // ==========================================================
 
 const cleanupCompletedMasterTelemetry = () => `
@@ -442,7 +516,9 @@ WHERE id IN (
     WHERE processing_status = 'COMPLETED'
 
     ORDER BY
+
         "receivedTimestamp" ASC,
+
         id ASC
 
     LIMIT 1000
@@ -450,8 +526,11 @@ WHERE id IN (
 )
 
 AND (
+
     SELECT COUNT(*)
+
     FROM master_telemetry
+
 ) >= 2000;
 `;
 
@@ -475,6 +554,7 @@ module.exports = {
   createVehicleCumulativeTable,
   updateVehicleCumulative,
   addMasterTelemetryStatusColumn,
+  addMasterTelemetryCumulativeColumn,
   createMasterTelemetryStatusIndex,
   markMasterTelemetryCompleted,
   markMasterTelemetryFailed,
