@@ -60,6 +60,7 @@ model vehicle_master {
   ward              String?             @db.VarChar(100)
   status            String?             @default("ACTIVE") @db.VarChar(30)
   created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  ward_no           Int?
   vehicle_incidents vehicle_incidents[]
   vehicle_telemetry vehicle_telemetry[]
 }

@@ -3949,10 +3949,12 @@ export namespace Prisma {
 
   export type Vehicle_masterAvgAggregateOutputType = {
     id: number | null
+    ward_no: number | null
   }
 
   export type Vehicle_masterSumAggregateOutputType = {
     id: number | null
+    ward_no: number | null
   }
 
   export type Vehicle_masterMinAggregateOutputType = {
@@ -3965,6 +3967,7 @@ export namespace Prisma {
     ward: string | null
     status: string | null
     created_at: Date | null
+    ward_no: number | null
   }
 
   export type Vehicle_masterMaxAggregateOutputType = {
@@ -3977,6 +3980,7 @@ export namespace Prisma {
     ward: string | null
     status: string | null
     created_at: Date | null
+    ward_no: number | null
   }
 
   export type Vehicle_masterCountAggregateOutputType = {
@@ -3989,16 +3993,19 @@ export namespace Prisma {
     ward: number
     status: number
     created_at: number
+    ward_no: number
     _all: number
   }
 
 
   export type Vehicle_masterAvgAggregateInputType = {
     id?: true
+    ward_no?: true
   }
 
   export type Vehicle_masterSumAggregateInputType = {
     id?: true
+    ward_no?: true
   }
 
   export type Vehicle_masterMinAggregateInputType = {
@@ -4011,6 +4018,7 @@ export namespace Prisma {
     ward?: true
     status?: true
     created_at?: true
+    ward_no?: true
   }
 
   export type Vehicle_masterMaxAggregateInputType = {
@@ -4023,6 +4031,7 @@ export namespace Prisma {
     ward?: true
     status?: true
     created_at?: true
+    ward_no?: true
   }
 
   export type Vehicle_masterCountAggregateInputType = {
@@ -4035,6 +4044,7 @@ export namespace Prisma {
     ward?: true
     status?: true
     created_at?: true
+    ward_no?: true
     _all?: true
   }
 
@@ -4134,6 +4144,7 @@ export namespace Prisma {
     ward: string | null
     status: string | null
     created_at: Date | null
+    ward_no: number | null
     _count: Vehicle_masterCountAggregateOutputType | null
     _avg: Vehicle_masterAvgAggregateOutputType | null
     _sum: Vehicle_masterSumAggregateOutputType | null
@@ -4165,6 +4176,7 @@ export namespace Prisma {
     ward?: boolean
     status?: boolean
     created_at?: boolean
+    ward_no?: boolean
     vehicle_incidents?: boolean | vehicle_master$vehicle_incidentsArgs<ExtArgs>
     vehicle_telemetry?: boolean | vehicle_master$vehicle_telemetryArgs<ExtArgs>
     _count?: boolean | Vehicle_masterCountOutputTypeDefaultArgs<ExtArgs>
@@ -4180,6 +4192,7 @@ export namespace Prisma {
     ward?: boolean
     status?: boolean
     created_at?: boolean
+    ward_no?: boolean
   }, ExtArgs["result"]["vehicle_master"]>
 
   export type vehicle_masterSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -4192,6 +4205,7 @@ export namespace Prisma {
     ward?: boolean
     status?: boolean
     created_at?: boolean
+    ward_no?: boolean
   }, ExtArgs["result"]["vehicle_master"]>
 
   export type vehicle_masterSelectScalar = {
@@ -4204,9 +4218,10 @@ export namespace Prisma {
     ward?: boolean
     status?: boolean
     created_at?: boolean
+    ward_no?: boolean
   }
 
-  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at", ExtArgs["result"]["vehicle_master"]>
+  export type vehicle_masterOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "vehicle_id" | "vehicle_type" | "city" | "zone" | "division" | "ward" | "status" | "created_at" | "ward_no", ExtArgs["result"]["vehicle_master"]>
   export type vehicle_masterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     vehicle_incidents?: boolean | vehicle_master$vehicle_incidentsArgs<ExtArgs>
     vehicle_telemetry?: boolean | vehicle_master$vehicle_telemetryArgs<ExtArgs>
@@ -4231,6 +4246,7 @@ export namespace Prisma {
       ward: string | null
       status: string | null
       created_at: Date | null
+      ward_no: number | null
     }, ExtArgs["result"]["vehicle_master"]>
     composites: {}
   }
@@ -4665,6 +4681,7 @@ export namespace Prisma {
     readonly ward: FieldRef<"vehicle_master", 'String'>
     readonly status: FieldRef<"vehicle_master", 'String'>
     readonly created_at: FieldRef<"vehicle_master", 'DateTime'>
+    readonly ward_no: FieldRef<"vehicle_master", 'Int'>
   }
     
 
@@ -9902,7 +9919,8 @@ export namespace Prisma {
     division: 'division',
     ward: 'ward',
     status: 'status',
-    created_at: 'created_at'
+    created_at: 'created_at',
+    ward_no: 'ward_no'
   };
 
   export type Vehicle_masterScalarFieldEnum = (typeof Vehicle_masterScalarFieldEnum)[keyof typeof Vehicle_masterScalarFieldEnum]
@@ -10349,6 +10367,7 @@ export namespace Prisma {
     ward?: StringNullableFilter<"vehicle_master"> | string | null
     status?: StringNullableFilter<"vehicle_master"> | string | null
     created_at?: DateTimeNullableFilter<"vehicle_master"> | Date | string | null
+    ward_no?: IntNullableFilter<"vehicle_master"> | number | null
     vehicle_incidents?: Vehicle_incidentsListRelationFilter
     vehicle_telemetry?: Vehicle_telemetryListRelationFilter
   }
@@ -10363,6 +10382,7 @@ export namespace Prisma {
     ward?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
     created_at?: SortOrderInput | SortOrder
+    ward_no?: SortOrderInput | SortOrder
     vehicle_incidents?: vehicle_incidentsOrderByRelationAggregateInput
     vehicle_telemetry?: vehicle_telemetryOrderByRelationAggregateInput
   }
@@ -10380,6 +10400,7 @@ export namespace Prisma {
     ward?: StringNullableFilter<"vehicle_master"> | string | null
     status?: StringNullableFilter<"vehicle_master"> | string | null
     created_at?: DateTimeNullableFilter<"vehicle_master"> | Date | string | null
+    ward_no?: IntNullableFilter<"vehicle_master"> | number | null
     vehicle_incidents?: Vehicle_incidentsListRelationFilter
     vehicle_telemetry?: Vehicle_telemetryListRelationFilter
   }, "id" | "vehicle_id">
@@ -10394,6 +10415,7 @@ export namespace Prisma {
     ward?: SortOrderInput | SortOrder
     status?: SortOrderInput | SortOrder
     created_at?: SortOrderInput | SortOrder
+    ward_no?: SortOrderInput | SortOrder
     _count?: vehicle_masterCountOrderByAggregateInput
     _avg?: vehicle_masterAvgOrderByAggregateInput
     _max?: vehicle_masterMaxOrderByAggregateInput
@@ -10414,6 +10436,7 @@ export namespace Prisma {
     ward?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     status?: StringNullableWithAggregatesFilter<"vehicle_master"> | string | null
     created_at?: DateTimeNullableWithAggregatesFilter<"vehicle_master"> | Date | string | null
+    ward_no?: IntNullableWithAggregatesFilter<"vehicle_master"> | number | null
   }
 
   export type vehicle_telemetryWhereInput = {
@@ -11069,6 +11092,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_incidents?: vehicle_incidentsCreateNestedManyWithoutVehicle_masterInput
     vehicle_telemetry?: vehicle_telemetryCreateNestedManyWithoutVehicle_masterInput
   }
@@ -11083,6 +11107,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_incidents?: vehicle_incidentsUncheckedCreateNestedManyWithoutVehicle_masterInput
     vehicle_telemetry?: vehicle_telemetryUncheckedCreateNestedManyWithoutVehicle_masterInput
   }
@@ -11096,6 +11121,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_incidents?: vehicle_incidentsUpdateManyWithoutVehicle_masterNestedInput
     vehicle_telemetry?: vehicle_telemetryUpdateManyWithoutVehicle_masterNestedInput
   }
@@ -11110,6 +11136,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_incidents?: vehicle_incidentsUncheckedUpdateManyWithoutVehicle_masterNestedInput
     vehicle_telemetry?: vehicle_telemetryUncheckedUpdateManyWithoutVehicle_masterNestedInput
   }
@@ -11124,6 +11151,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
   }
 
   export type vehicle_masterUpdateManyMutationInput = {
@@ -11135,6 +11163,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type vehicle_masterUncheckedUpdateManyInput = {
@@ -11147,6 +11176,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type vehicle_telemetryCreateInput = {
@@ -11995,10 +12025,12 @@ export namespace Prisma {
     ward?: SortOrder
     status?: SortOrder
     created_at?: SortOrder
+    ward_no?: SortOrder
   }
 
   export type vehicle_masterAvgOrderByAggregateInput = {
     id?: SortOrder
+    ward_no?: SortOrder
   }
 
   export type vehicle_masterMaxOrderByAggregateInput = {
@@ -12011,6 +12043,7 @@ export namespace Prisma {
     ward?: SortOrder
     status?: SortOrder
     created_at?: SortOrder
+    ward_no?: SortOrder
   }
 
   export type vehicle_masterMinOrderByAggregateInput = {
@@ -12023,10 +12056,12 @@ export namespace Prisma {
     ward?: SortOrder
     status?: SortOrder
     created_at?: SortOrder
+    ward_no?: SortOrder
   }
 
   export type vehicle_masterSumOrderByAggregateInput = {
     id?: SortOrder
+    ward_no?: SortOrder
   }
 
   export type vehicle_telemetryCountOrderByAggregateInput = {
@@ -12858,6 +12893,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_telemetry?: vehicle_telemetryCreateNestedManyWithoutVehicle_masterInput
   }
 
@@ -12871,6 +12907,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_telemetry?: vehicle_telemetryUncheckedCreateNestedManyWithoutVehicle_masterInput
   }
 
@@ -12899,6 +12936,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_telemetry?: vehicle_telemetryUpdateManyWithoutVehicle_masterNestedInput
   }
 
@@ -12912,6 +12950,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_telemetry?: vehicle_telemetryUncheckedUpdateManyWithoutVehicle_masterNestedInput
   }
 
@@ -13048,6 +13087,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_incidents?: vehicle_incidentsCreateNestedManyWithoutVehicle_masterInput
   }
 
@@ -13061,6 +13101,7 @@ export namespace Prisma {
     ward?: string | null
     status?: string | null
     created_at?: Date | string | null
+    ward_no?: number | null
     vehicle_incidents?: vehicle_incidentsUncheckedCreateNestedManyWithoutVehicle_masterInput
   }
 
@@ -13089,6 +13130,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_incidents?: vehicle_incidentsUpdateManyWithoutVehicle_masterNestedInput
   }
 
@@ -13102,6 +13144,7 @@ export namespace Prisma {
     ward?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    ward_no?: NullableIntFieldUpdateOperationsInput | number | null
     vehicle_incidents?: vehicle_incidentsUncheckedUpdateManyWithoutVehicle_masterNestedInput
   }
 

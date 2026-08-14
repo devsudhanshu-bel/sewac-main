@@ -165,7 +165,8 @@ exports.Prisma.Vehicle_masterScalarFieldEnum = {
   division: 'division',
   ward: 'ward',
   status: 'status',
-  created_at: 'created_at'
+  created_at: 'created_at',
+  ward_no: 'ward_no'
 };
 
 exports.Prisma.Vehicle_telemetryScalarFieldEnum = {
