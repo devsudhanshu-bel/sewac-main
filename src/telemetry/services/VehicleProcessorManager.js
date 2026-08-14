@@ -7,14 +7,30 @@ const insertTelemetryLog = require("../../services/telemetry/insertTelemetryLog"
 // =====================================================
 
 const VEHICLE_QUEUE_PREFIX = "telemetry_vehicle_queue:";
+
 const VEHICLE_PROCESSING_PREFIX = "telemetry_vehicle_processing:";
+
 const ACTIVE_VEHICLES_KEY = "telemetry_active_vehicles";
 
 // =====================================================
 // PROCESSOR STATE
 // =====================================================
+//
+// activeProcessors:
+//     Tracks which vehicles currently have an
+//     active processor.
+//
+// processorClients:
+//     Dedicated Redis blocking connection for
+//     each vehicle processor.
+//
+// Packets themselves are NEVER stored here.
+// Packets remain inside Redis.
+//
+// =====================================================
 
 const activeProcessors = new Map();
+
 const processorClients = new Map();
 
 // =====================================================
@@ -30,15 +46,17 @@ function vehicleProcessingKey(vehicleId) {
 }
 
 // =====================================================
-// CREATE DEDICATED BLOCKING CLIENT
+// CREATE DEDICATED BLOCKING REDIS CLIENT
 // =====================================================
-//
-// IMPORTANT:
 //
 // Every vehicle processor gets its own Redis connection.
 //
-// A blocking BRPOPLPUSH on one vehicle must NEVER block
-// another vehicle processor or the dispatcher.
+// Vehicle A → Redis connection A
+// Vehicle B → Redis connection B
+// Vehicle C → Redis connection C
+//
+// This prevents BRPOPLPUSH/BRPOP blocking operations
+// for one vehicle from affecting another vehicle.
 //
 // =====================================================
 
@@ -65,13 +83,25 @@ async function createProcessorClient(vehicleId) {
 async function enqueue(vehicleId, packet) {
   const key = String(vehicleId || "").trim();
 
+  // ---------------------------------------------------
+  // Validate vehicle ID
+  // ---------------------------------------------------
+
   if (!key) {
     throw new Error("Cannot enqueue telemetry without vehicleId.");
   }
 
+  // ---------------------------------------------------
+  // Validate packet
+  // ---------------------------------------------------
+
   if (!packet || typeof packet !== "object") {
     throw new Error(`Cannot enqueue invalid packet for vehicle ${key}.`);
   }
+
+  // ---------------------------------------------------
+  // Ensure packet vehicle ID exists
+  // ---------------------------------------------------
 
   if (!packet.vehicleId) {
     throw new Error(`Telemetry packet has no vehicleId for queue ${key}.`);
@@ -81,21 +111,23 @@ async function enqueue(vehicleId, packet) {
 
   const queueKey = vehicleQueueKey(key);
 
-  // -------------------------------------------------
-  // Store RAW SERIALIZABLE TELEMETRY PACKET.
-  // -------------------------------------------------
+  // ---------------------------------------------------
+  // Store packet durably in Redis.
+  //
+  // LPUSH + RPOP/BRPOPLPUSH gives FIFO ordering.
+  // ---------------------------------------------------
 
   await redis.lPush(queueKey, JSON.stringify(packet));
 
-  // -------------------------------------------------
-  // Mark vehicle active.
-  // -------------------------------------------------
+  // ---------------------------------------------------
+  // Mark vehicle active
+  // ---------------------------------------------------
 
   await redis.sAdd(ACTIVE_VEHICLES_KEY, key);
 
-  // -------------------------------------------------
-  // Start processor if necessary.
-  // -------------------------------------------------
+  // ---------------------------------------------------
+  // Start processor if necessary
+  // ---------------------------------------------------
 
   startProcessor(key);
 }
@@ -105,16 +137,29 @@ async function enqueue(vehicleId, packet) {
 // =====================================================
 
 function startProcessor(vehicleId) {
+  // ---------------------------------------------------
+  // Already running
+  // ---------------------------------------------------
+
   if (activeProcessors.has(vehicleId)) {
     return;
   }
 
+  // ---------------------------------------------------
+  // Mark active
+  // ---------------------------------------------------
+
   activeProcessors.set(vehicleId, true);
+
+  // ---------------------------------------------------
+  // Start asynchronous processor
+  // ---------------------------------------------------
 
   processVehicle(vehicleId)
     .catch((err) => {
       console.error(`❌ Vehicle processor crashed [${vehicleId}]:`, err);
     })
+
     .finally(async () => {
       await cleanupProcessor(vehicleId);
     });
@@ -125,6 +170,10 @@ function startProcessor(vehicleId) {
 // =====================================================
 
 async function processVehicle(vehicleId) {
+  // ---------------------------------------------------
+  // Dedicated Redis connection
+  // ---------------------------------------------------
+
   const redis = await createProcessorClient(vehicleId);
 
   const queueKey = vehicleQueueKey(vehicleId);
@@ -133,16 +182,21 @@ async function processVehicle(vehicleId) {
 
   console.log(`Processing vehicle ${vehicleId}`);
 
+  // ===================================================
+  // VEHICLE FIFO LOOP
+  // ===================================================
+
   while (true) {
-    // =================================================
+    // -------------------------------------------------
     // ATOMIC MOVE
     //
     // vehicle queue
-    //      ↓
-    // vehicle processing queue
+    //       ↓
+    // processing queue
     //
-    // The packet remains recoverable until DB success.
-    // =================================================
+    // The packet remains recoverable until processing
+    // succeeds.
+    // -------------------------------------------------
 
     const packetString = await redis.brPopLPush(queueKey, processingKey, 1);
 
@@ -151,69 +205,50 @@ async function processVehicle(vehicleId) {
     // -------------------------------------------------
 
     if (!packetString) {
-      const remaining = await redis.lLen(queueKey);
-
-      const processing = await redis.lLen(processingKey);
-
-      if (remaining === 0 && processing === 0) {
-        break;
-      }
-
-      continue;
+      break;
     }
 
     let packet;
 
     // =================================================
-    // PARSE
+    // PARSE PACKET
     // =================================================
 
     try {
       packet = JSON.parse(packetString);
-    } catch (err) {
-      console.error(`❌ Invalid vehicle packet JSON [${vehicleId}]`, err);
+    } catch (parseError) {
+      // ------------------------------------------------
+      // Invalid JSON is a permanent packet failure.
+      //
+      // There is no point retrying malformed data.
+      // ------------------------------------------------
 
-      // Bad packet cannot be processed.
+      console.error(`❌ Invalid packet JSON [${vehicleId}]`, parseError);
+
       await redis.lRem(processingKey, 1, packetString);
+
+      console.error(`🚫 Invalid packet discarded [${vehicleId}]`);
 
       continue;
     }
 
     // =================================================
-    // VALIDATE
-    // =================================================
-
-    if (
-      !packet ||
-      typeof packet !== "object" ||
-      !packet.vehicleId ||
-      !packet.iotTimestamp
-    ) {
-      console.error(`❌ Invalid vehicle packet [${vehicleId}]`, packet);
-
-      await redis.lRem(processingKey, 1, packetString);
-
-      continue;
-    }
-
-    // =================================================
-    // IMPORTANT:
-    //
-    // insertTelemetryLog receives the ACTUAL PACKET.
-    //
-    // No envelope.
-    // No execute().
-    // No callback.
+    // PROCESS PACKET
     // =================================================
 
     try {
+      // ------------------------------------------------
+      // Send packet through complete telemetry pipeline.
+      // ------------------------------------------------
+
       await insertTelemetryLog(packet);
 
-      // =================================================
-      // DATABASE SUCCESS
+      // ------------------------------------------------
+      // SUCCESS
       //
-      // ONLY NOW ACK / REMOVE FROM PROCESSING QUEUE.
-      // =================================================
+      // Database transaction has completed successfully.
+      // Remove packet from processing queue.
+      // ------------------------------------------------
 
       await redis.lRem(processingKey, 1, packetString);
 
@@ -222,20 +257,120 @@ async function processVehicle(vehicleId) {
       console.error(`❌ Vehicle processing failed [${vehicleId}]:`, err);
 
       // =================================================
-      // DATABASE FAILED
+      // PERMANENT FAILURE
+      // =================================================
       //
-      // Put packet back at the FRONT of FIFO.
+      // Vehicle is not registered in vehicle_master
+      // or has invalid/missing ward information.
+      //
+      // THIS PACKET MUST NEVER BE REQUEUED.
+      //
+      // It has already been marked FAILED by the
+      // telemetry pipeline.
+      //
       // =================================================
 
-      await redis.lRem(processingKey, 1, packetString);
+      if (err && err.code === "UNREGISTERED_VEHICLE") {
+        // -----------------------------------------------
+        // Remove packet from processing queue.
+        // -----------------------------------------------
 
-      await redis.rPush(queueKey, packetString);
+        await redis.lRem(processingKey, 1, packetString);
 
-      console.log(`♻️ Packet requeued [${vehicleId}]`);
+        // -----------------------------------------------
+        // DO NOT LPUSH / RPUSH
+        //
+        // This is intentional.
+        // -----------------------------------------------
+
+        console.error(
+          `🚫 Permanent vehicle failure — packet discarded, NOT requeued [${vehicleId}]`,
+        );
+
+        // -----------------------------------------------
+        // Continue to next packet.
+        // -----------------------------------------------
+
+        continue;
+      }
+
+      // =================================================
+      // OTHER PERMANENT MALFORMED-PACKET FAILURES
+      // =================================================
+      //
+      // These are optional safety cases.
+      //
+      // If packet structure is clearly invalid, there
+      // is no value in retrying indefinitely.
+      //
+      // =================================================
+
+      if (
+        err &&
+        (err.code === "INVALID_TELEMETRY_PACKET" ||
+          err.code === "INVALID_PACKET")
+      ) {
+        await redis.lRem(processingKey, 1, packetString);
+
+        console.error(`🚫 Invalid telemetry packet discarded [${vehicleId}]`);
+
+        continue;
+      }
+
+      // =================================================
+      // TRANSIENT / UNKNOWN FAILURE
+      // =================================================
+      //
+      // Examples:
+      //
+      // PostgreSQL temporary failure
+      // Redis/network issue
+      // transaction timeout
+      // connection failure
+      // temporary infrastructure issue
+      //
+      // These remain retryable.
+      //
+      // =================================================
+
+      try {
+        // ------------------------------------------------
+        // Put packet back at the RIGHT side of the FIFO.
+        //
+        // Original packet gets priority over newer
+        // packets so ordering is preserved.
+        // ------------------------------------------------
+
+        await redis.rPush(queueKey, packetString);
+
+        // ------------------------------------------------
+        // Remove processing copy.
+        // ------------------------------------------------
+
+        await redis.lRem(processingKey, 1, packetString);
+
+        console.log(`♻️ Packet requeued [${vehicleId}]`);
+      } catch (requeueError) {
+        // ------------------------------------------------
+        // If requeue itself fails, DO NOT pretend that
+        // the packet was recovered.
+        // ------------------------------------------------
+
+        console.error(
+          `❌ Failed to requeue packet [${vehicleId}]:`,
+          requeueError,
+        );
+
+        // ------------------------------------------------
+        // Leave the packet in processing queue.
+        //
+        // Startup recovery can recover it later.
+        // ------------------------------------------------
+      }
 
       // -------------------------------------------------
-      // Small backoff prevents a permanent DB error
-      // from creating a hot retry loop.
+      // Small backoff prevents a permanent transient
+      // failure from producing a hot retry loop.
       // -------------------------------------------------
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -244,10 +379,14 @@ async function processVehicle(vehicleId) {
 }
 
 // =====================================================
-// CLEANUP
+// CLEANUP PROCESSOR
 // =====================================================
 
 async function cleanupProcessor(vehicleId) {
+  // ---------------------------------------------------
+  // Remove local processor state
+  // ---------------------------------------------------
+
   activeProcessors.delete(vehicleId);
 
   const redis = getProducerClient();
@@ -258,19 +397,30 @@ async function cleanupProcessor(vehicleId) {
     const processing = await redis.lLen(vehicleProcessingKey(vehicleId));
 
     // -------------------------------------------------
-    // New packets arrived while processor was shutting
-    // down. Restart it.
+    // If packets appeared while processor was shutting
+    // down, restart the processor.
     // -------------------------------------------------
 
     if (queued > 0 || processing > 0) {
       startProcessor(vehicleId);
+
       return;
     }
+
+    // -------------------------------------------------
+    // No packets remain.
+    //
+    // Vehicle is no longer active.
+    // -------------------------------------------------
 
     await redis.sRem(ACTIVE_VEHICLES_KEY, vehicleId);
   } catch (err) {
     console.error(`❌ Processor cleanup failed [${vehicleId}]:`, err);
   } finally {
+    // -------------------------------------------------
+    // Close dedicated processor Redis connection.
+    // -------------------------------------------------
+
     const client = processorClients.get(vehicleId);
 
     if (client) {
@@ -292,10 +442,11 @@ async function cleanupProcessor(vehicleId) {
 // RECOVERY
 // =====================================================
 //
-// Called once when server starts.
+// Called during server startup.
 //
-// Anything that was in a vehicle processing queue when
-// the server died is returned to its vehicle FIFO.
+// Any packet that was inside a vehicle's processing
+// queue when the server stopped is returned to that
+// vehicle's FIFO queue.
 //
 // =====================================================
 
@@ -312,10 +463,10 @@ async function recover() {
     const processingKey = vehicleProcessingKey(vehicleId);
 
     // -------------------------------------------------
-    // Move processing packets back to FIFO.
+    // Move processing packets back into FIFO.
     //
-    // rPop + rPush preserves the packet ordering
-    // when restoring the processing queue.
+    // rPop + rPush preserves packet ordering during
+    // recovery.
     // -------------------------------------------------
 
     while (true) {
@@ -329,6 +480,10 @@ async function recover() {
 
       console.log(`Recovered vehicle packet [${vehicleId}]`);
     }
+
+    // -------------------------------------------------
+    // Check remaining queue
+    // -------------------------------------------------
 
     const remaining = await redis.lLen(queueKey);
 
@@ -367,7 +522,7 @@ async function getStats() {
 }
 
 // =====================================================
-// COUNTS
+// QUEUE TOTALS
 // =====================================================
 
 async function getQueueTotals() {
@@ -376,6 +531,7 @@ async function getQueueTotals() {
   const vehicles = await redis.sMembers(ACTIVE_VEHICLES_KEY);
 
   let queued = 0;
+
   let processing = 0;
 
   for (const vehicleId of vehicles) {
@@ -386,13 +542,24 @@ async function getQueueTotals() {
 
   return {
     activeVehicles: vehicles.length,
+
     queued,
+
     processing,
   };
 }
 
 // =====================================================
-// FLUSH
+// FLUSH ALL VEHICLE QUEUES
+// =====================================================
+//
+// Intended for controlled maintenance/testing only.
+//
+// This clears:
+//   telemetry_vehicle_queue:*
+//   telemetry_vehicle_processing:*
+//   telemetry_active_vehicles
+//
 // =====================================================
 
 async function flush() {
@@ -408,6 +575,10 @@ async function flush() {
 
   await redis.del(ACTIVE_VEHICLES_KEY);
 
+  // ---------------------------------------------------
+  // Close dedicated processor clients
+  // ---------------------------------------------------
+
   for (const [vehicleId, client] of processorClients) {
     try {
       await client.quit();
@@ -420,6 +591,7 @@ async function flush() {
   }
 
   processorClients.clear();
+
   activeProcessors.clear();
 }
 
@@ -429,9 +601,14 @@ async function flush() {
 
 module.exports = {
   enqueue,
+
   recover,
+
   getStats,
+
   getQueueTotals,
+
   getActiveVehicleCount: () => activeProcessors.size,
+
   flush,
 };
