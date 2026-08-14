@@ -1,79 +1,121 @@
-const Redis = require("ioredis");
+require("dotenv").config();
+const { createClient } = require("redis");
 
-const redis = new Redis(process.env.REDIS_URL);
+const redis = createClient({
+  url: process.env.REDIS_URL,
 
-async function clearTelemetryQueues() {
+  socket: {
+    keepAlive: 5000,
+    reconnectStrategy: (retries) => Math.min(retries * 500, 5000),
+    connectTimeout: 10000,
+  },
+});
+
+redis.on("error", (err) => {
+  console.error("❌ Redis Error:", err);
+});
+
+async function clearBadVehicle() {
+  const vehicleId = "KA05AB1233";
+
+  const queueKey = `telemetry_vehicle_queue:${vehicleId}`;
+
+  const processingKey = `telemetry_vehicle_processing:${vehicleId}`;
+
   try {
     console.log("🔌 Connecting to Redis...");
 
-    await redis.ping();
+    await redis.connect();
 
     console.log("✅ Redis connected");
 
-    // =====================================================
-    // CLEAR ONLY THE BAD VEHICLE
-    // =====================================================
+    // -------------------------------------------------
+    // CHECK CURRENT STATE
+    // -------------------------------------------------
 
-    const vehicleId = "KA05AB1233";
+    const queueCount = await redis.lLen(queueKey);
 
-    const queueKey =
-      `telemetry_vehicle_queue:${vehicleId}`;
+    const processingCount = await redis.lLen(processingKey);
 
-    const processingKey =
-      `telemetry_vehicle_processing:${vehicleId}`;
-
-    // Remove queued packets
-    const queueDeleted =
-      await redis.del(queueKey);
-
-    // Remove processing packets
-    const processingDeleted =
-      await redis.del(processingKey);
-
-    // Remove vehicle from active processor set
-    const activeRemoved =
-      await redis.srem(
-        "telemetry_active_vehicles",
-        vehicleId
-      );
+    const isActive = await redis.sIsMember(
+      "telemetry_active_vehicles",
+      vehicleId,
+    );
 
     console.log("");
     console.log("====================================");
-    console.log("TELEMETRY QUEUE CLEANUP COMPLETE");
+    console.log("BEFORE CLEANUP");
     console.log("====================================");
 
-    console.log(
-      `Vehicle              : ${vehicleId}`
+    console.log(`Vehicle       : ${vehicleId}`);
+
+    console.log(`Queued packets: ${queueCount}`);
+
+    console.log(`Processing    : ${processingCount}`);
+
+    console.log(`Active        : ${isActive}`);
+
+    // -------------------------------------------------
+    // DELETE QUEUED PACKETS
+    // -------------------------------------------------
+
+    const queueDeleted = await redis.del(queueKey);
+
+    // -------------------------------------------------
+    // DELETE PROCESSING PACKETS
+    // -------------------------------------------------
+
+    const processingDeleted = await redis.del(processingKey);
+
+    // -------------------------------------------------
+    // REMOVE VEHICLE FROM ACTIVE SET
+    // -------------------------------------------------
+
+    const activeRemoved = await redis.sRem(
+      "telemetry_active_vehicles",
+      vehicleId,
     );
 
-    console.log(
-      `Queue key deleted    : ${queueDeleted}`
+    // -------------------------------------------------
+    // VERIFY
+    // -------------------------------------------------
+
+    const remainingQueue = await redis.lLen(queueKey);
+
+    const remainingProcessing = await redis.lLen(processingKey);
+
+    const remainingActive = await redis.sIsMember(
+      "telemetry_active_vehicles",
+      vehicleId,
     );
 
-    console.log(
-      `Processing key deleted: ${processingDeleted}`
-    );
-
-    console.log(
-      `Active set removed   : ${activeRemoved}`
-    );
-
+    console.log("");
+    console.log("====================================");
+    console.log("AFTER CLEANUP");
     console.log("====================================");
 
+    console.log(`Queue deleted      : ${queueDeleted}`);
+
+    console.log(`Processing deleted : ${processingDeleted}`);
+
+    console.log(`Active removed     : ${activeRemoved}`);
+
+    console.log(`Remaining queue    : ${remainingQueue}`);
+
+    console.log(`Remaining processing: ${remainingProcessing}`);
+
+    console.log(`Still active       : ${remainingActive}`);
+
+    console.log("====================================");
   } catch (error) {
-
-    console.error(
-      "❌ Redis cleanup failed:",
-      error
-    );
+    console.error("❌ Cleanup failed:", error);
 
     process.exitCode = 1;
-
   } finally {
-
-    await redis.quit();
-
+    if (redis.isOpen) {
+      await redis.quit();
+    }
   }
 }
 
-clearTelemetryQueues();
+clearBadVehicle();
