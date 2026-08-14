@@ -246,6 +246,8 @@ CREATE TABLE IF NOT EXISTS "${tableName}" (
 
     vehicle_table_name VARCHAR(100) NOT NULL,
 
+    ward_no INTEGER,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 );
@@ -256,7 +258,9 @@ INSERT INTO "${tableName}" (
 
     vehicle_number,
 
-    vehicle_table_name
+    vehicle_table_name,
+
+    ward_no
 
 )
 
@@ -264,13 +268,19 @@ VALUES (
 
     $1,
 
-    $2
+    $2,
+
+    $3
 
 )
 
 ON CONFLICT (vehicle_number)
 
-DO NOTHING;
+DO UPDATE SET
+
+    vehicle_table_name = EXCLUDED.vehicle_table_name,
+
+    ward_no = EXCLUDED.ward_no;
 `;
 
 // ==========================================================
