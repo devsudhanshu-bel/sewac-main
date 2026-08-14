@@ -154,7 +154,7 @@ const TEST_CONFIG = TEST_CONFIGS[TEST_NUMBER] || TEST_CONFIGS[1];
 
 const VEHICLES = [
   {
-    vehicleId: "KA05AB1233",
+    vehicleId: "KA05AB1234",
 
     wardNo: 1,
 
