@@ -52,8 +52,38 @@ const complaintRoutes =
 
 
 // =====================================================
-// CITIZEN HISTORICAL PROCESSING
+// NEW HISTORICAL DATABASE
 // =====================================================
+//
+// New clean historical database pipeline.
+//
+// Endpoint:
+//
+// POST
+// /api/historical-database/archive-today
+//
+// POST
+// /api/historical-database/archive
+//
+// =====================================================
+
+const historicalDatabaseRoutes =
+  require(
+    "./routes/historicalDatabase.routes"
+  );
+
+
+// =====================================================
+// OLD CITIZEN HISTORICAL PROCESSING
+// =====================================================
+//
+// NOTE:
+//
+// This is kept temporarily because the old historical
+// processing system is still present in the project.
+//
+// We will remove/deprecate this later after the new
+// historical-database pipeline has been tested.
 //
 // Manual:
 //
@@ -77,17 +107,18 @@ const citizenHistoricalProcessingRoutes =
 
 
 // =====================================================
-// CITIZEN HISTORICAL AUTOMATIC SCHEDULER
+// OLD CITIZEN HISTORICAL AUTOMATIC SCHEDULER
 // =====================================================
+//
+// TEMPORARILY KEPT.
 //
 // Automatically processes the previous day's
 // telemetry every day at 00:05.
 //
-// IMPORTANT:
+// This belongs to the OLD citizenHistorical pipeline.
 //
-// The scheduler uses the SAME
-// CitizenHistoricalDailyWorker used by the
-// manual processing endpoint.
+// We will remove it once the new historical database
+// scheduler is implemented and tested.
 //
 // =====================================================
 
@@ -238,7 +269,7 @@ app.use(
 
 
 // =====================================================
-// EXISTING ROUTES
+// EXISTING API ROUTES
 // =====================================================
 
 app.use(
@@ -330,11 +361,42 @@ app.use(
   complaintRoutes
 );
 
+
 // =====================================================
-// CITIZEN HISTORICAL PROCESSING
+// NEW HISTORICAL DATABASE
 // =====================================================
 //
-// MANUAL PROCESSING
+// POST
+// /api/historical-database/archive-today
+//
+// Archives today's telemetry.
+//
+//
+//
+// POST
+// /api/historical-database/archive
+//
+// Body:
+//
+// {
+//   "date": "2026-08-14"
+// }
+//
+// =====================================================
+
+app.use(
+  "/api/historical-database",
+  historicalDatabaseRoutes
+);
+
+
+// =====================================================
+// OLD CITIZEN HISTORICAL PROCESSING
+// =====================================================
+//
+// TEMPORARY.
+//
+// These routes belong to the old historical system.
 //
 // POST
 // /api/historical-processing/run
@@ -347,14 +409,10 @@ app.use(
 //
 //
 //
-// PROCESS TODAY
-//
 // POST
 // /api/historical-processing/run/today
 //
 //
-//
-// STATUS
 //
 // GET
 // /api/historical-processing/status
@@ -524,8 +582,10 @@ startMasterCitizenWeeklySync();
 
 
 // =====================================================
-// START CITIZEN HISTORICAL AUTOMATIC SCHEDULER
+// START OLD CITIZEN HISTORICAL AUTOMATIC SCHEDULER
 // =====================================================
+//
+// TEMPORARY.
 //
 // Schedule:
 //
@@ -542,10 +602,10 @@ startMasterCitizenWeeklySync();
 //
 // IMPORTANT:
 //
-// The scheduler only starts the worker.
-// All historical processing logic remains inside:
+// This is the OLD historical processing system.
 //
-// citizenHistoricalDailyWorker.service.js
+// Do NOT remove until the new historical database
+// scheduler is implemented and tested.
 //
 // =====================================================
 
