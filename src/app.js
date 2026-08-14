@@ -52,79 +52,32 @@ const complaintRoutes =
 
 
 // =====================================================
-// NEW HISTORICAL DATABASE
+// HISTORICAL DATABASE
 // =====================================================
 //
-// New clean historical database pipeline.
+// NEW HISTORICAL DATABASE PIPELINE
 //
-// Endpoint:
+// Source:
+// master_telemetry_db
 //
-// POST
-// /api/historical-database/archive-today
+// Daily tables:
 //
-// POST
-// /api/historical-database/archive
+// day_DDMMYYYY
+//
+// Example:
+//
+// day_14082026
+//
+// Historical tables:
+//
+// ward_174_2026
+// ward_174_082026
 //
 // =====================================================
 
 const historicalDatabaseRoutes =
   require(
     "./routes/historicalDatabase.routes"
-  );
-
-
-// =====================================================
-// OLD CITIZEN HISTORICAL PROCESSING
-// =====================================================
-//
-// NOTE:
-//
-// This is kept temporarily because the old historical
-// processing system is still present in the project.
-//
-// We will remove/deprecate this later after the new
-// historical-database pipeline has been tested.
-//
-// Manual:
-//
-// POST
-// /api/historical-processing/run
-//
-// POST
-// /api/historical-processing/run/today
-//
-// Status:
-//
-// GET
-// /api/historical-processing/status
-//
-// =====================================================
-
-const citizenHistoricalProcessingRoutes =
-  require(
-    "./routes/citizenHistoricalProcessing.routes"
-  );
-
-
-// =====================================================
-// OLD CITIZEN HISTORICAL AUTOMATIC SCHEDULER
-// =====================================================
-//
-// TEMPORARILY KEPT.
-//
-// Automatically processes the previous day's
-// telemetry every day at 00:05.
-//
-// This belongs to the OLD citizenHistorical pipeline.
-//
-// We will remove it once the new historical database
-// scheduler is implemented and tested.
-//
-// =====================================================
-
-const citizenHistoricalScheduler =
-  require(
-    "./schedulers/citizenHistorical.scheduler"
   );
 
 
@@ -201,18 +154,15 @@ app.use(
       ) {
 
         // -------------------------------------------------
-        // Allow requests without Origin
+        // Requests without Origin
         //
-        // Useful for:
-        // Thunder Client
         // Postman
-        // Server-to-server requests
+        // Thunder Client
+        // Server-to-server
         // etc.
         // -------------------------------------------------
 
-        if (
-          !origin
-        ) {
+        if (!origin) {
 
           return callback(
             null,
@@ -223,7 +173,7 @@ app.use(
 
 
         // -------------------------------------------------
-        // Allow known frontend origins
+        // Allowed frontends
         // -------------------------------------------------
 
         if (
@@ -255,7 +205,7 @@ app.use(
     credentials:
       true,
 
-  }),
+  })
 );
 
 
@@ -265,6 +215,27 @@ app.use(
 
 app.use(
   express.json()
+);
+
+
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
+app.get(
+  "/",
+  (req, res) => {
+
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        "SEWAC backend is running.",
+
+    });
+
+  }
 );
 
 
@@ -363,13 +334,15 @@ app.use(
 
 
 // =====================================================
-// NEW HISTORICAL DATABASE
+// HISTORICAL DATABASE
 // =====================================================
+//
+// NEW PIPELINE
 //
 // POST
 // /api/historical-database/archive-today
 //
-// Archives today's telemetry.
+// Archives today's daily table.
 //
 //
 //
@@ -382,46 +355,16 @@ app.use(
 //   "date": "2026-08-14"
 // }
 //
+//
+//
+// GET
+// /api/historical-database/test-connections
+//
 // =====================================================
 
 app.use(
   "/api/historical-database",
   historicalDatabaseRoutes
-);
-
-
-// =====================================================
-// OLD CITIZEN HISTORICAL PROCESSING
-// =====================================================
-//
-// TEMPORARY.
-//
-// These routes belong to the old historical system.
-//
-// POST
-// /api/historical-processing/run
-//
-// Body:
-//
-// {
-//   "date": "2026-08-09"
-// }
-//
-//
-//
-// POST
-// /api/historical-processing/run/today
-//
-//
-//
-// GET
-// /api/historical-processing/status
-//
-// =====================================================
-
-app.use(
-  "/api/historical-processing",
-  citizenHistoricalProcessingRoutes
 );
 
 
@@ -548,11 +491,6 @@ app.use(
 // POST
 // /api/master-citizen/sync/ward/:wardNo
 //
-// IMPORTANT:
-//
-// The Ward-wise endpoint uses the actual Ward Number,
-// NOT the internal ward_id.
-//
 // Example:
 //
 // POST
@@ -567,14 +505,12 @@ app.use(
 
 
 // =====================================================
-// START MASTER CITIZEN BACKGROUND JOB
+// START MASTER CITIZEN WEEKLY SYNC
 // =====================================================
 //
-// Schedule:
-//
-// Every Sunday
+// Sunday
 // 02:00 AM
-// Asia/Kolkata (IST)
+// Asia/Kolkata
 //
 // =====================================================
 
@@ -582,34 +518,85 @@ startMasterCitizenWeeklySync();
 
 
 // =====================================================
-// START OLD CITIZEN HISTORICAL AUTOMATIC SCHEDULER
-// =====================================================
-//
-// TEMPORARY.
-//
-// Schedule:
-//
-// Every day
-// 00:05 AM
-//
-// It processes the PREVIOUS DAY.
-//
-// Example:
-//
-// August 10 at 00:05
-//        ↓
-// Process August 9
-//
-// IMPORTANT:
-//
-// This is the OLD historical processing system.
-//
-// Do NOT remove until the new historical database
-// scheduler is implemented and tested.
-//
+// 404 HANDLER
 // =====================================================
 
-citizenHistoricalScheduler.start();
+app.use(
+  (req, res) => {
+
+    res.status(404).json({
+
+      success: false,
+
+      message:
+        "API endpoint not found.",
+
+      path:
+        req.originalUrl,
+
+    });
+
+  }
+);
+
+
+// =====================================================
+// GLOBAL ERROR HANDLER
+// =====================================================
+
+app.use(
+  (
+    error,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(
+      "❌ GLOBAL ERROR:",
+      error
+    );
+
+
+    // ---------------------------------------------------
+    // CORS ERROR
+    // ---------------------------------------------------
+
+    if (
+      error.message ===
+      "Not allowed by CORS"
+    ) {
+
+      return res.status(403).json({
+
+        success: false,
+
+        message:
+          "Origin not allowed by CORS.",
+
+      });
+
+    }
+
+
+    // ---------------------------------------------------
+    // DEFAULT ERROR
+    // ---------------------------------------------------
+
+    return res.status(
+      error.status || 500
+    ).json({
+
+      success: false,
+
+      message:
+        error.message ||
+        "Internal server error.",
+
+    });
+
+  }
+);
 
 
 // =====================================================
