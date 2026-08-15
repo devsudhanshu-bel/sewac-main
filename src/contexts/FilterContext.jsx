@@ -29,8 +29,6 @@ export function FilterProvider({ children }) {
       try {
         const cityList = await getCities();
 
-        console.log("Cities loaded:", cityList);
-
         setCities(cityList);
 
         // Default city = Bangalore
@@ -66,8 +64,6 @@ export function FilterProvider({ children }) {
 
       try {
         const zoneList = await getZones(selectedCity.city_id);
-
-        console.log("Zones loaded:", zoneList);
 
         setZones(zoneList);
 
@@ -112,8 +108,6 @@ export function FilterProvider({ children }) {
           selectedZone.zone_id,
         );
 
-        console.log("Divisions loaded:", divisionList);
-
         setDivisions(divisionList);
 
         // Default division = Bommanahalli Division
@@ -154,8 +148,6 @@ export function FilterProvider({ children }) {
           selectedZone.zone_id,
           selectedDivision.division_id,
         );
-
-        console.log("Wards loaded:", wardList);
 
         setWards(wardList);
 
