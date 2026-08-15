@@ -17,10 +17,27 @@
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.6.0",
     "pg": "^8.21.0",
-    "redis": "^6.1.0"
+    "redis": "^6.1.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "nodemon": "^2.0.0",
     "prisma": "^6.8.2"
-  }
+  },
+  "description": "Project scaffold generated.",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devsudhanshu-bel/sewac-main.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/devsudhanshu-bel/sewac-main/issues"
+  },
+  "homepage": "https://github.com/devsudhanshu-bel/sewac-main#readme"
 }
