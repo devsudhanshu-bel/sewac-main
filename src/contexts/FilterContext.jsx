@@ -1,6 +1,4 @@
-import { createContext, useContext, useState } from "react";
-
-import { useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 import {
   getCities,
@@ -16,15 +14,21 @@ export function FilterProvider({ children }) {
   const [selectedZone, setSelectedZone] = useState(null);
   const [selectedDivision, setSelectedDivision] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
+
   const [cities, setCities] = useState([]);
   const [zones, setZones] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [wards, setWards] = useState([]);
 
+  /* =====================================================
+     CITY
+  ===================================================== */
+
   useEffect(() => {
     const loadCities = async () => {
       try {
         const res = await getCities();
+
         setCities(res.data);
 
         if (res.data.length > 0) {
@@ -34,35 +38,64 @@ export function FilterProvider({ children }) {
         console.error("Failed to load cities", err);
       }
     };
+
     loadCities();
   }, []);
 
+  /* =====================================================
+     ZONE
+     Depends on CITY
+  ===================================================== */
+
   useEffect(() => {
     const loadZones = async () => {
-      if (!selectedCity) return;
+      if (!selectedCity) {
+        setZones([]);
+        setSelectedZone(null);
+        return;
+      }
 
       try {
         const res = await getZones(selectedCity.city_id);
 
         setZones(res.data);
 
+        /*
+         * Keep your existing default-zone behavior.
+         * Currently your code selects the 4th zone.
+         */
         setSelectedZone(res.data.length ? res.data[3] : null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load zones", err);
+
+        setZones([]);
+        setSelectedZone(null);
       }
     };
 
     loadZones();
   }, [selectedCity]);
 
+  /* =====================================================
+     DIVISION
+     Depends on CITY + ZONE
+  ===================================================== */
+
   useEffect(() => {
     const loadDivisions = async () => {
-      if (!selectedZone) return;
+      if (!selectedCity || !selectedZone) {
+        setDivisions([]);
+        setSelectedDivision(null);
+        return;
+      }
 
       try {
-        const res = await getDivisions(selectedZone.zone_id);
+        const res = await getDivisions(
+          selectedCity.city_id,
+          selectedZone.zone_id,
+        );
 
-        setDivisions(res.data); // <-- THIS WAS MISSING
+        setDivisions(res.data);
 
         const defaultDivision =
           res.data.find((d) => d.division_name === "Bommanahalli Division") ||
@@ -70,19 +103,35 @@ export function FilterProvider({ children }) {
 
         setSelectedDivision(defaultDivision || null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load divisions", err);
+
+        setDivisions([]);
+        setSelectedDivision(null);
       }
     };
 
     loadDivisions();
-  }, [selectedZone]);
+  }, [selectedCity, selectedZone]);
+
+  /* =====================================================
+     WARD
+     Depends on CITY + ZONE + DIVISION
+  ===================================================== */
 
   useEffect(() => {
     const loadWards = async () => {
-      if (!selectedDivision) return;
+      if (!selectedCity || !selectedZone || !selectedDivision) {
+        setWards([]);
+        setSelectedWard(null);
+        return;
+      }
 
       try {
-        const res = await getWards(selectedDivision.division_id);
+        const res = await getWards(
+          selectedCity.city_id,
+          selectedZone.zone_id,
+          selectedDivision.division_id,
+        );
 
         setWards(res.data);
 
@@ -91,12 +140,19 @@ export function FilterProvider({ children }) {
 
         setSelectedWard(defaultWard || null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load wards", err);
+
+        setWards([]);
+        setSelectedWard(null);
       }
     };
 
     loadWards();
-  }, [selectedDivision]);
+  }, [selectedCity, selectedZone, selectedDivision]);
+
+  /* =====================================================
+     CONTEXT VALUE
+  ===================================================== */
 
   const value = {
     selectedCity,

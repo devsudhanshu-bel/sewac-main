@@ -21,6 +21,7 @@ export default function Complaints() {
     closed: 0,
   });
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -151,12 +152,75 @@ export default function Complaints() {
       }
 
       console.log("Verification OTP requested:", result);
-
+      setOtpSent(true);
       alert("OTP sent successfully to the citizen.");
     } catch (err) {
       console.error("Request verification error:", err);
 
       alert(err.message || "Unable to request verification OTP.");
+    }
+  };
+
+  const verifyOTP = async (otp) => {
+    if (!selectedComplaint?.ticket_number) {
+      throw new Error("No complaint selected.");
+    }
+
+    if (!otp || otp.length !== 6) {
+      throw new Error("Please enter a valid 6-digit OTP.");
+    }
+
+    try {
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error("Admin authentication token not found.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints/${selectedComplaint.ticket_number}/verify`,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            otp,
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      console.log("OTP verification response:", result);
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Failed to verify OTP.");
+      }
+
+      alert("Complaint closed successfully.");
+
+      // Refresh the complaint list.
+      await fetchComplaints(pagination.page);
+
+      // Refresh KPI cards.
+      await fetchKPIs();
+
+      // Close the details panel.
+      setSelectedComplaint(null);
+
+      // Reset OTP request state.
+      setOtpSent(false);
+
+      return result;
+    } catch (err) {
+      console.error("Verify OTP error:", err);
+
+      alert(err.message || "Unable to verify OTP.");
+
+      throw err;
     }
   };
 
@@ -190,7 +254,9 @@ export default function Complaints() {
         <div className="w-[370px] shrink-0">
           <ComplaintDetails
             complaint={selectedComplaint}
+            otpSent={otpSent}
             onRequestVerification={requestVerification}
+            onVerifyOTP={verifyOTP}
           />
         </div>
       </div>

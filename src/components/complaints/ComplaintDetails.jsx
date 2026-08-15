@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   X,
   Tag,
@@ -12,7 +14,13 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-export default function ComplaintDetails({ complaint, onRequestVerification }) {
+export default function ComplaintDetails({
+  complaint,
+  otpSent,
+  onRequestVerification,
+  onVerifyOTP,
+}) {
+  const [otp, setOtp] = useState("");
   return (
     <div
       className="
@@ -516,6 +524,68 @@ export default function ComplaintDetails({ complaint, onRequestVerification }) {
           >
             Request Verification OTP
           </button>
+          {otpSent && (
+            <div className="mt-4">
+              <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
+                Enter Verification OTP
+              </p>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+
+                  setOtp(value);
+                }}
+                placeholder="Enter 6-digit OTP"
+                className="
+        w-full
+        h-9
+        rounded-lg
+        border
+        border-gray-200
+        bg-white
+        px-3
+        text-[12px]
+        tracking-[0.25em]
+        text-[#16295A]
+        outline-none
+        placeholder:text-gray-400
+        placeholder:tracking-normal
+        focus:border-violet-400
+        focus:ring-2
+        focus:ring-violet-100
+      "
+              />
+
+              <button
+                type="button"
+                disabled={!complaint || otp.length !== 6}
+                onClick={() => onVerifyOTP?.(otp)}
+                className="
+        w-full
+        h-9
+        mt-2
+        rounded-lg
+        border
+        border-violet-200
+        bg-violet-50
+        text-violet-700
+        text-[11px]
+        font-semibold
+        hover:bg-violet-100
+        transition
+        disabled:opacity-50
+        disabled:cursor-not-allowed
+      "
+              >
+                Verify OTP & Close Complaint
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,13 +1,14 @@
 import api from "../api/axios";
 
-export const getCities = () =>
-  api.get("/api/filters/cities");
+export const getCities = () => api.get("/api/master-citizen/cities");
 
 export const getZones = (cityId) =>
-  api.get(`/api/filters/zones/${cityId}`);
+  api.get(`/api/master-citizen/cities/${cityId}/zones`);
 
-export const getDivisions = (zoneId) =>
-  api.get(`/api/filters/divisions/${zoneId}`);
+export const getDivisions = (cityId, zoneId) =>
+  api.get(`/api/master-citizen/cities/${cityId}/zones/${zoneId}/divisions`);
 
-export const getWards = (divisionId) =>
-  api.get(`/api/filters/wards/${divisionId}`);
+export const getWards = (cityId, zoneId, divisionId) =>
+  api.get(
+    `/api/master-citizen/cities/${cityId}/zones/${zoneId}/divisions/${divisionId}/wards`,
+  );
