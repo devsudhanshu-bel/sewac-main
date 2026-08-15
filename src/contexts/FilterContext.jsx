@@ -29,13 +29,23 @@ export function FilterProvider({ children }) {
       try {
         const res = await getCities();
 
-        setCities(res.data);
+        const cityList = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data || [];
 
-        if (res.data.length > 0) {
-          setSelectedCity(res.data[0]);
-        }
+        setCities(cityList);
+
+        const defaultCity =
+          cityList.find(
+            (city) => city.city_name?.toLowerCase() === "bangalore",
+          ) || cityList[0];
+
+        setSelectedCity(defaultCity || null);
       } catch (err) {
         console.error("Failed to load cities", err);
+
+        setCities([]);
+        setSelectedCity(null);
       }
     };
 
@@ -58,13 +68,22 @@ export function FilterProvider({ children }) {
       try {
         const res = await getZones(selectedCity.city_id);
 
-        setZones(res.data);
+        const zoneList = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data || [];
 
-        /*
-         * Keep your existing default-zone behavior.
-         * Currently your code selects the 4th zone.
-         */
-        setSelectedZone(res.data.length ? res.data[3] : null);
+        setZones(zoneList);
+
+        const defaultZone =
+          zoneList.find(
+            (zone) => zone.zone_name?.toLowerCase() === "bangalore south zone",
+          ) ||
+          zoneList.find((zone) =>
+            zone.zone_name?.toLowerCase().includes("south"),
+          ) ||
+          zoneList[0];
+
+        setSelectedZone(defaultZone || null);
       } catch (err) {
         console.error("Failed to load zones", err);
 
@@ -95,11 +114,16 @@ export function FilterProvider({ children }) {
           selectedZone.zone_id,
         );
 
-        setDivisions(res.data);
+        const divisionList = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data || [];
+
+        setDivisions(divisionList);
 
         const defaultDivision =
-          res.data.find((d) => d.division_name === "Bommanahalli Division") ||
-          res.data[0];
+          divisionList.find(
+            (division) => division.division_name === "Bommanahalli Division",
+          ) || divisionList[0];
 
         setSelectedDivision(defaultDivision || null);
       } catch (err) {
@@ -133,10 +157,14 @@ export function FilterProvider({ children }) {
           selectedDivision.division_id,
         );
 
-        setWards(res.data);
+        const wardList = Array.isArray(res.data)
+          ? res.data
+          : res.data?.data || [];
+
+        setWards(wardList);
 
         const defaultWard =
-          res.data.find((w) => w.ward_name === "Ibbalur") || res.data[0];
+          wardList.find((ward) => ward.ward_name === "Ibbalur") || wardList[0];
 
         setSelectedWard(defaultWard || null);
       } catch (err) {
@@ -151,7 +179,7 @@ export function FilterProvider({ children }) {
   }, [selectedCity, selectedZone, selectedDivision]);
 
   /* =====================================================
-     CONTEXT VALUE
+     CONTEXT
   ===================================================== */
 
   const value = {
