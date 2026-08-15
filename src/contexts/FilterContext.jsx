@@ -22,19 +22,18 @@ export function FilterProvider({ children }) {
 
   /* =====================================================
      CITY
-  ===================================================== */
+     ===================================================== */
 
   useEffect(() => {
     const loadCities = async () => {
       try {
-        const res = await getCities();
+        const cityList = await getCities();
 
-        const cityList = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        console.log("Cities loaded:", cityList);
 
         setCities(cityList);
 
+        // Default city = Bangalore
         const defaultCity =
           cityList.find(
             (city) => city.city_name?.toLowerCase() === "bangalore",
@@ -42,7 +41,7 @@ export function FilterProvider({ children }) {
 
         setSelectedCity(defaultCity || null);
       } catch (err) {
-        console.error("Failed to load cities", err);
+        console.error("Failed to load cities:", err);
 
         setCities([]);
         setSelectedCity(null);
@@ -55,7 +54,7 @@ export function FilterProvider({ children }) {
   /* =====================================================
      ZONE
      Depends on CITY
-  ===================================================== */
+     ===================================================== */
 
   useEffect(() => {
     const loadZones = async () => {
@@ -66,14 +65,13 @@ export function FilterProvider({ children }) {
       }
 
       try {
-        const res = await getZones(selectedCity.city_id);
+        const zoneList = await getZones(selectedCity.city_id);
 
-        const zoneList = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        console.log("Zones loaded:", zoneList);
 
         setZones(zoneList);
 
+        // Default zone = Bangalore South Zone
         const defaultZone =
           zoneList.find(
             (zone) => zone.zone_name?.toLowerCase() === "bangalore south zone",
@@ -85,7 +83,7 @@ export function FilterProvider({ children }) {
 
         setSelectedZone(defaultZone || null);
       } catch (err) {
-        console.error("Failed to load zones", err);
+        console.error("Failed to load zones:", err);
 
         setZones([]);
         setSelectedZone(null);
@@ -98,7 +96,7 @@ export function FilterProvider({ children }) {
   /* =====================================================
      DIVISION
      Depends on CITY + ZONE
-  ===================================================== */
+     ===================================================== */
 
   useEffect(() => {
     const loadDivisions = async () => {
@@ -109,25 +107,25 @@ export function FilterProvider({ children }) {
       }
 
       try {
-        const res = await getDivisions(
+        const divisionList = await getDivisions(
           selectedCity.city_id,
           selectedZone.zone_id,
         );
 
-        const divisionList = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        console.log("Divisions loaded:", divisionList);
 
         setDivisions(divisionList);
 
+        // Default division = Bommanahalli Division
         const defaultDivision =
           divisionList.find(
-            (division) => division.division_name === "Bommanahalli Division",
+            (division) =>
+              division.division_name?.toLowerCase() === "bommanahalli division",
           ) || divisionList[0];
 
         setSelectedDivision(defaultDivision || null);
       } catch (err) {
-        console.error("Failed to load divisions", err);
+        console.error("Failed to load divisions:", err);
 
         setDivisions([]);
         setSelectedDivision(null);
@@ -140,7 +138,7 @@ export function FilterProvider({ children }) {
   /* =====================================================
      WARD
      Depends on CITY + ZONE + DIVISION
-  ===================================================== */
+     ===================================================== */
 
   useEffect(() => {
     const loadWards = async () => {
@@ -151,24 +149,25 @@ export function FilterProvider({ children }) {
       }
 
       try {
-        const res = await getWards(
+        const wardList = await getWards(
           selectedCity.city_id,
           selectedZone.zone_id,
           selectedDivision.division_id,
         );
 
-        const wardList = Array.isArray(res.data)
-          ? res.data
-          : res.data?.data || [];
+        console.log("Wards loaded:", wardList);
 
         setWards(wardList);
 
+        // Default ward = Ibbalur
         const defaultWard =
-          wardList.find((ward) => ward.ward_name === "Ibbalur") || wardList[0];
+          wardList.find(
+            (ward) => ward.ward_name?.toLowerCase() === "ibbalur",
+          ) || wardList[0];
 
         setSelectedWard(defaultWard || null);
       } catch (err) {
-        console.error("Failed to load wards", err);
+        console.error("Failed to load wards:", err);
 
         setWards([]);
         setSelectedWard(null);
@@ -179,10 +178,12 @@ export function FilterProvider({ children }) {
   }, [selectedCity, selectedZone, selectedDivision]);
 
   /* =====================================================
-     CONTEXT
-  ===================================================== */
+     CONTEXT VALUE
+     ===================================================== */
 
   const value = {
+    /* Selected values */
+
     selectedCity,
     setSelectedCity,
 
@@ -195,6 +196,8 @@ export function FilterProvider({ children }) {
     selectedWard,
     setSelectedWard,
 
+    /* Available options */
+
     cities,
     zones,
     divisions,
@@ -205,6 +208,10 @@ export function FilterProvider({ children }) {
     <FilterContext.Provider value={value}>{children}</FilterContext.Provider>
   );
 }
+
+/* =====================================================
+   HOOK
+   ===================================================== */
 
 export function useFilters() {
   return useContext(FilterContext);
