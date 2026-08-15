@@ -44,9 +44,7 @@ const https = require("https");
 // Do NOT put a Socket.IO URL here.
 //
 
-const TELEMETRY_URL =
-  process.env.TELEMETRY_URL ||
-  "http://localhost:5002/api/telemetry";
+const TELEMETRY_URL = "https://sewac-main.onrender.com/api/iot/telemetry/record";
 
 // ============================================================
 // TEST CONFIGURATION
