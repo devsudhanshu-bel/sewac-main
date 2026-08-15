@@ -1,6 +1,6 @@
 const repository =
   require(
-    "./repositories/telemetryDaily.repository"
+    "../repositories/telemetryDaily.repository"
   );
 
 

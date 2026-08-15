@@ -4,10 +4,22 @@ const telemetryDb =
 const historicalDb =
   require("../config/citizenHistoricalPrisma");
 
+const historicalTableRepository =
+  require(
+    "../repositories/citizenHistoricalTable.repository"
+  );
 
-// ============================================================
+
+// =====================================================
+// CONFIG
+// =====================================================
+
+const BATCH_SIZE = 500;
+
+
+// =====================================================
 // MONTH NAMES
-// ============================================================
+// =====================================================
 
 const MONTH_NAMES = [
   "January",
@@ -25,20 +37,12 @@ const MONTH_NAMES = [
 ];
 
 
-// ============================================================
-// HELPERS
-// ============================================================
-
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-
-// ============================================================
+// =====================================================
 // SQL IDENTIFIER VALIDATION
-// ============================================================
+// =====================================================
 
 function validateIdentifier(value) {
+
   if (
     typeof value !== "string" ||
     !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(value)
@@ -52,622 +56,1046 @@ function validateIdentifier(value) {
 }
 
 
+// =====================================================
+// QUOTE IDENTIFIER
+// =====================================================
+
 function quoteIdentifier(value) {
-  return `"${validateIdentifier(value)}"`;
+
+  validateIdentifier(value);
+
+  return `"${value}"`;
 }
 
 
-// ============================================================
-// DATE PARSING
-// ============================================================
-//
-// IMPORTANT
-//
-// Daily table format:
-//
-// day_DDMMYYYY
-//
-// Example:
-//
-// 14 August 2026
-//
-// day_14082026
-//
-// ============================================================
+// =====================================================
+// NORMALIZE DATE
+// =====================================================
 
-function parseRequestDate(dateString) {
-  if (
-    typeof dateString !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(dateString)
-  ) {
-    throw new Error(
-      "Invalid date format. Use YYYY-MM-DD."
-    );
+function normalizeDate(input) {
+
+  if (input instanceof Date) {
+
+    if (
+      Number.isNaN(
+        input.getTime()
+      )
+    ) {
+      throw new Error("Invalid date");
+    }
+
+    return input;
   }
 
-  const [
-    year,
-    month,
-    day,
-  ] = dateString
-    .split("-")
-    .map(Number);
 
-  const date = new Date(
-    year,
-    month - 1,
-    day
+  if (
+    typeof input === "string"
+  ) {
+
+    const value =
+      input.trim();
+
+
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+
+      const [
+        year,
+        month,
+        day,
+      ] =
+        value
+          .split("-")
+          .map(Number);
+
+
+      const date =
+        new Date(
+          Date.UTC(
+            year,
+            month - 1,
+            day
+          )
+        );
+
+
+      if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+      ) {
+
+        throw new Error(
+          `Invalid date: ${value}`
+        );
+
+      }
+
+
+      return date;
+    }
+
+
+    const parsed =
+      new Date(value);
+
+
+    if (
+      Number.isNaN(
+        parsed.getTime()
+      )
+    ) {
+
+      throw new Error(
+        `Invalid date: ${value}`
+      );
+
+    }
+
+
+    return parsed;
+  }
+
+
+  throw new Error(
+    `Invalid date: ${input}`
   );
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    throw new Error(
-      "Invalid calendar date."
-    );
-  }
-
-  return date;
 }
 
 
-// ============================================================
+// =====================================================
 // DATE INFORMATION
-// ============================================================
+// =====================================================
 
-function getDateInfo(date) {
-  const year =
-    date.getFullYear();
+function getDateInformation(input) {
 
-  const monthNumber =
-    date.getMonth() + 1;
+  const date =
+    normalizeDate(input);
 
-  const month =
-    pad(monthNumber);
 
   const day =
-    pad(date.getDate());
+    String(
+      date.getUTCDate()
+    ).padStart(2, "0");
+
+
+  const month =
+    date.getUTCMonth() + 1;
+
+
+  const monthString =
+    String(month).padStart(
+      2,
+      "0"
+    );
+
+
+  const year =
+    date.getUTCFullYear();
+
+
+  // IMPORTANT
+  //
+  // SEWAC DAY TABLE FORMAT:
+  //
+  // day_14082026
+  //
+  // NOT:
+  //
+  // day_2026_08_14
+  //
+
+  const dayTable =
+    `day_${day}${monthString}${year}`;
+
 
   return {
-    year,
-    monthNumber,
+
+    date,
+
+    day:
+      Number(day),
+
     month,
-    day,
+
+    year,
+
+    monthString,
+
+    dayString:
+      day,
+
+    dayTable,
+
+    monthName:
+      MONTH_NAMES[
+        month - 1
+      ],
+
   };
 }
 
 
-// ============================================================
-// DAILY TABLE NAME
-// ============================================================
-//
-// Example:
-//
-// 2026-08-14
-//
-// becomes:
-//
-// day_14082026
-//
-// ============================================================
-
-function getDayTableName(date) {
-  const {
-    year,
-    month,
-    day,
-  } = getDateInfo(date);
-
-  return `day_${day}${month}${year}`;
-}
-
-
-// ============================================================
-// HISTORICAL YEAR TABLE
-// ============================================================
-//
-// Example:
-//
-// ward_174_2026
-//
-// ============================================================
-
-function getYearTableName(
-  wardNo,
-  year
-) {
-  return `ward_${wardNo}_${year}`;
-}
-
-
-// ============================================================
-// HISTORICAL MONTH TABLE
-// ============================================================
-//
-// Example:
-//
-// ward_174_082026
-//
-// ============================================================
-
-function getMonthTableName(
-  wardNo,
-  monthNumber,
-  year
-) {
-  return `ward_${wardNo}_${pad(monthNumber)}${year}`;
-}
-
-
-// ============================================================
-// CHECK TABLE EXISTS
-// ============================================================
-//
-// prismaClient can be:
-//
-// telemetryDb
-//
-// OR
-//
-// historicalDb
-//
-// ============================================================
+// =====================================================
+// TABLE EXISTS
+// =====================================================
 
 async function tableExists(
-  prismaClient,
+  db,
   tableName
 ) {
-  validateIdentifier(tableName);
+
+  validateIdentifier(
+    tableName
+  );
+
 
   const result =
-    await prismaClient.$queryRawUnsafe(
+    await db.$queryRawUnsafe(
       `
       SELECT EXISTS (
+
         SELECT 1
+
         FROM information_schema.tables
+
         WHERE table_schema = 'public'
-        AND table_name = $1
-      ) AS exists;
+
+          AND table_type = 'BASE TABLE'
+
+          AND table_name = $1
+
+      ) AS exists
       `,
       tableName
     );
 
-  return result[0]?.exists === true;
+
+  return (
+    result[0]?.exists === true
+  );
 }
 
 
-// ============================================================
-// GET TABLE COLUMNS
-// ============================================================
+// =====================================================
+// GET DAY TABLE COLUMNS
+// =====================================================
 
-async function getTableColumns(
-  prismaClient,
-  tableName
+async function getDayTableColumns(
+  dayTableName
 ) {
-  validateIdentifier(tableName);
 
-  return prismaClient.$queryRawUnsafe(
+  validateIdentifier(
+    dayTableName
+  );
+
+
+  return telemetryDb.$queryRawUnsafe(
     `
     SELECT
+
       column_name,
+
       data_type,
-      udt_name,
-      is_nullable,
+
       ordinal_position
+
     FROM information_schema.columns
+
     WHERE table_schema = 'public'
-    AND table_name = $1
-    ORDER BY ordinal_position ASC;
+
+      AND table_name = $1
+
+    ORDER BY ordinal_position ASC
+    `,
+    dayTableName
+  );
+}
+
+
+// =====================================================
+// FIND VEHICLE TABLE COLUMN
+// =====================================================
+
+function findVehicleTableColumn(
+  columns
+) {
+
+  const names =
+    columns.map(
+      column =>
+        column.column_name
+    );
+
+
+  const possibleNames = [
+
+    "vehicle_table_name",
+
+    "vehicleTableName",
+
+    "vehicle_table",
+
+    "vehicleTable",
+
+    "table_name",
+
+    "tablename",
+
+  ];
+
+
+  const found =
+    possibleNames.find(
+      name =>
+        names.includes(name)
+    );
+
+
+  if (!found) {
+
+    throw new Error(
+      `Could not find vehicle table name column. Available columns: ${names.join(
+        ", "
+      )}`
+    );
+
+  }
+
+
+  return found;
+}
+
+
+// =====================================================
+// GET VEHICLES FROM DAY TABLE
+// =====================================================
+//
+// IMPORTANT:
+//
+// vehicle_table_name is read DIRECTLY
+// from day_14082026.
+//
+// We DO NOT construct the vehicle table name.
+//
+// =====================================================
+
+async function getVehiclesFromDayTable(
+  dayTableName
+) {
+
+  validateIdentifier(
+    dayTableName
+  );
+
+
+  const columns =
+    await getDayTableColumns(
+      dayTableName
+    );
+
+
+  const availableColumns =
+    columns.map(
+      column =>
+        column.column_name
+    );
+
+
+  const vehicleTableColumn =
+    findVehicleTableColumn(
+      columns
+    );
+
+
+  // ---------------------------------------------------
+  // REQUIRED DAY TABLE COLUMNS
+  // ---------------------------------------------------
+
+  if (
+    !availableColumns.includes(
+      "vehicle_number"
+    )
+  ) {
+
+    throw new Error(
+      `Day table "${dayTableName}" does not contain vehicle_number`
+    );
+
+  }
+
+
+  if (
+    !availableColumns.includes(
+      "ward_no"
+    )
+  ) {
+
+    throw new Error(
+      `Day table "${dayTableName}" does not contain ward_no`
+    );
+
+  }
+
+
+  // ---------------------------------------------------
+  // READ DISTINCT VEHICLES
+  // ---------------------------------------------------
+
+  const sql = `
+
+    SELECT DISTINCT
+
+      vehicle_number,
+
+      ward_no,
+
+      "${vehicleTableColumn}"
+        AS vehicle_table_name
+
+    FROM "${dayTableName}"
+
+    WHERE
+      "${vehicleTableColumn}" IS NOT NULL
+
+      AND TRIM(
+        "${vehicleTableColumn}"
+      ) <> ''
+
+    ORDER BY
+      vehicle_number ASC
+
+  `;
+
+
+  return telemetryDb.$queryRawUnsafe(
+    sql
+  );
+}
+
+
+// =====================================================
+// SOURCE VEHICLE TABLE EXISTS
+// =====================================================
+
+async function sourceVehicleTableExists(
+  tableName
+) {
+
+  validateIdentifier(
+    tableName
+  );
+
+
+  return tableExists(
+    telemetryDb,
+    tableName
+  );
+}
+
+
+// =====================================================
+// GET VEHICLE TABLE COLUMNS
+// =====================================================
+
+async function getVehicleColumns(
+  tableName
+) {
+
+  validateIdentifier(
+    tableName
+  );
+
+
+  return telemetryDb.$queryRawUnsafe(
+    `
+    SELECT
+
+      column_name,
+
+      data_type,
+
+      ordinal_position
+
+    FROM information_schema.columns
+
+    WHERE table_schema = 'public'
+
+      AND table_name = $1
+
+    ORDER BY ordinal_position ASC
     `,
     tableName
   );
 }
 
 
-// ============================================================
-// GET DAILY TABLE
-// ============================================================
-//
-// THIS ALWAYS READS FROM:
-//
-// master_telemetry_db
-//
-// through:
-//
-// telemetryDb
-//
-// ============================================================
+// =====================================================
+// VALIDATE VEHICLE TABLE
+// =====================================================
 
-async function getDailyTable(date) {
-  const dayTableName =
-    getDayTableName(date);
-
-  const exists =
-    await tableExists(
-      telemetryDb,
-      dayTableName
-    );
-
-  return {
-    dayTableName,
-    exists,
-  };
-}
-
-
-// ============================================================
-// GET VEHICLES FROM DAILY TABLE
-// ============================================================
-//
-// IMPORTANT:
-//
-// ward_no comes DIRECTLY from:
-//
-// day_14082026
-//
-// No ward lookup.
-// No GPS calculation.
-// No external ward table.
-//
-// ============================================================
-
-async function getVehiclesFromDailyTable(
-  dayTableName
+async function validateVehicleTableStructure(
+  tableName
 ) {
+
   const columns =
-    await getTableColumns(
-      telemetryDb,
-      dayTableName
+    await getVehicleColumns(
+      tableName
     );
 
-  const columnNames =
+
+  const names =
     columns.map(
-      (column) =>
+      column =>
         column.column_name
     );
 
 
-  // ----------------------------------------------------------
-  // Required columns
-  // ----------------------------------------------------------
-
   const requiredColumns = [
-    "vehicle_number",
-    "vehicle_table_name",
-    "ward_no",
+
+    "id",
+
+    "iottimestamp",
+
+    "receivedtimestamp",
+
+    "rfidepc",
+
+    "citizenid",
+
+    "wastetype",
+
+    "latitude",
+
+    "longitude",
+
+    "wetweight",
+
+    "dryweight",
+
+    "otherweight",
+
+    "cumulativeweight",
+
+    "drivername",
+
+    "vehiclenumber",
+
+    "firmwareversion",
+
+    "unitnumber",
+
+    "collectiontype",
+
+    "remarks",
+
+    "errorcode",
+
+    "citizencontact",
+
+    "driveraction",
+
   ];
 
 
-  const missingColumns =
+  const missing =
     requiredColumns.filter(
-      (column) =>
-        !columnNames.includes(column)
+      column =>
+        !names.includes(
+          column
+        )
     );
 
 
   if (
-    missingColumns.length > 0
+    missing.length > 0
   ) {
+
     throw new Error(
-      `Daily table '${dayTableName}' is missing required columns: ${missingColumns.join(", ")}`
+      `Vehicle table "${tableName}" is missing columns: ${missing.join(
+        ", "
+      )}`
     );
+
   }
 
 
-  return telemetryDb.$queryRawUnsafe(
+  return true;
+}
+
+
+// =====================================================
+// ENSURE HISTORICAL TABLES
+// =====================================================
+//
+// IMPORTANT FIX:
+//
+// The previous code tried:
+//
+// historicalTableRepository.ensureWardHistoricalTables()
+//
+// BUT that function does not exist in the repository
+// you showed.
+//
+// Therefore we perform the exact operations here using
+// the functions that ACTUALLY exist in the repository.
+//
+// =====================================================
+
+async function ensureHistoricalTables(
+  wardNo,
+  month,
+  year
+) {
+
+  const numericWard =
+    Number(wardNo);
+
+  const numericMonth =
+    Number(month);
+
+  const numericYear =
+    Number(year);
+
+
+  // ---------------------------------------------------
+  // VALIDATION
+  // ---------------------------------------------------
+
+  if (
+    !Number.isInteger(
+      numericWard
+    ) ||
+    numericWard <= 0
+  ) {
+
+    throw new Error(
+      `Invalid ward number: ${wardNo}`
+    );
+
+  }
+
+
+  if (
+    !Number.isInteger(
+      numericMonth
+    ) ||
+    numericMonth < 1 ||
+    numericMonth > 12
+  ) {
+
+    throw new Error(
+      `Invalid month: ${month}`
+    );
+
+  }
+
+
+  if (
+    !Number.isInteger(
+      numericYear
+    ) ||
+    numericYear < 2000
+  ) {
+
+    throw new Error(
+      `Invalid year: ${year}`
+    );
+
+  }
+
+
+  // ---------------------------------------------------
+  // GENERATE TABLE NAMES
+  // ---------------------------------------------------
+
+  const yearlyTableName =
+    historicalTableRepository
+      .generateYearlyIndexTableName(
+        numericWard,
+        numericYear
+      );
+
+
+  const monthlyTableName =
+    historicalTableRepository
+      .generateMonthlyTableName(
+        numericWard,
+        numericMonth,
+        numericYear
+      );
+
+
+  const monthName =
+    MONTH_NAMES[
+      numericMonth - 1
+    ];
+
+
+  // ---------------------------------------------------
+  // YEAR TABLE
+  // ---------------------------------------------------
+
+  const yearlyExists =
+    await historicalTableRepository.tableExists(
+      yearlyTableName
+    );
+
+
+  if (
+    !yearlyExists
+  ) {
+
+    await historicalTableRepository
+      .createYearlyIndexTable(
+        yearlyTableName
+      );
+
+  }
+
+
+  // ---------------------------------------------------
+  // MONTH TABLE
+  // ---------------------------------------------------
+
+  const monthlyExists =
+    await historicalTableRepository.tableExists(
+      monthlyTableName
+    );
+
+
+  if (
+    !monthlyExists
+  ) {
+
+    await historicalTableRepository
+      .createMonthlyHistoryTable(
+        monthlyTableName
+      );
+
+  }
+
+
+  // ---------------------------------------------------
+  // REGISTER MONTH IN YEAR INDEX
+  // ---------------------------------------------------
+
+  await historicalTableRepository
+    .registerMonthlyTable(
+
+      yearlyTableName,
+
+      numericMonth,
+
+      monthName,
+
+      monthlyTableName
+
+    );
+
+
+  return {
+
+    wardNo:
+      numericWard,
+
+    year:
+      numericYear,
+
+    month:
+      numericMonth,
+
+    monthName,
+
+    yearlyTableName,
+
+    monthlyTableName,
+
+    yearlyTableCreated:
+      !yearlyExists,
+
+    monthlyTableCreated:
+      !monthlyExists,
+
+  };
+}
+
+
+// =====================================================
+// GET HISTORICAL TABLE COLUMNS
+// =====================================================
+
+async function getHistoricalTableColumns(
+  tableName
+) {
+
+  validateIdentifier(
+    tableName
+  );
+
+
+  return historicalDb.$queryRawUnsafe(
     `
     SELECT
-      vehicle_number,
-      vehicle_table_name,
-      ward_no
-    FROM ${quoteIdentifier(dayTableName)}
-    ORDER BY vehicle_number ASC;
-    `
+
+      column_name,
+
+      data_type,
+
+      ordinal_position
+
+    FROM information_schema.columns
+
+    WHERE table_schema = 'public'
+
+      AND table_name = $1
+
+    ORDER BY ordinal_position ASC
+    `,
+    tableName
   );
 }
 
 
-// ============================================================
-// GET VEHICLE TELEMETRY
-// ============================================================
-//
-// READS FROM MASTER TELEMETRY DB.
-//
-// ============================================================
+// =====================================================
+// VALIDATE HISTORICAL TABLE
+// =====================================================
 
-async function getVehicleTelemetry(
+async function validateHistoricalTable(
+  tableName
+) {
+
+  const exists =
+    await tableExists(
+      historicalDb,
+      tableName
+    );
+
+
+  if (
+    !exists
+  ) {
+
+    throw new Error(
+      `Historical table "${tableName}" does not exist`
+    );
+
+  }
+
+
+  const columns =
+    await getHistoricalTableColumns(
+      tableName
+    );
+
+
+  const names =
+    columns.map(
+      column =>
+        column.column_name
+    );
+
+
+  const requiredColumns = [
+
+    "historical_id",
+
+    "source_telemetry_id",
+
+    "source_vehicle_table",
+
+    "vehicle_number",
+
+    "ward_no",
+
+    "iot_timestamp",
+
+    "received_timestamp",
+
+    "rfid_epc",
+
+    "citizen_id",
+
+    "waste_type",
+
+    "latitude",
+
+    "longitude",
+
+    "wet_weight",
+
+    "dry_weight",
+
+    "other_weight",
+
+    "cumulative_weight",
+
+    "driver_name",
+
+    "firmware_version",
+
+    "unit_number",
+
+    "collection_type",
+
+    "remarks",
+
+    "error_code",
+
+    "citizen_contact",
+
+    "driver_action",
+
+    "source_day_table",
+
+    "archived_at",
+
+  ];
+
+
+  const missing =
+    requiredColumns.filter(
+      column =>
+        !names.includes(
+          column
+        )
+    );
+
+
+  if (
+    missing.length > 0
+  ) {
+
+    throw new Error(
+      `Historical table "${tableName}" is missing columns: ${missing.join(
+        ", "
+      )}`
+    );
+
+  }
+
+
+  return true;
+}
+
+
+// =====================================================
+// GET SOURCE VEHICLE COUNT
+// =====================================================
+
+async function getVehicleRowCount(
   vehicleTableName
 ) {
+
   validateIdentifier(
     vehicleTableName
   );
 
 
-  const exists =
-    await tableExists(
-      telemetryDb,
-      vehicleTableName
-    );
-
-
-  if (!exists) {
-    return {
-      exists: false,
-      records: [],
-    };
-  }
-
-
-  const records =
+  const result =
     await telemetryDb.$queryRawUnsafe(
       `
-      SELECT *
-      FROM ${quoteIdentifier(vehicleTableName)}
-      ORDER BY id ASC;
+      SELECT
+        COUNT(*)::BIGINT AS count
+
+      FROM "${vehicleTableName}"
       `
     );
 
 
-  return {
-    exists: true,
-    records,
-  };
-}
-
-
-// ============================================================
-// CREATE YEAR INDEX TABLE
-// ============================================================
-//
-// HISTORICAL DATABASE
-//
-// Example:
-//
-// ward_174_2026
-//
-// ============================================================
-
-async function createYearTable(
-  tableName
-) {
-  await historicalDb.$executeRawUnsafe(
-    `
-    CREATE TABLE IF NOT EXISTS
-    ${quoteIdentifier(tableName)}
-    (
-      month_number INTEGER PRIMARY KEY,
-
-      month_name VARCHAR(20) NOT NULL,
-
-      month_table_name VARCHAR(150) NOT NULL,
-
-      created_at
-        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    `
+  return Number(
+    result[0]?.count ?? 0
   );
 }
 
 
-// ============================================================
-// CREATE MONTH HISTORICAL TABLE
-// ============================================================
+// =====================================================
+// INSERT VEHICLE DATA
+// =====================================================
 //
-// HISTORICAL DATABASE
+// IMPORTANT:
 //
-// Example:
+// Source database:
 //
-// ward_174_082026
+// master_telemetry_db
 //
-// ============================================================
-
-async function createMonthTable(
-  tableName
-) {
-  await historicalDb.$executeRawUnsafe(
-    `
-    CREATE TABLE IF NOT EXISTS
-    ${quoteIdentifier(tableName)}
-    (
-      historical_id BIGSERIAL PRIMARY KEY,
-
-      source_telemetry_id BIGINT NOT NULL,
-
-      source_vehicle_table
-        VARCHAR(150) NOT NULL,
-
-      vehicle_number
-        VARCHAR(100),
-
-      ward_no
-        INTEGER NOT NULL,
-
-      iot_timestamp
-        TIMESTAMP,
-
-      received_timestamp
-        TIMESTAMP,
-
-      rfid_epc
-        VARCHAR(255),
-
-      citizen_id
-        INTEGER,
-
-      waste_type
-        VARCHAR(100),
-
-      latitude
-        DECIMAL(10,7),
-
-      longitude
-        DECIMAL(10,7),
-
-      wet_weight
-        DECIMAL(10,2),
-
-      dry_weight
-        DECIMAL(10,2),
-
-      other_weight
-        DECIMAL(10,2),
-
-      cumulative_weight
-        DECIMAL(10,2),
-
-      driver_name
-        VARCHAR(150),
-
-      firmware_version
-        VARCHAR(100),
-
-      unit_number
-        VARCHAR(100),
-
-      collection_type
-        VARCHAR(100),
-
-      remarks
-        TEXT,
-
-      error_code
-        VARCHAR(100),
-
-      citizen_contact
-        VARCHAR(100),
-
-      driver_action
-        VARCHAR(100),
-
-      source_day_table
-        VARCHAR(100),
-
-      archived_at
-        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-      UNIQUE (
-        source_vehicle_table,
-        source_telemetry_id
-      )
-    );
-    `
-  );
-}
-
-
-// ============================================================
-// REGISTER MONTH
-// ============================================================
+// Source:
 //
-// Example:
+// KA05AB1234_14082026
 //
-// ward_174_2026
+// Destination:
 //
-// 8 | August | ward_174_082026
+// ward_1_082026
 //
-// ============================================================
-
-async function registerMonth(
-  yearTableName,
-  monthNumber,
-  monthName,
-  monthTableName
-) {
-  await historicalDb.$executeRawUnsafe(
-    `
-    INSERT INTO
-    ${quoteIdentifier(yearTableName)}
-    (
-      month_number,
-      month_name,
-      month_table_name
-    )
-    VALUES
-    (
-      $1,
-      $2,
-      $3
-    )
-    ON CONFLICT (month_number)
-    DO UPDATE SET
-      month_name =
-        EXCLUDED.month_name,
-
-      month_table_name =
-        EXCLUDED.month_table_name;
-    `,
-    monthNumber,
-    monthName,
-    monthTableName
-  );
-}
-
-
-// ============================================================
-// FIELD HELPER
-// ============================================================
+// Mapping is explicit.
 //
-// Supports both:
-//
-// camelCase
-//
-// and:
-//
-// snake_case
-//
-// ============================================================
+// =====================================================
 
-function getField(
-  record,
-  ...names
-) {
-  for (
-    const name of names
-  ) {
-    if (
-      record[name] !== undefined
-    ) {
-      return record[name];
-    }
-  }
-
-  return null;
-}
-
-
-// ============================================================
-// INSERT HISTORICAL RECORD
-// ============================================================
-
-async function insertHistoricalRecord(
+async function insertHistoricalBatch(
   historicalTableName,
-  record
+  vehicleTableName,
+  vehicleNumber,
+  wardNo,
+  sourceDayTable,
+  limit,
+  offset
 ) {
-  const sourceTelemetryId =
-    getField(
-      record,
-      "id"
-    );
+
+  validateIdentifier(
+    historicalTableName
+  );
+
+  validateIdentifier(
+    vehicleTableName
+  );
+
+  validateIdentifier(
+    sourceDayTable
+  );
+
+
+  const safeLimit =
+    Number(limit);
+
+  const safeOffset =
+    Number(offset);
 
 
   if (
-    sourceTelemetryId === null ||
-    sourceTelemetryId === undefined
+    !Number.isInteger(
+      safeLimit
+    ) ||
+    safeLimit <= 0 ||
+    safeLimit > 5000
   ) {
+
     throw new Error(
-      `Telemetry record does not contain an id. Vehicle table: ${record.sourceVehicleTable}`
+      "Invalid batch size"
     );
+
+  }
+
+
+  if (
+    !Number.isInteger(
+      safeOffset
+    ) ||
+    safeOffset < 0
+  ) {
+
+    throw new Error(
+      "Invalid offset"
+    );
+
   }
 
 
   const result =
     await historicalDb.$queryRawUnsafe(
       `
-      INSERT INTO
-      ${quoteIdentifier(historicalTableName)}
-      (
+      INSERT INTO "${historicalTableName}" (
+
         source_telemetry_id,
 
         source_vehicle_table,
@@ -714,177 +1142,432 @@ async function insertHistoricalRecord(
 
         driver_action,
 
-        source_day_table
+        source_day_table,
+
+        archived_at
+
       )
-      VALUES
-      (
+
+      SELECT
+
+        v.id,
+
         $1,
+
+        v.vehiclenumber,
+
         $2,
+
+        v.iottimestamp,
+
+        v.receivedtimestamp,
+
+        v.rfidepc,
+
+        v.citizenid,
+
+        v.wastetype,
+
+        v.latitude,
+
+        v.longitude,
+
+        v.wetweight,
+
+        v.dryweight,
+
+        v.otherweight,
+
+        v.cumulativeweight,
+
+        v.drivername,
+
+        v.firmwareversion,
+
+        v.unitnumber,
+
+        v.collectiontype,
+
+        v.remarks,
+
+        v.errorcode,
+
+        v.citizencontact,
+
+        v.driveraction,
+
         $3,
-        $4,
-        $5,
-        $6,
-        $7,
-        $8,
-        $9,
-        $10,
-        $11,
-        $12,
-        $13,
-        $14,
-        $15,
-        $16,
-        $17,
-        $18,
-        $19,
-        $20,
-        $21,
-        $22,
-        $23,
-        $24
-      )
-      ON CONFLICT
-      (
+
+        NOW()
+
+      FROM "${vehicleTableName}" AS v
+
+      ORDER BY
+        v.id ASC
+
+      LIMIT $4
+      OFFSET $5
+
+      ON CONFLICT (
         source_vehicle_table,
         source_telemetry_id
       )
+
       DO NOTHING
-      RETURNING historical_id;
+
+      RETURNING historical_id
       `,
 
-      Number(sourceTelemetryId),
+      vehicleTableName,
 
-      record.sourceVehicleTable,
+      Number(wardNo),
 
-      record.vehicleNumber,
+      sourceDayTable,
 
-      record.wardNo,
+      safeLimit,
 
-      record.iotTimestamp,
+      safeOffset
 
-      record.receivedTimestamp,
-
-      record.rfidEpc,
-
-      record.citizenId,
-
-      record.wasteType,
-
-      record.latitude,
-
-      record.longitude,
-
-      record.wetWeight,
-
-      record.dryWeight,
-
-      record.otherWeight,
-
-      record.cumulativeWeight,
-
-      record.driverName,
-
-      record.firmwareVersion,
-
-      record.unitNumber,
-
-      record.collectionType,
-
-      record.remarks,
-
-      record.errorCode,
-
-      record.citizenContact,
-
-      record.driverAction,
-
-      record.sourceDayTable
     );
 
 
   return {
-    inserted:
-      result.length > 0,
 
-    historicalId:
-      result[0]?.historical_id ??
-      null,
+    inserted:
+      result.length,
+
   };
 }
 
 
-// ============================================================
-// PROCESS ARCHIVE DATE
-// ============================================================
-//
-// MAIN BUSINESS LOGIC
-//
-// Example:
-//
-// 2026-08-14
-//
-// ↓
-//
-// master_telemetry_db
-//
-// day_14082026
-//
-// ↓
-//
-// ward_no
-//
-// ↓
-//
-// vehicle_table_name
-//
-// ↓
-//
-// vehicle telemetry
-//
-// ↓
-//
-// historical DB
-//
-// ward_174_082026
-//
-// ============================================================
+// =====================================================
+// ARCHIVE ONE VEHICLE
+// =====================================================
 
-async function processArchiveDate(
-  processingDate
-) {
-  const {
-    year,
-    monthNumber,
-  } =
-    getDateInfo(
-      processingDate
+async function archiveVehicle({
+  vehicleNumber,
+  wardNo,
+  vehicleTableName,
+  sourceDayTable,
+  month,
+  year,
+}) {
+
+  const numericWard =
+    Number(wardNo);
+
+
+  const numericMonth =
+    Number(month);
+
+
+  const numericYear =
+    Number(year);
+
+
+  // ---------------------------------------------------
+  // VALIDATE
+  // ---------------------------------------------------
+
+  if (
+    !Number.isInteger(
+      numericWard
+    ) ||
+    numericWard <= 0
+  ) {
+
+    throw new Error(
+      `Invalid ward number: ${wardNo}`
     );
 
-
-  const monthName =
-    MONTH_NAMES[
-      monthNumber - 1
-    ];
+  }
 
 
-  // ========================================================
-  // FIND DAILY TABLE
-  // ========================================================
+  if (
+    !vehicleTableName
+  ) {
 
-  const {
-    dayTableName,
-    exists: dayTableExists,
-  } =
-    await getDailyTable(
-      processingDate
+    throw new Error(
+      `Vehicle table missing for ${vehicleNumber}`
+    );
+
+  }
+
+
+  validateIdentifier(
+    vehicleTableName
+  );
+
+
+  // ---------------------------------------------------
+  // VEHICLE TABLE EXISTS
+  // ---------------------------------------------------
+
+  const vehicleExists =
+    await sourceVehicleTableExists(
+      vehicleTableName
     );
 
 
   if (
-    !dayTableExists
+    !vehicleExists
   ) {
+
+    throw new Error(
+      `Vehicle table "${vehicleTableName}" does not exist in master_telemetry_db`
+    );
+
+  }
+
+
+  // ---------------------------------------------------
+  // VALIDATE SOURCE
+  // ---------------------------------------------------
+
+  await validateVehicleTableStructure(
+    vehicleTableName
+  );
+
+
+  console.log(
+    `✅ Vehicle table validated: ${vehicleTableName}`
+  );
+
+
+  // ---------------------------------------------------
+  // ENSURE WARD TABLES
+  // ---------------------------------------------------
+
+  const historicalTables =
+    await ensureHistoricalTables(
+
+      numericWard,
+
+      numericMonth,
+
+      numericYear
+
+    );
+
+
+  const monthlyTableName =
+    historicalTables.monthlyTableName;
+
+
+  const yearlyTableName =
+    historicalTables.yearlyTableName;
+
+
+  // ---------------------------------------------------
+  // VALIDATE DESTINATION
+  // ---------------------------------------------------
+
+  await validateHistoricalTable(
+    monthlyTableName
+  );
+
+
+  console.log(
+    `✅ Historical table validated: ${monthlyTableName}`
+  );
+
+
+  // ---------------------------------------------------
+  // SOURCE COUNT
+  // ---------------------------------------------------
+
+  const sourceRecords =
+    await getVehicleRowCount(
+      vehicleTableName
+    );
+
+
+  console.log(
+    `📊 ${vehicleTableName}: ${sourceRecords} source records`
+  );
+
+
+  // ---------------------------------------------------
+  // INSERT BATCHES
+  // ---------------------------------------------------
+
+  let offset =
+    0;
+
+  let inserted =
+    0;
+
+
+  while (
+    offset < sourceRecords
+  ) {
+
+    const batch =
+      await insertHistoricalBatch(
+
+        monthlyTableName,
+
+        vehicleTableName,
+
+        vehicleNumber,
+
+        numericWard,
+
+        sourceDayTable,
+
+        BATCH_SIZE,
+
+        offset
+
+      );
+
+
+    inserted +=
+      batch.inserted;
+
+
+    console.log(
+      `   ${vehicleTableName} | offset ${offset} | inserted ${batch.inserted}`
+    );
+
+
+    offset +=
+      BATCH_SIZE;
+
+  }
+
+
+  // ---------------------------------------------------
+  // DUPLICATES
+  // ---------------------------------------------------
+
+  const duplicates =
+    Math.max(
+      sourceRecords - inserted,
+      0
+    );
+
+
+  return {
+
+    vehicleNumber,
+
+    vehicleTableName,
+
+    wardNo:
+      numericWard,
+
+    sourceDatabase:
+      "master_telemetry_db",
+
+    sourceDayTable,
+
+    historicalYearTable:
+      yearlyTableName,
+
+    historicalMonthTable:
+      monthlyTableName,
+
+    sourceRecords,
+
+    inserted,
+
+    duplicates,
+
+    archived:
+      inserted > 0 ||
+      sourceRecords === 0,
+
+  };
+}
+
+
+// =====================================================
+// ARCHIVE DATE
+// =====================================================
+
+async function archiveDate(
+  dateInput
+) {
+
+  const {
+
+    date,
+
+    day,
+
+    month,
+
+    year,
+
+    dayTable,
+
+    monthName,
+
+  } =
+    getDateInformation(
+      dateInput
+    );
+
+
+  console.log("");
+  console.log(
+    "============================================================"
+  );
+
+  console.log(
+    "🚛 SEWAC HISTORICAL ARCHIVE"
+  );
+
+  console.log(
+    "============================================================"
+  );
+
+  console.log(
+    "Source DB:",
+    "master_telemetry_db"
+  );
+
+  console.log(
+    "Day table:",
+    dayTable
+  );
+
+  console.log(
+    "Date:",
+    `${year}-${String(month).padStart(
+      2,
+      "0"
+    )}-${String(day).padStart(
+      2,
+      "0"
+    )}`
+  );
+
+  console.log(
+    "============================================================"
+  );
+
+
+  // ---------------------------------------------------
+  // DAY TABLE EXISTS
+  // ---------------------------------------------------
+
+  const dayExists =
+    await tableExists(
+      telemetryDb,
+      dayTable
+    );
+
+
+  if (
+    !dayExists
+  ) {
+
     return {
-      success: false,
+
+      success:
+        false,
 
       reason:
         "DAY_TABLE_NOT_FOUND",
@@ -892,27 +1575,48 @@ async function processArchiveDate(
       sourceDatabase:
         "master_telemetry_db",
 
-      dayTable:
-        dayTableName,
+      sourceDayTable:
+        dayTable,
+
+      year,
+
+      month,
+
+      monthName,
+
+      archivedVehicles:
+        0,
+
+      archivedRecords:
+        0,
+
+      duplicateRecords:
+        0,
+
+      vehicles: [],
+
     };
   }
 
 
-  // ========================================================
-  // GET DAILY VEHICLES
-  // ========================================================
+  // ---------------------------------------------------
+  // READ VEHICLES
+  // ---------------------------------------------------
 
   const vehicles =
-    await getVehiclesFromDailyTable(
-      dayTableName
+    await getVehiclesFromDayTable(
+      dayTable
     );
 
 
   if (
-    vehicles.length === 0
+    !vehicles.length
   ) {
+
     return {
-      success: true,
+
+      success:
+        false,
 
       reason:
         "NO_VEHICLES",
@@ -921,7 +1625,13 @@ async function processArchiveDate(
         "master_telemetry_db",
 
       sourceDayTable:
-        dayTableName,
+        dayTable,
+
+      year,
+
+      month,
+
+      monthName,
 
       archivedVehicles:
         0,
@@ -929,27 +1639,42 @@ async function processArchiveDate(
       archivedRecords:
         0,
 
+      duplicateRecords:
+        0,
+
       vehicles: [],
+
     };
   }
 
 
-  // ========================================================
-  // COUNTERS
-  // ========================================================
+  console.log(
+    `🚚 Vehicles found: ${vehicles.length}`
+  );
 
-  let archivedVehicles = 0;
 
-  let archivedRecords = 0;
+  // ---------------------------------------------------
+  // TOTALS
+  // ---------------------------------------------------
 
-  let duplicateRecords = 0;
+  let archivedVehicles =
+    0;
+
+  let archivedRecords =
+    0;
+
+  let duplicateRecords =
+    0;
+
 
   const vehicleResults = [];
 
+  const failedVehicles = [];
 
-  // ========================================================
-  // PROCESS EACH VEHICLE
-  // ========================================================
+
+  // ---------------------------------------------------
+  // PROCESS VEHICLES
+  // ---------------------------------------------------
 
   for (
     const vehicle
@@ -957,15 +1682,14 @@ async function processArchiveDate(
   ) {
 
     const vehicleNumber =
-      vehicle.vehicle_number;
+      vehicle.vehicle_number ??
+      null;
+
 
     const vehicleTableName =
-      vehicle.vehicle_table_name;
+      vehicle.vehicle_table_name ??
+      null;
 
-
-    // ======================================================
-    // WARD COMES DIRECTLY FROM DAILY TABLE
-    // ======================================================
 
     const wardNo =
       Number(
@@ -973,410 +1697,184 @@ async function processArchiveDate(
       );
 
 
-    // ======================================================
-    // VALIDATE VEHICLE TABLE
-    // ======================================================
+    console.log("");
+
+    console.log(
+      "------------------------------------------------------------"
+    );
+
+    console.log(
+      "Vehicle:",
+      vehicleNumber
+    );
+
+    console.log(
+      "Vehicle table:",
+      vehicleTableName
+    );
+
+    console.log(
+      "Ward:",
+      wardNo
+    );
+
+    console.log(
+      "------------------------------------------------------------"
+    );
+
+
+    // -------------------------------------------------
+    // VALIDATE
+    // -------------------------------------------------
 
     if (
       !vehicleTableName
     ) {
-      vehicleResults.push({
+
+      failedVehicles.push({
+
         vehicleNumber,
+
+        vehicleTableName:
+          null,
 
         wardNo,
 
-        archived: false,
+        archived:
+          false,
 
-        reason:
+        error:
           "MISSING_VEHICLE_TABLE_NAME",
+
       });
 
       continue;
     }
 
 
-    // ======================================================
-    // VALIDATE WARD
-    // ======================================================
-
     if (
-      !Number.isInteger(wardNo)
+      !Number.isInteger(
+        wardNo
+      ) ||
+      wardNo <= 0
     ) {
-      vehicleResults.push({
+
+      failedVehicles.push({
+
         vehicleNumber,
 
         vehicleTableName,
 
-        wardNo:
-          vehicle.ward_no,
+        wardNo,
 
-        archived: false,
+        archived:
+          false,
 
-        reason:
+        error:
           "INVALID_WARD_NO",
+
       });
 
       continue;
     }
 
 
-    // ======================================================
-    // HISTORICAL TABLE NAMES
-    // ======================================================
+    // -------------------------------------------------
+    // ARCHIVE
+    // -------------------------------------------------
 
-    const yearTableName =
-      getYearTableName(
-        wardNo,
-        year
-      );
-
-
-    const monthTableName =
-      getMonthTableName(
-        wardNo,
-        monthNumber,
-        year
-      );
-
-
-    // ======================================================
-    // CREATE YEAR TABLE
-    // ======================================================
-
-    const yearExists =
-      await tableExists(
-        historicalDb,
-        yearTableName
-      );
-
-
-    if (
-      !yearExists
-    ) {
-      await createYearTable(
-        yearTableName
-      );
-    }
-
-
-    // ======================================================
-    // CREATE MONTH TABLE
-    // ======================================================
-
-    const monthExists =
-      await tableExists(
-        historicalDb,
-        monthTableName
-      );
-
-
-    if (
-      !monthExists
-    ) {
-      await createMonthTable(
-        monthTableName
-      );
-    }
-
-
-    // ======================================================
-    // REGISTER MONTH
-    // ======================================================
-
-    await registerMonth(
-      yearTableName,
-      monthNumber,
-      monthName,
-      monthTableName
-    );
-
-
-    // ======================================================
-    // READ VEHICLE TELEMETRY
-    // ======================================================
-    //
-    // MASTER TELEMETRY DB
-    //
-    // ======================================================
-
-    const telemetry =
-      await getVehicleTelemetry(
-        vehicleTableName
-      );
-
-
-    if (
-      !telemetry.exists
-    ) {
-      vehicleResults.push({
-        vehicleNumber,
-
-        vehicleTableName,
-
-        wardNo,
-
-        archived: false,
-
-        reason:
-          "VEHICLE_TABLE_NOT_FOUND",
-      });
-
-      continue;
-    }
-
-
-    // ======================================================
-    // INSERT TELEMETRY RECORDS
-    // ======================================================
-
-    let inserted = 0;
-
-    let duplicates = 0;
-
-
-    for (
-      const record
-      of telemetry.records
-    ) {
-
-      const normalizedRecord = {
-
-        sourceVehicleTable:
-          vehicleTableName,
-
-        vehicleNumber:
-          getField(
-            record,
-            "vehicleNumber",
-            "vehicle_number"
-          ) ??
-          vehicleNumber,
-
-        wardNo,
-
-        iotTimestamp:
-          getField(
-            record,
-            "iotTimestamp",
-            "iot_timestamp"
-          ),
-
-        receivedTimestamp:
-          getField(
-            record,
-            "receivedTimestamp",
-            "received_timestamp"
-          ),
-
-        rfidEpc:
-          getField(
-            record,
-            "rfidEpc",
-            "rfid_epc"
-          ),
-
-        citizenId:
-          getField(
-            record,
-            "citizenId",
-            "citizen_id"
-          ),
-
-        wasteType:
-          getField(
-            record,
-            "wasteType",
-            "waste_type"
-          ),
-
-        latitude:
-          getField(
-            record,
-            "latitude"
-          ),
-
-        longitude:
-          getField(
-            record,
-            "longitude"
-          ),
-
-        wetWeight:
-          getField(
-            record,
-            "wetWeight",
-            "wet_weight"
-          ),
-
-        dryWeight:
-          getField(
-            record,
-            "dryWeight",
-            "dry_weight"
-          ),
-
-        otherWeight:
-          getField(
-            record,
-            "otherWeight",
-            "other_weight"
-          ),
-
-        cumulativeWeight:
-          getField(
-            record,
-            "cumulativeWeight",
-            "cumulative_weight"
-          ),
-
-        driverName:
-          getField(
-            record,
-            "driverName",
-            "driver_name"
-          ),
-
-        firmwareVersion:
-          getField(
-            record,
-            "firmwareVersion",
-            "firmware_version"
-          ),
-
-        unitNumber:
-          getField(
-            record,
-            "unitNumber",
-            "unit_number"
-          ),
-
-        collectionType:
-          getField(
-            record,
-            "collectionType",
-            "collection_type"
-          ),
-
-        remarks:
-          getField(
-            record,
-            "remarks"
-          ),
-
-        errorCode:
-          getField(
-            record,
-            "errorCode",
-            "error_code"
-          ),
-
-        citizenContact:
-          getField(
-            record,
-            "citizenContact",
-            "citizen_contact"
-          ),
-
-        driverAction:
-          getField(
-            record,
-            "driverAction",
-            "driver_action"
-          ),
-
-        sourceDayTable:
-          dayTableName,
-      };
-
+    try {
 
       const result =
-        await insertHistoricalRecord(
-          monthTableName,
-          {
-            ...record,
-            ...normalizedRecord,
-          }
-        );
+        await archiveVehicle({
+
+          vehicleNumber,
+
+          wardNo,
+
+          vehicleTableName,
+
+          sourceDayTable:
+            dayTable,
+
+          month,
+
+          year,
+
+        });
+
+
+      vehicleResults.push(
+        result
+      );
 
 
       if (
-        result.inserted
+        result.archived
       ) {
-        inserted++;
-      } else {
-        duplicates++;
+
+        archivedVehicles++;
+
       }
+
+
+      archivedRecords +=
+        result.inserted;
+
+
+      duplicateRecords +=
+        result.duplicates;
+
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        `❌ Failed ${vehicleNumber}:`,
+        error.message
+      );
+
+
+      failedVehicles.push({
+
+        vehicleNumber,
+
+        vehicleTableName,
+
+        wardNo,
+
+        archived:
+          false,
+
+        error:
+          error.message,
+
+      });
+
     }
 
-
-    // ======================================================
-    // UPDATE TOTALS
-    // ======================================================
-
-    archivedVehicles++;
-
-    archivedRecords +=
-      inserted;
-
-    duplicateRecords +=
-      duplicates;
-
-
-    // ======================================================
-    // VEHICLE RESULT
-    // ======================================================
-
-    vehicleResults.push({
-
-      vehicleNumber,
-
-      vehicleTableName,
-
-      wardNo,
-
-      sourceDatabase:
-        "master_telemetry_db",
-
-      sourceDayTable:
-        dayTableName,
-
-      historicalYearTable:
-        yearTableName,
-
-      historicalMonthTable:
-        monthTableName,
-
-      sourceRecords:
-        telemetry.records.length,
-
-      inserted,
-
-      duplicates,
-
-      archived:
-        true,
-    });
   }
 
 
-  // ========================================================
-  // FINAL RESULT
-  // ========================================================
+  // ---------------------------------------------------
+  // RESULT
+  // ---------------------------------------------------
 
   return {
 
-    success: true,
+    success:
+      true,
 
     sourceDatabase:
       "master_telemetry_db",
 
     sourceDayTable:
-      dayTableName,
+      dayTable,
 
     year,
 
-    month:
-      monthNumber,
+    month,
 
     monthName,
 
@@ -1386,35 +1884,29 @@ async function processArchiveDate(
 
     duplicateRecords,
 
+    failedVehicles,
+
     vehicles:
       vehicleResults,
+
   };
 }
 
 
-// ============================================================
-// ARCHIVE TODAY
-// ============================================================
-//
-// POST
-//
-// /api/historical-database/archive-today
-//
-// ============================================================
+// =====================================================
+// CONTROLLER — ARCHIVE TODAY
+// =====================================================
 
 async function archiveToday(
   req,
   res
 ) {
+
   try {
 
-    const today =
-      new Date();
-
-
     const result =
-      await processArchiveDate(
-        today
+      await archiveDate(
+        new Date()
       );
 
 
@@ -1422,16 +1914,42 @@ async function archiveToday(
       result.reason ===
       "DAY_TABLE_NOT_FOUND"
     ) {
+
       return res
         .status(404)
         .json({
 
-          success: false,
+          success:
+            false,
 
           message:
-            `Daily table '${result.dayTable}' does not exist in master_telemetry_db.`,
+            `Day table '${result.sourceDayTable}' does not exist in master_telemetry_db.`,
 
-          ...result,
+          data:
+            result,
+
+        });
+    }
+
+
+    if (
+      result.reason ===
+      "NO_VEHICLES"
+    ) {
+
+      return res
+        .status(404)
+        .json({
+
+          success:
+            false,
+
+          message:
+            `No vehicles found in '${result.sourceDayTable}'.`,
+
+          data:
+            result,
+
         });
     }
 
@@ -1440,19 +1958,38 @@ async function archiveToday(
       .status(200)
       .json({
 
-        success: true,
+        success:
+          true,
 
         message:
-          "Today's telemetry archived successfully.",
+          `Historical telemetry for ${result.year}-${String(
+            result.month
+          ).padStart(2, "0")}-${String(
+            result.sourceDayTable
+              .replace(
+                "day_",
+                ""
+              )
+              .substring(
+                0,
+                2
+              )
+          ).padStart(
+            2,
+            "0"
+          )} archived successfully.`,
 
         data:
           result,
+
       });
 
-  } catch (error) {
+  } catch (
+    error
+  ) {
 
     console.error(
-      "❌ archiveToday error:",
+      "\n❌ HISTORICAL ARCHIVE TODAY ERROR\n",
       error
     );
 
@@ -1461,68 +1998,79 @@ async function archiveToday(
       .status(500)
       .json({
 
-        success: false,
+        success:
+          false,
 
         message:
-          "Failed to archive today's telemetry.",
+          "Failed to archive today's historical telemetry.",
 
         error:
           error.message,
+
       });
   }
 }
 
 
-// ============================================================
-// ARCHIVE SPECIFIC DATE
-// ============================================================
-//
-// POST
-//
-// /api/historical-database/archive
-//
-// BODY:
-//
-// {
-//   "date": "2026-08-14"
-// }
-//
-// ============================================================
+// =====================================================
+// CONTROLLER — ARCHIVE SPECIFIC DATE
+// =====================================================
 
 async function archiveSpecificDate(
   req,
   res
 ) {
+
   try {
 
     const {
-      date,
+      date
     } =
       req.body || {};
 
 
-    if (!date) {
+    if (
+      !date
+    ) {
+
       return res
         .status(400)
         .json({
 
-          success: false,
+          success:
+            false,
 
           message:
-            "date is required.",
+            "date is required. Use YYYY-MM-DD.",
+
         });
     }
 
 
-    const requestedDate =
-      parseRequestDate(
+    if (
+      typeof date !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(
         date
-      );
+      )
+    ) {
+
+      return res
+        .status(400)
+        .json({
+
+          success:
+            false,
+
+          message:
+            "Invalid date format. Use YYYY-MM-DD.",
+
+        });
+    }
 
 
     const result =
-      await processArchiveDate(
-        requestedDate
+      await archiveDate(
+        date
       );
 
 
@@ -1530,16 +2078,42 @@ async function archiveSpecificDate(
       result.reason ===
       "DAY_TABLE_NOT_FOUND"
     ) {
+
       return res
         .status(404)
         .json({
 
-          success: false,
+          success:
+            false,
 
           message:
-            `Daily table '${result.dayTable}' does not exist in master_telemetry_db.`,
+            `Day table '${result.sourceDayTable}' does not exist in master_telemetry_db.`,
 
-          ...result,
+          data:
+            result,
+
+        });
+    }
+
+
+    if (
+      result.reason ===
+      "NO_VEHICLES"
+    ) {
+
+      return res
+        .status(404)
+        .json({
+
+          success:
+            false,
+
+          message:
+            `No vehicles found in '${result.sourceDayTable}'.`,
+
+          data:
+            result,
+
         });
     }
 
@@ -1548,19 +2122,23 @@ async function archiveSpecificDate(
       .status(200)
       .json({
 
-        success: true,
+        success:
+          true,
 
         message:
           `Historical telemetry for ${date} archived successfully.`,
 
         data:
           result,
+
       });
 
-  } catch (error) {
+  } catch (
+    error
+  ) {
 
     console.error(
-      "❌ archiveSpecificDate error:",
+      "\n❌ HISTORICAL ARCHIVE ERROR\n",
       error
     );
 
@@ -1569,37 +2147,30 @@ async function archiveSpecificDate(
       .status(500)
       .json({
 
-        success: false,
+        success:
+          false,
 
         message:
           "Failed to archive historical telemetry.",
 
         error:
           error.message,
+
       });
   }
 }
 
 
-// ============================================================
+// =====================================================
 // TEST DATABASE CONNECTIONS
-// ============================================================
-//
-// GET
-//
-// /api/historical-database/test-connections
-//
-// ============================================================
+// =====================================================
 
 async function testConnections(
   req,
   res
 ) {
-  try {
 
-    // ========================================================
-    // TELEMETRY DATABASE
-    // ========================================================
+  try {
 
     const telemetryResult =
       await telemetryDb.$queryRawUnsafe(
@@ -1611,10 +2182,6 @@ async function testConnections(
       );
 
 
-    // ========================================================
-    // HISTORICAL DATABASE
-    // ========================================================
-
     const historicalResult =
       await historicalDb.$queryRawUnsafe(
         `
@@ -1625,24 +2192,16 @@ async function testConnections(
       );
 
 
-    // ========================================================
-    // TODAY'S DAILY TABLE
-    // ========================================================
-
-    const today =
-      new Date();
-
-
-    const todayTable =
-      getDayTableName(
-        today
+    const todayInfo =
+      getDateInformation(
+        new Date()
       );
 
 
     const todayExists =
       await tableExists(
         telemetryDb,
-        todayTable
+        todayInfo.dayTable
       );
 
 
@@ -1650,7 +2209,8 @@ async function testConnections(
       .status(200)
       .json({
 
-        success: true,
+        success:
+          true,
 
         telemetryDatabase: {
 
@@ -1663,10 +2223,12 @@ async function testConnections(
           expectedDatabase:
             "master_telemetry_db",
 
-          todayTable,
+          todayTable:
+            todayInfo.dayTable,
 
           todayTableExists:
             todayExists,
+
         },
 
         historicalDatabase: {
@@ -1676,13 +2238,17 @@ async function testConnections(
 
           schema:
             historicalResult[0]?.schema,
+
         },
+
       });
 
-  } catch (error) {
+  } catch (
+    error
+  ) {
 
     console.error(
-      "❌ testConnections error:",
+      "❌ Database connection test failed:",
       error
     );
 
@@ -1691,21 +2257,23 @@ async function testConnections(
       .status(500)
       .json({
 
-        success: false,
+        success:
+          false,
 
         message:
           "Database connection test failed.",
 
         error:
           error.message,
+
       });
   }
 }
 
 
-// ============================================================
+// =====================================================
 // EXPORTS
-// ============================================================
+// =====================================================
 
 module.exports = {
 

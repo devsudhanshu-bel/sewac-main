@@ -1,116 +1,326 @@
-const repository =
-  require(
-    "../repositories/historicalDatabase.repository"
-  );
+const telemetryDailyRepository =
+  require("../repositories/telemetryDaily.repository");
+
+const historicalRepository =
+  require("../repositories/citizenHistoricalTable.repository");
 
 // =====================================================
-// ARCHIVE DATE
+// HISTORICAL ARCHIVE SERVICE
 // =====================================================
 
-async function archiveDate(
-  processingDate = new Date()
-) {
-
-  const date =
-    processingDate instanceof Date
-      ? processingDate
-      : new Date(processingDate);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    throw new Error(
-      "Invalid processing date"
-    );
-  }
-
-  const year =
-    date.getFullYear();
-
-  const month =
-    date.getMonth() + 1;
+class HistoricalArchiveService {
 
   // ===================================================
-  // STEP 1
-  // GET DAY TABLE
+  // ARCHIVE ONE DATE
   // ===================================================
 
-  const dayResult =
-    await repository.getVehiclesFromDayTable(
-      date
-    );
-
-  if (!dayResult.exists) {
-    return {
-
-      archived: false,
-
-      reason:
-        "DAY_TABLE_NOT_FOUND",
-
-      dayTable:
-        dayResult.dayTable,
-
-    };
-  }
-
-  // ===================================================
-  // STEP 2
-  // NO VEHICLES
-  // ===================================================
-
-  if (
-    dayResult.vehicles.length === 0
-  ) {
-    return {
-
-      archived: false,
-
-      reason:
-        "NO_VEHICLES",
-
-      dayTable:
-        dayResult.dayTable,
-
-    };
-  }
-
-  // ===================================================
-  // RESULTS
-  // ===================================================
-
-  const vehicleResults = [];
-
-  let totalRecords = 0;
-
-  // ===================================================
-  // STEP 3
-  // PROCESS EACH VEHICLE
-  // ===================================================
-
-  for (
-    const vehicle
-    of dayResult.vehicles
+  async archiveDate(
+    processingDate
   ) {
 
-    const vehicleNumber =
-      vehicle.vehicle_number;
-
-    const vehicleTableName =
-      vehicle.vehicle_table_name;
-
-    const wardNo =
-      Number(vehicle.ward_no);
-
-    // -------------------------------------------------
-    // VALIDATE WARD
-    // -------------------------------------------------
+    const date =
+      processingDate instanceof Date
+        ? processingDate
+        : new Date(processingDate);
 
     if (
-      !Number.isInteger(wardNo)
+      Number.isNaN(
+        date.getTime()
+      )
     ) {
+      throw new Error(
+        "Invalid processing date"
+      );
+    }
+
+    // -----------------------------------------------
+    // DATE VALUES
+    // -----------------------------------------------
+
+    const year =
+      date.getFullYear();
+
+    const month =
+      date.getMonth() + 1;
+
+    const monthName =
+      historicalRepository.MONTH_NAMES[
+        month - 1
+      ];
+
+    const dayTableName =
+      telemetryDailyRepository.getDayTableName(
+        date
+      );
+
+    // -----------------------------------------------
+    // GET DAY TABLE VEHICLES
+    // -----------------------------------------------
+
+    const vehicles =
+      await telemetryDailyRepository
+        .getVehiclesFromDayTable(
+          date
+        );
+
+    if (!vehicles.length) {
+
+      return {
+
+        success: true,
+
+        sourceDatabase:
+          "master_telemetry_db",
+
+        sourceDayTable:
+          dayTableName,
+
+        year,
+
+        month,
+
+        monthName,
+
+        archivedVehicles: 0,
+
+        archivedRecords: 0,
+
+        duplicateRecords: 0,
+
+        vehicles: [],
+
+      };
+
+    }
+
+    let archivedVehicles = 0;
+
+    let archivedRecords = 0;
+
+    let duplicateRecords = 0;
+
+    const vehicleResults = [];
+
+    // -----------------------------------------------
+    // PROCESS EVERY VEHICLE
+    // -----------------------------------------------
+
+    for (
+      const vehicle
+      of vehicles
+    ) {
+
+      const vehicleNumber =
+        vehicle.vehicle_number;
+
+      const vehicleTableName =
+        vehicle.vehicle_table_name;
+
+      const wardNo =
+        Number(
+          vehicle.ward_no
+        );
+
+      if (
+        !vehicleTableName
+      ) {
+
+        vehicleResults.push({
+
+          vehicleNumber,
+
+          vehicleTableName: null,
+
+          wardNo,
+
+          archived: false,
+
+          reason:
+            "VEHICLE_TABLE_NAME_MISSING",
+
+        });
+
+        continue;
+
+      }
+
+      if (
+        !Number.isInteger(wardNo) ||
+        wardNo <= 0
+      ) {
+
+        vehicleResults.push({
+
+          vehicleNumber,
+
+          vehicleTableName,
+
+          wardNo,
+
+          archived: false,
+
+          reason:
+            "WARD_NO_MISSING_OR_INVALID",
+
+        });
+
+        continue;
+
+      }
+
+      // ---------------------------------------------
+      // HISTORICAL TABLE NAMES
+      // ---------------------------------------------
+
+      const yearlyTableName =
+        historicalRepository
+          .generateYearlyIndexTableName(
+            wardNo,
+            year
+          );
+
+      const monthlyTableName =
+        historicalRepository
+          .generateMonthlyTableName(
+            wardNo,
+            month,
+            year
+          );
+
+      // ---------------------------------------------
+      // ENSURE YEARLY TABLE
+      // ---------------------------------------------
+
+      const yearlyExists =
+        await historicalRepository
+          .tableExists(
+            yearlyTableName
+          );
+
+      if (!yearlyExists) {
+
+        await historicalRepository
+          .createYearlyIndexTable(
+            yearlyTableName
+          );
+
+      }
+
+      // ---------------------------------------------
+      // ENSURE MONTHLY TABLE
+      // ---------------------------------------------
+
+      const monthlyExists =
+        await historicalRepository
+          .tableExists(
+            monthlyTableName
+          );
+
+      if (!monthlyExists) {
+
+        await historicalRepository
+          .createMonthlyHistoryTable(
+            monthlyTableName
+          );
+
+      }
+
+      // ---------------------------------------------
+      // REGISTER MONTH
+      // ---------------------------------------------
+
+      await historicalRepository
+        .registerMonthlyTable(
+          yearlyTableName,
+          month,
+          monthName,
+          monthlyTableName
+        );
+
+      // ---------------------------------------------
+      // READ VEHICLE RECORDS
+      // ---------------------------------------------
+
+      let lastId = 0;
+
+      let sourceRecords = 0;
+
+      let inserted = 0;
+
+      let duplicates = 0;
+
+      while (true) {
+
+        const records =
+          await telemetryDailyRepository
+            .getVehicleTelemetryAfterId(
+              vehicleTableName,
+              lastId,
+              500
+            );
+
+        if (!records.length) {
+          break;
+        }
+
+        sourceRecords +=
+          records.length;
+
+        // -------------------------------------------
+        // INSERT EACH RECORD
+        // -------------------------------------------
+
+        for (
+          const record
+          of records
+        ) {
+
+          const result =
+            await historicalRepository
+              .insertHistoricalRecord(
+                monthlyTableName,
+                {
+                  record,
+
+                  wardNo,
+
+                  vehicleTableName,
+
+                  sourceDayTable:
+                    dayTableName,
+                }
+              );
+
+          if (result.inserted) {
+            inserted++;
+          } else {
+            duplicates++;
+          }
+
+          // IMPORTANT:
+          // Always advance using source ID.
+          lastId =
+            Number(record.id);
+        }
+
+        // -------------------------------------------
+        // SAFETY
+        // -------------------------------------------
+
+        if (
+          records.length < 500
+        ) {
+          break;
+        }
+      }
+
+      archivedVehicles++;
+
+      archivedRecords +=
+        inserted;
+
+      duplicateRecords +=
+        duplicates;
 
       vehicleResults.push({
 
@@ -118,238 +328,71 @@ async function archiveDate(
 
         vehicleTableName,
 
-        archived: false,
+        wardNo,
 
-        reason:
-          "INVALID_WARD_NO",
+        sourceDatabase:
+          "master_telemetry_db",
+
+        sourceDayTable:
+          dayTableName,
+
+        historicalYearTable:
+          yearlyTableName,
+
+        historicalMonthTable:
+          monthlyTableName,
+
+        sourceRecords,
+
+        inserted,
+
+        duplicates,
+
+        archived: true,
 
       });
 
-      continue;
     }
 
-    // -------------------------------------------------
-    // HISTORICAL TABLE NAMES
-    // -------------------------------------------------
+    // -----------------------------------------------
+    // RESULT
+    // -----------------------------------------------
 
-    const yearTableName =
-      repository.getYearTableName(
-        wardNo,
-        year
-      );
+    return {
 
-    const monthTableName =
-      repository.getMonthTableName(
-        wardNo,
-        month,
-        year
-      );
+      success: true,
 
-    // -------------------------------------------------
-    // CREATE YEAR TABLE
-    // -------------------------------------------------
+      sourceDatabase:
+        "master_telemetry_db",
 
-    await repository.createYearTable(
-      yearTableName
-    );
+      sourceDayTable:
+        dayTableName,
 
-    // -------------------------------------------------
-    // CREATE MONTH TABLE
-    // -------------------------------------------------
-
-    await repository.createMonthTable(
-      monthTableName
-    );
-
-    // -------------------------------------------------
-    // REGISTER MONTH
-    // -------------------------------------------------
-
-    await repository.registerMonthInYear(
-      yearTableName,
-      month,
       year,
-      monthTableName
-    );
 
-    // -------------------------------------------------
-    // GET TELEMETRY
-    // -------------------------------------------------
+      month,
 
-    const telemetry =
-      await repository.getVehicleTelemetry(
-        vehicleTableName
-      );
+      monthName,
 
-    let inserted =
-      0;
+      archivedVehicles,
 
-    let duplicates =
-      0;
+      archivedRecords,
 
-    // -------------------------------------------------
-    // INSERT RECORDS
-    // -------------------------------------------------
+      duplicateRecords,
 
-    for (
-      const record
-      of telemetry
-    ) {
+      vehicles:
+        vehicleResults,
 
-      const result =
-        await repository.insertHistoricalRecord(
-          monthTableName,
-          {
-
-            sourceTelemetryId:
-              Number(record.id),
-
-            sourceVehicleTable:
-              vehicleTableName,
-
-            vehicleNumber:
-              record.vehicleNumber ||
-              vehicleNumber,
-
-            wardNo,
-
-            iotTimestamp:
-              record.iotTimestamp,
-
-            receivedTimestamp:
-              record.receivedTimestamp,
-
-            rfidEpc:
-              record.rfidEpc,
-
-            citizenId:
-              record.citizenId,
-
-            wasteType:
-              record.wasteType,
-
-            latitude:
-              record.latitude,
-
-            longitude:
-              record.longitude,
-
-            wetWeight:
-              record.wetWeight,
-
-            dryWeight:
-              record.dryWeight,
-
-            otherWeight:
-              record.otherWeight,
-
-            cumulativeWeight:
-              record.cumulativeWeight,
-
-            driverName:
-              record.driverName,
-
-            firmwareVersion:
-              record.firmwareVersion,
-
-            unitNumber:
-              record.unitNumber,
-
-            collectionType:
-              record.collectionType,
-
-            remarks:
-              record.remarks,
-
-            errorCode:
-              record.errorCode,
-
-            citizenContact:
-              record.citizenContact,
-
-            driverAction:
-              record.driverAction,
-
-          }
-        );
-
-      if (
-        result.inserted
-      ) {
-        inserted++;
-      } else {
-        duplicates++;
-      }
-
-    }
-
-    // -------------------------------------------------
-    // VEHICLE RESULT
-    // -------------------------------------------------
-
-    totalRecords += inserted;
-
-    vehicleResults.push({
-
-      vehicleNumber,
-
-      wardNo,
-
-      sourceTable:
-        vehicleTableName,
-
-      yearTable:
-        yearTableName,
-
-      monthTable:
-        monthTableName,
-
-      sourceRecords:
-        telemetry.length,
-
-      inserted,
-
-      duplicates,
-
-      archived:
-        true,
-
-    });
+    };
 
   }
 
-  // ===================================================
-  // FINAL RESULT
-  // ===================================================
-
-  return {
-
-    archived: true,
-
-    processingDate:
-      date.toISOString(),
-
-    dayTable:
-      dayResult.dayTable,
-
-    year,
-
-    month,
-
-    vehicles:
-      vehicleResults.length,
-
-    totalRecords,
-
-    vehicleResults,
-
-  };
 }
+
 
 // =====================================================
 // EXPORT
 // =====================================================
 
-module.exports = {
-  archiveDate,
-};
+module.exports =
+  new HistoricalArchiveService();

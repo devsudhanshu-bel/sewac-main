@@ -1,19 +1,33 @@
-const express =
-  require("express");
+const express = require("express");
 
 const {
   archiveToday,
   archiveDate,
-} =
-  require(
-    "../controllers/historicalDatabase.controller"
-  );
+} = require(
+  "../controllers/citizenHistoricalArchive.controller"
+);
 
-const router =
-  express.Router();
+const router = express.Router();
+
 
 // =====================================================
 // ARCHIVE TODAY
+// =====================================================
+//
+// POST
+// /archive-today
+//
+// Reads:
+// master_telemetry_db
+//      ↓
+// day_DDMMYYYY
+//      ↓
+// vehicle_table_name
+//      ↓
+// vehicle table
+//      ↓
+// ward historical monthly table
+//
 // =====================================================
 
 router.post(
@@ -21,8 +35,20 @@ router.post(
   archiveToday
 );
 
+
 // =====================================================
 // ARCHIVE SPECIFIC DATE
+// =====================================================
+//
+// POST
+// /archive
+//
+// Body:
+//
+// {
+//   "date": "2026-08-14"
+// }
+//
 // =====================================================
 
 router.post(
@@ -30,5 +56,5 @@ router.post(
   archiveDate
 );
 
-module.exports =
-  router;
+
+module.exports = router;

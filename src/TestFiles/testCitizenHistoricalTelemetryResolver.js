@@ -1,11 +1,11 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const telemetryDailyRepository =
-  require("./repositories/telemetryDaily.repository");
+  require("../repositories/telemetryDaily.repository");
 
 const telemetryResolver =
   require(
-    "./services/citizenHistoricalTelemetryResolver.service"
+    "../services/citizenHistoricalTelemetryResolver.service"
   );
 
 

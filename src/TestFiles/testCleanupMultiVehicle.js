@@ -1,10 +1,10 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const telemetryDb =
-  require("./config/telemetryDb");
+  require("../config/telemetryDb");
 
 const citizenHistoricalPrisma =
-  require("./config/citizenHistoricalPrisma");
+  require("../config/citizenHistoricalPrisma");
 
 
 // =====================================================

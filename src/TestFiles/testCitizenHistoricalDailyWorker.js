@@ -1,9 +1,9 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 
 const citizenHistoricalDailyWorker =
   require(
-    "./services/citizenHistoricalDailyWorker.service"
+    "../services/citizenHistoricalDailyWorker.service"
   );
 
 

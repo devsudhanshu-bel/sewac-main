@@ -14,9 +14,6 @@ const citizenRoutes =
 const telemetryRoutes =
   require("./routes/telemetryRoutes");
 
-const ragRoutes =
-  require("./routes/ragRoutes");
-
 const iotRoutes =
   require("./routes/iotRoutes");
 
@@ -52,32 +49,34 @@ const complaintRoutes =
 
 
 // =====================================================
-// HISTORICAL DATABASE
-// =====================================================
-//
-// NEW HISTORICAL DATABASE PIPELINE
-//
-// Source:
-// master_telemetry_db
-//
-// Daily tables:
-//
-// day_DDMMYYYY
-//
-// Example:
-//
-// day_14082026
-//
-// Historical tables:
-//
-// ward_174_2026
-// ward_174_082026
-//
+// HISTORICAL DATABASE ROUTES
 // =====================================================
 
 const historicalDatabaseRoutes =
   require(
     "./routes/historicalDatabase.routes"
+  );
+
+
+// =====================================================
+// HISTORICAL DATABASE SCHEDULER
+// =====================================================
+//
+// Automatically archives TODAY'S telemetry every day
+// at 02:00 PM IST.
+//
+// IMPORTANT:
+//
+// The scheduler uses the existing
+// historicalDatabase.controller.js archive logic.
+//
+// It does NOT contain its own database logic.
+//
+// =====================================================
+
+const citizenHistoricalScheduler =
+  require(
+    "./schedulers/citizenHistorical.scheduler"
   );
 
 
@@ -286,12 +285,6 @@ app.use(
 
 
 app.use(
-  "/api/rag",
-  ragRoutes
-);
-
-
-app.use(
   "/api/logs",
   logsRoutes
 );
@@ -337,13 +330,10 @@ app.use(
 // HISTORICAL DATABASE
 // =====================================================
 //
-// NEW PIPELINE
-//
 // POST
 // /api/historical-database/archive-today
 //
-// Archives today's daily table.
-//
+// Archives today's daily telemetry.
 //
 //
 // POST
@@ -354,7 +344,6 @@ app.use(
 // {
 //   "date": "2026-08-14"
 // }
-//
 //
 //
 // GET
@@ -376,17 +365,6 @@ app.use(
 // =====================================================
 // CITY
 // =====================================================
-//
-// POST
-// /api/master-citizen/cities
-//
-// GET
-// /api/master-citizen/cities
-//
-// GET
-// /api/master-citizen/cities/:cityId
-//
-// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -396,23 +374,6 @@ app.use(
 
 // =====================================================
 // ZONE
-// =====================================================
-//
-// POST
-// /api/master-citizen/cities/:cityId/zones
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones/:zoneId
-//
-// PATCH
-// /api/master-citizen/cities/:cityId/zones/:zoneId
-//
-// DELETE
-// /api/master-citizen/cities/:cityId/zones/:zoneId
-//
 // =====================================================
 
 app.use(
@@ -424,23 +385,6 @@ app.use(
 // =====================================================
 // DIVISION
 // =====================================================
-//
-// POST
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
-//
-// PATCH
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
-//
-// DELETE
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId
-//
-// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -451,23 +395,6 @@ app.use(
 // =====================================================
 // WARD
 // =====================================================
-//
-// POST
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
-//
-// GET
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
-//
-// PATCH
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
-//
-// DELETE
-// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards/:wardId
-//
-// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -477,25 +404,6 @@ app.use(
 
 // =====================================================
 // MASTER CITIZEN SYNC
-// =====================================================
-//
-// FULL SYNC
-//
-// POST
-// /api/master-citizen/sync
-//
-//
-//
-// WARD-WISE SYNC
-//
-// POST
-// /api/master-citizen/sync/ward/:wardNo
-//
-// Example:
-//
-// POST
-// /api/master-citizen/sync/ward/174
-//
 // =====================================================
 
 app.use(
@@ -515,6 +423,71 @@ app.use(
 // =====================================================
 
 startMasterCitizenWeeklySync();
+
+
+// =====================================================
+// START HISTORICAL DATABASE SCHEDULER
+// =====================================================
+//
+// Every day:
+//
+// 02:00 PM IST
+//
+// The scheduler archives:
+//
+// TODAY
+//
+// Example:
+//
+// 15 August 2026
+//       ↓
+// 14:00 IST
+//       ↓
+// day_15082026
+//       ↓
+// vehicle_table_name
+//       ↓
+// actual vehicle table
+//       ↓
+// telemetry records
+//       ↓
+// ward monthly historical table
+//
+// =====================================================
+
+console.log("");
+console.log(
+  "============================================================"
+);
+console.log(
+  "🚛 SEWAC HISTORICAL ARCHIVE SCHEDULER"
+);
+console.log(
+  "============================================================"
+);
+console.log(
+  "Status: STARTING"
+);
+console.log(
+  "Schedule: Every day at 02:00 PM IST"
+);
+console.log(
+  "Archive target: TODAY"
+);
+console.log(
+  "============================================================"
+);
+
+citizenHistoricalScheduler.start();
+
+console.log(
+  "✅ Historical archive scheduler started successfully."
+);
+
+console.log(
+  "============================================================"
+);
+console.log("");
 
 
 // =====================================================

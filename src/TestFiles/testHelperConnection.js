@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const helperPrisma =
-  require("./config/helperPrisma");
+  require("../config/helperPrisma");
 
 async function test() {
 

@@ -1,22 +1,22 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const initializeTelemetryDB =
-  require("./telemetry/initialize/initializeTelemetryDB");
+  require("../telemetry/initialize/initializeTelemetryDB");
 
 const telemetryPipelineService =
-  require("./telemetry/services/TelemetryPipelineService");
+  require("../telemetry/services/TelemetryPipelineService");
 
 const telemetryDailyRepository =
-  require("./repositories/telemetryDaily.repository");
+  require("../repositories/telemetryDaily.repository");
 
 const citizenHistoricalDailyWorker =
-  require("./services/citizenHistoricalDailyWorker.service");
+  require("../services/citizenHistoricalDailyWorker.service");
 
 const historicalProcessingManager =
-  require("./citizenHistorical/processing/HistoricalProcessingManager");
+  require("../citizenHistorical/processing/HistoricalProcessingManager");
 
 const citizenHistoricalPrisma =
-  require("./config/citizenHistoricalPrisma");
+  require("../config/citizenHistoricalPrisma");
 
 
 // =====================================================

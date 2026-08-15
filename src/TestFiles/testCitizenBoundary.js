@@ -1,5 +1,5 @@
 const repository =
-  require("./repositories/citizenHistoricalBoundary.repository");
+  require("../repositories/citizenHistoricalBoundary.repository");
 
 // =====================================================
 // MAIN

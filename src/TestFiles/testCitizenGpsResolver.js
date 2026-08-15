@@ -1,6 +1,6 @@
 const gpsResolver =
   require(
-    "./services/citizenHistoricalGpsResolver.service"
+    "../services/citizenHistoricalGpsResolver.service"
   );
 
 

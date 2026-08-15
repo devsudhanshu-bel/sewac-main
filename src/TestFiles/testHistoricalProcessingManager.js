@@ -1,8 +1,8 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const historicalProcessingManager =
   require(
-    "./citizenHistorical/processing/HistoricalProcessingManager"
+    "../citizenHistorical/processing/HistoricalProcessingManager"
   );
 
 

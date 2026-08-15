@@ -1,8 +1,8 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const citizenHistoricalProcessor =
   require(
-    "./services/citizenHistoricalProcessor.service"
+    "../services/citizenHistoricalProcessor.service"
   );
 
 

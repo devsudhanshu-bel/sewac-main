@@ -1,7 +1,7 @@
-require("./config/loadEnv");
+require("../config/loadEnv");
 
 const citizenHistoricalPrisma =
-  require("./config/citizenHistoricalPrisma");
+  require("../config/citizenHistoricalPrisma");
 
 
 // =====================================================
