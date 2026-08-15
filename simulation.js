@@ -13,37 +13,40 @@
  * DURATION:
  *   5 minutes
  *
- * PURPOSE:
- *   Simulate two waste collection vehicles moving inside
- *   Ward 216 and continuously sending telemetry.
+ * IMPORTANT:
+ *   NO SOCKET.IO
+ *
+ * Flow:
+ *
+ * Simulation
+ *     ↓
+ * HTTP POST
+ *     ↓
+ * SEWAC Backend
+ *     ↓
+ * Existing telemetry processing
  *
  * ============================================================
  */
 
-const { io } = require("socket.io-client");
+const http = require("http");
+const https = require("https");
 
 // ============================================================
 // CONFIGURATION
 // ============================================================
-
-// Your SEWAC backend Socket.IO URL
-const SOCKET_URL =
-  process.env.SOCKET_URL ||
-  "http://localhost:5000";
-
-// ------------------------------------------------------------
-// SOCKET EVENT
-// ------------------------------------------------------------
 //
-// IMPORTANT:
-// Keep this as the event your backend uses for telemetry.
+// PUT YOUR EXISTING TELEMETRY HTTP ENDPOINT HERE.
 //
-// If your backend listens to another event, change this one.
-// ------------------------------------------------------------
+// Example:
+// http://localhost:5002/api/telemetry
+//
+// Do NOT put a Socket.IO URL here.
+//
 
-const SOCKET_EVENT =
-  process.env.SOCKET_EVENT ||
-  "vehicle-location-update";
+const TELEMETRY_URL =
+  process.env.TELEMETRY_URL ||
+  "http://localhost:5002/api/telemetry";
 
 // ============================================================
 // TEST CONFIGURATION
@@ -68,21 +71,6 @@ const WARD_NAME = "Ibbaluru";
 // ============================================================
 // WARD 216 BOUNDARY
 // ============================================================
-//
-// IMPORTANT:
-//
-// Replace these coordinates with the EXACT geo_boundary
-// coordinates stored in your Master Citizen DB for Ward 216.
-//
-// Format:
-// [
-//   [latitude, longitude],
-//   [latitude, longitude],
-//   ...
-// ]
-//
-// The example below represents the approximate Ibbaluru area.
-// ============================================================
 
 const WARD_BOUNDARY = [
   [12.902313, 77.6548554],
@@ -103,13 +91,6 @@ const WARD_BOUNDARY = [
 
 // ============================================================
 // VEHICLES
-// ============================================================
-//
-// Each vehicle has its own route.
-//
-// The routes should remain inside Ward 216.
-//
-// You can add more vehicles later.
 // ============================================================
 
 const vehicles = [
@@ -185,67 +166,70 @@ const vehicles = [
 ];
 
 // ============================================================
-// SOCKET CONNECTION
+// STARTUP INFORMATION
 // ============================================================
 
 console.log("");
-console.log("============================================================");
-console.log("🚛 SEWAC VEHICLE SIMULATION");
-console.log("============================================================");
-console.log(`Ward       : ${WARD_NO} - ${WARD_NAME}`);
-console.log(`Vehicles   : ${vehicles.length}`);
-console.log(`Duration   : 5 minutes`);
-console.log(`Interval   : ${TELEMETRY_INTERVAL_MS / 1000}s`);
-console.log(`Socket     : ${SOCKET_URL}`);
-console.log(`Event      : ${SOCKET_EVENT}`);
-console.log("============================================================");
+
+console.log(
+  "============================================================"
+);
+
+console.log(
+  "🚛 SEWAC VEHICLE SIMULATION"
+);
+
+console.log(
+  "============================================================"
+);
+
+console.log(
+  `Ward       : ${WARD_NO} - ${WARD_NAME}`
+);
+
+console.log(
+  `Vehicles   : ${vehicles.length}`
+);
+
+console.log(
+  "Vehicles   : KA05AB1237, KA05AB1238"
+);
+
+console.log(
+  "Duration   : 5 minutes"
+);
+
+console.log(
+  `Interval   : ${TELEMETRY_INTERVAL_MS / 1000}s`
+);
+
+console.log(
+  `HTTP API   : ${TELEMETRY_URL}`
+);
+
+console.log(
+  "Socket.IO  : DISABLED"
+);
+
+console.log(
+  "============================================================"
+);
+
 console.log("");
 
-const socket = io(SOCKET_URL, {
-  transports: ["websocket"],
-  reconnection: true,
-});
-
 // ============================================================
-// CONNECTION EVENTS
-// ============================================================
-
-socket.on("connect", () => {
-  console.log(
-    `✅ Socket connected: ${socket.id}`
-  );
-
-  console.log("");
-  console.log(
-    "🚛 Starting vehicle simulation..."
-  );
-  console.log("");
-});
-
-socket.on("connect_error", (error) => {
-  console.error(
-    "❌ Socket connection error:",
-    error.message
-  );
-});
-
-socket.on("disconnect", (reason) => {
-  console.log(
-    `⚠️ Socket disconnected: ${reason}`
-  );
-});
-
-// ============================================================
-// UTILITY FUNCTIONS
+// UTILITY
 // ============================================================
 
 function random(min, max) {
-  return Math.random() * (max - min) + min;
+  return Math.random() *
+    (max - min) +
+    min;
 }
 
-// ------------------------------------------------------------
-// INTERPOLATE BETWEEN TWO GPS POINTS
-// ------------------------------------------------------------
+// ============================================================
+// INTERPOLATE GPS
+// ============================================================
 
 function interpolate(
   start,
@@ -269,10 +253,12 @@ function interpolate(
 }
 
 // ============================================================
-// VEHICLE STATE
+// VEHICLE POSITION
 // ============================================================
 
-function getVehiclePosition(vehicle) {
+function getVehiclePosition(
+  vehicle
+) {
   const route =
     vehicle.route;
 
@@ -297,14 +283,133 @@ function getVehiclePosition(vehicle) {
 }
 
 // ============================================================
-// SEND TELEMETRY
+// HTTP POST
 // ============================================================
 
-function sendVehicleTelemetry(
+function postTelemetry(
+  telemetry
+) {
+  return new Promise(
+    (resolve, reject) => {
+
+      const url =
+        new URL(
+          TELEMETRY_URL
+        );
+
+      const payload =
+        JSON.stringify(
+          telemetry
+        );
+
+      const isHttps =
+        url.protocol ===
+        "https:";
+
+      const transport =
+        isHttps
+          ? https
+          : http;
+
+      const request =
+        transport.request(
+          {
+            hostname:
+              url.hostname,
+
+            port:
+              url.port ||
+              (isHttps
+                ? 443
+                : 80),
+
+            path:
+              `${url.pathname}${url.search}`,
+
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "Content-Length":
+                Buffer.byteLength(
+                  payload
+                ),
+            },
+          },
+
+          (response) => {
+
+            let body = "";
+
+            response.on(
+              "data",
+              (chunk) => {
+                body += chunk;
+              }
+            );
+
+            response.on(
+              "end",
+              () => {
+
+                if (
+                  response.statusCode >= 200 &&
+                  response.statusCode < 300
+                ) {
+
+                  resolve({
+                    status:
+                      response.statusCode,
+
+                    body,
+                  });
+
+                } else {
+
+                  reject(
+                    new Error(
+                      `HTTP ${response.statusCode}: ${body}`
+                    )
+                  );
+
+                }
+
+              }
+            );
+
+          }
+        );
+
+      request.on(
+        "error",
+        reject
+      );
+
+      request.write(
+        payload
+      );
+
+      request.end();
+
+    }
+  );
+}
+
+// ============================================================
+// SEND VEHICLE TELEMETRY
+// ============================================================
+
+async function sendVehicleTelemetry(
   vehicle
 ) {
+
   const position =
-    getVehiclePosition(vehicle);
+    getVehiclePosition(
+      vehicle
+    );
 
   const latitude =
     position[0];
@@ -317,7 +422,10 @@ function sendVehicleTelemetry(
   // ----------------------------------------------------------
 
   const collected =
-    random(0.5, 2.5);
+    random(
+      0.5,
+      2.5
+    );
 
   vehicle.wasteCollected +=
     collected;
@@ -336,10 +444,11 @@ function sendVehicleTelemetry(
   }
 
   // ----------------------------------------------------------
-  // TELEMETRY PAYLOAD
+  // TELEMETRY
   // ----------------------------------------------------------
 
   const telemetry = {
+
     vehicleId:
       vehicle.vehicleId,
 
@@ -366,7 +475,8 @@ function sendVehicleTelemetry(
 
     wasteCollected:
       Number(
-        vehicle.wasteCollected.toFixed(2)
+        vehicle.wasteCollected
+          .toFixed(2)
       ),
 
     status:
@@ -374,29 +484,38 @@ function sendVehicleTelemetry(
 
     timestamp:
       new Date().toISOString(),
+
   };
 
   // ----------------------------------------------------------
-  // SEND TO BACKEND
+  // SEND HTTP REQUEST
   // ----------------------------------------------------------
 
-  socket.emit(
-    SOCKET_EVENT,
-    telemetry
-  );
+  try {
 
-  // ----------------------------------------------------------
-  // LOG
-  // ----------------------------------------------------------
+    const response =
+      await postTelemetry(
+        telemetry
+      );
 
-  console.log(
-    `🚛 ${vehicle.vehicleId} | ` +
-    `Ward ${vehicle.wardNo} | ` +
-    `Lat ${latitude.toFixed(6)} | ` +
-    `Lng ${longitude.toFixed(6)} | ` +
-    `Speed ${telemetry.speed} km/h | ` +
-    `Waste ${telemetry.wasteCollected} kg`
-  );
+    console.log(
+      `🚛 ${vehicle.vehicleId} | ` +
+      `Ward ${vehicle.wardNo} | ` +
+      `Lat ${latitude.toFixed(6)} | ` +
+      `Lng ${longitude.toFixed(6)} | ` +
+      `Speed ${telemetry.speed} km/h | ` +
+      `Waste ${telemetry.wasteCollected} kg | ` +
+      `HTTP ${response.status}`
+    );
+
+  } catch (error) {
+
+    console.error(
+      `❌ ${vehicle.vehicleId} telemetry failed:`,
+      error.message
+    );
+
+  }
 }
 
 // ============================================================
@@ -405,41 +524,70 @@ function sendVehicleTelemetry(
 
 let simulationInterval = null;
 
-function startSimulation() {
+let simulationStartedAt =
+  null;
+
+// ============================================================
+// START
+// ============================================================
+
+async function startSimulation() {
+
+  simulationStartedAt =
+    Date.now();
+
+  console.log(
+    "🚛 Starting vehicle simulation..."
+  );
+
+  console.log("");
+
   // ----------------------------------------------------------
-  // SEND INITIAL LOCATION
+  // INITIAL TELEMETRY
   // ----------------------------------------------------------
 
-  vehicles.forEach(
-    (vehicle) => {
-      sendVehicleTelemetry(
-        vehicle
-      );
-    }
-  );
+  for (
+    const vehicle of vehicles
+  ) {
+
+    await sendVehicleTelemetry(
+      vehicle
+    );
+
+  }
 
   // ----------------------------------------------------------
   // CONTINUOUS TELEMETRY
   // ----------------------------------------------------------
 
   simulationInterval =
-    setInterval(() => {
-      vehicles.forEach(
-        (vehicle) => {
-          sendVehicleTelemetry(
-            vehicle
-          );
-        }
-      );
-    }, TELEMETRY_INTERVAL_MS);
+    setInterval(
+      () => {
+
+        vehicles.forEach(
+          (vehicle) => {
+
+            sendVehicleTelemetry(
+              vehicle
+            );
+
+          }
+        );
+
+      },
+      TELEMETRY_INTERVAL_MS
+    );
+
 }
 
 // ============================================================
-// STOP SIMULATION
+// STOP
 // ============================================================
 
 function stopSimulation() {
+
   console.log("");
+
   console.log(
     "============================================================"
   );
@@ -452,20 +600,32 @@ function stopSimulation() {
     "============================================================"
   );
 
-  if (simulationInterval) {
+  if (
+    simulationInterval
+  ) {
+
     clearInterval(
       simulationInterval
     );
 
-    simulationInterval = null;
+    simulationInterval =
+      null;
+
   }
 
-  // ----------------------------------------------------------
-  // FINAL VEHICLE STATISTICS
-  // ----------------------------------------------------------
+  console.log("");
+
+  console.log(
+    "📊 FINAL VEHICLE STATISTICS"
+  );
+
+  console.log(
+    "------------------------------------------------------------"
+  );
 
   vehicles.forEach(
     (vehicle) => {
+
       console.log(
         `🚛 ${vehicle.vehicleId}`
       );
@@ -479,6 +639,13 @@ function stopSimulation() {
           2
         )} kg`
       );
+
+      console.log(
+        `   Route points visited: ${vehicle.routeIndex}`
+      );
+
+      console.log("");
+
     }
   );
 
@@ -487,68 +654,78 @@ function stopSimulation() {
   );
 
   console.log(
-    "🔌 Closing socket..."
+    "✅ Simulation stopped successfully."
   );
 
-  socket.disconnect();
+  console.log(
+    "============================================================"
+  );
 
   process.exit(0);
 }
 
 // ============================================================
-// START AFTER SOCKET CONNECTION
-// ============================================================
-
-socket.on("connect", () => {
-  if (!simulationInterval) {
-    startSimulation();
-  }
-});
-
-// ============================================================
 // 5-MINUTE TIMER
 // ============================================================
 
-setTimeout(() => {
-  stopSimulation();
-}, TEST_DURATION_MS);
+setTimeout(
+  () => {
+
+    stopSimulation();
+
+  },
+  TEST_DURATION_MS
+);
 
 // ============================================================
-// CTRL+C HANDLER
+// CTRL + C
 // ============================================================
 
 process.on(
   "SIGINT",
   () => {
+
     console.log("");
+
     console.log(
       "⚠️ Simulation manually stopped."
     );
 
     stopSimulation();
+
   }
 );
 
 // ============================================================
-// ERROR HANDLER
+// ERROR HANDLERS
 // ============================================================
 
 process.on(
   "uncaughtException",
   (error) => {
+
     console.error(
       "❌ Simulation error:",
       error
     );
+
   }
 );
 
 process.on(
   "unhandledRejection",
   (error) => {
+
     console.error(
       "❌ Unhandled simulation error:",
       error
     );
+
   }
 );
+
+// ============================================================
+// START
+// ============================================================
+
+startSimulation();
