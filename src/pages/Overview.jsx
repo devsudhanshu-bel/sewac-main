@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
-import api from "./api/axios";
+import api from "../api/axios";
 
-import Header from "./components/layouts/Header";
+import Header from "../components/layouts/Header";
 
-import OverviewKPIs from "./components/overview/OverviewKPIs";
-import VehicleStats from "./components/overview/VehicleStats";
-import CityOverviewMap from "./components/overview/CityOverviewMap";
+import OverviewKPIs from "../components/overview/OverviewKPIs";
+import VehicleStats from "../components/overview/VehicleStats";
+import CityOverviewMap from "../components/overview/CityOverviewMap";
 
-import { useFilters } from "./contexts/FilterContext";
+import { useFilters } from "../contexts/FilterContext";
 
 export default function Overview() {
   const [overviewData, setOverviewData] = useState(null);
