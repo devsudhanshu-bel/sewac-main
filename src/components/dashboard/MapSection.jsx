@@ -24,6 +24,89 @@ import api from "../../api/axios";
 import { useFilters } from "../../contexts/FilterContext";
 
 /* =========================================================
+   FIX DB [LAT, LNG] → GEOJSON [LNG, LAT]
+========================================================= */
+
+function invertGeoJSONCoordinates(coordinates) {
+  if (!Array.isArray(coordinates)) {
+    return coordinates;
+  }
+
+  // A coordinate pair:
+  // [latitude, longitude]
+  if (
+    coordinates.length >= 2 &&
+    typeof coordinates[0] === "number" &&
+    typeof coordinates[1] === "number"
+  ) {
+    return [coordinates[1], coordinates[0], ...coordinates.slice(2)];
+  }
+
+  // Polygon / MultiPolygon / LineString etc.
+  return coordinates.map((coordinate) => invertGeoJSONCoordinates(coordinate));
+}
+
+/* =========================================================
+   NORMALIZE COMPLETE GEOJSON OBJECT
+========================================================= */
+
+function normalizeGeoJSON(geojson) {
+  if (!geojson) {
+    return null;
+  }
+
+  const normalized = {
+    ...geojson,
+  };
+
+  /*
+   * GeometryCollection
+   */
+  if (
+    normalized.type === "GeometryCollection" &&
+    Array.isArray(normalized.geometries)
+  ) {
+    normalized.geometries = normalized.geometries.map((geometry) =>
+      normalizeGeoJSON(geometry),
+    );
+
+    return normalized;
+  }
+
+  /*
+   * FeatureCollection
+   */
+  if (
+    normalized.type === "FeatureCollection" &&
+    Array.isArray(normalized.features)
+  ) {
+    normalized.features = normalized.features.map((feature) =>
+      normalizeGeoJSON(feature),
+    );
+
+    return normalized;
+  }
+
+  /*
+   * Feature
+   */
+  if (normalized.type === "Feature" && normalized.geometry) {
+    normalized.geometry = normalizeGeoJSON(normalized.geometry);
+
+    return normalized;
+  }
+
+  /*
+   * Geometry
+   */
+  if (normalized.coordinates) {
+    normalized.coordinates = invertGeoJSONCoordinates(normalized.coordinates);
+  }
+
+  return normalized;
+}
+
+/* =========================================================
    FIT SELECTED BOUNDARY
 ========================================================= */
 
@@ -36,11 +119,18 @@ function FitBoundary({ data }) {
     }
 
     try {
-      const layer = L.geoJSON(data);
+      /*
+       * DB gives [LAT, LNG]
+       * GeoJSON requires [LNG, LAT]
+       */
+      const normalizedData = normalizeGeoJSON(data);
+
+      const layer = L.geoJSON(normalizedData);
 
       const bounds = layer.getBounds();
 
       if (!bounds.isValid()) {
+        console.warn("Boundary bounds are invalid");
         return;
       }
 
@@ -404,7 +494,7 @@ export default function MapSection({ mapView }) {
 
             <GeoJSON
               key={`${selectedBoundary.type}-${selectedBoundary.name}`}
-              data={selectedBoundary.boundary}
+              data={normalizeGeoJSON(selectedBoundary.boundary)}
               style={{
                 color:
                   selectedBoundary.type === "zone"
