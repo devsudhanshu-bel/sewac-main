@@ -11,12 +11,7 @@ import {
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
@@ -56,11 +51,7 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(
-        payload
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
     );
 
     return {
@@ -85,12 +76,7 @@ function getRoleLabel(role) {
    DROPDOWN
 ========================================================= */
 
-function Dropdown({
-  width,
-  value,
-  options,
-  onChange,
-}) {
+function Dropdown({ width, value, options, onChange }) {
   const [open, setOpen] = useState(false);
 
   const wrapperRef = useRef(null);
@@ -125,16 +111,13 @@ function Dropdown({
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        }
+        },
       );
     }
   }, [open]);
 
   return (
-    <div
-      ref={wrapperRef}
-      className={`relative ${width}`}
-    >
+    <div ref={wrapperRef} className={`relative ${width}`}>
       <button
         onClick={() => setOpen(!open)}
         className="
@@ -172,18 +155,23 @@ function Dropdown({
         <div
           ref={menuRef}
           className="
-            absolute
-            top-11
-            left-0
-            w-full
-            rounded-2xl
-            bg-white
-            border
-            border-gray-100
-            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-            overflow-hidden
-            z-[9999]
-          "
+    absolute
+    top-11
+    left-0
+    w-full
+    max-h-[315px]
+    overflow-y-auto
+    rounded-2xl
+    bg-white
+    border
+    border-gray-100
+    shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+    z-[9999]
+
+    scrollbar-thin
+    scrollbar-thumb-violet-300
+    scrollbar-track-transparent
+  "
         >
           {options.map((item) => {
             const label =
@@ -222,10 +210,7 @@ function Dropdown({
                 {label}
 
                 {label === value && (
-                  <Check
-                    size={14}
-                    className="text-violet-600"
-                  />
+                  <Check size={14} className="text-violet-600" />
                 )}
               </button>
             );
@@ -242,9 +227,7 @@ function Dropdown({
 
 export default function Header({
   variant = "dashboard",
-  selectedDate = new Date()
-    .toISOString()
-    .split("T")[0],
+  selectedDate = new Date().toISOString().split("T")[0],
   setSelectedDate = () => {},
 }) {
   const navigate = useNavigate();
@@ -283,31 +266,25 @@ export default function Header({
      USER
   ======================================================= */
 
-  const [user, setUser] = useState(() =>
-    getUserFromToken()
-  );
+  const [user, setUser] = useState(() => getUserFromToken());
 
   const roleLabel = getRoleLabel(user.role);
 
-  const userInitial =
-    user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+  const userInitial = user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
 
   /* =======================================================
      STATE
   ======================================================= */
 
-  const [selectedLanguage, setSelectedLanguage] =
-    useState("English");
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   const [dayType, setDayType] = useState("wet");
 
   const [search, setSearch] = useState("");
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [languageOpen, setLanguageOpen] =
-    useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   const isDashboard = variant === "dashboard";
 
@@ -323,8 +300,7 @@ export default function Header({
 
   // Wednesday = 3
   // Saturday = 6
-  const isDryDay =
-    selectedDay === 3 || selectedDay === 6;
+  const isDryDay = selectedDay === 3 || selectedDay === 6;
 
   /* =======================================================
      REFRESH USER FROM SESSION
@@ -360,7 +336,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2"
+        "-=0.2",
       );
     }
 
@@ -375,15 +351,11 @@ export default function Header({
 
   useEffect(() => {
     function close(e) {
-      if (
-        !profileRef.current?.contains(e.target)
-      ) {
+      if (!profileRef.current?.contains(e.target)) {
         setProfileOpen(false);
       }
 
-      if (
-        !languageRef.current?.contains(e.target)
-      ) {
+      if (!languageRef.current?.contains(e.target)) {
         setLanguageOpen(false);
       }
     }
@@ -401,10 +373,7 @@ export default function Header({
 
   useEffect(() => {
     function shortcut(e) {
-      if (
-        e.key === "/" &&
-        variant !== "dashboard"
-      ) {
+      if (e.key === "/" && variant !== "dashboard") {
         e.preventDefault();
 
         searchRef.current?.focus();
@@ -425,9 +394,7 @@ export default function Header({
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace(
-      "https://app-authentication-frontend.onrender.com"
-    );
+    window.location.replace("https://app-authentication-frontend.onrender.com");
   };
 
   /* =======================================================
@@ -437,13 +404,9 @@ export default function Header({
   const formatLocalDate = (date) => {
     const year = date.getFullYear();
 
-    const month = String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
 
-    const day = String(
-      date.getDate()
-    ).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   };
@@ -473,20 +436,14 @@ export default function Header({
           LEFT
       =================================================== */}
 
-      <div
-        ref={controlsRef}
-        className="flex items-center gap-3"
-      >
+      <div ref={controlsRef} className="flex items-center gap-3">
         {isDashboard ? (
           <div className="flex items-center gap-2">
             {/* City */}
 
             <Dropdown
               width="w-[118px]"
-              value={
-                selectedCity?.city_name ||
-                "Select City"
-              }
+              value={selectedCity?.city_name || "Select City"}
               options={cities}
               onChange={setSelectedCity}
             />
@@ -495,10 +452,7 @@ export default function Header({
 
             <Dropdown
               width="w-[200px]"
-              value={
-                selectedZone?.zone_name ||
-                "Select Zone"
-              }
+              value={selectedZone?.zone_name || "Select Zone"}
               options={zones}
               onChange={setSelectedZone}
             />
@@ -507,10 +461,7 @@ export default function Header({
 
             <Dropdown
               width="w-[138px]"
-              value={
-                selectedDivision?.division_name ||
-                "Select Division"
-              }
+              value={selectedDivision?.division_name || "Select Division"}
               options={divisions}
               onChange={setSelectedDivision}
             />
@@ -547,9 +498,7 @@ export default function Header({
               ref={searchRef}
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
               className="
                 w-[330px]
@@ -603,9 +552,7 @@ export default function Header({
           <Calendar
             value={selectedDateObj}
             onChange={(date) => {
-              setSelectedDate(
-                formatLocalDate(date)
-              );
+              setSelectedDate(formatLocalDate(date));
             }}
           />
         </div>
@@ -625,9 +572,7 @@ export default function Header({
         >
           {isDryDay && (
             <button
-              onClick={() =>
-                setDayType("dry")
-              }
+              onClick={() => setDayType("dry")}
               className={`
                 h-9
                 px-4
@@ -648,9 +593,7 @@ export default function Header({
           )}
 
           <button
-            onClick={() =>
-              setDayType("wet")
-            }
+            onClick={() => setDayType("wet")}
             className={`
               h-9
               px-4
@@ -674,14 +617,9 @@ export default function Header({
             LANGUAGE
         ================================================= */}
 
-        <div
-          ref={languageRef}
-          className="relative"
-        >
+        <div ref={languageRef} className="relative">
           <button
-            onClick={() =>
-              setLanguageOpen(!languageOpen)
-            }
+            onClick={() => setLanguageOpen(!languageOpen)}
             className="
               h-9
               px-3
@@ -697,10 +635,7 @@ export default function Header({
               duration-300
             "
           >
-            <Globe
-              size={15}
-              className="text-violet-600"
-            />
+            <Globe size={15} className="text-violet-600" />
 
             <span className="text-[12px] font-semibold text-[#16295A]">
               {selectedLanguage === "English"
@@ -715,11 +650,7 @@ export default function Header({
               className={`
                 transition-transform
                 duration-300
-                ${
-                  languageOpen
-                    ? "rotate-180"
-                    : ""
-                }
+                ${languageOpen ? "rotate-180" : ""}
               `}
             />
           </button>
@@ -745,9 +676,7 @@ export default function Header({
                 <button
                   key={language}
                   onClick={() => {
-                    setSelectedLanguage(
-                      language
-                    );
+                    setSelectedLanguage(language);
 
                     setLanguageOpen(false);
                   }}
@@ -765,12 +694,8 @@ export default function Header({
                 >
                   {language}
 
-                  {selectedLanguage ===
-                    language && (
-                    <Check
-                      size={14}
-                      className="text-violet-600"
-                    />
+                  {selectedLanguage === language && (
+                    <Check size={14} className="text-violet-600" />
                   )}
                 </button>
               ))}
@@ -782,14 +707,9 @@ export default function Header({
             PROFILE
         ================================================= */}
 
-        <div
-          ref={profileRef}
-          className="relative"
-        >
+        <div ref={profileRef} className="relative">
           <button
-            onClick={() =>
-              setProfileOpen(!profileOpen)
-            }
+            onClick={() => setProfileOpen(!profileOpen)}
             className="
               h-9
               pl-2
@@ -834,9 +754,7 @@ export default function Header({
                 {user.name}
               </h4>
 
-              <p className="text-[10px] text-gray-500">
-                {roleLabel}
-              </p>
+              <p className="text-[10px] text-gray-500">{roleLabel}</p>
             </div>
 
             <ChevronDown
@@ -844,11 +762,7 @@ export default function Header({
               className={`
                 transition-transform
                 duration-300
-                ${
-                  profileOpen
-                    ? "rotate-180"
-                    : ""
-                }
+                ${profileOpen ? "rotate-180" : ""}
               `}
             />
           </button>
@@ -887,7 +801,7 @@ export default function Header({
                       y: 0,
                       duration: 0.22,
                       ease: "power3.out",
-                    }
+                    },
                   );
                 }
               }}
@@ -933,9 +847,7 @@ export default function Header({
                 onClick={() => {
                   setProfileOpen(false);
 
-                  navigate(
-                    "/dashboard/admin/settings"
-                  );
+                  navigate("/dashboard/admin/settings");
                 }}
                 className="
                   w-full
@@ -951,7 +863,6 @@ export default function Header({
                 "
               >
                 <Settings size={16} />
-
                 Settings
               </button>
 
@@ -977,7 +888,6 @@ export default function Header({
                 "
               >
                 <LogOut size={16} />
-
                 Logout
               </button>
             </div>
