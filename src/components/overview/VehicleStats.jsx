@@ -318,26 +318,21 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   top: 10,
                   right: 25,
                   left: 10,
-                  bottom: 55,
+                  bottom: 95,
                 }}
               >
-                {/* =========================================
-                    GRID
-                    ========================================= */}
-
                 <CartesianGrid stroke="#F1F5F9" vertical={false} />
-
-                {/* =========================================
-                    X AXIS
-                    ========================================= */}
 
                 <XAxis
                   dataKey="ward"
                   interval={0}
                   tickLine={false}
                   axisLine={false}
+                  height={95}
+                  angle={-25}
+                  textAnchor="end"
                   tick={{
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 600,
                     fill: "#475569",
                   }}
@@ -353,10 +348,6 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
-                {/* =========================================
-                    Y AXIS
-                    ========================================= */}
-
                 <YAxis
                   allowDecimals={true}
                   tickLine={false}
@@ -365,7 +356,6 @@ export default function VehicleStats({ vehicleData, trendData }) {
                     fontSize: 12,
                     fill: "#64748B",
                   }}
-                  tickFormatter={(value) => `${value}`}
                   label={{
                     value: "Waste Generated (tons)",
                     angle: -90,
@@ -379,10 +369,6 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
-                {/* =========================================
-                    TOOLTIP
-                    ========================================= */}
-
                 <Tooltip
                   content={<CustomTooltip />}
                   cursor={{
@@ -392,9 +378,29 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
-                {/* =========================================
-                    LINE
-                    ========================================= */}
+                {/* =====================================================
+      VERTICAL STEMS
+      Each stem connects the X-axis to its data point.
+      ===================================================== */}
+
+                {chartData.map((item) => (
+                  <ReferenceLine
+                    key={`stem-${item.wardNo}`}
+                    segment={[
+                      {
+                        x: item.ward,
+                        y: 0,
+                      },
+                      {
+                        x: item.ward,
+                        y: item.wasteTons,
+                      },
+                    ]}
+                    stroke="#C4B5FD"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                  />
+                ))}
 
                 <Line
                   type="monotone"
