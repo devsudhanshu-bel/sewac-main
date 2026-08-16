@@ -387,7 +387,7 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
     rows = await telemetryDb.$queryRawUnsafe(
       `
           SELECT
-            vehicle_number,
+            vehicle_id,
             vehicle_table_name,
             ward_no
           FROM ${dayIdentifier}
@@ -626,30 +626,289 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 |
 */
 
+/*
+|--------------------------------------------------------------------------
+| LIVE VEHICLE SUMMARY
+|--------------------------------------------------------------------------
+|
+| Vehicle status is determined from TELEMETRY, NOT from
+| vehicle_master.status.
+|
+| ACTIVE:
+|   Vehicle has received a telemetry packet within the
+|   last 30 minutes.
+|
+| INACTIVE:
+|   Vehicle has not sent a packet for more than 30 minutes,
+|   or has never sent a packet.
+|
+| IMPORTANT:
+|   We use receivedTimestamp because this represents when
+|   SEWAC actually received the packet.
+|
+*/
+
+const VEHICLE_INACTIVITY_MINUTES = 30;
+
 const getVehicleSummary = async () => {
-  const [totalVehiclesResult, runningVehiclesResult] = await Promise.all([
-    mainDb.query(`
-        SELECT COUNT(*) AS total
-        FROM vehicle_master
-      `),
+  /*
+   * =========================================================
+   * 1. TOTAL REGISTERED VEHICLES
+   * =========================================================
+   */
 
-    mainDb.query(`
-        SELECT COUNT(*) AS total
-        FROM vehicle_master
-        WHERE status = 'ACTIVE'
-      `),
-  ]);
+  const totalVehiclesResult = await mainDb.query(`
+    SELECT COUNT(*) AS total
+    FROM vehicle_master
+  `);
 
-  const totalVehicles = Number(totalVehiclesResult.rows[0].total);
+  const totalVehicles = Number(totalVehiclesResult.rows[0].total || 0);
 
-  const runningVehicles = Number(runningVehiclesResult.rows[0].total);
+  /*
+   * =========================================================
+   * 2. CURRENT TIME
+   * =========================================================
+   *
+   * We use the backend/server time for the liveness decision.
+   */
+
+  const now = new Date();
+
+  /*
+   * Vehicle is active only if the last packet was received
+   * within the previous 30 minutes.
+   */
+
+  const inactivityLimit = new Date(
+    now.getTime() - VEHICLE_INACTIVITY_MINUTES * 60 * 1000,
+  );
+
+  /*
+   * =========================================================
+   * 3. CHECK TODAY'S TELEMETRY TABLE
+   * =========================================================
+   *
+   * The current day table tells us which dynamic vehicle
+   * tables currently exist.
+   */
+
+  const today = new Date();
+
+  const todayVehicleTables = await getVehicleTablesForDate(today, null);
+
+  /*
+   * =========================================================
+   * 4. CHECK YESTERDAY TOO
+   * =========================================================
+   *
+   * This handles the midnight boundary.
+   *
+   * Example:
+   *
+   * packet received:
+   *   23:58 yesterday
+   *
+   * current time:
+   *   00:10 today
+   *
+   * The vehicle has been inactive for only 12 minutes,
+   * so it must still be ACTIVE.
+   */
+
+  const yesterday = new Date(today);
+
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  let yesterdayVehicleTables = [];
+
+  try {
+    yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, null);
+  } catch (error) {
+    /*
+     * If yesterday's partition does not exist,
+     * that simply means there is no older telemetry
+     * available from that partition.
+     *
+     * Do not fail the entire Overview API.
+     */
+
+    console.warn(
+      "Vehicle summary: yesterday telemetry table unavailable:",
+      error.message,
+    );
+
+    yesterdayVehicleTables = [];
+  }
+
+  /*
+   * =========================================================
+   * 5. COMBINE VEHICLE TABLES
+   * =========================================================
+   */
+
+  const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
+
+  /*
+   * Remove duplicate physical vehicle tables.
+   */
+
+  const uniqueVehicleTables = Array.from(
+    new Map(
+      allVehicleTables.map((vehicle) => [vehicle.vehicleTableName, vehicle]),
+    ).values(),
+  );
+
+  /*
+   * =========================================================
+   * 6. FIND LATEST RECEIVED PACKET PER VEHICLE
+   * =========================================================
+   */
+
+  const latestPacketByVehicle = new Map();
+
+  for (const vehicle of uniqueVehicleTables) {
+    if (!vehicle.vehicleTableName) {
+      continue;
+    }
+
+    const table = quoteIdentifier(vehicle.vehicleTableName);
+
+    try {
+      const result = await telemetryDb.$queryRawUnsafe(
+        `
+            SELECT
+              vehiclenumber,
+              MAX(receivedtimestamp) AS "lastReceivedTimestamp"
+            FROM ${table}
+            WHERE vehiclenumber IS NOT NULL
+            GROUP BY vehiclenumber
+          `,
+      );
+
+      for (const row of result) {
+        if (!row.vehiclenumber || !row.lastReceivedTimestamp) {
+          continue;
+        }
+
+        const vehicleNumber = String(row.vehiclenumber).trim();
+
+        const lastReceived = new Date(row.lastReceivedTimestamp);
+
+        if (Number.isNaN(lastReceived.getTime())) {
+          continue;
+        }
+
+        const existing = latestPacketByVehicle.get(vehicleNumber);
+
+        /*
+         * Keep only the newest packet.
+         */
+
+        if (!existing || lastReceived > existing.lastReceivedTimestamp) {
+          latestPacketByVehicle.set(vehicleNumber, {
+            vehicleNumber,
+
+            lastReceivedTimestamp: lastReceived,
+          });
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `Vehicle summary: unable to inspect ${vehicle.vehicleTableName}:`,
+        error.message,
+      );
+    }
+  }
+
+  /*
+   * =========================================================
+   * 7. GET REGISTERED VEHICLE NUMBERS
+   * =========================================================
+   *
+   * This prevents an unregistered telemetry vehicle from
+   * being counted as an active registered vehicle.
+   *
+   * We intentionally don't depend on vehicle_master.status.
+   */
+
+  const registeredVehiclesResult = await mainDb.query(`
+  SELECT
+    vehicle_id
+  FROM vehicle_master
+  WHERE vehicle_id IS NOT NULL
+`);
+
+  /*
+   * Normalize vehicle numbers so comparisons are reliable.
+   */
+
+  const registeredVehicles = registeredVehiclesResult.rows
+    .map((vehicle) => ({
+      vehicleId: String(vehicle.vehicle_id).trim(),
+    }))
+    .filter((vehicle) => vehicle.vehicleId);
+
+  /*
+   * =========================================================
+   * 8. DETERMINE ACTIVE / INACTIVE
+   * =========================================================
+   */
+
+  let runningVehicles = 0;
+
+  const vehicleStatus = [];
+
+  for (const vehicle of registeredVehicles) {
+    const latest = latestPacketByVehicle.get(vehicle.vehicleId);
+
+    if (!latest) {
+      vehicleStatus.push({
+        vehicleId: vehicle.vehicleId,
+        status: "INACTIVE",
+        lastReceivedTimestamp: null,
+      });
+
+      continue;
+    }
+
+    const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
+
+    if (isActive) {
+      runningVehicles += 1;
+    }
+
+    vehicleStatus.push({
+      vehicleId: vehicle.vehicleId,
+
+      status: isActive ? "ACTIVE" : "INACTIVE",
+
+      lastReceivedTimestamp: latest.lastReceivedTimestamp,
+    });
+  }
+
+  /*
+   * =========================================================
+   * 9. FINAL COUNTS
+   * =========================================================
+   */
+
+  const inactiveVehicles = Math.max(totalVehicles - runningVehicles, 0);
 
   return {
     totalVehicles,
 
     runningVehicles,
 
-    inactiveVehicles: totalVehicles - runningVehicles,
+    inactiveVehicles,
+
+    /*
+     * Keep this available for future vehicle page usage.
+     *
+     * The existing Overview UI does not need to use it yet.
+     */
+    vehicleStatus,
+
+    inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
   };
 };
 
