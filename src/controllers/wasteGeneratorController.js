@@ -12,7 +12,25 @@ const wasteGeneratorService = require("../services/wasteGeneratorService");
 */
 exports.getAllWasteGenerators = async (req, res) => {
   try {
-    const data = await wasteGeneratorService.getAllWasteGenerators(req.query);
+    /*
+    ===========================================
+    READ HEADER GEOGRAPHIC FILTERS
+    ===========================================
+    */
+    const {
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    } = req.query;
+
+    const data = await wasteGeneratorService.getAllWasteGenerators({
+      ...req.query,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
 
     res.status(200).json({
       success: true,
@@ -52,11 +70,27 @@ exports.getSummary = async (req, res) => {
     ===========================================
     READ OVERVIEW HEADER FILTERS
     ===========================================
+    
+    These values come from the global Header:
+
+    cityId
+    zoneId
+    divisionId
+    wardId
+
+    The controller does NOT interpret these IDs.
+    It simply passes them to the service.
+    ===========================================
     */
-    const { date, cityId, zoneId, divisionId, wardId } = req.query;
+
+    const {
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    } = req.query;
 
     const data = await wasteGeneratorService.getSummary({
-      date,
       cityId,
       zoneId,
       divisionId,
@@ -84,10 +118,30 @@ exports.getSummary = async (req, res) => {
 */
 exports.getDirectory = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    } = req.query;
 
     const pageNumber = Number(page);
     const pageSize = Number(limit);
+
+    /*
+    ===========================================
+    HEADER FILTERS
+
+    These are currently passed through so the
+    directory service/API can use the same
+    geographic scope.
+
+    The existing telemetry query itself is
+    intentionally NOT changed here.
+    ===========================================
+    */
 
     const directory = await sewacPrisma.telemetry_log.groupBy({
       by: ["wet_rfid"],
@@ -105,6 +159,10 @@ exports.getDirectory = async (req, res) => {
     res.status(200).json({
       page: pageNumber,
       limit: pageSize,
+
+      /*
+      Keep the existing response data unchanged.
+      */
       data: directory,
     });
   } catch (error) {
@@ -119,8 +177,11 @@ exports.getDirectory = async (req, res) => {
 ===========================================
 3. GVP GENERATION TREND
 ===========================================
+
 Formula:
+
 GVP = Total Waste Collected - Total Waste Generated
+
 ===========================================
 */
 exports.getGvpTrend = async (req, res) => {
@@ -137,7 +198,9 @@ exports.getGvpTrend = async (req, res) => {
       ward: item.ward,
       totalCollected: item._sum.weightCollected || 0,
       totalGenerated: item._sum.weightGenerated || 0,
-      gvp: (item._sum.weightCollected || 0) - (item._sum.weightGenerated || 0),
+      gvp:
+        (item._sum.weightCollected || 0) -
+        (item._sum.weightGenerated || 0),
     }));
 
     res.status(200).json(result);
