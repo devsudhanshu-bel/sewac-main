@@ -111,13 +111,19 @@ export default function MapSection({ mapView }) {
    */
 
   useEffect(() => {
-    const cityId =
-      selectedCity?.city_id ?? selectedCity?.cityId ?? selectedCity?.id;
+    const cityId = selectedCity?.city_id;
+    const zoneId = selectedZone?.zone_id;
 
-    const zoneId =
-      selectedZone?.zone_id ?? selectedZone?.zoneId ?? selectedZone?.id;
+    console.log("================ MAP FILTER =================");
+    console.log("Selected City:", selectedCity);
+    console.log("Selected Zone:", selectedZone);
+    console.log("City ID:", cityId);
+    console.log("Zone ID:", zoneId);
+    console.log("==============================================");
 
     if (!cityId || !zoneId) {
+      console.warn("Map API skipped: cityId or zoneId not available yet");
+
       setMapData(null);
       return;
     }
@@ -129,22 +135,40 @@ export default function MapSection({ mapView }) {
         setMapLoading(true);
         setMapError("");
 
+        /*
+         * Reset ONLY the map-level filters
+         */
+
         setSelectedDivisionId("");
         setSelectedWardId("");
 
-        console.log("MAP REQUEST");
-        console.log("City ID:", cityId);
-        console.log("Zone ID:", zoneId);
+        /*
+         * Let Axios construct the query parameters.
+         *
+         * This guarantees:
+         *
+         * ?cityId=1&zoneId=4
+         */
 
-        const response = await api.get(
-          `/api/admin/overview/map?cityId=${cityId}&zoneId=${zoneId}`,
-        );
+        console.log("MAP API PARAMS:", {
+          cityId,
+          zoneId,
+        });
+
+        const response = await api.get("/api/admin/overview/map", {
+          params: {
+            cityId,
+            zoneId,
+          },
+        });
+
+        console.log("MAP API RESPONSE:", response.data);
 
         if (!mounted) {
           return;
         }
 
-        setMapData(response.data.data);
+        setMapData(response.data?.data || null);
       } catch (error) {
         if (!mounted) {
           return;
@@ -169,7 +193,7 @@ export default function MapSection({ mapView }) {
     return () => {
       mounted = false;
     };
-  }, [selectedCity, selectedZone]);
+  }, [selectedCity?.city_id, selectedZone?.zone_id]);
 
   /*
    * =======================================================
