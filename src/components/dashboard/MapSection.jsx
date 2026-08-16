@@ -111,7 +111,13 @@ export default function MapSection({ mapView }) {
    */
 
   useEffect(() => {
-    if (!selectedCity?.city_id || !selectedZone?.zone_id) {
+    const cityId =
+      selectedCity?.city_id ?? selectedCity?.cityId ?? selectedCity?.id;
+
+    const zoneId =
+      selectedZone?.zone_id ?? selectedZone?.zoneId ?? selectedZone?.id;
+
+    if (!cityId || !zoneId) {
       setMapData(null);
       return;
     }
@@ -123,16 +129,15 @@ export default function MapSection({ mapView }) {
         setMapLoading(true);
         setMapError("");
 
-        /*
-         * Reset map-specific filters whenever
-         * Header zone changes.
-         */
-
         setSelectedDivisionId("");
         setSelectedWardId("");
 
+        console.log("MAP REQUEST");
+        console.log("City ID:", cityId);
+        console.log("Zone ID:", zoneId);
+
         const response = await api.get(
-          `/api/admin/overview/map?cityId=${selectedCity.city_id}&zoneId=${selectedZone.zone_id}`,
+          `/api/admin/overview/map?cityId=${cityId}&zoneId=${zoneId}`,
         );
 
         if (!mounted) {
@@ -164,7 +169,7 @@ export default function MapSection({ mapView }) {
     return () => {
       mounted = false;
     };
-  }, [selectedCity?.city_id, selectedZone?.zone_id]);
+  }, [selectedCity, selectedZone]);
 
   /*
    * =======================================================
