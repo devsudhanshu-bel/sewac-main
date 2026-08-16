@@ -221,7 +221,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
             rounded-[24px]
             p-6
             shadow-sm
-            h-[430px]
+            h-[520px]
             flex
             flex-col
           "
@@ -304,14 +304,14 @@ export default function VehicleStats({ vehicleData, trendData }) {
             rounded-[24px]
             p-6
             shadow-sm
-            h-[430px]
+            h-[520px]
             flex
             flex-col
           "
         >
           <h2 className="text-[18px] font-semibold mb-5">GENERATION TREND</h2>
 
-          <div className="flex-1 pt-3">
+          <div className="flex-1 min-h-0 pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
@@ -319,7 +319,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   top: 10,
                   right: 25,
                   left: 10,
-                  bottom: 95,
+                  bottom: 75,
                 }}
               >
                 <CartesianGrid stroke="#F1F5F9" vertical={false} />
@@ -329,7 +329,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   interval={0}
                   tickLine={false}
                   axisLine={false}
-                  height={95}
+                  height={75}
                   angle={-25}
                   textAnchor="end"
                   tick={{
