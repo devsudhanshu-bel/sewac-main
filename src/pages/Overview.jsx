@@ -134,23 +134,13 @@ export default function Overview() {
          * =====================================================
          */
 
-        const [summary, vehicleSummary, generationTrend, map] =
-          await Promise.all([
-            api.get(`/api/admin/overview/summary?${queryString}`),
+        const [summary, vehicleSummary, generationTrend] = await Promise.all([
+          api.get(`/api/admin/overview/summary?${queryString}`),
 
-            /*
-             * Vehicle summary MUST receive the same
-             * header filters.
-             */
+          api.get("/api/admin/overview/vehicle-summary"),
 
-            api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
-
-            api.get(
-              `/api/admin/overview/generation-trend?${trendParams.toString()}`,
-            ),
-
-            api.get("/api/admin/overview/map"),
-          ]);
+          api.get(`/api/admin/overview/generation-trend?${queryString}`),
+        ]);
 
         if (!mounted) {
           return;
@@ -181,15 +171,11 @@ export default function Overview() {
           generationTrendData.length === 0;
 
         setOverviewData({
-          summary: summaryData,
+          summary: summary.data.data,
 
           vehicleSummary: vehicleSummary.data.data,
 
-          generationTrend: generationTrendData,
-
-          map: map.data.data,
-
-          hasNoData,
+          generationTrend: generationTrend.data.data,
         });
 
         /*
