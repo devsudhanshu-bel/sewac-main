@@ -16,7 +16,6 @@ exports.getAllWasteGenerators = async (req, res) => {
 
     res.status(200).json({
       success: true,
-
       data,
     });
   } catch (error) {
@@ -24,7 +23,6 @@ exports.getAllWasteGenerators = async (req, res) => {
 
     res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -38,13 +36,11 @@ exports.getWasteGeneratorByPhone = async (req, res) => {
 
     res.status(200).json({
       success: true,
-
       data,
     });
   } catch (error) {
     res.status(404).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -52,14 +48,27 @@ exports.getWasteGeneratorByPhone = async (req, res) => {
 
 exports.getSummary = async (req, res) => {
   try {
-    const data = await wasteGeneratorService.getSummary();
+    /*
+    ===========================================
+    READ OVERVIEW HEADER FILTERS
+    ===========================================
+    */
+    const { date, cityId, zoneId, divisionId, wardId } = req.query;
+
+    const data = await wasteGeneratorService.getSummary({
+      date,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
 
     res.status(200).json({
       success: true,
       data,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Waste Generator Summary Error:", error);
 
     res.status(500).json({
       success: false,
@@ -149,13 +158,11 @@ exports.createWasteGenerator = async (req, res) => {
 
     res.status(201).json({
       success: true,
-
       data,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -171,13 +178,11 @@ exports.updateWasteGenerator = async (req, res) => {
 
     res.status(200).json({
       success: true,
-
       data,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -192,13 +197,11 @@ exports.deleteWasteGenerator = async (req, res) => {
 
     res.status(200).json({
       success: true,
-
       data,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-
       message: error.message,
     });
   }
