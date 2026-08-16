@@ -369,58 +369,82 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
   const dayIdentifier = quoteIdentifier(dayTable);
 
   /*
-   * No wards = no telemetry.
+   * If a geographic filter was supplied but no wards
+   * belong to it, there is simply no telemetry.
    */
-
   if (Array.isArray(wardNos) && wardNos.length === 0) {
     return [];
   }
 
-  let rows;
+  try {
+    let rows;
 
-  /*
-   * Filter by ward numbers.
-   */
-
-  if (Array.isArray(wardNos)) {
-    rows = await telemetryDb.$queryRawUnsafe(
-      `
+    if (Array.isArray(wardNos)) {
+      rows = await telemetryDb.$queryRawUnsafe(
+        `
           SELECT
             vehicle_number,
             vehicle_table_name,
             ward_no
           FROM ${dayIdentifier}
-          WHERE ward_no =
-                ANY($1::integer[])
+          WHERE ward_no = ANY($1::integer[])
           ORDER BY vehicle_number ASC
         `,
-      wardNos,
-    );
-  } else {
+        wardNos,
+      );
+    } else {
+      rows = await telemetryDb.$queryRawUnsafe(
+        `
+          SELECT
+            vehicle_number,
+            vehicle_table_name,
+            ward_no
+          FROM ${dayIdentifier}
+          ORDER BY vehicle_number ASC
+        `,
+      );
+    }
+
+    return rows.map((row) => ({
+      vehicleNumber:
+        row.vehicle_number === null || row.vehicle_number === undefined
+          ? null
+          : String(row.vehicle_number).trim(),
+
+      vehicleTableName: row.vehicle_table_name,
+
+      wardNo: row.ward_no === null ? null : Number(row.ward_no),
+    }));
+  } catch (error) {
     /*
-     * No ward filter.
+     * PostgreSQL 42P01 =
+     * relation/table does not exist.
+     *
+     * Example:
+     * day_15082026 does not exist
+     *
+     * This simply means telemetry has not been
+     * created for the selected date.
+     *
+     * DO NOT throw this error to the controller.
+     * Return an empty result instead.
      */
 
-    rows = await telemetryDb.$queryRawUnsafe(`
-        SELECT
-          vehicle_number,
-          vehicle_table_name,
-          ward_no
-        FROM ${dayIdentifier}
-        ORDER BY vehicle_number ASC
-      `);
+    if (error?.code === "42P01") {
+      console.warn(
+        `Overview: telemetry day table ${dayTable} does not exist. Returning no data.`,
+      );
+
+      return [];
+    }
+
+    /*
+     * Any other database error is a genuine error
+     * and should still be reported normally.
+     */
+
+    throw error;
   }
-
-  return rows.map((row) => ({
-    vehicleNumber:
-      row.vehicle_number === null || row.vehicle_number === undefined
-        ? null
-        : String(row.vehicle_number).trim(),
-
-    vehicleTableName: row.vehicle_table_name,
-
-    wardNo: row.ward_no === null ? null : Number(row.ward_no),
-  }));
 };
 
 /*
