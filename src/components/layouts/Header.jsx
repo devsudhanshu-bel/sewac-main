@@ -6,7 +6,6 @@ import {
   Settings,
   LogOut,
   Check,
-  Plus,
   X,
 } from "lucide-react";
 
@@ -90,7 +89,6 @@ function Dropdown({
   width,
   value,
   options,
-  addLabel,
   onChange,
 }) {
   const [open, setOpen] = useState(false);
@@ -232,28 +230,6 @@ function Dropdown({
               </button>
             );
           })}
-
-          <button
-            className="
-              w-full
-              border-t
-              border-gray-100
-              px-4
-              py-2.5
-              flex
-              items-center
-              gap-2
-              text-[12px]
-              font-semibold
-              text-violet-600
-              hover:bg-violet-50
-              transition
-            "
-          >
-            <Plus size={14} />
-
-            {addLabel}
-          </button>
         </div>
       )}
     </div>
