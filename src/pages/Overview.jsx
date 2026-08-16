@@ -126,6 +126,12 @@ export default function Overview() {
          *
          * MAP currently preserves its existing contract.
          */
+        const trendParams = new URLSearchParams({
+          date: selectedDate,
+          cityId: String(selectedCity.city_id),
+          zoneId: String(selectedZone.zone_id),
+          divisionId: String(selectedDivision.division_id),
+        });
 
         const [summary, vehicleSummary, generationTrend, map] =
           await Promise.all([
@@ -133,7 +139,9 @@ export default function Overview() {
 
             api.get("/api/admin/overview/vehicle-summary"),
 
-            api.get(`/api/admin/overview/generation-trend?${queryString}`),
+            api.get(
+              `/api/admin/overview/generation-trend?${trendParams.toString()}`,
+            ),
 
             api.get("/api/admin/overview/map"),
           ]);

@@ -4,8 +4,8 @@ import { gsap } from "gsap";
 
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,17 +18,29 @@ export default function VehicleStats({ vehicleData, trendData }) {
   const rightCardRef = useRef(null);
   const statCardsRef = useRef([]);
 
+  /*
+   * =========================================================
+   * VEHICLE FLEET DATA
+   * =========================================================
+   */
+
   const vehicleStats = vehicleData
     ? [
         {
           title: "Total Registered Vehicles",
+
           value: Number(vehicleData.totalVehicles).toLocaleString(),
+
           color: "text-violet-600",
+
           bg: "bg-violet-50",
         },
+
         {
           title: "Running Vehicles",
+
           value: Number(vehicleData.runningVehicles).toLocaleString(),
+
           percentage:
             vehicleData.totalVehicles > 0
               ? `(${(
@@ -36,12 +48,17 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   100
                 ).toFixed(1)}%)`
               : "(0%)",
+
           color: "text-green-600",
+
           bg: "bg-green-50",
         },
+
         {
           title: "Not Running Vehicles",
+
           value: Number(vehicleData.inactiveVehicles).toLocaleString(),
+
           percentage:
             vehicleData.totalVehicles > 0
               ? `(${(
@@ -49,29 +66,46 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   100
                 ).toFixed(1)}%)`
               : "(0%)",
+
           color: "text-red-500",
+
           bg: "bg-red-50",
         },
       ]
     : [];
 
+  /*
+   * =========================================================
+   * WARD-WISE GENERATION DATA
+   * =========================================================
+   *
+   * Backend sends:
+   *
+   * wasteGenerated = KG
+   *
+   * Graph uses:
+   *
+   * wasteTons = KG / 1000
+   */
+
   const chartData =
     trendData?.map((item) => ({
-      zone:
-        item.label === "Bengaluru East City Corporation"
-          ? "BECC"
-          : item.label === "Bengaluru West City Corporation"
-            ? "BWCC"
-            : item.label === "Bengaluru North City Corporation"
-              ? "BNCC"
-              : item.label === "Bengaluru South City Corporation"
-                ? "BSCC"
-                : item.label === "Bengaluru Central City Corporation"
-                  ? "BCCC"
-                  : item.label,
-      fullName: item.label,
-      waste: item.wasteGenerated,
+      ward: item.wardName || `Ward ${item.wardNo}`,
+
+      wardNo: item.wardNo,
+
+      fullName: item.wardName || `Ward ${item.wardNo}`,
+
+      wasteKg: Number(item.wasteGenerated) || 0,
+
+      wasteTons: (Number(item.wasteGenerated) || 0) / 1000,
     })) || [];
+
+  /*
+   * =========================================================
+   * GSAP ANIMATION
+   * =========================================================
+   */
 
   useEffect(() => {
     const tl = gsap.timeline({
@@ -123,14 +157,73 @@ export default function VehicleStats({ vehicleData, trendData }) {
       );
   }, []);
 
+  /*
+   * =========================================================
+   * CUSTOM TOOLTIP
+   * =========================================================
+   */
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) {
+      return null;
+    }
+
+    const point = payload[0]?.payload;
+
+    if (!point) {
+      return null;
+    }
+
+    const tons = Number(point.wasteTons) || 0;
+
+    return (
+      <div
+        className="
+          rounded-xl
+          border
+          border-gray-200
+          bg-white
+          px-4
+          py-3
+          shadow-[0_10px_25px_rgba(0,0,0,0.08)]
+        "
+      >
+        <p className="text-[15px] font-semibold text-gray-900">
+          {point.fullName}
+        </p>
+
+        <p className="mt-2 text-[14px] font-medium text-violet-600">
+          Waste Generated:{" "}
+          {tons.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{" "}
+          {tons === 1 ? "ton" : "tons"}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <section ref={sectionRef} className="mt-6">
       <div className="grid grid-cols-[0.9fr_1.1fr] gap-6 items-start">
-        {/* ================= VEHICLE DETAILS ================= */}
+        {/* =================================================
+            VEHICLE DETAILS
+            ================================================= */}
 
         <div
           ref={leftCardRef}
-          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm h-[430px] flex flex-col"
+          className="
+            bg-white
+            border
+            border-[#EEF1F6]
+            rounded-[24px]
+            p-6
+            shadow-sm
+            h-[430px]
+            flex
+            flex-col
+          "
         >
           <div className="flex items-center gap-3 mb-6">
             <Truck size={18} className="text-violet-600" />
@@ -147,10 +240,26 @@ export default function VehicleStats({ vehicleData, trendData }) {
               <div
                 key={item.title}
                 ref={(el) => (statCardsRef.current[index] = el)}
-                className="border border-[#EEF1F6] rounded-2xl h-[72px] px-4 flex items-center"
+                className="
+                    border
+                    border-[#EEF1F6]
+                    rounded-2xl
+                    h-[72px]
+                    px-4
+                    flex
+                    items-center
+                  "
               >
                 <div
-                  className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center`}
+                  className={`
+                      w-9
+                      h-9
+                      rounded-xl
+                      ${item.bg}
+                      flex
+                      items-center
+                      justify-center
+                    `}
                 >
                   <Truck size={21} className={item.color} />
                 </div>
@@ -165,7 +274,11 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
                     {item.percentage && (
                       <span
-                        className={`text-[13px] font-semibold ${item.color}`}
+                        className={`
+                            text-[13px]
+                            font-semibold
+                            ${item.color}
+                          `}
                       >
                         {item.percentage}
                       </span>
@@ -177,59 +290,84 @@ export default function VehicleStats({ vehicleData, trendData }) {
           </div>
         </div>
 
-        {/* ================= GENERATION TREND ================= */}
+        {/* =================================================
+            WARD-WISE GENERATION TREND
+            ================================================= */}
 
         <div
           ref={rightCardRef}
-          className="bg-white border border-[#EEF1F6] rounded-[24px] p-6 shadow-sm h-[430px] flex flex-col"
+          className="
+            bg-white
+            border
+            border-[#EEF1F6]
+            rounded-[24px]
+            p-6
+            shadow-sm
+            h-[430px]
+            flex
+            flex-col
+          "
         >
           <h2 className="text-[18px] font-semibold mb-5">GENERATION TREND</h2>
 
           <div className="flex-1 pt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
+              <LineChart
                 data={chartData}
                 margin={{
                   top: 10,
-                  right: 20,
-                  left: 0,
-                  bottom: 50,
+                  right: 25,
+                  left: 10,
+                  bottom: 55,
                 }}
               >
+                {/* =========================================
+                    GRID
+                    ========================================= */}
+
                 <CartesianGrid stroke="#F1F5F9" vertical={false} />
 
+                {/* =========================================
+                    X AXIS
+                    ========================================= */}
+
                 <XAxis
-                  dataKey="zone"
+                  dataKey="ward"
                   interval={0}
                   tickLine={false}
                   axisLine={false}
+                  tick={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fill: "#475569",
+                  }}
                   label={{
-                    value: "BBMP Administrative Zones",
+                    value: "Wards",
                     position: "insideBottom",
-                    offset: -5,
+                    offset: -8,
                     style: {
                       fontSize: 13,
                       fill: "#64748B",
                       fontWeight: 600,
                     },
                   }}
-                  tick={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fill: "#475569",
-                  }}
                 />
 
+                {/* =========================================
+                    Y AXIS
+                    ========================================= */}
+
                 <YAxis
-                  allowDecimals={false}
+                  allowDecimals={true}
+                  tickLine={false}
+                  axisLine={false}
                   tick={{
                     fontSize: 12,
                     fill: "#64748B",
                   }}
-                  tickLine={false}
-                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
                   label={{
-                    value: "Waste Generated (kg)",
+                    value: "Waste Generated (tons)",
                     angle: -90,
                     position: "insideLeft",
                     style: {
@@ -241,25 +379,45 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
+                {/* =========================================
+                    TOOLTIP
+                    ========================================= */}
+
                 <Tooltip
-                  formatter={(value) => [`${value} kg`, "Waste Generated"]}
-                  labelFormatter={(label, payload) =>
-                    payload?.[0]?.payload?.fullName || label
-                  }
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid #E5E7EB",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                  content={<CustomTooltip />}
+                  cursor={{
+                    stroke: "#CBD5E1",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 4",
                   }}
                 />
 
-                <Bar
-                  dataKey="waste"
-                  fill="#7C3AED"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={55}
+                {/* =========================================
+                    LINE
+                    ========================================= */}
+
+                <Line
+                  type="monotone"
+                  dataKey="wasteTons"
+                  stroke="#7C3AED"
+                  strokeWidth={3}
+                  dot={{
+                    r: 5,
+                    strokeWidth: 2,
+                    fill: "#FFFFFF",
+                    stroke: "#7C3AED",
+                  }}
+                  activeDot={{
+                    r: 7,
+                    strokeWidth: 3,
+                    fill: "#FFFFFF",
+                    stroke: "#7C3AED",
+                  }}
+                  connectNulls
+                  isAnimationActive
+                  animationDuration={900}
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
