@@ -26,7 +26,12 @@ const getSummary = async (req, res) => {
 
 const getVehicleSummary = async (req, res) => {
   try {
-    const data = await overviewService.getVehicleSummary();
+    const data = await overviewService.getVehicleSummary(
+      req.query.cityId,
+      req.query.zoneId,
+      req.query.divisionId,
+      req.query.wardId,
+    );
 
     return res.status(200).json({
       success: true,
