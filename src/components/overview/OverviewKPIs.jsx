@@ -23,36 +23,99 @@ export default function OverviewKPIs({ data }) {
         stagger: 0.1,
         ease: "power3.out",
         clearProps: "filter",
-      }
+      },
     );
   }, []);
+
+  /*
+   * =========================================================
+   * WASTE FORMATTER
+   * =========================================================
+   *
+   * Backend always returns waste in KG.
+   *
+   * < 1000 KG
+   *     → display KG
+   *
+   * >= 1000 KG
+   *     → convert to TON
+   *
+   * Examples:
+   *
+   * 850       → 850.00 KG
+   * 1000      → 1.00 TON
+   * 8106.79   → 8.11 TONS
+   */
+
+  const formatWaste = (value) => {
+    const kg = Number(value) || 0;
+
+    if (kg >= 1000) {
+      const tons = kg / 1000;
+
+      return {
+        value: tons.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+        unit: tons === 1 ? "TON" : "TONS",
+      };
+    }
+
+    return {
+      value: kg.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+      unit: "KG",
+    };
+  };
 
   const kpis = useMemo(() => {
     if (!data) return [];
 
+    const waste = formatWaste(data.totalWasteCollected);
+
     return [
       {
         title: "Total Waste Collected",
-        value: Number(data.totalWasteCollected).toLocaleString(),
-        unit: "KG",
+
+        value: waste.value,
+
+        unit: waste.unit,
+
         icon: Trash2,
+
         iconColor: "text-pink-500",
+
         bg: "bg-pink-50",
       },
+
       {
         title: "Collection Points",
+
         value: Number(data.collectionPoints).toLocaleString(),
+
         unit: "",
+
         icon: MapPinned,
+
         iconColor: "text-violet-600",
+
         bg: "bg-violet-50",
       },
+
       {
         title: "Total Citizens",
+
         value: Number(data.totalCitizens).toLocaleString(),
+
         unit: "",
+
         icon: Users,
+
         iconColor: "text-violet-600",
+
         bg: "bg-violet-50",
       },
     ];
@@ -84,11 +147,7 @@ export default function OverviewKPIs({ data }) {
             <div
               className={`w-11 h-11 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0`}
             >
-              <Icon
-                size={21}
-                strokeWidth={2.3}
-                className={item.iconColor}
-              />
+              <Icon size={21} strokeWidth={2.3} className={item.iconColor} />
             </div>
 
             <div className="ml-5">
@@ -129,9 +188,7 @@ export default function OverviewKPIs({ data }) {
                 className="text-green-500 fill-green-500"
               />
 
-              <span className="text-[13px] text-gray-700">
-                Trash Given
-              </span>
+              <span className="text-[13px] text-gray-700">Trash Given</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -153,9 +210,7 @@ export default function OverviewKPIs({ data }) {
                 className="text-orange-500 fill-orange-500"
               />
 
-              <span className="text-[13px] text-gray-700">
-                Not Given
-              </span>
+              <span className="text-[13px] text-gray-700">Not Given</span>
             </div>
 
             <div className="flex items-center gap-3">
