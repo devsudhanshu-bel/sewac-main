@@ -512,7 +512,6 @@ export default function Header({
                 "Select City"
               }
               options={cities}
-              addLabel="Add City"
               onChange={setSelectedCity}
             />
 
@@ -525,7 +524,6 @@ export default function Header({
                 "Select Zone"
               }
               options={zones}
-              addLabel="Add Zone"
               onChange={setSelectedZone}
             />
 
@@ -538,7 +536,6 @@ export default function Header({
                 "Select Division"
               }
               options={divisions}
-              addLabel="Add Division"
               onChange={setSelectedDivision}
             />
 
@@ -552,7 +549,6 @@ export default function Header({
                   : "Select Ward"
               }
               options={wards}
-              addLabel="Add Ward"
               onChange={setSelectedWard}
             />
           </div>
