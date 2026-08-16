@@ -5,11 +5,23 @@ const wasteGeneratorController = require("../controllers/wasteGeneratorControlle
 
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
-const checkTemporaryPermission = require("../middlewares/checkTemporaryPermission");
 
-// Waste Generator Summary
-router.get("/", wasteGeneratorController.getAllWasteGenerators);
-//router.get("/dashboard", getWasteGeneratorDashboard);
+
+// =====================================================
+// WASTE GENERATORS
+// =====================================================
+
+// Current Waste Generators
+router.get(
+  "/",
+  wasteGeneratorController.getAllWasteGenerators
+);
+
+
+// =====================================================
+// SUMMARY
+// =====================================================
+
 router.get(
   "/summary",
   authMiddleware,
@@ -17,28 +29,72 @@ router.get(
   wasteGeneratorController.getSummary
 );
 
-router.get("/gvp-trend", wasteGeneratorController.getGVPTrend);
-// Waste Generator Directory
+
+// =====================================================
+// DIRECTORY
+// =====================================================
+
 router.get(
   "/directory",
   authMiddleware,
   checkPermission("waste_generators"),
   wasteGeneratorController.getDirectory
 );
-// Waste Generator GVP Trend
+
+
+// =====================================================
+// GVP TREND
+// =====================================================
+
 router.get(
   "/gvp-trend",
   authMiddleware,
   checkPermission("waste_generators"),
-  wasteGeneratorController.getGvpTrend
+  wasteGeneratorController.getGVPTrend
 );
-router.get("/:phoneNumber", wasteGeneratorController.getWasteGeneratorByPhone);
+
+
+// =====================================================
+// SINGLE WASTE GENERATOR
+// =====================================================
+
+router.get(
+  "/:phoneNumber",
+  wasteGeneratorController.getWasteGeneratorByPhone
+);
+
+
+// =====================================================
+// CREATE
+// =====================================================
+
 router.post(
   "/",
   authMiddleware,
   wasteGeneratorController.createWasteGenerator
 );
-router.put("/:phoneNumber", authMiddleware, wasteGeneratorController.updateWasteGenerator);
-router.delete("/:phoneNumber", authMiddleware, wasteGeneratorController.deleteWasteGenerator);
+
+
+// =====================================================
+// UPDATE
+// =====================================================
+
+router.put(
+  "/:phoneNumber",
+  authMiddleware,
+  wasteGeneratorController.updateWasteGenerator
+);
+
+
+// =====================================================
+// DELETE
+// =====================================================
+
+router.delete(
+  "/:phoneNumber",
+  authMiddleware,
+  wasteGeneratorController.deleteWasteGenerator
+);
+
 
 module.exports = router;
