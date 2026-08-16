@@ -603,30 +603,112 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 
 const VEHICLE_INACTIVITY_MINUTES = 30;
 
-const getVehicleSummary = async () => {
+const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
   /*
    * =========================================================
-   * 1. REGISTERED VEHICLES
+   * 1. BUILD VEHICLE SCOPE
    * =========================================================
-   *
-   * vehicle_id is the actual vehicle identifier.
    */
 
-  const registeredVehiclesResult = await mainDb.query(`
-      SELECT
-        id,
-        vehicle_id
-      FROM vehicle_master
-      WHERE vehicle_id IS NOT NULL
+  const selectedCityId = parseId(cityId, "cityId");
+  const selectedZoneId = parseId(zoneId, "zoneId");
+  const selectedDivisionId = parseId(divisionId, "divisionId");
+  const selectedWardId = parseId(wardId, "wardId");
+
+  /*
+   * No filters → all vehicles.
+   */
+
+  let whereConditions = [];
+  let queryParams = [];
+
+  /*
+   * =========================================================
+   * CITY
+   * =========================================================
+   *
+   * vehicle_master.city contains the city name,
+   * while the header gives us cityId.
+   *
+   * We therefore resolve the selected hierarchy first.
+   */
+
+  if (selectedCityId) {
+    const scope = await getSelectedWardScope({
+      cityId: selectedCityId,
+      zoneId: selectedZoneId,
+      divisionId: selectedDivisionId,
+      wardId: selectedWardId,
+    });
+
+    /*
+     * The selected scope gives us the exact ward numbers
+     * belonging to the current header selection.
+     */
+
+    const wardNos = scope.wards
+      .map((ward) => Number(ward.wardNo))
+      .filter((wardNo) => Number.isInteger(wardNo));
+
+    /*
+     * If the selected hierarchy has no wards,
+     * there cannot be any vehicles in that scope.
+     */
+
+    if (wardNos.length === 0) {
+      return {
+        totalVehicles: 0,
+        runningVehicles: 0,
+        inactiveVehicles: 0,
+        vehicleStatus: [],
+        inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+      };
+    }
+
+    /*
+     * vehicle_master.ward_no is the reliable geographic
+     * relationship.
+     */
+
+    queryParams.push(wardNos);
+
+    whereConditions.push(`ward_no = ANY($${queryParams.length}::integer[])`);
+  }
+
+  /*
+   * =========================================================
+   * 2. GET REGISTERED VEHICLES IN SELECTED SCOPE
+   * =========================================================
+   */
+
+  const whereClause =
+    whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+  const registeredVehiclesResult = await mainDb.query(
+    `
+        SELECT
+          id,
+          vehicle_id,
+          ward_no
+        FROM vehicle_master
+        ${whereClause}
+        AND vehicle_id IS NOT NULL
         AND TRIM(vehicle_id) <> ''
-      ORDER BY id ASC
-    `);
+        ORDER BY id ASC
+      `.replace(
+      `${whereClause}\n        AND`,
+      whereClause ? `${whereClause}\n        AND` : `WHERE`,
+    ),
+    queryParams,
+  );
 
   const registeredVehicles = registeredVehiclesResult.rows
     .map((vehicle) => ({
       id: vehicle.id,
 
       vehicleId: String(vehicle.vehicle_id).trim(),
+
+      wardNo: vehicle.ward_no === null ? null : Number(vehicle.ward_no),
     }))
     .filter((vehicle) => vehicle.vehicleId);
 
@@ -634,7 +716,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 2. CURRENT TIME
+   * 3. CURRENT TIME
    * =========================================================
    */
 
@@ -646,7 +728,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 3. TODAY'S TELEMETRY TABLES
+   * 4. TODAY
    * =========================================================
    */
 
@@ -665,10 +747,8 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 4. YESTERDAY'S TELEMETRY TABLES
+   * 5. YESTERDAY
    * =========================================================
-   *
-   * Needed for the midnight boundary.
    */
 
   const yesterday = new Date(today);
@@ -688,14 +768,18 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 5. COMBINE TABLES
+   * 6. ONLY TELEMETRY FOR REGISTERED VEHICLES
    * =========================================================
    */
+
+  const registeredVehicleIds = new Set(
+    registeredVehicles.map((vehicle) => vehicle.vehicleId),
+  );
 
   const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
 
   /*
-   * Remove duplicate physical vehicle tables.
+   * Remove duplicate telemetry tables.
    */
 
   const uniqueVehicleTables = Array.from(
@@ -708,7 +792,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 6. FIND LATEST PACKET PER VEHICLE
+   * 7. LATEST PACKET PER VEHICLE
    * =========================================================
    */
 
@@ -741,6 +825,15 @@ const getVehicleSummary = async () => {
 
         const vehicleNumber = String(row.vehiclenumber).trim();
 
+        /*
+         * Ignore telemetry from vehicles
+         * outside the selected vehicle scope.
+         */
+
+        if (!registeredVehicleIds.has(vehicleNumber)) {
+          continue;
+        }
+
         const lastReceived = new Date(row.lastReceivedTimestamp);
 
         if (Number.isNaN(lastReceived.getTime())) {
@@ -767,7 +860,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 7. DETERMINE ACTIVE / INACTIVE
+   * 8. ACTIVE / INACTIVE
    * =========================================================
    */
 
@@ -786,6 +879,8 @@ const getVehicleSummary = async () => {
       vehicleStatus.push({
         vehicleId: vehicle.vehicleId,
 
+        wardNo: vehicle.wardNo,
+
         status: "INACTIVE",
 
         lastReceivedTimestamp: null,
@@ -795,7 +890,8 @@ const getVehicleSummary = async () => {
     }
 
     /*
-     * Packet received within last 30 minutes.
+     * Active only if packet arrived
+     * within the last 30 minutes.
      */
 
     const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
@@ -807,6 +903,8 @@ const getVehicleSummary = async () => {
     vehicleStatus.push({
       vehicleId: vehicle.vehicleId,
 
+      wardNo: vehicle.wardNo,
+
       status: isActive ? "ACTIVE" : "INACTIVE",
 
       lastReceivedTimestamp: latest.lastReceivedTimestamp,
@@ -815,7 +913,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 8. FINAL COUNTS
+   * 9. FINAL RESPONSE
    * =========================================================
    */
 
