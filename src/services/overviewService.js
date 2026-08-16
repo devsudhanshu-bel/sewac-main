@@ -670,36 +670,83 @@ const getVehicleSummary = async () => {
 const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
   const { value: selectedDate, date: dateObject } = validateDate(date);
 
+  /*
+   * =========================================================
+   * IMPORTANT
+   * =========================================================
+   *
+   * The KPI cards use wardId directly.
+   *
+   * The generation graph is different:
+   *
+   * selected Division
+   *       ↓
+   * all wards inside that Division
+   *       ↓
+   * each ward_no
+   *       ↓
+   * day_DDMMYYYY
+   *       ↓
+   * vehicle tables
+   *       ↓
+   * telemetry
+   *
+   * Therefore wardId is intentionally NOT used to restrict
+   * the graph to a single ward.
+   *
+   * It is only the currently selected ward in the Header.
+   */
+
   const wardScope = await getSelectedWardScope({
     cityId,
     zoneId,
     divisionId,
-    wardId,
+    /*
+     * IMPORTANT:
+     * Do not pass wardId here.
+     *
+     * We want ALL wards in the selected division.
+     */
+    wardId: null,
   });
 
-  const zoneMap = new Map();
+  /*
+   * No wards = empty graph.
+   */
 
-  for (const ward of wardScope.wards) {
-    if (!zoneMap.has(ward.zoneId)) {
-      zoneMap.set(ward.zoneId, {
-        label: ward.zoneName,
-
-        wardNos: new Set(),
-      });
-    }
-
-    zoneMap.get(ward.zoneId).wardNos.add(ward.wardNo);
+  if (!wardScope.wards.length) {
+    return [];
   }
+
+  /*
+   * =========================================================
+   * BUILD ONE GRAPH POINT PER WARD
+   * =========================================================
+   */
 
   const results = [];
 
-  for (const zone of zoneMap.values()) {
-    const vehicleTables = await getVehicleTablesForDate(
-      dateObject,
-      Array.from(zone.wardNos),
-    );
+  for (const ward of wardScope.wards) {
+    /*
+     * Resolve the vehicle tables registered for this
+     * particular ward number.
+     */
+
+    const vehicleTables = await getVehicleTablesForDate(dateObject, [
+      ward.wardNo,
+    ]);
+
+    /*
+     * Read telemetry from those vehicle tables.
+     */
 
     const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
+
+    /*
+     * Sum:
+     *
+     * wet + dry + other
+     */
 
     const wasteGenerated = telemetryRows.reduce((total, row) => {
       return (
@@ -711,15 +758,53 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
     }, 0);
 
     results.push({
-      label: zone.label,
+      /*
+       * Frontend uses this as X-axis label.
+       */
+      wardName: ward.wardName,
 
+      /*
+       * Keep ward number available for display/debugging.
+       */
+      wardNo: ward.wardNo,
+
+      /*
+       * Internal hierarchy ID.
+       */
+      wardId: ward.wardId,
+
+      /*
+       * Parent hierarchy information.
+       */
+      cityId: ward.cityId,
+      cityName: ward.cityName,
+
+      zoneId: ward.zoneId,
+      zoneName: ward.zoneName,
+
+      divisionId: ward.divisionId,
+      divisionName: ward.divisionName,
+
+      /*
+       * Backend remains KG.
+       *
+       * Frontend converts this to tons for the graph.
+       */
       wasteGenerated,
 
-      threshold: 6500,
+      /*
+       * Existing threshold preserved.
+       */
+      threshold: 5000,
     });
   }
 
-  return results.sort((a, b) => a.label.localeCompare(b.label));
+  /*
+   * Sort by ward number so the graph follows the actual
+   * administrative ward order.
+   */
+
+  return results.sort((a, b) => Number(a.wardNo) - Number(b.wardNo));
 };
 
 /*
