@@ -39,19 +39,6 @@ export default function Overview() {
   useEffect(() => {
     /*
      * Wait until the cascading filter has finished loading.
-     *
-     * The Header/FilterContext loads:
-     *
-     * City
-     *   ↓
-     * Zone
-     *   ↓
-     * Division
-     *   ↓
-     * Ward
-     *
-     * We should not make an Overview request while that
-     * hierarchy is still being resolved.
      */
 
     if (!selectedCity || !selectedZone || !selectedDivision || !selectedWard) {
@@ -115,29 +102,48 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * API REQUESTS
+         * GENERATION TREND QUERY
          * =====================================================
          *
-         * SUMMARY and GENERATION TREND use the geographic
-         * filter.
+         * Generation Trend is division-wise.
          *
-         * VEHICLE SUMMARY is global vehicle-master data,
-         * so it does not receive the ward filter.
+         * Therefore:
          *
-         * MAP currently preserves its existing contract.
+         * cityId
+         * zoneId
+         * divisionId
+         *
+         * are supplied.
+         *
+         * wardId is intentionally NOT supplied.
          */
+
         const trendParams = new URLSearchParams({
           date: selectedDate,
+
           cityId: String(selectedCity.city_id),
+
           zoneId: String(selectedZone.zone_id),
+
           divisionId: String(selectedDivision.division_id),
         });
+
+        /*
+         * =====================================================
+         * API REQUESTS
+         * =====================================================
+         */
 
         const [summary, vehicleSummary, generationTrend, map] =
           await Promise.all([
             api.get(`/api/admin/overview/summary?${queryString}`),
 
-            api.get("/api/admin/overview/vehicle-summary"),
+            /*
+             * Vehicle summary MUST receive the same
+             * header filters.
+             */
+
+            api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
 
             api.get(
               `/api/admin/overview/generation-trend?${trendParams.toString()}`,
@@ -156,15 +162,42 @@ export default function Overview() {
          * =====================================================
          */
 
+        const summaryData = summary.data.data;
+
+        const generationTrendData = generationTrend.data.data || [];
+
+        /*
+         * =====================================================
+         * CHECK FOR NO DATA
+         * =====================================================
+         *
+         * If the selected date has no telemetry,
+         * show "No Data Found" while keeping Header alive.
+         */
+
+        const hasNoData =
+          Number(summaryData?.totalWasteCollected || 0) === 0 &&
+          Number(summaryData?.collectionPoints || 0) === 0 &&
+          generationTrendData.length === 0;
+
         setOverviewData({
-          summary: summary.data.data,
+          summary: summaryData,
 
           vehicleSummary: vehicleSummary.data.data,
 
-          generationTrend: generationTrend.data.data,
+          generationTrend: generationTrendData,
 
           map: map.data.data,
+
+          hasNoData,
         });
+
+        /*
+         * Clear any previous error after
+         * successful response.
+         */
+
+        setError("");
       } catch (err) {
         if (!mounted) {
           return;
@@ -172,9 +205,75 @@ export default function Overview() {
 
         console.error("Overview API Error:", err);
 
-        setError(
-          err.response?.data?.message || "Unable to connect to the server.",
-        );
+        /*
+         * =====================================================
+         * MISSING DAY TABLE HANDLING
+         * =====================================================
+         *
+         * PostgreSQL:
+         *
+         * Code 42P01
+         *
+         * means the requested relation/table does not exist.
+         *
+         * Example:
+         *
+         * day_15082026 does not exist
+         *
+         * This is NOT a dashboard crash.
+         *
+         * Treat it as "No Data Found".
+         */
+
+        const backendMessage =
+          err?.response?.data?.message || err?.message || "";
+
+        const isMissingDayTable =
+          backendMessage.includes("42P01") ||
+          backendMessage.includes("does not exist") ||
+          backendMessage.includes("relation");
+
+        if (isMissingDayTable) {
+          setOverviewData({
+            summary: null,
+
+            vehicleSummary: {
+              totalVehicles: 0,
+              runningVehicles: 0,
+              inactiveVehicles: 0,
+              vehicleStatus: [],
+            },
+
+            generationTrend: [],
+
+            map: null,
+
+            hasNoData: true,
+          });
+
+          /*
+           * IMPORTANT:
+           * Do NOT put anything into error.
+           */
+
+          setError("");
+
+          return;
+        }
+
+        /*
+         * =====================================================
+         * REAL ERROR
+         * =====================================================
+         *
+         * Keep Header visible.
+         * Show the error below the Header.
+         *
+         * No full-screen error.
+         * No Retry button.
+         */
+
+        setError(backendMessage || "Unable to connect to the server.");
       } finally {
         if (mounted) {
           setLoading(false);
@@ -201,77 +300,75 @@ export default function Overview() {
 
   /*
    * =========================================================
-   * LOADING
-   * =========================================================
-   */
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#FAFAFC]">
-        <p className="text-lg font-medium text-gray-500">Loading dashboard.</p>
-      </div>
-    );
-  }
-
-  /*
-   * =========================================================
-   * ERROR
-   * =========================================================
-   */
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#FAFAFC]">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-red-500">{error}</p>
-
-          <button
-            onClick={() => {
-              /*
-               * Changing a dependency is normally what triggers
-               * the request. This button is kept for the existing
-               * UI contract.
-               */
-              window.location.reload();
-            }}
-            className="
-              mt-5
-              rounded-xl
-              bg-violet-600
-              px-5
-              py-2
-              text-white
-              transition
-              hover:bg-violet-700
-            "
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /*
-   * =========================================================
    * RENDER
    * =========================================================
+   *
+   * IMPORTANT:
+   *
+   * Header is ALWAYS rendered.
+   *
+   * This means even if:
+   *
+   * day_15082026
+   * does not exist,
+   *
+   * the admin can still use:
+   *
+   * City
+   * Zone
+   * Division
+   * Ward
+   * Date
+   *
+   * and move back to a valid date.
    */
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
       <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
-      <main className="space-y-6 px-8 py-6">
-        <OverviewKPIs data={overviewData?.summary} />
+      {loading && (
+        <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
+          <p className="text-lg font-medium text-gray-500">
+            Loading dashboard...
+          </p>
+        </main>
+      )}
 
-        <VehicleStats
-          vehicleData={overviewData?.vehicleSummary}
-          trendData={overviewData?.generationTrend}
-        />
+      {!loading && !error && overviewData?.hasNoData && (
+        <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
+          <div className="text-center">
+            <p className="text-2xl font-semibold text-gray-700">
+              No Data Found
+            </p>
 
-        <CityOverviewMap mapData={overviewData?.map} />
-      </main>
+            <p className="mt-2 text-gray-500">
+              No telemetry data is available for {selectedDate}.
+            </p>
+          </div>
+        </main>
+      )}
+
+      {!loading && error && (
+        <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-red-500">{error}</p>
+          </div>
+        </main>
+      )}
+
+      {!loading && !error && !overviewData?.hasNoData && (
+        <main className="space-y-6 px-8 py-6">
+          <OverviewKPIs data={overviewData?.summary} />
+
+          <VehicleStats
+            vehicleData={overviewData?.vehicleSummary}
+            trendData={overviewData?.generationTrend}
+          />
+
+          <CityOverviewMap mapData={overviewData?.map} />
+        </main>
+      )}
     </div>
   );
 }
