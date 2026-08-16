@@ -1154,23 +1154,239 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
   return results.sort((a, b) => Number(a.wardNo) - Number(b.wardNo));
 };
 
-/*
-|--------------------------------------------------------------------------
-| MAP
-|--------------------------------------------------------------------------
-*/
+const normalizeGeoBoundary = (value) => {
+  if (!value) {
+    return null;
+  }
 
-const getMapData = async () => {
-  return {
-    defaultView: "route-map",
-  };
+  /*
+   * PostgreSQL JSON/JSONB may already arrive
+   * as a JavaScript object.
+   */
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  /*
+   * In case the database driver returns
+   * the geometry as a JSON string.
+   */
+
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.warn("Unable to parse geo_boundary:", error.message);
+
+      return null;
+    }
+  }
+
+  return null;
 };
 
-/*
-|--------------------------------------------------------------------------
-| LEGACY OVERVIEW FILTERS
-|--------------------------------------------------------------------------
-*/
+const getMapData = async (cityId, zoneId) => {
+  const selectedCityId = parseId(cityId, "cityId");
+  const selectedZoneId = parseId(zoneId, "zoneId");
+
+  if (!selectedCityId) {
+    throw new Error("cityId is required");
+  }
+
+  if (!selectedZoneId) {
+    throw new Error("zoneId is required");
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CITY
+  |--------------------------------------------------------------------------
+  */
+
+  const city = await masterCitizenPrisma.city_table.findUnique({
+    where: {
+      city_id: selectedCityId,
+    },
+  });
+
+  if (!city) {
+    throw new Error("City not found");
+  }
+
+  if (!city.city_table_name) {
+    throw new Error("City has no dynamic table registered");
+  }
+
+  const cityTable = quoteIdentifier(city.city_table_name);
+
+  /*
+  |--------------------------------------------------------------------------
+  | SELECTED ZONE
+  |--------------------------------------------------------------------------
+  */
+
+  const zones = await masterCitizenPrisma.$queryRawUnsafe(
+    `
+      SELECT
+        zone_id,
+        zone_name,
+        zone_table_name,
+        geo_boundary
+      FROM ${cityTable}
+      WHERE zone_id = $1
+      ORDER BY zone_id ASC
+    `,
+    selectedZoneId,
+  );
+
+  if (zones.length === 0) {
+    throw new Error("Zone not found in selected city");
+  }
+
+  const zone = zones[0];
+
+  /*
+  |--------------------------------------------------------------------------
+  | ZONE BOUNDARY
+  |--------------------------------------------------------------------------
+  */
+
+  const zoneBoundary = normalizeGeoBoundary(zone.geo_boundary);
+
+  /*
+  |--------------------------------------------------------------------------
+  | DIVISIONS
+  |--------------------------------------------------------------------------
+  */
+
+  let divisionRows = [];
+
+  if (zone.zone_table_name) {
+    const zoneTable = quoteIdentifier(zone.zone_table_name);
+
+    divisionRows = await masterCitizenPrisma.$queryRawUnsafe(
+      `
+          SELECT
+            division_id,
+            division_name,
+            division_table_name,
+            geo_boundary
+          FROM ${zoneTable}
+          ORDER BY division_id ASC
+        `,
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | DIVISIONS + WARDS
+  |--------------------------------------------------------------------------
+  */
+
+  const divisions = [];
+
+  const allWards = [];
+
+  for (const division of divisionRows) {
+    let wards = [];
+
+    /*
+     * ------------------------------------------------------
+     * WARDS BELONGING TO THIS DIVISION
+     * ------------------------------------------------------
+     */
+
+    if (division.division_table_name) {
+      const divisionTable = quoteIdentifier(division.division_table_name);
+
+      const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
+        `
+            SELECT
+              ward_id,
+              ward_no,
+              ward_name,
+              geo_boundary,
+              ward_table_name
+            FROM ${divisionTable}
+            ORDER BY ward_no ASC
+          `,
+      );
+
+      wards = wardRows.map((ward) => ({
+        wardId: Number(ward.ward_id),
+
+        wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
+
+        wardName: ward.ward_name,
+
+        geoBoundary: normalizeGeoBoundary(ward.geo_boundary),
+
+        wardTableName: ward.ward_table_name,
+      }));
+    }
+
+    /*
+     * Add wards to global ward collection.
+     */
+
+    allWards.push(
+      ...wards.map((ward) => ({
+        ...ward,
+
+        divisionId: Number(division.division_id),
+
+        divisionName: division.division_name,
+
+        zoneId: Number(zone.zone_id),
+
+        zoneName: zone.zone_name,
+      })),
+    );
+
+    /*
+     * Division object
+     */
+
+    divisions.push({
+      divisionId: Number(division.division_id),
+
+      divisionName: division.division_name,
+
+      geoBoundary: normalizeGeoBoundary(division.geo_boundary),
+
+      wards,
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | FINAL MAP RESPONSE
+  |--------------------------------------------------------------------------
+  */
+
+  return {
+    defaultView: "route-map",
+
+    city: {
+      cityId: Number(city.city_id),
+
+      cityName: city.city_name,
+    },
+
+    zone: {
+      zoneId: Number(zone.zone_id),
+
+      zoneName: zone.zone_name,
+
+      geoBoundary: zoneBoundary,
+    },
+
+    divisions,
+
+    wards: allWards,
+  };
+};
 
 const getOverviewFilters = async () => {
   const citiesResult = await helperDb.query(`

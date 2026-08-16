@@ -73,7 +73,10 @@ const getGenerationTrend = async (req, res) => {
 
 const getMapData = async (req, res) => {
   try {
-    const data = await overviewService.getMapData();
+    const data = await overviewService.getMapData(
+      req.query.cityId,
+      req.query.zoneId,
+    );
 
     return res.status(200).json({
       success: true,
