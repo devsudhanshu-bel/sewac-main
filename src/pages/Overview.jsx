@@ -137,7 +137,7 @@ export default function Overview() {
         const [summary, vehicleSummary, generationTrend] = await Promise.all([
           api.get(`/api/admin/overview/summary?${queryString}`),
 
-          api.get("/api/admin/overview/vehicle-summary"),
+          api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
 
           api.get(`/api/admin/overview/generation-trend?${queryString}`),
         ]);
