@@ -51,20 +51,15 @@ const validateDate = (date) => {
 | DAY TABLE
 |--------------------------------------------------------------------------
 |
-| 2026-08-15
+| 2026-08-16
 |      ↓
-| day_15082026
-|
-| The ingestion architecture creates this table using the received date.
-| Therefore Overview resolves the partition using the same convention.
+| day_16082026
 |
 */
 
 const getDayTableName = (date) => {
   const dd = String(date.getDate()).padStart(2, "0");
-
   const mm = String(date.getMonth() + 1).padStart(2, "0");
-
   const yyyy = date.getFullYear();
 
   return `day_${dd}${mm}${yyyy}`;
@@ -74,19 +69,6 @@ const getDayTableName = (date) => {
 |--------------------------------------------------------------------------
 | GEOGRAPHIC HIERARCHY
 |--------------------------------------------------------------------------
-|
-| city_table
-|      ↓
-| city dynamic table
-|      ↓
-| zone dynamic table
-|      ↓
-| division dynamic table
-|      ↓
-| ward rows
-|
-| Only ward_no eventually reaches the telemetry side.
-|
 */
 
 const getAllWardScope = async () => {
@@ -106,13 +88,13 @@ const getAllWardScope = async () => {
     const cityTable = quoteIdentifier(city.city_table_name);
 
     const zones = await masterCitizenPrisma.$queryRawUnsafe(`
-        SELECT
-          zone_id,
-          zone_name,
-          zone_table_name
-        FROM ${cityTable}
-        ORDER BY zone_id ASC
-      `);
+      SELECT
+        zone_id,
+        zone_name,
+        zone_table_name
+      FROM ${cityTable}
+      ORDER BY zone_id ASC
+    `);
 
     for (const zone of zones) {
       if (!zone.zone_table_name) {
@@ -122,13 +104,13 @@ const getAllWardScope = async () => {
       const zoneTable = quoteIdentifier(zone.zone_table_name);
 
       const divisions = await masterCitizenPrisma.$queryRawUnsafe(`
-          SELECT
-            division_id,
-            division_name,
-            division_table_name
-          FROM ${zoneTable}
-          ORDER BY division_id ASC
-        `);
+        SELECT
+          division_id,
+          division_name,
+          division_table_name
+        FROM ${zoneTable}
+        ORDER BY division_id ASC
+      `);
 
       for (const division of divisions) {
         if (!division.division_table_name) {
@@ -138,33 +120,28 @@ const getAllWardScope = async () => {
         const divisionTable = quoteIdentifier(division.division_table_name);
 
         const wardRows = await masterCitizenPrisma.$queryRawUnsafe(`
-            SELECT
-              ward_id,
-              ward_no,
-              ward_name,
-              ward_table_name
-            FROM ${divisionTable}
-            ORDER BY ward_no ASC
-          `);
+          SELECT
+            ward_id,
+            ward_no,
+            ward_name,
+            ward_table_name
+          FROM ${divisionTable}
+          ORDER BY ward_no ASC
+        `);
 
         for (const ward of wardRows) {
           wards.push({
             cityId: Number(city.city_id),
-
             cityName: city.city_name,
 
             zoneId: Number(zone.zone_id),
-
             zoneName: zone.zone_name,
 
             divisionId: Number(division.division_id),
-
             divisionName: division.division_name,
 
             wardId: Number(ward.ward_id),
-
             wardNo: Number(ward.ward_no),
-
             wardName: ward.ward_name,
 
             wardTableName: ward.ward_table_name,
@@ -185,11 +162,8 @@ const getAllWardScope = async () => {
 
 const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   const selectedCityId = parseId(cityId, "cityId");
-
   const selectedZoneId = parseId(zoneId, "zoneId");
-
   const selectedDivisionId = parseId(divisionId, "divisionId");
-
   const selectedWardId = parseId(wardId, "wardId");
 
   if (selectedZoneId && !selectedCityId) {
@@ -207,6 +181,7 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   /*
    * No geographic filter.
    */
+
   if (!selectedCityId) {
     return {
       filtered: false,
@@ -233,25 +208,26 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   /*
    * City → zones
    */
+
   const zones = await masterCitizenPrisma.$queryRawUnsafe(
     selectedZoneId
       ? `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM ${cityTable}
-          WHERE zone_id = $1
-          ORDER BY zone_id ASC
-        `
+        SELECT
+          zone_id,
+          zone_name,
+          zone_table_name
+        FROM ${cityTable}
+        WHERE zone_id = $1
+        ORDER BY zone_id ASC
+      `
       : `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM ${cityTable}
-          ORDER BY zone_id ASC
-        `,
+        SELECT
+          zone_id,
+          zone_name,
+          zone_table_name
+        FROM ${cityTable}
+        ORDER BY zone_id ASC
+      `,
     ...(selectedZoneId ? [selectedZoneId] : []),
   );
 
@@ -269,27 +245,28 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
     const zoneTable = quoteIdentifier(zone.zone_table_name);
 
     /*
-     * Zone → selected division(s)
+     * Zone → divisions
      */
+
     const divisions = await masterCitizenPrisma.$queryRawUnsafe(
       selectedDivisionId
         ? `
-            SELECT
-              division_id,
-              division_name,
-              division_table_name
-            FROM ${zoneTable}
-            WHERE division_id = $1
-            ORDER BY division_id ASC
-          `
+          SELECT
+            division_id,
+            division_name,
+            division_table_name
+          FROM ${zoneTable}
+          WHERE division_id = $1
+          ORDER BY division_id ASC
+        `
         : `
-            SELECT
-              division_id,
-              division_name,
-              division_table_name
-            FROM ${zoneTable}
-            ORDER BY division_id ASC
-          `,
+          SELECT
+            division_id,
+            division_name,
+            division_table_name
+          FROM ${zoneTable}
+          ORDER BY division_id ASC
+        `,
       ...(selectedDivisionId ? [selectedDivisionId] : []),
     );
 
@@ -305,29 +282,30 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
       const divisionTable = quoteIdentifier(division.division_table_name);
 
       /*
-       * Division → selected ward(s)
+       * Division → wards
        */
+
       const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
         selectedWardId
           ? `
-              SELECT
-                ward_id,
-                ward_no,
-                ward_name,
-                ward_table_name
-              FROM ${divisionTable}
-              WHERE ward_id = $1
-              ORDER BY ward_no ASC
-            `
+            SELECT
+              ward_id,
+              ward_no,
+              ward_name,
+              ward_table_name
+            FROM ${divisionTable}
+            WHERE ward_id = $1
+            ORDER BY ward_no ASC
+          `
           : `
-              SELECT
-                ward_id,
-                ward_no,
-                ward_name,
-                ward_table_name
-              FROM ${divisionTable}
-              ORDER BY ward_no ASC
-            `,
+            SELECT
+              ward_id,
+              ward_no,
+              ward_name,
+              ward_table_name
+            FROM ${divisionTable}
+            ORDER BY ward_no ASC
+          `,
         ...(selectedWardId ? [selectedWardId] : []),
       );
 
@@ -366,6 +344,18 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 |--------------------------------------------------------------------------
 | DAY TABLE → VEHICLE TABLES
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| vehicle_master.vehicle_id
+|          ↕
+| day_table.vehicle_number
+|          ↕
+| telemetry_table.vehiclenumber
+|
+| vehicle_id is ONLY used in vehicle_master.
+| vehicle_number is used in the telemetry day table.
+|
 */
 
 const getVehicleTablesForDate = async (date, wardNos = null) => {
@@ -386,31 +376,34 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
   if (Array.isArray(wardNos)) {
     rows = await telemetryDb.$queryRawUnsafe(
       `
-          SELECT
-            vehicle_id,
-            vehicle_table_name,
-            ward_no
-          FROM ${dayIdentifier}
-          WHERE ward_no = ANY($1::integer[])
-          ORDER BY vehicle_number ASC
-        `,
+        SELECT
+          vehicle_number,
+          vehicle_table_name,
+          ward_no
+        FROM ${dayIdentifier}
+        WHERE ward_no = ANY($1::integer[])
+        ORDER BY vehicle_number ASC
+      `,
       wardNos,
     );
   } else {
     rows = await telemetryDb.$queryRawUnsafe(
       `
-          SELECT
-            vehicle_number,
-            vehicle_table_name,
-            ward_no
-          FROM ${dayIdentifier}
-          ORDER BY vehicle_number ASC
-        `,
+        SELECT
+          vehicle_number,
+          vehicle_table_name,
+          ward_no
+        FROM ${dayIdentifier}
+        ORDER BY vehicle_number ASC
+      `,
     );
   }
 
   return rows.map((row) => ({
-    vehicleNumber: row.vehicle_number,
+    vehicleNumber:
+      row.vehicle_number === null || row.vehicle_number === undefined
+        ? null
+        : String(row.vehicle_number).trim(),
 
     vehicleTableName: row.vehicle_table_name,
 
@@ -422,12 +415,6 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
 |--------------------------------------------------------------------------
 | DYNAMIC TELEMETRY UNION
 |--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| vehicle_table_name values come from the trusted day table.
-| They are NOT taken directly from req.query.
-|
 */
 
 const buildTelemetryUnion = (vehicleTables) => {
@@ -436,24 +423,28 @@ const buildTelemetryUnion = (vehicleTables) => {
   }
 
   return vehicleTables
+    .filter(
+      ({ vehicleTableName }) =>
+        vehicleTableName && typeof vehicleTableName === "string",
+    )
     .map(({ vehicleTableName }) => {
       const table = quoteIdentifier(vehicleTableName);
 
       return `
-          SELECT
-            id,
-            iottimestamp,
-            receivedtimestamp,
-            citizenid,
-            latitude,
-            longitude,
-            wetweight,
-            dryweight,
-            otherweight,
-            vehiclenumber,
-            remarks
-          FROM ${table}
-        `;
+        SELECT
+          id,
+          iottimestamp,
+          receivedtimestamp,
+          citizenid,
+          latitude,
+          longitude,
+          wetweight,
+          dryweight,
+          otherweight,
+          vehiclenumber,
+          remarks
+        FROM ${table}
+      `;
     })
     .join("\nUNION ALL\n");
 };
@@ -471,36 +462,27 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
     return [];
   }
 
-  /*
-   * The physical vehicle table is partitioned by
-   * receivedTimestamp.
-   *
-   * We resolve the table using that partition date,
-   * but preserve the existing Overview semantics by
-   * applying the original iotTimestamp date filter
-   * inside the selected vehicle tables.
-   */
   const result = await telemetryDb.$queryRawUnsafe(
     `
-        SELECT
-          id,
-          iottimestamp AS "iotTimestamp",
-          receivedtimestamp AS "receivedTimestamp",
-          citizenid AS "citizenId",
-          latitude,
-          longitude,
-          wetweight AS "wetWeight",
-          dryweight AS "dryWeight",
-          otherweight AS "otherWeight",
-          vehiclenumber AS "vehicleNumber",
-          remarks
-        FROM (
-          ${unionSql}
-        ) telemetry
-        WHERE iottimestamp >= $1::date
-          AND iottimestamp <
-              ($1::date + INTERVAL '1 day')
-      `,
+      SELECT
+        id,
+        iottimestamp AS "iotTimestamp",
+        receivedtimestamp AS "receivedTimestamp",
+        citizenid AS "citizenId",
+        latitude,
+        longitude,
+        wetweight AS "wetWeight",
+        dryweight AS "dryWeight",
+        otherweight AS "otherWeight",
+        vehiclenumber AS "vehicleNumber",
+        remarks
+      FROM (
+        ${unionSql}
+      ) telemetry
+      WHERE iottimestamp >= $1::date
+        AND iottimestamp <
+            ($1::date + INTERVAL '1 day')
+    `,
     selectedDate,
   );
 
@@ -511,20 +493,13 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
 |--------------------------------------------------------------------------
 | TOTAL CITIZENS
 |--------------------------------------------------------------------------
-|
-| Keep the existing business definition here.
-|
-| The old Overview counted master_citizen_data globally.
-| We therefore preserve that contract instead of inventing
-| a new citizen-counting rule.
-|
 */
 
 const getTotalCitizens = async () => {
   const result = await helperDb.query(`
-        SELECT COUNT(*) AS total
-        FROM master_citizen_data
-      `);
+    SELECT COUNT(*) AS total
+    FROM master_citizen_data
+  `);
 
   return Number(result.rows[0].total);
 };
@@ -556,10 +531,9 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
 
   /*
-   * Existing business definition:
-   *
-   * wet + dry + other
+   * Wet + dry + other
    */
+
   const totalWasteCollected = telemetryRows.reduce((total, row) => {
     return (
       total +
@@ -570,9 +544,9 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   }, 0);
 
   /*
-   * Existing business definition:
-   * distinct latitude + longitude.
+   * Distinct collection points
    */
+
   const collectionPoints = new Set(
     telemetryRows
       .filter(
@@ -586,11 +560,9 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   ).size;
 
   /*
-   * Existing business definition:
-   *
-   * distinct citizen_id
-   * where remarks != 'O'
+   * Distinct citizens who gave trash
    */
+
   const trashGiven = new Set(
     telemetryRows
       .filter(
@@ -606,13 +578,9 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 
   return {
     totalWasteCollected,
-
     collectionPoints,
-
     totalCitizens,
-
     trashGiven,
-
     notGiven,
   };
 };
@@ -622,29 +590,14 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 | VEHICLE SUMMARY
 |--------------------------------------------------------------------------
 |
-| This remains on vehicle_master.
-|
-*/
-
-/*
-|--------------------------------------------------------------------------
-| LIVE VEHICLE SUMMARY
-|--------------------------------------------------------------------------
-|
-| Vehicle status is determined from TELEMETRY, NOT from
-| vehicle_master.status.
-|
 | ACTIVE:
-|   Vehicle has received a telemetry packet within the
-|   last 30 minutes.
+|   latest received packet <= 30 minutes old
 |
 | INACTIVE:
-|   Vehicle has not sent a packet for more than 30 minutes,
-|   or has never sent a packet.
+|   latest received packet > 30 minutes old
+|   OR vehicle has never sent a packet
 |
-| IMPORTANT:
-|   We use receivedTimestamp because this represents when
-|   SEWAC actually received the packet.
+| vehicle_master.status is NOT used anymore.
 |
 */
 
@@ -653,31 +606,39 @@ const VEHICLE_INACTIVITY_MINUTES = 30;
 const getVehicleSummary = async () => {
   /*
    * =========================================================
-   * 1. TOTAL REGISTERED VEHICLES
+   * 1. REGISTERED VEHICLES
    * =========================================================
+   *
+   * vehicle_id is the actual vehicle identifier.
    */
 
-  const totalVehiclesResult = await mainDb.query(`
-    SELECT COUNT(*) AS total
-    FROM vehicle_master
-  `);
+  const registeredVehiclesResult = await mainDb.query(`
+      SELECT
+        id,
+        vehicle_id
+      FROM vehicle_master
+      WHERE vehicle_id IS NOT NULL
+        AND TRIM(vehicle_id) <> ''
+      ORDER BY id ASC
+    `);
 
-  const totalVehicles = Number(totalVehiclesResult.rows[0].total || 0);
+  const registeredVehicles = registeredVehiclesResult.rows
+    .map((vehicle) => ({
+      id: vehicle.id,
+
+      vehicleId: String(vehicle.vehicle_id).trim(),
+    }))
+    .filter((vehicle) => vehicle.vehicleId);
+
+  const totalVehicles = registeredVehicles.length;
 
   /*
    * =========================================================
    * 2. CURRENT TIME
    * =========================================================
-   *
-   * We use the backend/server time for the liveness decision.
    */
 
   const now = new Date();
-
-  /*
-   * Vehicle is active only if the last packet was received
-   * within the previous 30 minutes.
-   */
 
   const inactivityLimit = new Date(
     now.getTime() - VEHICLE_INACTIVITY_MINUTES * 60 * 1000,
@@ -685,34 +646,29 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 3. CHECK TODAY'S TELEMETRY TABLE
+   * 3. TODAY'S TELEMETRY TABLES
    * =========================================================
-   *
-   * The current day table tells us which dynamic vehicle
-   * tables currently exist.
    */
 
   const today = new Date();
 
-  const todayVehicleTables = await getVehicleTablesForDate(today, null);
+  let todayVehicleTables = [];
+
+  try {
+    todayVehicleTables = await getVehicleTablesForDate(today, null);
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: today's telemetry table unavailable:",
+      error.message,
+    );
+  }
 
   /*
    * =========================================================
-   * 4. CHECK YESTERDAY TOO
+   * 4. YESTERDAY'S TELEMETRY TABLES
    * =========================================================
    *
-   * This handles the midnight boundary.
-   *
-   * Example:
-   *
-   * packet received:
-   *   23:58 yesterday
-   *
-   * current time:
-   *   00:10 today
-   *
-   * The vehicle has been inactive for only 12 minutes,
-   * so it must still be ACTIVE.
+   * Needed for the midnight boundary.
    */
 
   const yesterday = new Date(today);
@@ -724,25 +680,15 @@ const getVehicleSummary = async () => {
   try {
     yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, null);
   } catch (error) {
-    /*
-     * If yesterday's partition does not exist,
-     * that simply means there is no older telemetry
-     * available from that partition.
-     *
-     * Do not fail the entire Overview API.
-     */
-
     console.warn(
-      "Vehicle summary: yesterday telemetry table unavailable:",
+      "Vehicle summary: yesterday's telemetry table unavailable:",
       error.message,
     );
-
-    yesterdayVehicleTables = [];
   }
 
   /*
    * =========================================================
-   * 5. COMBINE VEHICLE TABLES
+   * 5. COMBINE TABLES
    * =========================================================
    */
 
@@ -754,13 +700,15 @@ const getVehicleSummary = async () => {
 
   const uniqueVehicleTables = Array.from(
     new Map(
-      allVehicleTables.map((vehicle) => [vehicle.vehicleTableName, vehicle]),
+      allVehicleTables
+        .filter((vehicle) => vehicle.vehicleTableName)
+        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
     ).values(),
   );
 
   /*
    * =========================================================
-   * 6. FIND LATEST RECEIVED PACKET PER VEHICLE
+   * 6. FIND LATEST PACKET PER VEHICLE
    * =========================================================
    */
 
@@ -778,7 +726,8 @@ const getVehicleSummary = async () => {
         `
             SELECT
               vehiclenumber,
-              MAX(receivedtimestamp) AS "lastReceivedTimestamp"
+              MAX(receivedtimestamp)
+                AS "lastReceivedTimestamp"
             FROM ${table}
             WHERE vehiclenumber IS NOT NULL
             GROUP BY vehiclenumber
@@ -800,10 +749,6 @@ const getVehicleSummary = async () => {
 
         const existing = latestPacketByVehicle.get(vehicleNumber);
 
-        /*
-         * Keep only the newest packet.
-         */
-
         if (!existing || lastReceived > existing.lastReceivedTimestamp) {
           latestPacketByVehicle.set(vehicleNumber, {
             vehicleNumber,
@@ -822,35 +767,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 7. GET REGISTERED VEHICLE NUMBERS
-   * =========================================================
-   *
-   * This prevents an unregistered telemetry vehicle from
-   * being counted as an active registered vehicle.
-   *
-   * We intentionally don't depend on vehicle_master.status.
-   */
-
-  const registeredVehiclesResult = await mainDb.query(`
-  SELECT
-    vehicle_id
-  FROM vehicle_master
-  WHERE vehicle_id IS NOT NULL
-`);
-
-  /*
-   * Normalize vehicle numbers so comparisons are reliable.
-   */
-
-  const registeredVehicles = registeredVehiclesResult.rows
-    .map((vehicle) => ({
-      vehicleId: String(vehicle.vehicle_id).trim(),
-    }))
-    .filter((vehicle) => vehicle.vehicleId);
-
-  /*
-   * =========================================================
-   * 8. DETERMINE ACTIVE / INACTIVE
+   * 7. DETERMINE ACTIVE / INACTIVE
    * =========================================================
    */
 
@@ -861,15 +778,25 @@ const getVehicleSummary = async () => {
   for (const vehicle of registeredVehicles) {
     const latest = latestPacketByVehicle.get(vehicle.vehicleId);
 
+    /*
+     * Never sent a packet.
+     */
+
     if (!latest) {
       vehicleStatus.push({
         vehicleId: vehicle.vehicleId,
+
         status: "INACTIVE",
+
         lastReceivedTimestamp: null,
       });
 
       continue;
     }
+
+    /*
+     * Packet received within last 30 minutes.
+     */
 
     const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
 
@@ -888,7 +815,7 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
-   * 9. FINAL COUNTS
+   * 8. FINAL COUNTS
    * =========================================================
    */
 
@@ -901,11 +828,6 @@ const getVehicleSummary = async () => {
 
     inactiveVehicles,
 
-    /*
-     * Keep this available for future vehicle page usage.
-     *
-     * The existing Overview UI does not need to use it yet.
-     */
     vehicleStatus,
 
     inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
@@ -917,12 +839,20 @@ const getVehicleSummary = async () => {
 | GENERATION TREND
 |--------------------------------------------------------------------------
 |
-| The old implementation grouped telemetry_logs by
-| vehicle_master.zone.
+| One point per ward.
 |
-| The new implementation groups the resolved ward scope
-| by zone and then reads the relevant vehicle telemetry
-| tables.
+| Selected division:
+|
+| Division
+|   ↓
+| all wards
+|   ↓
+| telemetry
+|   ↓
+| waste generated
+|
+| Backend returns KG.
+| Frontend converts KG → tons.
 |
 */
 
@@ -930,82 +860,52 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
   const { value: selectedDate, date: dateObject } = validateDate(date);
 
   /*
-   * =========================================================
-   * IMPORTANT
-   * =========================================================
+   * IMPORTANT:
    *
-   * The KPI cards use wardId directly.
+   * The graph is division-wise.
    *
-   * The generation graph is different:
+   * If the user selects:
    *
-   * selected Division
-   *       ↓
-   * all wards inside that Division
-   *       ↓
-   * each ward_no
-   *       ↓
-   * day_DDMMYYYY
-   *       ↓
-   * vehicle tables
-   *       ↓
-   * telemetry
+   * Bangalore
+   * → South City Corporation
+   * → Bommanahalli Division
    *
-   * Therefore wardId is intentionally NOT used to restrict
-   * the graph to a single ward.
+   * then the graph shows ALL wards
+   * inside Bommanahalli.
    *
-   * It is only the currently selected ward in the Header.
+   * The selected ward in Header does NOT
+   * restrict the graph to one point.
    */
 
   const wardScope = await getSelectedWardScope({
     cityId,
     zoneId,
     divisionId,
+
     /*
-     * IMPORTANT:
-     * Do not pass wardId here.
+     * Deliberately null.
      *
-     * We want ALL wards in the selected division.
+     * We need all wards in the selected division.
      */
     wardId: null,
   });
-
-  /*
-   * No wards = empty graph.
-   */
 
   if (!wardScope.wards.length) {
     return [];
   }
 
-  /*
-   * =========================================================
-   * BUILD ONE GRAPH POINT PER WARD
-   * =========================================================
-   */
-
   const results = [];
 
-  for (const ward of wardScope.wards) {
-    /*
-     * Resolve the vehicle tables registered for this
-     * particular ward number.
-     */
+  /*
+   * One graph point per ward.
+   */
 
+  for (const ward of wardScope.wards) {
     const vehicleTables = await getVehicleTablesForDate(dateObject, [
       ward.wardNo,
     ]);
 
-    /*
-     * Read telemetry from those vehicle tables.
-     */
-
     const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
-
-    /*
-     * Sum:
-     *
-     * wet + dry + other
-     */
 
     const wasteGenerated = telemetryRows.reduce((total, row) => {
       return (
@@ -1017,50 +917,37 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
     }, 0);
 
     results.push({
-      /*
-       * Frontend uses this as X-axis label.
-       */
       wardName: ward.wardName,
 
-      /*
-       * Keep ward number available for display/debugging.
-       */
       wardNo: ward.wardNo,
 
-      /*
-       * Internal hierarchy ID.
-       */
       wardId: ward.wardId,
 
-      /*
-       * Parent hierarchy information.
-       */
       cityId: ward.cityId,
+
       cityName: ward.cityName,
 
       zoneId: ward.zoneId,
+
       zoneName: ward.zoneName,
 
       divisionId: ward.divisionId,
+
       divisionName: ward.divisionName,
 
       /*
-       * Backend remains KG.
+       * Backend always returns KG.
        *
-       * Frontend converts this to tons for the graph.
+       * Frontend converts this to tons.
        */
       wasteGenerated,
 
-      /*
-       * Existing threshold preserved.
-       */
       threshold: 5000,
     });
   }
 
   /*
-   * Sort by ward number so the graph follows the actual
-   * administrative ward order.
+   * Administrative ward order.
    */
 
   return results.sort((a, b) => Number(a.wardNo) - Number(b.wardNo));
@@ -1070,9 +957,6 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
 |--------------------------------------------------------------------------
 | MAP
 |--------------------------------------------------------------------------
-|
-| Existing API contract preserved.
-|
 */
 
 const getMapData = async () => {
@@ -1085,29 +969,22 @@ const getMapData = async () => {
 |--------------------------------------------------------------------------
 | LEGACY OVERVIEW FILTERS
 |--------------------------------------------------------------------------
-|
-| Kept untouched so the existing endpoint does not
-| unexpectedly break.
-|
-| The actual Header cascade uses the dedicated
-| master-citizen endpoints.
-|
 */
 
 const getOverviewFilters = async () => {
   const citiesResult = await helperDb.query(`
-        SELECT DISTINCT city
-        FROM master_citizen_data
-        WHERE city IS NOT NULL
-        ORDER BY city
-      `);
+      SELECT DISTINCT city
+      FROM master_citizen_data
+      WHERE city IS NOT NULL
+      ORDER BY city
+    `);
 
   const wardsResult = await helperDb.query(`
-        SELECT DISTINCT ward
-        FROM master_citizen_data
-        WHERE ward IS NOT NULL
-        ORDER BY ward
-      `);
+      SELECT DISTINCT ward
+      FROM master_citizen_data
+      WHERE ward IS NOT NULL
+      ORDER BY ward
+    `);
 
   return {
     cities: citiesResult.rows.map((row) => row.city),
