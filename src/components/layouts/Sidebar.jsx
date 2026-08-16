@@ -51,11 +51,6 @@ const menuItems = [
     path: "/dashboard/admin/users2",
     icon: Users,
   },
-  {
-    name: "Settings",
-    path: "/dashboard/admin/settings",
-    icon: Settings,
-  },
 ];
 
 export default function Sidebar() {
