@@ -12,54 +12,41 @@ const cors =
 const overviewRoutes =
   require("./routes/overviewRoutes");
 
-
 const citizenRoutes =
   require("./routes/citizenRoutes");
-
 
 const telemetryRoutes =
   require("./routes/telemetryRoutes");
 
-
 const iotRoutes =
   require("./routes/iotRoutes");
-
 
 const filterRoutes =
   require("./routes/filterRoutes");
 
-
 const wasteGeneratorRoutes =
   require("./routes/wasteGeneratorRoutes");
-
 
 const authRoutes =
   require("./routes/authRoutes");
 
-
 const logsRoutes =
   require("./routes/logsRoutes");
-
 
 const usersRoutes =
   require("./routes/usersRoutes");
 
-
 const vehicleRoutes =
   require("./routes/vehicleRoutes");
-
 
 const plantRoutes =
   require("./routes/plantRoutes");
 
-
 const permissionRoutes =
   require("./routes/permissionRoutes");
 
-
 const redisRoutes =
   require("./routes/redisRoutes");
-
 
 const complaintRoutes =
   require("./routes/complaintRoutes");
@@ -68,61 +55,20 @@ const complaintRoutes =
 // =====================================================
 // ROUTE MAP
 // =====================================================
-//
-// Reads:
-//
-// Header date
-// Header ward number
-//
-// Then:
-//
-// master_telemetry_db
-//       ↓
-// selected date day table
-//       ↓
-// selected ward
-//       ↓
-// vehicles
-//       ↓
-// individual vehicle tables
-//       ↓
-// latitude / longitude + complete telemetry rows
-//
-// =====================================================
 
 const routeMapRoutes =
-  require("./routes/routeMap.routes");
+  require(
+    "./routes/routeMap.routes"
+  );
 
 
 // =====================================================
-// HISTORICAL DATABASE ROUTES
+// HISTORICAL DATABASE
 // =====================================================
 
 const historicalDatabaseRoutes =
   require(
     "./routes/historicalDatabase.routes"
-  );
-
-
-// =====================================================
-// HISTORICAL DATABASE SCHEDULER
-// =====================================================
-//
-// Automatically archives TODAY'S telemetry every day
-// at 02:00 PM IST.
-//
-// IMPORTANT:
-//
-// The scheduler uses the existing
-// historicalDatabase.controller.js archive logic.
-//
-// It does NOT contain its own database logic.
-//
-// =====================================================
-
-const citizenHistoricalScheduler =
-  require(
-    "./schedulers/citizenHistorical.scheduler"
   );
 
 
@@ -161,38 +107,29 @@ const masterCitizenSyncRoutes =
 
 
 // =====================================================
-// MASTER CITIZEN MAP ROUTES
+// MASTER CITIZEN MAP
 // =====================================================
 //
-// City Overview Map API.
+// IMPORTANT
 //
-// This endpoint will eventually provide:
+// The actual file is:
 //
-// City
-//   ↓
-// City GeoBoundary
-//   ↓
-// Zones
+// src/master_citizen/masterCitizenMap.routes.js
 //
-// Endpoint:
+// NOT:
 //
-// GET
-// /api/master-citizen/map/city/:cityId
-//
-// Example:
-//
-// /api/master-citizen/map/city/1
+// src/routes/masterCitizenMap.routes.js
 //
 // =====================================================
 
 const masterCitizenMapRoutes =
   require(
-    "./routes/masterCitizenMap.routes"
+    "./master_citizen/masterCitizenMap.routes"
   );
 
 
 // =====================================================
-// MASTER CITIZEN BACKGROUND JOBS
+// MASTER CITIZEN BACKGROUND JOB
 // =====================================================
 
 const {
@@ -221,6 +158,14 @@ const allowedOrigins = [
 
   "https://sewac-main-frontend.onrender.com",
 
+  // ---------------------------------------------------
+  // LOCAL DEVELOPMENT
+  // ---------------------------------------------------
+
+  "http://localhost:5173",
+
+  "http://localhost:5174",
+
 ];
 
 
@@ -239,10 +184,11 @@ app.use(
         // Postman
         // Thunder Client
         // Server-to-server
-        // etc.
         // -------------------------------------------------
 
-        if (!origin) {
+        if (
+          !origin
+        ) {
 
           return callback(
             null,
@@ -253,7 +199,7 @@ app.use(
 
 
         // -------------------------------------------------
-        // Allow registered frontend origins
+        // Allow known frontend origins
         // -------------------------------------------------
 
         if (
@@ -273,6 +219,12 @@ app.use(
         // -------------------------------------------------
         // Reject unknown origins
         // -------------------------------------------------
+
+        console.warn(
+          "❌ CORS rejected:",
+          origin
+        );
+
 
         return callback(
           new Error(
@@ -299,6 +251,17 @@ app.use(
 
 
 // =====================================================
+// URL ENCODER
+// =====================================================
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
+
+// =====================================================
 // HEALTH CHECK
 // =====================================================
 
@@ -309,17 +272,17 @@ app.get(
     res
   ) => {
 
-    res.status(
-      200
-    ).json({
+    return res
+      .status(200)
+      .json({
 
-      success:
-        true,
+        success:
+          true,
 
-      message:
-        "SEWAC backend is running.",
+        message:
+          "SEWAC backend is running.",
 
-    });
+      });
 
   }
 );
@@ -419,26 +382,13 @@ app.use(
 //
 // GET:
 //
-// /api/route-map?date=2026-08-16&wardNo=20
+// /api/route-map
 //
 // Example:
 //
 // /api/route-map
-//     ?date=2026-08-16
-//     &wardNo=20
-//
-// The route-map service will:
-//
-// 1. Read the selected date.
-// 2. Read the selected ward number.
-// 3. Locate that day's telemetry table.
-// 4. Find vehicles belonging to that ward.
-// 5. Open each vehicle's telemetry table.
-// 6. Read ALL telemetry records.
-// 7. Order them by timestamp.
-// 8. Return every latitude/longitude.
-// 9. Return the complete telemetry information
-//    required by the frontend hover popup.
+//   ?date=2026-08-16
+//   &wardNo=20
 //
 // =====================================================
 
@@ -449,26 +399,16 @@ app.use(
 
 
 // =====================================================
-// HISTORICAL DATABASE
+// HISTORICAL DATABASE API
 // =====================================================
+//
+// Examples:
 //
 // POST
 // /api/historical-database/archive-today
 //
-// Archives today's daily telemetry.
-//
-//
-//
 // POST
 // /api/historical-database/archive
-//
-// Body:
-//
-// {
-//   "date": "2026-08-14"
-// }
-//
-//
 //
 // GET
 // /api/historical-database/test-connections
@@ -489,6 +429,17 @@ app.use(
 // =====================================================
 // CITY
 // =====================================================
+//
+// POST
+// /api/master-citizen/cities
+//
+// GET
+// /api/master-citizen/cities
+//
+// GET
+// /api/master-citizen/cities/:cityId
+//
+// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -498,6 +449,17 @@ app.use(
 
 // =====================================================
 // ZONE
+// =====================================================
+//
+// POST
+// /api/master-citizen/cities/:cityId/zones
+//
+// GET
+// /api/master-citizen/cities/:cityId/zones
+//
+// GET
+// /api/master-citizen/cities/:cityId/zones/:zoneId
+//
 // =====================================================
 
 app.use(
@@ -509,6 +471,14 @@ app.use(
 // =====================================================
 // DIVISION
 // =====================================================
+//
+// POST
+// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
+//
+// GET
+// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions
+//
+// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -518,6 +488,14 @@ app.use(
 
 // =====================================================
 // WARD
+// =====================================================
+//
+// POST
+// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
+//
+// GET
+// /api/master-citizen/cities/:cityId/zones/:zoneId/divisions/:divisionId/wards
+//
 // =====================================================
 
 app.use(
@@ -530,6 +508,10 @@ app.use(
 // CITY OVERVIEW MAP
 // =====================================================
 //
+// THIS IS THE NEW MAP ENDPOINT.
+//
+// ONE ENDPOINT ONLY.
+//
 // GET:
 //
 // /api/master-citizen/map/city/:cityId
@@ -541,23 +523,15 @@ app.use(
 // Response:
 //
 // {
-//   "success": true,
-//   "city": {
-//     "id": 1,
-//     "cityName": "Bangalore",
-//     "geoBoundary": {},
-//     "cityTableName": "bangalore_city"
+//   success: true,
+//   city: {
+//     id,
+//     cityName,
+//     geoBoundary,
+//     cityTableName
 //   },
-//   "zones": [
-//     {
-//       "id": 1,
-//       "zoneName": "Zone Name",
-//       "geoBoundary": {},
-//       "totalDivisions": 5,
-//       "totalWards": 20,
-//       "zoneTableName": "zone_table"
-//     }
-//   ]
+//   zoneNames: [],
+//   zones: []
 // }
 //
 // =====================================================
@@ -571,6 +545,14 @@ app.use(
 // =====================================================
 // MASTER CITIZEN SYNC
 // =====================================================
+//
+// POST
+// /api/master-citizen/sync
+//
+// POST
+// /api/master-citizen/sync/ward/:wardNo
+//
+// =====================================================
 
 app.use(
   "/api/master-citizen",
@@ -581,90 +563,23 @@ app.use(
 // =====================================================
 // START MASTER CITIZEN WEEKLY SYNC
 // =====================================================
-//
-// Sunday
-// 02:00 AM
-// Asia/Kolkata
-//
-// =====================================================
 
-startMasterCitizenWeeklySync();
+try {
 
+  startMasterCitizenWeeklySync();
 
-// =====================================================
-// START HISTORICAL DATABASE SCHEDULER
-// =====================================================
-//
-// Every day:
-//
-// 02:00 PM IST
-//
-// The scheduler archives:
-//
-// TODAY
-//
-// Example:
-//
-// 15 August 2026
-//       ↓
-// 14:00 IST
-//       ↓
-// day_15082026
-//       ↓
-// vehicle_table_name
-//       ↓
-// actual vehicle table
-//       ↓
-// telemetry records
-//       ↓
-// ward monthly historical table
-//
-// =====================================================
+  console.log(
+    "✅ Master Citizen weekly sync started."
+  );
 
-console.log("");
+} catch (error) {
 
-console.log(
-  "============================================================"
-);
+  console.error(
+    "❌ Failed to start Master Citizen weekly sync:",
+    error
+  );
 
-console.log(
-  "🚛 SEWAC HISTORICAL ARCHIVE SCHEDULER"
-);
-
-console.log(
-  "============================================================"
-);
-
-console.log(
-  "Status: STARTING"
-);
-
-console.log(
-  "Schedule: Every day at 02:00 PM IST"
-);
-
-console.log(
-  "Archive target: TODAY"
-);
-
-console.log(
-  "============================================================"
-);
-
-
-citizenHistoricalScheduler.start();
-
-
-console.log(
-  "✅ Historical archive scheduler started successfully."
-);
-
-
-console.log(
-  "============================================================"
-);
-
-console.log("");
+}
 
 
 // =====================================================
@@ -677,20 +592,20 @@ app.use(
     res
   ) => {
 
-    res.status(
-      404
-    ).json({
+    return res
+      .status(404)
+      .json({
 
-      success:
-        false,
+        success:
+          false,
 
-      message:
-        "API endpoint not found.",
+        message:
+          "API endpoint not found.",
 
-      path:
-        req.originalUrl,
+        path:
+          req.originalUrl,
 
-    });
+      });
 
   }
 );
@@ -709,51 +624,64 @@ app.use(
   ) => {
 
     console.error(
-      "❌ GLOBAL ERROR:",
+      "================================================"
+    );
+
+    console.error(
+      "❌ GLOBAL ERROR"
+    );
+
+    console.error(
       error
     );
 
+    console.error(
+      "================================================"
+    );
 
-    // ---------------------------------------------------
+
+    // -------------------------------------------------
     // CORS ERROR
-    // ---------------------------------------------------
+    // -------------------------------------------------
 
     if (
       error.message ===
       "Not allowed by CORS"
     ) {
 
-      return res.status(
-        403
-      ).json({
+      return res
+        .status(403)
+        .json({
+
+          success:
+            false,
+
+          message:
+            "Origin not allowed by CORS.",
+
+        });
+
+    }
+
+
+    // -------------------------------------------------
+    // DEFAULT ERROR
+    // -------------------------------------------------
+
+    return res
+      .status(
+        error.status || 500
+      )
+      .json({
 
         success:
           false,
 
         message:
-          "Origin not allowed by CORS.",
+          error.message ||
+          "Internal server error.",
 
       });
-
-    }
-
-
-    // ---------------------------------------------------
-    // DEFAULT ERROR
-    // ---------------------------------------------------
-
-    return res.status(
-      error.status || 500
-    ).json({
-
-      success:
-        false,
-
-      message:
-        error.message ||
-        "Internal server error.",
-
-    });
 
   }
 );

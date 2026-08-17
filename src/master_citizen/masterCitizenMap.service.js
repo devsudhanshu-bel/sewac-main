@@ -1,5 +1,5 @@
 const masterCitizenPrisma =
-  require("../../config/masterCitizenPrisma");
+  require("../config/masterCitizenPrisma");
 
 /**
  * ============================================================
@@ -7,18 +7,10 @@ const masterCitizenPrisma =
  * ============================================================
  */
 
-/**
- * Validate a dynamic PostgreSQL table name.
- *
- * Dynamic identifiers cannot be passed as normal Prisma
- * query parameters, so we validate them before interpolation.
- */
 function validateTableName(tableName) {
   if (
     typeof tableName !== "string" ||
-    !/^[a-z][a-z0-9_]*$/.test(
-      tableName
-    )
+    !/^[a-z][a-z0-9_]*$/.test(tableName)
   ) {
     throw new Error(
       `Invalid table name: ${tableName}`
@@ -28,12 +20,12 @@ function validateTableName(tableName) {
   return tableName;
 }
 
+
 /**
- * Convert PostgreSQL JSON/JSONB values into a JS object.
+ * Convert PostgreSQL JSON/JSONB values
+ * into normal JavaScript objects.
  */
-function normalizeGeoBoundary(
-  value
-) {
+function normalizeGeoBoundary(value) {
   if (
     value === null ||
     value === undefined
@@ -41,14 +33,10 @@ function normalizeGeoBoundary(
     return null;
   }
 
-  if (
-    typeof value === "string"
-  ) {
+  if (typeof value === "string") {
     try {
       return JSON.parse(value);
-    } catch (
-      error
-    ) {
+    } catch (error) {
       return null;
     }
   }
@@ -56,31 +44,42 @@ function normalizeGeoBoundary(
   return value;
 }
 
+
 /**
  * ============================================================
- * GET CITY + ZONES
+ * GET CITY MAP DATA
  * ============================================================
+ *
+ * ONE ENDPOINT
  *
  * Returns:
  *
  * {
- *   id,
- *   cityName,
- *   geoBoundary,
- *   cityTableName,
- *   zones: []
+ *   city: {
+ *     id,
+ *     cityName,
+ *     geoBoundary,
+ *     cityTableName
+ *   },
+ *
+ *   zones: [
+ *     {
+ *       zoneName,
+ *       geoBoundary,
+ *       zoneTableName
+ *     }
+ *   ]
  * }
  *
  * ============================================================
  */
 
-async function getCityMapData(
-  cityId
-) {
+async function getCityMapData(cityId) {
+
   /**
-   * ----------------------------------------------------------
-   * VALIDATE CITY ID
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 1. VALIDATE CITY ID
+   * ==========================================================
    */
 
   if (
@@ -93,8 +92,10 @@ async function getCityMapData(
     );
   }
 
+
   const numericCityId =
     Number(cityId);
+
 
   if (
     !Number.isInteger(
@@ -107,41 +108,45 @@ async function getCityMapData(
     );
   }
 
+
   /**
-   * ----------------------------------------------------------
-   * FETCH CITY FROM MASTER CITY TABLE
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 2. FETCH CITY
+   * ==========================================================
    *
-   * Expected structure:
+   * Actual master city table:
    *
    * city
-   * ├── id
-   * ├── city_name
-   * ├── geoboundary
-   * └── city_table_name
    *
-   * ----------------------------------------------------------
+   * city_id
+   * city_name
+   * geo_boundary
+   * created_at
+   * city_table_name
+   *
+   * ==========================================================
    */
 
   const cityRows =
     await masterCitizenPrisma.$queryRawUnsafe(
       `
         SELECT
-          id,
+          city_id,
           city_name,
-          geoboundary,
+          geo_boundary,
           city_table_name
         FROM "city"
-        WHERE id = $1
+        WHERE city_id = $1
         LIMIT 1
       `,
       numericCityId
     );
 
+
   /**
-   * ----------------------------------------------------------
-   * CITY NOT FOUND
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 3. CITY NOT FOUND
+   * ==========================================================
    */
 
   if (
@@ -153,22 +158,15 @@ async function getCityMapData(
     );
   }
 
+
   const city =
     cityRows[0];
 
+
   /**
-   * ----------------------------------------------------------
-   * CITY TABLE NAME
-   * ----------------------------------------------------------
-   *
-   * Example:
-   *
-   * Bangalore
-   *      ↓
-   * bangalore_city
-   *
-   * The actual value comes from the DB.
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 4. VALIDATE CITY TABLE NAME
+   * ==========================================================
    */
 
   const cityTableName =
@@ -176,10 +174,11 @@ async function getCityMapData(
       city.city_table_name
     );
 
+
   /**
-   * ----------------------------------------------------------
-   * CHECK CITY TABLE
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 5. CHECK CITY TABLE EXISTS
+   * ==========================================================
    */
 
   const tableCheck =
@@ -195,106 +194,94 @@ async function getCityMapData(
       cityTableName
     );
 
-  const cityTableExists =
-    tableCheck?.[0]?.exists ===
-    true;
 
-  if (
-    !cityTableExists
-  ) {
+  const cityTableExists =
+    tableCheck?.[0]?.exists === true;
+
+
+  if (!cityTableExists) {
     throw new Error(
       `City table "${cityTableName}" does not exist.`
     );
   }
 
+
   /**
-   * ----------------------------------------------------------
-   * FETCH ALL ZONES
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 6. FETCH ZONE INFORMATION
+   * ==========================================================
    *
-   * Your dynamic city table contains:
+   * We ONLY return the fields required by the frontend:
    *
-   * zone_id
    * zone_name
    * geo_boundary
-   * total_divisions
-   * total_wards
-   * created_at
    * zone_table_name
    *
-   * ----------------------------------------------------------
+   * ==========================================================
    */
 
   const zoneRows =
     await masterCitizenPrisma.$queryRawUnsafe(
       `
         SELECT
-          zone_id,
           zone_name,
           geo_boundary,
-          total_divisions,
-          total_wards,
-          created_at,
           zone_table_name
         FROM "${cityTableName}"
+        WHERE zone_name IS NOT NULL
         ORDER BY zone_id ASC
       `
     );
 
+
   /**
-   * ----------------------------------------------------------
-   * FORMAT ZONES
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 7. FORMAT ZONES
+   * ==========================================================
    */
 
   const zones =
-    zoneRows.map(
-      (zone) => ({
-        id:
-          Number(
-            zone.zone_id
-          ),
+    zoneRows
+      .map(
+        (zone) => ({
 
-        zoneName:
-          zone.zone_name,
+          zoneName:
+            zone.zone_name,
 
-        geoBoundary:
-          normalizeGeoBoundary(
-            zone.geo_boundary
-          ),
+          geoBoundary:
+            normalizeGeoBoundary(
+              zone.geo_boundary
+            ),
 
-        totalDivisions:
-          Number(
-            zone.total_divisions ??
-              0
-          ),
+          zoneTableName:
+            zone.zone_table_name ||
+            null,
 
-        totalWards:
-          Number(
-            zone.total_wards ??
-              0
-          ),
+        })
+      )
+      .filter(
+        (zone) =>
+          zone.zoneName !== null &&
+          zone.zoneName !== undefined &&
+          String(
+            zone.zoneName
+          ).trim() !== ""
+      );
 
-        createdAt:
-          zone.created_at,
-
-        zoneTableName:
-          zone.zone_table_name ||
-          null,
-      })
-    );
 
   /**
-   * ----------------------------------------------------------
-   * FINAL RESPONSE OBJECT
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 8. FINAL RESPONSE
+   * ==========================================================
    */
 
   return {
+
     city: {
+
       id:
         Number(
-          city.id
+          city.city_id
         ),
 
       cityName:
@@ -302,46 +289,26 @@ async function getCityMapData(
 
       geoBoundary:
         normalizeGeoBoundary(
-          city.geoboundary
+          city.geo_boundary
         ),
 
       cityTableName:
         cityTableName,
+
     },
 
     zones,
+
   };
 }
 
-/**
- * ============================================================
- * GET ONLY ZONES
- * ============================================================
- *
- * This is useful later when the frontend needs to refresh
- * only the Zone dropdown.
- *
- * ============================================================
- */
-
-async function getCityZones(
-  cityId
-) {
-  const cityData =
-    await getCityMapData(
-      cityId
-    );
-
-  return cityData.zones;
-}
 
 /**
  * ============================================================
- * EXPORTS
+ * EXPORT
  * ============================================================
  */
 
 module.exports = {
   getCityMapData,
-  getCityZones,
 };

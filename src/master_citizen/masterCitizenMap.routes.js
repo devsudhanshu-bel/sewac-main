@@ -5,28 +5,27 @@ const router =
   express.Router();
 
 const {
-  getCityMapData,
-} = require("./masterCitizenMap.controller");
+  getCityMapDataController,
+} =
+  require("./masterCitizenMap.controller");
+
 
 /**
  * ============================================================
- * CITY MAP
+ * ONE CITY MAP ENDPOINT
  * ============================================================
  *
  * GET
  * /api/master-citizen/map/city/:cityId
  *
- * Example:
- *
- * /api/master-citizen/map/city/1
- *
  * ============================================================
  */
 
 router.get(
-  "/city/:cityId",
-  getCityMapData
+  "/map/city/:cityId",
+  getCityMapDataController
 );
+
 
 module.exports =
   router;
