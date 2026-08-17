@@ -578,76 +578,71 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
   const dayIdentifier = quoteIdentifier(dayTable);
 
   /*
-    |--------------------------------------------------------------------------
-    | No selected wards
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | If geographic filter exists but no wards match,
+  | there is simply no telemetry.
+  |--------------------------------------------------------------------------
+  */
 
   if (Array.isArray(wardNos) && wardNos.length === 0) {
     return [];
   }
 
   try {
-    const rows = await telemetryDb.$queryRawUnsafe(
-      Array.isArray(wardNos)
-        ? `
-                  SELECT
-                    d.vehicle_id,
-                    d.vehicle_table_name,
-                    d.ward_no
-                  FROM ${dayIdentifier} d
-                  INNER JOIN vehicle_master vm
-                    ON vm.vehicle_id = d.vehicle_id
-                  WHERE d.ward_no =
-                        ANY($1::integer[])
-                  ORDER BY
-                    d.vehicle_id ASC
-                `
-        : `
-                  SELECT
-                    d.vehicle_id,
-                    d.vehicle_table_name,
-                    d.ward_no
-                  FROM ${dayIdentifier} d
-                  INNER JOIN vehicle_master vm
-                    ON vm.vehicle_id = d.vehicle_id
-                  ORDER BY
-                    d.vehicle_id ASC
-                `,
-      ...(Array.isArray(wardNos) ? [wardNos] : []),
-    );
+    let rows;
 
-    return rows
-      .filter(
-        (row) =>
-          row.vehicle_table_name &&
-          typeof row.vehicle_table_name === "string" &&
-          IDENTIFIER_REGEX.test(row.vehicle_table_name),
-      )
-      .map((row) => ({
-        vehicleId: row.vehicle_id,
+    if (Array.isArray(wardNos)) {
+      rows = await telemetryDb.$queryRawUnsafe(
+        `
+            SELECT
+              vehicle_number,
+              vehicle_table_name,
+              ward_no
+            FROM ${dayIdentifier}
+            WHERE ward_no =
+                  ANY($1::integer[])
+            ORDER BY
+              vehicle_number ASC
+          `,
+        wardNos,
+      );
+    } else {
+      rows = await telemetryDb.$queryRawUnsafe(
+        `
+            SELECT
+              vehicle_number,
+              vehicle_table_name,
+              ward_no
+            FROM ${dayIdentifier}
+            ORDER BY
+              vehicle_number ASC
+          `,
+      );
+    }
 
-        vehicleTableName: row.vehicle_table_name,
+    return rows.map((row) => ({
+      vehicleNumber:
+        row.vehicle_number === null || row.vehicle_number === undefined
+          ? null
+          : String(row.vehicle_number).trim(),
 
-        wardNo:
-          row.ward_no === null || row.ward_no === undefined
-            ? null
-            : Number(row.ward_no),
-      }));
+      vehicleTableName: row.vehicle_table_name,
+
+      wardNo:
+        row.ward_no === null || row.ward_no === undefined
+          ? null
+          : Number(row.ward_no),
+    }));
   } catch (error) {
     /*
-      |--------------------------------------------------------------------------
-      | Missing day table = NO DATA
-      |--------------------------------------------------------------------------
-      |
-      | This is expected when admin selects a date
-      | for which telemetry has not been created.
-      |--------------------------------------------------------------------------
-      */
+    |--------------------------------------------------------------------------
+    | Missing day table = NO DATA
+    |--------------------------------------------------------------------------
+    */
 
     if (error?.code === "42P01") {
       console.warn(
-        `Waste Generator: telemetry day table ${dayTable} does not exist.`,
+        `Waste Generator: telemetry day table ${dayTable} does not exist. Returning no data.`,
       );
 
       return [];
