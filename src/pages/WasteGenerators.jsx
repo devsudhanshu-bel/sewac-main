@@ -1,205 +1,390 @@
-import { useEffect, useState } from "react";
-import Header from "../components/layouts/Header";
-import api from "../api/axios";
+import { useEffect, useRef } from "react";
+import { Trash2, Scale, UserRound } from "lucide-react";
+import { gsap } from "gsap";
 
-import WasteGenKPIs from "../components/waste-generators/WasteGenKPIs";
-import WasteGenMap from "../components/waste-generators/WasteGenMap";
-import GVPGen from "../components/waste-generators/GVPGen";
-import WasteGenDir from "../components/waste-generators/WasteGenDir";
+export default function WasteGenKPIs({ summary }) {
+  if (!summary) {
+    return null;
+  }
 
-import { useFilters } from "../contexts/FilterContext";
-
-export default function WasteGenerators() {
-  const [summary, setSummary] = useState(null);
-
-  /*
-  |--------------------------------------------------------------------------
-  | SELECTED DATE
-  |--------------------------------------------------------------------------
-  |
-  | Header already accepts selectedDate + setSelectedDate as props.
-  | We keep the date state here so this page controls its own
-  | analytical date.
-  |
-  */
-
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-
-  /*
-  |--------------------------------------------------------------------------
-  | HEADER FILTERS
-  |--------------------------------------------------------------------------
-  */
-
-  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
-    useFilters();
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD WASTE GENERATOR KPI SUMMARY
-  |--------------------------------------------------------------------------
-  |
-  | KPI DATA DEPENDS ON:
-  |
-  | City
-  | Zone
-  | Division
-  | Ward
-  | Date
-  |
-  */
-
-  const loadSummary = async () => {
-    try {
-      /*
-       * Wait until city is available.
-       */
-
-      if (!selectedCity?.city_id) {
-        setSummary(null);
-        return;
-      }
-
-      /*
-       * Build query parameters.
-       */
-
-      const params = new URLSearchParams();
-
-      /*
-       * DATE
-       */
-
-      params.set("date", selectedDate);
-
-      /*
-       * CITY
-       */
-
-      params.set("cityId", selectedCity.city_id);
-
-      /*
-       * ZONE
-       */
-
-      if (selectedZone?.zone_id) {
-        params.set("zoneId", selectedZone.zone_id);
-      }
-
-      /*
-       * DIVISION
-       */
-
-      if (selectedDivision?.division_id) {
-        params.set("divisionId", selectedDivision.division_id);
-      }
-
-      /*
-       * WARD
-       */
-
-      if (selectedWard?.ward_id) {
-        params.set("wardId", selectedWard.ward_id);
-      }
-
-      /*
-       * FINAL REQUEST
-       *
-       * Example:
-       *
-       * /api/waste-generators/summary
-       * ?date=2026-08-16
-       * &cityId=1
-       * &zoneId=4
-       * &divisionId=5
-       * &wardId=216
-       */
-
-      const res = await api.get(
-        `/api/waste-generators/summary?${params.toString()}`,
-      );
-
-      setSummary(res.data?.data || null);
-    } catch (err) {
-      console.error("Waste Generator Summary Error:", err);
-
-      setSummary(null);
-    }
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | RELOAD KPI WHEN ANY HEADER FILTER CHANGES
-  |--------------------------------------------------------------------------
-  |
-  | Date is intentionally included here.
-  |
-  */
+  const sectionRef = useRef(null);
 
   useEffect(() => {
-    loadSummary();
-  }, [
-    selectedDate,
-    selectedCity?.city_id,
-    selectedZone?.zone_id,
-    selectedDivision?.division_id,
-    selectedWard?.ward_id,
-  ]);
+    const ctx = gsap.context(() => {
+      requestAnimationFrame(() => {
+        gsap.from(sectionRef.current, {
+          opacity: 0,
+          y: 10,
+          duration: 0.35,
+          ease: "power2.out",
+        });
+      });
+    }, sectionRef);
 
-  /*
-  |--------------------------------------------------------------------------
-  | RENDER
-  |--------------------------------------------------------------------------
-  */
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      {/* ================= Header ================= */}
+    <section
+      ref={sectionRef}
+      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6"
+    >
+      {/* ========================= Waste Generator Status ========================= */}
 
-      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          border
+          border-gray-200
+          px-5
+          py-5
+          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+          hover:shadow-lg
+          hover:-translate-y-0.5
+          transition-all
+          duration-300
+          min-h-[185px]
+        "
+      >
+        <h3 className="text-[12px] font-semibold text-slate-800 mb-5">
+          Waste Generator Status
+        </h3>
 
-      {/* ================= Page ================= */}
+        <div className="flex items-center gap-3">
+          <UserRound size={20} className="text-green-600" fill="currentColor" />
 
-      <div className="w-full px-8 py-7 overflow-x-hidden">
-        {/* ================= Title ================= */}
+          <div className="flex-1">
+            <p className="text-[12px] text-slate-600">
+              Active Waste Generators
+            </p>
 
-        <div>
-          <h1 className="text-[34px] font-bold tracking-tight text-[#16295A]">
-            Waste Generators
-          </h1>
+            <div className="flex items-end gap-2 mt-1">
+              <span
+                className="
+                  text-[18px]
+                  font-bold
+                  text-green-600
+                  leading-none
+                "
+              >
+                {summary?.activeWasteGenerators?.toLocaleString() ?? 0}
+              </span>
 
-          <p className="mt-1 text-[14px] text-slate-500">
-            Overview of waste generators participation, waste contribution,
-            activity, monitoring and collection performance.
+              <span
+                className="
+                  text-[13px]
+                  font-semibold
+                  text-slate-500
+                  pb-1
+                "
+              >
+                (
+                {summary.totalWasteGenerators
+                  ? (
+                      (summary.activeWasteGenerators /
+                        summary.totalWasteGenerators) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-5"></div>
+
+        <div className="flex items-center gap-3">
+          <UserRound
+            size={20}
+            className="text-orange-500"
+            fill="currentColor"
+          />
+
+          <div className="flex-1">
+            <p className="text-[12px] text-slate-600">
+              Inactive Waste Generators
+            </p>
+
+            <div className="flex items-end gap-2 mt-1">
+              <span
+                className="
+                  text-[22px]
+                  font-bold
+                  text-orange-500
+                  leading-none
+                "
+              >
+                {summary?.inactiveWasteGenerators?.toLocaleString() ?? 0}
+              </span>
+
+              <span
+                className="
+                  text-[13px]
+                  font-semibold
+                  text-slate-500
+                  pb-1
+                "
+              >
+                (
+                {summary.totalWasteGenerators
+                  ? (
+                      (summary.inactiveWasteGenerators /
+                        summary.totalWasteGenerators) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================= Total Waste Generated ========================= */}
+
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          border
+          border-gray-200
+          px-5
+          py-5
+          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+          hover:shadow-lg
+          hover:-translate-y-0.5
+          transition-all
+          duration-300
+          min-h-[185px]
+        "
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="
+              w-10
+              h-10
+              rounded-xl
+              bg-pink-100
+              flex
+              items-center
+              justify-center
+              shrink-0
+            "
+          >
+            <Trash2 size={18} className="text-pink-600" />
+          </div>
+
+          <p className="text-[12px] font-semibold leading-5 text-slate-800">
+            Total Waste
+            <br />
+            Generated
           </p>
         </div>
 
-        {/* ================= KPI Cards ================= */}
+        <div className="flex justify-center items-center h-[95px]">
+          <div className="flex items-end gap-2">
+            <h2
+              className="
+                text-[32px]
+                font-bold
+                tracking-tight
+                text-[#18214D]
+              "
+            >
+              {(Number(summary?.totalWasteGenerated ?? 0) / 1000).toFixed(2)}
+            </h2>
 
-        <section className="mt-6">
-          <WasteGenKPIs summary={summary} />
-        </section>
-
-        {/* ================= Maps ================= */}
-
-        <section className="mt-5">
-          <WasteGenMap />
-        </section>
-
-        {/* ================= GVP Trend ================= */}
-
-        <section className="mt-5">
-          <GVPGen />
-        </section>
-
-        {/* ================= Directory ================= */}
-
-        <section className="mt-5 mb-8">
-          <WasteGenDir />
-        </section>
+            <span
+              className="
+                text-sm
+                font-semibold
+                text-slate-600
+                mb-2
+              "
+            >
+              TONS
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* ========================= Average Waste ========================= */}
+
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          border
+          border-gray-200
+          px-5
+          py-5
+          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+          hover:shadow-lg
+          hover:-translate-y-0.5
+          transition-all
+          duration-300
+          min-h-[185px]
+        "
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="
+              w-10
+              h-10
+              rounded-xl
+              bg-emerald-100
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <Scale size={20} className="text-emerald-600" />
+          </div>
+
+          <div>
+            <p className="text-[13px] font-semibold text-slate-800">
+              Average Waste
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-center items-center h-[95px]">
+          <div className="flex items-end gap-2">
+            <h2
+              className="
+                text-[32px]
+                font-bold
+                tracking-tight
+                text-[#18214D]
+              "
+            >
+              {(Number(summary?.averageWaste ?? 0) / 1000).toFixed(2)}
+            </h2>
+
+            <span
+              className="
+                text-lg
+                font-semibold
+                text-slate-600
+                mb-2
+              "
+            >
+              TONS
+            </span>
+          </div>
+
+          <p className="mt-2 text-[13px] font-semibold text-slate-600">
+            Per House / Day
+          </p>
+        </div>
+      </div>
+
+      {/* ========================= Waste Generator Classification ========================= */}
+
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          border
+          border-gray-200
+          px-5
+          py-5
+          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+          hover:shadow-lg
+          hover:-translate-y-0.5
+          transition-all
+          duration-300
+          min-h-[185px]
+        "
+      >
+        <h3 className="text-[11px] font-semibold text-slate-800 mb-5">
+          Waste Generator Classification
+        </h3>
+
+        <div className="flex items-center gap-3">
+          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+
+          <div className="flex-1">
+            <p className="text-[12px] text-slate-600">Above Average</p>
+
+            <div className="flex items-end gap-2 mt-1">
+              <span
+                className="
+                  text-[22px]
+                  font-bold
+                  text-green-600
+                  leading-none
+                "
+              >
+                {summary?.aboveAverage?.toLocaleString() ?? 0}
+              </span>
+
+              <span
+                className="
+                  text-[13px]
+                  font-semibold
+                  text-slate-500
+                  pb-1
+                "
+              >
+                (
+                {summary.aboveAverage + summary.belowAverage
+                  ? (
+                      (summary.aboveAverage /
+                        (summary.aboveAverage + summary.belowAverage)) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-5"></div>
+
+        <div className="flex items-center gap-3">
+          <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+
+          <div className="flex-1">
+            <p className="text-[12px] text-slate-600">Below Average</p>
+
+            <div className="flex items-end gap-2 mt-1">
+              <span
+                className="
+                  text-[22px]
+                  font-bold
+                  text-orange-500
+                  leading-none
+                "
+              >
+                {summary?.belowAverage?.toLocaleString() ?? 0}
+              </span>
+
+              <span
+                className="
+                  text-[13px]
+                  font-semibold
+                  text-slate-500
+                  pb-1
+                "
+              >
+                (
+                {summary.aboveAverage + summary.belowAverage
+                  ? (
+                      (summary.belowAverage /
+                        (summary.aboveAverage + summary.belowAverage)) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
