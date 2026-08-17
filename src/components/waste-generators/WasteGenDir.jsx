@@ -1,522 +1,435 @@
 import {
   Search,
-  Download,
-  FileSpreadsheet,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
+  RefreshCw,
+  Pencil,
 } from "lucide-react";
+import { useState } from "react";
 
-import { useEffect, useState } from "react";
-import api from "../../api/axios";
-import CreateWasteGeneratorModal from "./CreateWasteGeneratorModal";
-import UpdateWasteGeneratorModal from "./UpdateWasteGeneratorModal";
-import DeleteWasteGeneratorModal from "./DeleteWasteGeneratorModal";
+export default function WasteGeneratorDirectory({
+  citizens = [],
+  onUpdate,
+  onSync,
+  syncing = false,
+}) {
+  const [search, setSearch] = useState("");
 
-export default function WasteGenDir() {
-  const [wasteGenerators, setWasteGenerators] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
+  const filteredCitizens = citizens.filter((citizen) => {
+    const searchValue = search.toLowerCase().trim();
+
+    if (!searchValue) return true;
+
+    return (
+      citizen.personName?.toLowerCase().includes(searchValue) ||
+      citizen.phoneNumber?.toLowerCase().includes(searchValue) ||
+      citizen.wetRFID?.toLowerCase().includes(searchValue) ||
+      citizen.dryRFID?.toLowerCase().includes(searchValue) ||
+      citizen.area?.toLowerCase().includes(searchValue) ||
+      citizen.ward?.toString().toLowerCase().includes(searchValue)
+    );
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [selectedCitizen, setSelectedCitizen] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    fetchWasteGenerators(currentPage, rowsPerPage);
-  }, [currentPage, rowsPerPage, debouncedSearch]);
-
-  const fetchWasteGenerators = async (
-    page = currentPage,
-    limit = rowsPerPage,
-  ) => {
-    try {
-      setLoading(true);
-
-      const res = await api.get(
-        `/api/waste-generators?page=${page}&limit=${limit}&search=${debouncedSearch}`,
-      );
-
-      setWasteGenerators(res.data.data.wasteGenerators);
-      if (res.data.data.wasteGenerators.length === 1) {
-        setSelectedCitizen(res.data.data.wasteGenerators[0]);
-      } else {
-        setSelectedCitizen(null);
-      }
-
-      setPagination(res.data.data.pagination);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const requestPermission = async () => {
-    if (!selectedCitizen) {
-      alert("Search for a single waste generator first.");
-
-      return;
-    }
-
-    try {
-      await api.post("/api/permissions/request", {
-        requested_by_admin_id: 2,
-
-        module: "waste-generators",
-
-        action: "UPDATE",
-
-        target_identifier: selectedCitizen.phoneNumber,
-
-        reason: "Citizen requested profile update.",
-      });
-
-      alert("Permission request sent successfully.");
-    } catch (err) {
-      console.error(err);
-
-      console.log(err.response);
-
-      console.log(err.response?.data);
-
-      alert(
-        err.response?.data?.message || "Failed to send permission request.",
-      );
-    }
-  };
   return (
-    <section
-      className="
-        mt-5
-        w-full
-        bg-white
-        rounded-[22px]
-        border
-        border-[#ECECF4]
-        shadow-[0_2px_10px_rgba(0,0,0,0.03)]
-        overflow-hidden
-      "
-    >
-      {/* ================= Header ================= */}
+    <div className="mt-8 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
-      <div className="px-6 pt-5 pb-3 flex items-start justify-between">
-        <div>
-          <h2 className="text-[18px] font-semibold text-[#16295A]">
-            Waste Generators Directory
-          </h2>
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
-          <p className="mt-1 text-[11px] text-[#7B8190]">
-            View and manage waste generators based on their waste contribution
-            and activity.
-          </p>
-        </div>
+      <div className="px-8 py-6 border-b border-gray-200">
 
-        {/* Right Side */}
+        <div className="flex items-center justify-between gap-6">
 
-        <div className="flex items-center gap-3">
-          {/* Search */}
+          {/* Title */}
 
-          <div className="relative">
-            <Search
-              size={15}
-              className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-slate-400
-              "
-            />
+          <div>
+            <h2 className="text-[24px] font-bold text-[#0B2A66]">
+              Waste Generators Directory
+            </h2>
 
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-
-                setCurrentPage(1);
-              }}
-              placeholder="Search by name, phone number, Wet RFID or Dry RFID..."
-              className="
-        w-[300px]
-        h-10
-        rounded-xl
-        border
-        border-[#E8E8EF]
-        bg-white
-        pl-10
-        pr-4
-        text-[12px]
-        outline-none
-        placeholder:text-slate-400
-    "
-            />
+            <p className="mt-1 text-[14px] text-[#667085]">
+              View and manage waste generators based on their waste
+              contribution and activity.
+            </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="
-    h-10
-    px-5
-    rounded-xl
-    bg-[#6D28D9]
-    text-white
-    text-[12px]
-    font-semibold
-    hover:bg-[#5B21B6]
-    transition
-  "
-          >
-            + Add Waste Generator
-          </button>
+
+          {/* =================================================
+              SEARCH + SYNC
+          ================================================= */}
+
+          <div className="flex items-center gap-4">
+
+            {/* Search */}
+
+            <div className="relative w-[375px]">
+
+              <Search
+                size={20}
+                className="
+                  absolute
+                  left-4
+                  top-1/2
+                  -translate-y-1/2
+                  text-[#8FA1C1]
+                "
+              />
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, phone number, Wet RFID"
+                className="
+                  w-full
+                  h-[52px]
+                  pl-12
+                  pr-4
+                  rounded-xl
+                  border
+                  border-[#E2E7F0]
+                  bg-white
+                  text-[14px]
+                  text-gray-800
+                  outline-none
+                  placeholder:text-[#8FA1C1]
+                  focus:border-violet-400
+                  focus:ring-2
+                  focus:ring-violet-100
+                  transition
+                "
+              />
+
+            </div>
+
+            {/* =================================================
+                SYNC BUTTON
+            ================================================= */}
+
+            <button
+              type="button"
+              onClick={onSync}
+              disabled={syncing}
+              className="
+                h-[52px]
+                min-w-[125px]
+                px-6
+                rounded-xl
+                bg-[#6D28D9]
+                text-white
+                text-[14px]
+                font-semibold
+                flex
+                items-center
+                justify-center
+                gap-2
+                transition
+                hover:bg-[#5B21B6]
+                disabled:opacity-60
+                disabled:cursor-not-allowed
+              "
+            >
+
+              <RefreshCw
+                size={18}
+                className={syncing ? "animate-spin" : ""}
+              />
+
+              {syncing ? "Syncing..." : "Sync"}
+
+            </button>
+
+          </div>
         </div>
       </div>
 
-      {/* ================= Table ================= */}
+      {/* =====================================================
+          TABLE
+      ===================================================== */}
 
-      <div className="w-full overflow-x-auto">
-        <table className="min-w-[1400px] w-full border-collapse">
+      <div className="overflow-x-auto">
+
+        <table className="w-full border-collapse">
+
+          {/* =================================================
+              TABLE HEADER
+          ================================================= */}
+
           <thead>
-            <tr className="bg-[#F8F8FD] border-y border-[#ECECF4]">
-              <th className="w-[40px] py-3 pl-4 text-left text-[11px] font-semibold text-[#3B3F53]">
+
+            <tr className="bg-[#F8F8FC] border-b border-gray-200">
+
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 #
               </th>
 
-              <th className="min-w-[170px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Name
               </th>
 
-              <th className="min-w-[120px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Phone Number
               </th>
 
-              <th className="min-w-[120px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Wet RFID
               </th>
 
-              <th className="min-w-[120px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Dry RFID
               </th>
 
-              <th className="min-w-[170px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Ward / Area
               </th>
 
-              <th className="min-w-[110px] px-3 py-3 text-left text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Zone
               </th>
 
-              <th className="min-w-[130px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
-                Total Waste Generated
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
+                Total Waste
               </th>
 
-              <th className="min-w-[120px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
+              <th className="px-5 py-4 text-left text-[13px] font-semibold text-[#263A63]">
                 Average Waste
               </th>
 
-              <th className="min-w-[165px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
-                Last Collection
+              <th className="px-5 py-4 text-center text-[13px] font-semibold text-[#263A63]">
+                Action
               </th>
 
-              <th className="min-w-[90px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
-                Status
-              </th>
-
-              <th className="min-w-[140px] px-3 py-3 text-center text-[11px] font-semibold text-[#3B3F53]">
-                Actions
-              </th>
             </tr>
+
           </thead>
 
+          {/* =================================================
+              TABLE BODY
+          ================================================= */}
+
           <tbody>
-            {loading ? (
+
+            {filteredCitizens.length === 0 ? (
+
               <tr>
-                <td colSpan="11" className="py-10 text-center text-gray-500">
-                  Loading Waste Generators...
-                </td>
-              </tr>
-            ) : (
-              wasteGenerators.map((item, index) => (
-                <tr
-                  key={(pagination.page - 1) * pagination.limit + index + 1}
+
+                <td
+                  colSpan={10}
                   className="
-                  border-b
-                  border-[#F1F2F7]
-                  hover:bg-[#FAFAFD]
-                  transition-all
-                "
+                    px-6
+                    py-12
+                    text-center
+                    text-[14px]
+                    text-gray-500
+                  "
                 >
-                  {" "}
-                  {/* ================= Index ================= */}
-                  <td className="pl-4 py-[11px] text-[11px] font-medium text-[#374151]">
-                    {(pagination.page - 1) * pagination.limit + index + 1}
-                  </td>
-                  {/* ================= Name ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] font-semibold text-[#16295A]">
-                      {item.personName}
-                    </span>
-                  </td>
-                  {/* ================= Phone ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] font-medium text-[#4B5563]">
-                      {item.phoneNumber}
-                    </span>
-                  </td>
-                  {/* ================= Wet RFID ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] font-medium text-[#4B5563]">
-                      {item.wetRFID}
-                    </span>
-                  </td>
-                  {/* ================= Dry RFID ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] font-medium text-[#4B5563]">
-                      {item.dryRFID}
-                    </span>
-                  </td>
-                  {/* ================= Ward ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] text-[#4B5563]">
-                      {`${item.ward} ${item.area ?? ""}`}
-                    </span>
-                  </td>
-                  {/* ================= Zone ================= */}
-                  <td className="px-3 py-[11px]">
-                    <span className="text-[11px] font-medium text-[#16295A]">
-                      {"Bengaluru South Zone"}
-                    </span>
-                  </td>
-                  {/* ================= Total Waste ================= */}
-                  <td className="px-3 py-[11px] text-center">
-                    <span className="text-[11px] font-semibold text-[#16295A]">
-                      {"--"}
-                    </span>
-                  </td>
-                  {/* ================= Average Waste ================= */}
-                  <td className="px-3 py-[11px] text-center">
-                    <span className="text-[11px] font-semibold text-[#16295A]">
-                      {"--"}
-                    </span>
-                  </td>
-                  {/* ================= Last Collection ================= */}
-                  <td className="px-3 py-[11px] text-center">
-                    <span className="text-[11px] text-[#4B5563] whitespace-nowrap">
-                      {new Date(item.updatedAt).toLocaleString()}
-                    </span>
-                  </td>
-                  {/* ================= Status ================= */}
-                  <td className="px-3 py-[11px] text-center">
-                    <span
-                      className={`
-                    inline-flex
-                    items-center
-                    justify-center
-                    rounded-md
-                    px-3
-                    py-[4px]
-                    text-[10px]
-                    font-semibold
+                  No waste generators found.
+                </td>
 
-                    ${
-                      item.status === "Active"
-                        ? "bg-[#DCFCE7] text-[#16A34A]"
-                        : "bg-[#FEE2E2] text-[#EA580C]"
-                    }
-                  `}
-                    >
-                      {"Active"}
-                    </span>
+              </tr>
+
+            ) : (
+
+              filteredCitizens.map((citizen, index) => (
+
+                <tr
+                  key={
+                    citizen.id ??
+                    citizen.phoneNumber ??
+                    index
+                  }
+                  className="
+                    border-b
+                    border-gray-100
+                    hover:bg-[#FAFAFF]
+                    transition
+                  "
+                >
+
+                  {/* # */}
+
+                  <td className="px-5 py-5 text-[13px] text-gray-600">
+                    {index + 1}
                   </td>
-                  <td className="px-3 py-[11px] text-center">
-                    <select
-                      defaultValue=""
+
+                  {/* Name */}
+
+                  <td className="px-5 py-5">
+
+                    <div className="flex flex-col">
+
+                      <span className="text-[14px] font-semibold text-gray-800">
+                        {citizen.personName || "N/A"}
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                  {/* Phone */}
+
+                  <td className="px-5 py-5 text-[13px] text-gray-600">
+                    {citizen.phoneNumber || "N/A"}
+                  </td>
+
+                  {/* Wet RFID */}
+
+                  <td className="px-5 py-5">
+
+                    <span className="
+                      inline-flex
+                      px-3
+                      py-1
+                      rounded-lg
+                      bg-blue-50
+                      text-blue-600
+                      text-[12px]
+                      font-medium
+                    ">
+                      {citizen.wetRFID || "Not Assigned"}
+                    </span>
+
+                  </td>
+
+                  {/* Dry RFID */}
+
+                  <td className="px-5 py-5">
+
+                    <span className="
+                      inline-flex
+                      px-3
+                      py-1
+                      rounded-lg
+                      bg-orange-50
+                      text-orange-600
+                      text-[12px]
+                      font-medium
+                    ">
+                      {citizen.dryRFID || "Not Assigned"}
+                    </span>
+
+                  </td>
+
+                  {/* Ward / Area */}
+
+                  <td className="px-5 py-5">
+
+                    <div className="flex flex-col">
+
+                      <span className="text-[13px] font-medium text-gray-700">
+                        {citizen.ward || "N/A"}
+                      </span>
+
+                      <span className="text-[12px] text-gray-400">
+                        {citizen.area || "N/A"}
+                      </span>
+
+                    </div>
+
+                  </td>
+
+                  {/* Zone */}
+
+                  <td className="px-5 py-5 text-[13px] text-gray-600">
+                    {citizen.zone || "N/A"}
+                  </td>
+
+                  {/* Total Waste */}
+
+                  <td className="px-5 py-5">
+
+                    <span className="text-[14px] font-semibold text-gray-800">
+                      {citizen.totalWasteCollected ??
+                        citizen.totalWaste ??
+                        0}
+                    </span>
+
+                    <span className="ml-1 text-[11px] text-gray-400">
+                      kg
+                    </span>
+
+                  </td>
+
+                  {/* Average Waste */}
+
+                  <td className="px-5 py-5">
+
+                    <span className="text-[14px] font-semibold text-gray-800">
+                      {citizen.averageWaste ??
+                        citizen.avgWaste ??
+                        0}
+                    </span>
+
+                    <span className="ml-1 text-[11px] text-gray-400">
+                      kg
+                    </span>
+
+                  </td>
+
+                  {/* UPDATE ONLY */}
+
+                  <td className="px-5 py-5 text-center">
+
+                    <button
+                      type="button"
+                      onClick={() => onUpdate?.(citizen)}
                       className="
-      w-[120px]
-      h-9
-      rounded-lg
-      border
-      border-[#D1D5DB]
-      bg-white
-      px-3
-      text-[11px]
-      outline-none
-    "
-                      onChange={(e) => {
-                        if (e.target.value === "update") {
-                          setSelectedCitizen(item);
-                          setShowUpdateModal(true);
-                        }
-
-                        if (e.target.value === "delete") {
-                          setSelectedCitizen(item);
-                          setShowDeleteModal(true);
-                        }
-
-                        e.target.value = "";
-                      }}
+                        w-9
+                        h-9
+                        rounded-lg
+                        flex
+                        items-center
+                        justify-center
+                        mx-auto
+                        text-violet-600
+                        hover:bg-violet-50
+                        transition
+                      "
+                      title="Update Waste Generator"
                     >
-                      <option value="">Actions</option>
-                      <option value="update">Update</option>
-                      <option value="delete">Delete</option>
-                    </select>
+                      <Pencil size={17} />
+                    </button>
+
                   </td>
+
                 </tr>
+
               ))
+
             )}
+
           </tbody>
+
         </table>
+
       </div>
 
-      {/* ================= Footer ================= */}
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
 
-      <div
-        className="
-          flex
-          items-center
-          justify-between
-          px-6
-          py-4
-          border-t
-          border-[#ECECF4]
-          bg-white
-        "
-      >
-        {/* Left */}
+      <div className="
+        px-6
+        py-4
+        border-t
+        border-gray-100
+        flex
+        items-center
+        justify-between
+      ">
 
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] text-slate-500">Rows per page</span>
+        <p className="text-[13px] text-gray-500">
 
-          <select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="
-      h-8
-      px-3
-      rounded-lg
-      border
-      border-[#E5E7EB]
-      bg-white
-      text-[11px]
-      outline-none
-      cursor-pointer
-    "
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          Showing{" "}
 
-          <span className="text-[11px] text-slate-500">
-            Showing {(currentPage - 1) * rowsPerPage + 1}–
-            {Math.min(currentPage * rowsPerPage, pagination.total)} of{" "}
-            {pagination.total} entries
-          </span>
-        </div>
+          <span className="font-semibold text-gray-700">
+            {filteredCitizens.length}
+          </span>{" "}
 
-        {/* Pagination */}
+          waste generators
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="
-        w-8
-        h-8
-        rounded-lg
-        border
-        border-[#E5E7EB]
-        disabled:opacity-40
-    "
-            >
-              <ChevronLeft size={15} />
-            </button>
+        </p>
 
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-              .slice(
-                Math.max(currentPage - 2, 0),
-                Math.min(currentPage + 3, pagination.totalPages),
-              )
-              .map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`
-
-            w-8
-            h-8
-            rounded-lg
-            text-[11px]
-
-            ${
-              page === currentPage
-                ? "bg-[#6D28D9] text-white"
-                : "border border-[#E5E7EB]"
-            }
-
-        `}
-                >
-                  {page}
-                </button>
-              ))}
-
-            <button
-              disabled={currentPage === pagination.totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="
-        w-8
-        h-8
-        rounded-lg
-        border
-        border-[#E5E7EB]
-        disabled:opacity-40
-    "
-            >
-              <ChevronRight size={15} />
-            </button>
-          </div>
-        </div>
       </div>
-      <CreateWasteGeneratorModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        refreshData={fetchWasteGenerators}
-      />
 
-      <UpdateWasteGeneratorModal
-        open={showUpdateModal}
-        citizen={selectedCitizen}
-        refreshData={fetchWasteGenerators}
-        onClose={() => setShowUpdateModal(false)}
-      />
-
-      <DeleteWasteGeneratorModal
-        open={showDeleteModal}
-        citizen={selectedCitizen}
-        refreshData={fetchWasteGenerators}
-        onClose={() => setShowDeleteModal(false)}
-      />
-    </section>
+    </div>
   );
 }

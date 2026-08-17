@@ -24,7 +24,9 @@ export default function PlantKPICards({ data }) {
     },
     {
       title: "Total Waste Collected",
-      value: `${(data?.totalWasteCollected ?? 0).toLocaleString(undefined, {
+      value: `${(
+        data?.totalWasteCollected ?? 0
+      ).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })} Ton`,
@@ -36,7 +38,7 @@ export default function PlantKPICards({ data }) {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 gap-5">
       {kpis.map((card) => {
         const Icon = card.icon;
 
@@ -47,31 +49,32 @@ export default function PlantKPICards({ data }) {
               bg-white
               border
               border-gray-200
-              rounded-2xl
-              px-5
-              py-5
+              rounded-xl
+              px-4
+              py-4
               flex
               items-center
-              gap-5
+              gap-4
               shadow-sm
-              h-[150px]
+              min-h-[115px]
             "
           >
             {/* Icon */}
 
             <div
               className={`
-                w-16
-                h-16
-                rounded-2xl
+                w-12
+                h-12
+                rounded-xl
                 flex
                 items-center
                 justify-center
+                shrink-0
                 ${card.bg}
               `}
             >
               <Icon
-                size={34}
+                size={25}
                 className={card.color}
                 strokeWidth={2}
               />
@@ -79,16 +82,16 @@ export default function PlantKPICards({ data }) {
 
             {/* Text */}
 
-            <div className="flex flex-col">
-              <p className="text-[16px] font-semibold text-gray-800">
+            <div className="min-w-0 flex flex-col">
+              <p className="text-[13px] font-medium text-gray-500">
                 {card.title}
               </p>
 
-              <h2 className="mt-2 text-[28px] font-bold text-gray-900 leading-none">
+              <h2 className="mt-1 text-[23px] font-bold text-gray-900 leading-tight truncate">
                 {card.value}
               </h2>
 
-              <p className="mt-3 text-[15px] text-indigo-600 font-medium">
+              <p className="mt-1.5 text-[12px] text-indigo-600 font-medium">
                 {card.subtitle}
               </p>
             </div>

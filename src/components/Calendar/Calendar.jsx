@@ -30,6 +30,10 @@ export default function Calendar({
   value,
   onChange,
 }) {
+  /* =========================================================
+     STATE
+  ========================================================= */
+
   const [open, setOpen] = useState(false);
 
   const [selectedDate, setSelectedDate] =
@@ -38,11 +42,24 @@ export default function Calendar({
   const [currentMonth, setCurrentMonth] =
     useState(getInitialMonth(value));
 
+  /* =========================================================
+     REFS
+  ========================================================= */
+
   const wrapperRef = useRef(null);
-
   const popupRef = useRef(null);
-
   const triggerRef = useRef(null);
+
+  /* =========================================================
+     POPUP POSITION
+  ========================================================= */
+
+  const [popupStyle, setPopupStyle] =
+    useState({});
+
+  /* =========================================================
+     SYNC WITH PARENT VALUE
+  ========================================================= */
 
   useEffect(() => {
     if (value) {
@@ -51,6 +68,99 @@ export default function Calendar({
     }
   }, [value]);
 
+  /* =========================================================
+     CALCULATE POPUP POSITION
+  ========================================================= */
+
+  function updatePopupPosition() {
+    if (!triggerRef.current) return;
+
+    const rect =
+      triggerRef.current.getBoundingClientRect();
+
+    const popupWidth = 360;
+    const gap = 10;
+    const viewportPadding = 12;
+
+    let left =
+      rect.right - popupWidth;
+
+    /*
+     * Keep popup inside the left side
+     * of the viewport.
+     */
+    if (left < viewportPadding) {
+      left = viewportPadding;
+    }
+
+    /*
+     * Keep popup inside the right side
+     * of the viewport.
+     */
+    if (
+      left + popupWidth >
+      window.innerWidth - viewportPadding
+    ) {
+      left =
+        window.innerWidth -
+        popupWidth -
+        viewportPadding;
+    }
+
+    setPopupStyle({
+      position: "fixed",
+      top: `${rect.bottom + gap}px`,
+      left: `${left}px`,
+      width: `${popupWidth}px`,
+    });
+  }
+
+  /* =========================================================
+     POPUP POSITIONING
+  ========================================================= */
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    updatePopupPosition();
+
+    const handleResize = () => {
+      updatePopupPosition();
+    };
+
+    const handleScroll = () => {
+      updatePopupPosition();
+    };
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      true
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        true
+      );
+    };
+  }, [open]);
+
+  /* =========================================================
+     POPUP ANIMATION
+  ========================================================= */
+
   useLayoutEffect(() => {
     if (!open || !popupRef.current) return;
 
@@ -58,24 +168,38 @@ export default function Calendar({
       popupRef.current,
       {
         opacity: 0,
-        y: 14,
-        scale: 0.96,
+        y: 10,
+        scale: 0.97,
       },
       {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.32,
+        duration: 0.28,
         ease: "power4.out",
       }
     );
   }, [open]);
 
+  /* =========================================================
+     OUTSIDE CLICK
+  ========================================================= */
+
   useEffect(() => {
-    function outside(e) {
+    function handleOutsideClick(e) {
+      const clickedTrigger =
+        triggerRef.current?.contains(
+          e.target
+        );
+
+      const clickedPopup =
+        popupRef.current?.contains(
+          e.target
+        );
+
       if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target)
+        !clickedTrigger &&
+        !clickedPopup
       ) {
         setOpen(false);
       }
@@ -83,15 +207,20 @@ export default function Calendar({
 
     window.addEventListener(
       "mousedown",
-      outside
+      handleOutsideClick
     );
 
-    return () =>
+    return () => {
       window.removeEventListener(
         "mousedown",
-        outside
+        handleOutsideClick
       );
+    };
   }, []);
+
+  /* =========================================================
+     MONTH NAVIGATION
+  ========================================================= */
 
   function goPrevious() {
     setCurrentMonth((prev) =>
@@ -105,9 +234,17 @@ export default function Calendar({
     );
   }
 
+  /* =========================================================
+     SELECT DATE
+  ========================================================= */
+
   function selectDay(day) {
     setSelectedDate(day);
   }
+
+  /* =========================================================
+     TODAY
+  ========================================================= */
 
   function today() {
     const now = new Date();
@@ -116,38 +253,63 @@ export default function Calendar({
     setCurrentMonth(now);
   }
 
+  /* =========================================================
+     APPLY
+  ========================================================= */
+
   function apply() {
     onChange?.(selectedDate);
 
     setOpen(false);
   }
 
+  /* =========================================================
+     CANCEL
+  ========================================================= */
+
   function cancel() {
-    setSelectedDate(value);
+    const resetDate =
+      value ?? new Date();
+
+    setSelectedDate(resetDate);
 
     setCurrentMonth(
-      getInitialMonth(value)
+      getInitialMonth(resetDate)
     );
 
     setOpen(false);
   }
 
+  /* =========================================================
+     CALENDAR WEEKS
+  ========================================================= */
+
   const weeks =
     calendarWeeks(currentMonth);
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div
       ref={wrapperRef}
       className="relative"
     >
-
-      {/* Trigger */}
+      {/* =====================================================
+          CALENDAR TRIGGER
+      ===================================================== */}
 
       <button
         ref={triggerRef}
-        onClick={() =>
-          setOpen(!open)
-        }
+        type="button"
+        onClick={() => {
+          if (!open) {
+            updatePopupPosition();
+          }
+
+          setOpen((prev) => !prev);
+        }}
         className="
           group
           h-10
@@ -166,6 +328,7 @@ export default function Calendar({
           duration-300
         "
       >
+        {/* Calendar Icon */}
 
         <div
           className="
@@ -180,15 +343,17 @@ export default function Calendar({
             items-center
             justify-center
             shadow-md
+            shrink-0
           "
         >
-
           <CalendarDays
             size={15}
+            strokeWidth={2}
             className="text-white"
           />
-
         </div>
+
+        {/* Date */}
 
         <span
           className="
@@ -196,6 +361,7 @@ export default function Calendar({
             font-semibold
             text-slate-700
             tracking-wide
+            whitespace-nowrap
           "
         >
           {selectedDate.toLocaleDateString(
@@ -207,42 +373,90 @@ export default function Calendar({
             }
           )}
         </span>
-
       </button>
 
-      {open && (
+      {/* =====================================================
+          CALENDAR POPUP
+      ===================================================== */}
 
+      {open && (
         <div
           ref={popupRef}
+          style={popupStyle}
           className="
-            absolute
-            right-0
-            mt-4
-            w-[360px]
-            rounded-[28px]
-            bg-white/95
-            backdrop-blur-xl
+            rounded-[26px]
+            bg-white
             border
             border-violet-100
             shadow-[0_30px_80px_rgba(15,23,42,0.18)]
             overflow-hidden
-            z-[999]
+            z-[99999]
           "
         >
+          {/* =================================================
+              CALENDAR HEADER
+          ================================================= */}
 
-          <CalendarHeader
-            currentMonth={currentMonth}
-            onPrevious={goPrevious}
-            onNext={goNext}
-          />
+          <div className="relative">
+            <CalendarHeader
+              currentMonth={currentMonth}
+              onPrevious={goPrevious}
+              onNext={goNext}
+            />
 
-          <div className="px-6 pt-5">
+            {/* =================================================
+                CLOSE BUTTON
 
+                The header reserves space on the right
+                so this never overlaps the next button.
+            ================================================= */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setOpen(false)
+              }
+              aria-label="Close calendar"
+              className="
+                absolute
+                top-4
+                right-4
+                w-9
+                h-9
+                rounded-xl
+                bg-white
+                border
+                border-violet-100
+                flex
+                items-center
+                justify-center
+                shadow-[0_3px_10px_rgba(15,23,42,0.08)]
+                hover:bg-violet-50
+                hover:border-violet-200
+                hover:scale-[1.03]
+                transition-all
+                duration-200
+                z-[100]
+              "
+            >
+              <X
+                size={16}
+                strokeWidth={2}
+                className="text-violet-500"
+              />
+            </button>
+          </div>
+
+          {/* =================================================
+              WEEK DAYS
+          ================================================= */}
+
+          <div className="px-5 pt-4 pb-1">
             <div
               className="
                 grid
                 grid-cols-7
-                mb-4
+                mb-3
               "
             >
               {WEEK_DAYS.map((day) => (
@@ -263,51 +477,60 @@ export default function Calendar({
               ))}
             </div>
 
+            {/* =================================================
+                CALENDAR GRID
+            ================================================= */}
+
             <div className="space-y-1">
-                              {weeks.map((week, weekIndex) => (
-
-                <div
-                  key={weekIndex}
-                  className="
-                    grid
-                    grid-cols-7
-                    mb-1
-                  "
-                >
-                  {week.map((day) => (
-
-                    <div
-                      key={day.toISOString()}
-                      className="
-                        flex
-                        items-center
-                        justify-center
-                        py-0.5
-                      "
-                    >
-                      <CalendarDay
-                        day={day}
-                        currentMonth={currentMonth}
-                        selectedDate={selectedDate}
-                        onSelect={selectDay}
-                      />
-                    </div>
-
-                  ))}
-                </div>
-
-              ))}
+              {weeks.map(
+                (week, weekIndex) => (
+                  <div
+                    key={weekIndex}
+                    className="
+                      grid
+                      grid-cols-7
+                      mb-1
+                    "
+                  >
+                    {week.map((day) => (
+                      <div
+                        key={day.toISOString()}
+                        className="
+                          flex
+                          items-center
+                          justify-center
+                          py-0.5
+                        "
+                      >
+                        <CalendarDay
+                          day={day}
+                          currentMonth={
+                            currentMonth
+                          }
+                          selectedDate={
+                            selectedDate
+                          }
+                          onSelect={
+                            selectDay
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
             </div>
-
           </div>
 
-          {/* Footer */}
+          {/* =================================================
+              FOOTER
+          ================================================= */}
 
           <div
             className="
-              mt-5
+              mt-4
               px-5
-              py-5
+              py-4
               border-t
               border-violet-100
               bg-gradient-to-r
@@ -319,18 +542,18 @@ export default function Calendar({
               justify-between
             "
           >
-
-            {/* Left */}
+            {/* Today */}
 
             <button
+              type="button"
               onClick={today}
               className="
-                h-10
+                h-9
                 px-4
                 rounded-xl
                 bg-violet-100
                 text-violet-700
-                text-[13px]
+                text-[12px]
                 font-semibold
                 hover:bg-violet-200
                 transition-all
@@ -340,20 +563,26 @@ export default function Calendar({
               {TODAY_LABEL}
             </button>
 
-            {/* Right */}
+            {/* Actions */}
 
-            <div className="flex items-center gap-2">
-
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
               <button
+                type="button"
                 onClick={cancel}
                 className="
-                  h-10
+                  h-9
                   px-4
                   rounded-xl
                   border
                   border-gray-200
                   bg-white
-                  text-[13px]
+                  text-[12px]
                   font-medium
                   text-gray-600
                   hover:bg-gray-50
@@ -365,9 +594,10 @@ export default function Calendar({
               </button>
 
               <button
+                type="button"
                 onClick={apply}
                 className="
-                  h-10
+                  h-9
                   px-5
                   rounded-xl
                   bg-gradient-to-r
@@ -375,7 +605,7 @@ export default function Calendar({
                   via-purple-600
                   to-fuchsia-500
                   text-white
-                  text-[13px]
+                  text-[12px]
                   font-semibold
                   shadow-lg
                   shadow-violet-300/40
@@ -386,44 +616,10 @@ export default function Calendar({
               >
                 {APPLY_LABEL}
               </button>
-
             </div>
-
           </div>
-
-          {/* Close */}
-
-          <button
-            onClick={() => setOpen(false)}
-            className="
-              absolute
-              top-5
-              right-5
-              w-8
-              h-8
-              rounded-xl
-              bg-white
-              border
-              border-violet-100
-              flex
-              items-center
-              justify-center
-              shadow-sm
-              hover:bg-violet-50
-              transition-all
-              duration-300
-            "
-          >
-            <X
-              size={15}
-              className="text-violet-500"
-            />
-          </button>
-
         </div>
-
       )}
-
     </div>
   );
 }

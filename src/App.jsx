@@ -13,6 +13,7 @@ import AI from "./pages/AI";
 import Users from "./pages/Users";
 import Users2 from "./pages/Users2";
 import Settings from "./pages/Settings";
+import Complaints from "./pages/Complaints";
 
 function DashboardLayout() {
   return (
@@ -92,6 +93,11 @@ export default function App() {
         <Route
           path="admin/settings"
           element={<Settings />}
+        />
+
+        <Route 
+          path="admin/complaints"
+          element={<Complaints />}
         />
 
         <Route

@@ -1,6 +1,4 @@
-import { createContext, useContext, useState } from "react";
-
-import { useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 import {
   getCities,
@@ -16,89 +14,168 @@ export function FilterProvider({ children }) {
   const [selectedZone, setSelectedZone] = useState(null);
   const [selectedDivision, setSelectedDivision] = useState(null);
   const [selectedWard, setSelectedWard] = useState(null);
+
   const [cities, setCities] = useState([]);
   const [zones, setZones] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [wards, setWards] = useState([]);
 
+  /* =====================================================
+     CITY
+     ===================================================== */
+
   useEffect(() => {
     const loadCities = async () => {
       try {
-        const res = await getCities();
-        setCities(res.data);
+        const cityList = await getCities();
 
-        if (res.data.length > 0) {
-          setSelectedCity(res.data[0]);
-        }
+        setCities(cityList);
+
+        // Default city = Bangalore
+        const defaultCity =
+          cityList.find(
+            (city) => city.city_name?.toLowerCase() === "bangalore",
+          ) || cityList[0];
+
+        setSelectedCity(defaultCity || null);
       } catch (err) {
-        console.error("Failed to load cities", err);
+        console.error("Failed to load cities:", err);
+
+        setCities([]);
+        setSelectedCity(null);
       }
     };
+
     loadCities();
   }, []);
 
+  /* =====================================================
+     ZONE
+     Depends on CITY
+     ===================================================== */
+
   useEffect(() => {
     const loadZones = async () => {
-      if (!selectedCity) return;
+      if (!selectedCity) {
+        setZones([]);
+        setSelectedZone(null);
+        return;
+      }
 
       try {
-        const res = await getZones(selectedCity.city_id);
+        const zoneList = await getZones(selectedCity.city_id);
 
-        setZones(res.data);
+        setZones(zoneList);
 
-        setSelectedZone(res.data.length ? res.data[3] : null);
+        // Default zone = Bangalore South Zone
+        const defaultZone =
+          zoneList.find(
+            (zone) => zone.zone_name?.toLowerCase() === "bangalore south zone",
+          ) ||
+          zoneList.find((zone) =>
+            zone.zone_name?.toLowerCase().includes("south"),
+          ) ||
+          zoneList[0];
+
+        setSelectedZone(defaultZone || null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load zones:", err);
+
+        setZones([]);
+        setSelectedZone(null);
       }
     };
 
     loadZones();
   }, [selectedCity]);
 
+  /* =====================================================
+     DIVISION
+     Depends on CITY + ZONE
+     ===================================================== */
+
   useEffect(() => {
     const loadDivisions = async () => {
-      if (!selectedZone) return;
+      if (!selectedCity || !selectedZone) {
+        setDivisions([]);
+        setSelectedDivision(null);
+        return;
+      }
 
       try {
-        const res = await getDivisions(selectedZone.zone_id);
+        const divisionList = await getDivisions(
+          selectedCity.city_id,
+          selectedZone.zone_id,
+        );
 
-        setDivisions(res.data); // <-- THIS WAS MISSING
+        setDivisions(divisionList);
 
+        // Default division = Bommanahalli Division
         const defaultDivision =
-          res.data.find((d) => d.division_name === "Bommanahalli Division") ||
-          res.data[0];
+          divisionList.find(
+            (division) =>
+              division.division_name?.toLowerCase() === "bommanahalli division",
+          ) || divisionList[0];
 
         setSelectedDivision(defaultDivision || null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load divisions:", err);
+
+        setDivisions([]);
+        setSelectedDivision(null);
       }
     };
 
     loadDivisions();
-  }, [selectedZone]);
+  }, [selectedCity, selectedZone]);
+
+  /* =====================================================
+     WARD
+     Depends on CITY + ZONE + DIVISION
+     ===================================================== */
 
   useEffect(() => {
     const loadWards = async () => {
-      if (!selectedDivision) return;
+      if (!selectedCity || !selectedZone || !selectedDivision) {
+        setWards([]);
+        setSelectedWard(null);
+        return;
+      }
 
       try {
-        const res = await getWards(selectedDivision.division_id);
+        const wardList = await getWards(
+          selectedCity.city_id,
+          selectedZone.zone_id,
+          selectedDivision.division_id,
+        );
 
-        setWards(res.data);
+        setWards(wardList);
 
+        // Default ward = Ibbalur
         const defaultWard =
-          res.data.find((w) => w.ward_name === "Ibbalur") || res.data[0];
+          wardList.find(
+            (ward) => ward.ward_name?.toLowerCase() === "ibbalur",
+          ) || wardList[0];
 
         setSelectedWard(defaultWard || null);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load wards:", err);
+
+        setWards([]);
+        setSelectedWard(null);
       }
     };
 
     loadWards();
-  }, [selectedDivision]);
+  }, [selectedCity, selectedZone, selectedDivision]);
+
+  /* =====================================================
+     CONTEXT VALUE
+     ===================================================== */
 
   const value = {
+    /* Selected values */
+
     selectedCity,
     setSelectedCity,
 
@@ -111,6 +188,8 @@ export function FilterProvider({ children }) {
     selectedWard,
     setSelectedWard,
 
+    /* Available options */
+
     cities,
     zones,
     divisions,
@@ -121,6 +200,10 @@ export function FilterProvider({ children }) {
     <FilterContext.Provider value={value}>{children}</FilterContext.Provider>
   );
 }
+
+/* =====================================================
+   HOOK
+   ===================================================== */
 
 export function useFilters() {
   return useContext(FilterContext);

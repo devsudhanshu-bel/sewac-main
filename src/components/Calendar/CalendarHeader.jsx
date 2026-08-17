@@ -15,27 +15,38 @@ export default function CalendarHeader({
   return (
     <div
       className="
+        relative
+        w-full
+        min-h-[112px]
+        px-5
+        pt-5
+        pb-4
+        pr-[68px]
+        bg-gradient-to-r
+        from-violet-50/70
+        via-white
+        to-fuchsia-50/70
+        border-b
+        border-violet-100
         flex
         items-center
         justify-between
-        px-5
-        py-5
-        border-b
-        border-violet-100
-        bg-gradient-to-r
-        from-violet-50
-        via-white
-        to-fuchsia-50
+        gap-3
       "
     >
-      {/* Previous */}
+      {/* =====================================================
+          PREVIOUS MONTH
+      ===================================================== */}
 
       <button
+        type="button"
         onClick={onPrevious}
+        aria-label="Previous month"
         className="
           group
-          w-10
-          h-10
+          w-9
+          h-9
+          shrink-0
           rounded-xl
           bg-white
           border
@@ -52,7 +63,8 @@ export default function CalendarHeader({
         "
       >
         <ChevronLeft
-          size={18}
+          size={17}
+          strokeWidth={2}
           className="
             text-violet-600
             transition-colors
@@ -62,13 +74,15 @@ export default function CalendarHeader({
         />
       </button>
 
-      {/* Month */}
+      {/* =====================================================
+          MONTH
+      ===================================================== */}
 
       <motion.div
         key={monthLabel(currentMonth)}
         initial={{
           opacity: 0,
-          y: 12,
+          y: 8,
         }}
         animate={{
           opacity: 1,
@@ -77,14 +91,20 @@ export default function CalendarHeader({
         transition={{
           duration: 0.25,
         }}
-        className="text-center"
+        className="
+          flex-1
+          min-w-0
+          text-center
+        "
       >
         <h2
           className="
             text-[20px]
+            leading-tight
             font-bold
             tracking-tight
             text-slate-900
+            whitespace-nowrap
           "
         >
           {monthLabel(currentMonth)}
@@ -102,14 +122,23 @@ export default function CalendarHeader({
         </p>
       </motion.div>
 
-      {/* Next */}
+      {/* =====================================================
+          NEXT MONTH
+
+          This is deliberately kept LEFT of the close
+          button because the header reserves right-side
+          space for the X.
+      ===================================================== */}
 
       <button
+        type="button"
         onClick={onNext}
+        aria-label="Next month"
         className="
           group
-          w-10
-          h-10
+          w-9
+          h-9
+          shrink-0
           rounded-xl
           bg-white
           border
@@ -126,7 +155,8 @@ export default function CalendarHeader({
         "
       >
         <ChevronRight
-          size={18}
+          size={17}
+          strokeWidth={2}
           className="
             text-violet-600
             transition-colors

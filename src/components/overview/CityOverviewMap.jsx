@@ -1,42 +1,62 @@
 import { useState, useRef, useEffect } from "react";
+
 import {
   ChevronDown,
   Check,
+  Map,
   Route,
   MapPinned,
-  Flame,
   Factory,
   Megaphone,
 } from "lucide-react";
+
 import { gsap } from "gsap";
 
 import MapSection from "../dashboard/MapSection";
 
+/*
+====================================================
+CITY OVERVIEW MAP VIEWS
+====================================================
+
+1. City Overview Map
+2. Route Map
+3. Garbage Vulnerable Points (GVP)
+4. Plants Active
+5. Customer Grievances
+
+====================================================
+*/
+
 const mapViews = [
+  {
+    id: "overview",
+    label: "City Overview Map",
+    icon: Map,
+    color: "text-blue-600",
+  },
+
   {
     id: "route",
     label: "Route Map",
     icon: Route,
     color: "text-violet-600",
   },
+
   {
     id: "gvp",
     label: "Garbage Vulnerable Points (GVP)",
     icon: MapPinned,
     color: "text-green-600",
   },
-  {
-    id: "heatmap",
-    label: "Participation Heatmap",
-    icon: Flame,
-    color: "text-red-500",
-  },
+
   {
     id: "plants",
     label: "Plants Active",
     icon: Factory,
     color: "text-emerald-600",
   },
+
   {
     id: "grievances",
     label: "Customer Grievances",
@@ -45,30 +65,89 @@ const mapViews = [
   },
 ];
 
-export default function CityOverviewMap() {
-  const [selectedView, setSelectedView] = useState(mapViews[0]);
-  const [open, setOpen] = useState(false);
+/*
+====================================================
+PROPS
+====================================================
 
-  const sectionRef = useRef(null);
-  const headerRef = useRef(null);
-  const mapRef = useRef(null);
-  const controlsRef = useRef(null);
-  const dropdownRef = useRef(null);
+selectedDate
+-------------
+Date selected from the global Header.
 
-  // ================= APPLE STYLE PAGE LOAD =================
+Example:
+2026-08-16
+
+wardNo
+------
+Ward number selected from the global Header.
+
+Example:
+216
+
+IMPORTANT:
+DO NOT hardcode 216 here.
+
+The Header remains the source of truth.
+====================================================
+*/
+
+export default function CityOverviewMap({
+  selectedDate,
+  wardNo,
+}) {
+  /*
+  ==================================================
+  SELECTED MAP VIEW
+  ==================================================
+  */
+
+  const [selectedView, setSelectedView] =
+    useState(mapViews[0]);
+
+  const [open, setOpen] =
+    useState(false);
+
+  /*
+  ==================================================
+  REFS
+  ==================================================
+  */
+
+  const sectionRef =
+    useRef(null);
+
+  const headerRef =
+    useRef(null);
+
+  const mapRef =
+    useRef(null);
+
+  const controlsRef =
+    useRef(null);
+
+  const dropdownRef =
+    useRef(null);
+
+  /*
+  ==================================================
+  PAGE LOAD ANIMATION
+  ==================================================
+  */
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      defaults: {
-        ease: "power3.out",
-      },
-    });
+    const tl =
+      gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
 
     tl.from(sectionRef.current, {
       opacity: 0,
       y: 28,
       duration: 0.45,
     })
+
       .from(
         headerRef.current,
         {
@@ -76,8 +155,9 @@ export default function CityOverviewMap() {
           y: 18,
           duration: 0.45,
         },
-        "-=0.25"
+        "-=0.25",
       )
+
       .from(
         mapRef.current,
         {
@@ -85,8 +165,9 @@ export default function CityOverviewMap() {
           scale: 0.985,
           duration: 0.8,
         },
-        "-=0.2"
+        "-=0.2",
       )
+
       .from(
         controlsRef.current,
         {
@@ -94,49 +175,85 @@ export default function CityOverviewMap() {
           x: -18,
           duration: 0.55,
         },
-        "-=0.55"
+        "-=0.55",
       );
+
+    return () => {
+      tl.kill();
+    };
   }, []);
 
-  // ================= APPLE DROPDOWN =================
+  /*
+  ==================================================
+  DROPDOWN ANIMATION
+  ==================================================
+  */
 
   useEffect(() => {
-    if (!dropdownRef.current) return;
+    if (!dropdownRef.current) {
+      return;
+    }
 
     if (open) {
       gsap.fromTo(
         dropdownRef.current,
+
         {
           opacity: 0,
           y: -10,
           scale: 0.98,
         },
+
         {
           opacity: 1,
           y: 0,
           scale: 1,
           duration: 0.28,
           ease: "power2.out",
-        }
+        },
       );
     }
   }, [open]);
 
-  // ================= MAP TRANSITION =================
+  /*
+  ==================================================
+  MAP VIEW SELECTION
+  ==================================================
+  */
 
   const handleSelect = (item) => {
-    if (item.id === selectedView.id) {
+    /*
+    Same option selected.
+    */
+
+    if (
+      item.id ===
+      selectedView.id
+    ) {
       setOpen(false);
       return;
     }
+
+    /*
+    Fade current map out.
+    */
 
     gsap.to(mapRef.current, {
       opacity: 0,
       scale: 0.992,
       duration: 0.18,
       ease: "power2.out",
+
       onComplete: () => {
+        /*
+        Change map view.
+        */
+
         setSelectedView(item);
+
+        /*
+        Fade new map in.
+        */
 
         requestAnimationFrame(() => {
           gsap.to(mapRef.current, {
@@ -152,49 +269,115 @@ export default function CityOverviewMap() {
     setOpen(false);
   };
 
+  /*
+  ==================================================
+  RENDER
+  ==================================================
+  */
+
   return (
     <section
       ref={sectionRef}
       className="mt-6"
     >
-      <div className="bg-white rounded-[26px] border border-[#EEF1F6] shadow-sm overflow-hidden">
-
-        {/* ================= HEADER ================= */}
+      <div
+        className="
+          bg-white
+          rounded-[26px]
+          border
+          border-[#EEF1F6]
+          shadow-sm
+          overflow-hidden
+        "
+      >
+        {/* ==================================================
+            HEADER
+        ================================================== */}
 
         <div
           ref={headerRef}
-          className="px-8 pt-6 pb-5"
+          className="
+            px-8
+            pt-6
+            pb-5
+          "
         >
-          <h2 className="text-[18px] font-semibold tracking-wide text-[#171717]">
+          <h2
+            className="
+              text-[18px]
+              font-semibold
+              tracking-wide
+              text-[#171717]
+            "
+          >
             CITY OVERVIEW MAP
           </h2>
         </div>
 
-        {/* ================= MAP ================= */}
+        {/* ==================================================
+            MAP CONTAINER
+        ================================================== */}
 
-        <div className="relative mx-2 mb-2 rounded-[22px] overflow-hidden">
-
+        <div
+          className="
+            relative
+            mx-2
+            mb-2
+            rounded-[22px]
+            overflow-hidden
+          "
+        >
           <div
             ref={mapRef}
-            className="relative h-[460px] z-0"
+            className="
+              relative
+              h-[460px]
+              z-0
+            "
           >
             <MapSection
               mapView={selectedView.id}
+              selectedDate={selectedDate}
+              wardNo={wardNo}
             />
           </div>
 
-          {/* ================= FLOATING CONTROLS ================= */}
+          {/* ==================================================
+              MAP VIEW CONTROL
+          ================================================== */}
 
           <div
             ref={controlsRef}
-            className="absolute top-6 left-6 z-40 w-[285px]"
+            className="
+              absolute
+              top-6
+              left-6
+              z-[1000]
+              w-[300px]
+            "
           >
-            <p className="text-[13px] font-medium text-gray-700 mb-3">
+            <p
+              className="
+                text-[13px]
+                font-medium
+                text-gray-700
+                mb-3
+              "
+            >
               Select Map View
             </p>
 
+            {/* ==================================================
+                SELECTED VIEW
+            ================================================== */}
+
             <button
-              onClick={() => setOpen((prev) => !prev)}
+              type="button"
+              onClick={() =>
+                setOpen(
+                  (prev) => !prev,
+                )
+              }
               className="
                 w-full
                 h-[48px]
@@ -214,17 +397,33 @@ export default function CityOverviewMap() {
                 duration-300
               "
             >
-              <span className="text-[14px] font-semibold">
+              <span
+                className="
+                  text-[14px]
+                  font-semibold
+                  text-gray-800
+                "
+              >
                 {selectedView.label}
               </span>
 
               <ChevronDown
                 size={18}
-                className={`transition-all duration-300 ${
-                  open ? "rotate-180" : ""
-                }`}
+                className={`
+                  transition-all
+                  duration-300
+                  ${
+                    open
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
               />
             </button>
+
+            {/* ==================================================
+                DROPDOWN
+            ================================================== */}
 
             {open && (
               <div
@@ -241,66 +440,90 @@ export default function CityOverviewMap() {
                   origin-top
                 "
               >
-                                {mapViews.map((item) => {
-                  const Icon = item.icon;
+                {mapViews.map(
+                  (item) => {
+                    const Icon =
+                      item.icon;
 
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSelect(item)}
-                      className={`
-                        w-full
-                        h-[54px]
-                        px-4
-                        flex
-                        items-center
-                        justify-between
-                        transition-all
-                        duration-200
-                        ${
-                          selectedView.id === item.id
-                            ? "bg-violet-50"
-                            : "hover:bg-gray-50"
+                    const isSelected =
+                      selectedView.id ===
+                      item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          handleSelect(
+                            item,
+                          )
                         }
-                      `}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon
-                          size={18}
-                          className={item.color}
-                        />
+                        className={`
+                          w-full
+                          h-[54px]
+                          px-4
+                          flex
+                          items-center
+                          justify-between
+                          transition-all
+                          duration-200
 
-                        <span className="text-[13px] font-medium text-gray-700">
-                          {item.label}
-                        </span>
-                      </div>
+                          ${
+                            isSelected
+                              ? "bg-violet-50"
+                              : "hover:bg-gray-50"
+                          }
+                        `}
+                      >
+                        {/* ICON + LABEL */}
 
-                      {selectedView.id === item.id && (
-                        <Check
-                          size={18}
-                          className="text-violet-600"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
+                        <div
+                          className="
+                            flex
+                            items-center
+                            gap-3
+                          "
+                        >
+                          <Icon
+                            size={18}
+                            className={
+                              item.color
+                            }
+                          />
+
+                          <span
+                            className={`
+                              text-[13px]
+                              font-medium
+
+                              ${
+                                isSelected
+                                  ? "text-gray-800"
+                                  : "text-gray-700"
+                              }
+                            `}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+
+                        {/* CHECK */}
+
+                        {isSelected && (
+                          <Check
+                            size={18}
+                            className="
+                              text-violet-600
+                            "
+                          />
+                        )}
+                      </button>
+                    );
+                  },
+                )}
               </div>
             )}
           </div>
-
-          {/* ================= OPTIONAL LOADING OVERLAY ================= */}
-
-          {false && (
-            <div className="absolute inset-0 z-50 bg-white/70 backdrop-blur-sm flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin" />
-
-                <span className="text-sm font-medium text-gray-600">
-                  Loading Map...
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </section>

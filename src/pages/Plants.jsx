@@ -11,92 +11,170 @@ import PlantLocations from "../components/plants/PlantLocations";
 import PlantDirectory from "../components/plants/PlantDirectory";
 
 export default function Plants() {
+  // =====================================================
+  // STATE
+  // =====================================================
+
   const [dashboardData, setDashboardData] = useState(null);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
+
   const [plants, setPlants] = useState([]);
+
   const [plantLocations, setPlantLocations] = useState([]);
+
   const [pagination, setPagination] = useState({});
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedPlant, setSelectedPlant] = useState(null);
+
+  // =====================================================
+  // MODAL STATE
+  // =====================================================
+
+  const [showCreateModal, setShowCreateModal] =
+    useState(false);
+
+  const [showEditModal, setShowEditModal] =
+    useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] =
+    useState(false);
+
+  const [selectedPlant, setSelectedPlant] =
+    useState(null);
+
+  // =====================================================
+  // FETCH DASHBOARD DATA
+  // =====================================================
+
   const fetchDashboard = async () => {
     try {
       setLoading(true);
       setError("");
 
       const [
-  dashboardResponse,
-  plantsResponse,
-  locationsResponse,
-] = await Promise.all([
-  api.get("/api/plants/dashboard"),
-  api.get("/api/plants"),
-  api.get("/api/plants/locations"),
-]);
+        dashboardResponse,
+        plantsResponse,
+        locationsResponse,
+      ] = await Promise.all([
+        api.get("/api/plants/dashboard"),
+        api.get("/api/plants"),
+        api.get("/api/plants/locations"),
+      ]);
+
+      // -------------------------------------------------
+      // DASHBOARD
+      // -------------------------------------------------
 
       if (dashboardResponse.data.success) {
-  setDashboardData(dashboardResponse.data.data);
-}
+        setDashboardData(
+          dashboardResponse.data.data
+        );
+      }
 
-if (plantsResponse.data.success) {
-  setPlants(plantsResponse.data.data.plants);
-  setPagination(plantsResponse.data.data.pagination);
-}
-if (locationsResponse.data.success) {
-  setPlantLocations(locationsResponse.data.data);
-}
+      // -------------------------------------------------
+      // PLANTS
+      // -------------------------------------------------
+
+      if (plantsResponse.data.success) {
+        setPlants(
+          plantsResponse.data.data.plants
+        );
+
+        setPagination(
+          plantsResponse.data.data.pagination
+        );
+      }
+
+      // -------------------------------------------------
+      // PLANT LOCATIONS
+      // -------------------------------------------------
+
+      if (locationsResponse.data.success) {
+        setPlantLocations(
+          locationsResponse.data.data
+        );
+      }
+
     } catch (err) {
-      console.error("Plants Dashboard Error:", err);
+      console.error(
+        "Plants Dashboard Error:",
+        err
+      );
 
       setError(
         err.response?.data?.message ||
           "Unable to connect to the server."
       );
+
     } finally {
       setLoading(false);
     }
   };
 
+  // =====================================================
+  // CREATE PLANT
+  // =====================================================
+
   const handleCreatePlant = () => {
-  setShowCreateModal(true);
-};
+    setShowCreateModal(true);
+  };
 
-const handleEditPlant = (plant) => {
-  setSelectedPlant(plant);
-  setShowEditModal(true);
-};
+  // =====================================================
+  // EDIT PLANT
+  // =====================================================
 
-const handleDeletePlant = (plant) => {
-  setSelectedPlant(plant);
-  setShowDeleteModal(true);
-};
+  const handleEditPlant = (plant) => {
+    setSelectedPlant(plant);
+    setShowEditModal(true);
+  };
+
+  // =====================================================
+  // DELETE PLANT
+  // =====================================================
+
+  const handleDeletePlant = (plant) => {
+    setSelectedPlant(plant);
+    setShowDeleteModal(true);
+  };
+
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
 
   useEffect(() => {
-  fetchDashboard();
-}, []);
+    fetchDashboard();
+  }, []);
 
-useEffect(() => {
-  if (
-    showCreateModal ||
-    showEditModal ||
-    showDeleteModal
-  ) {
-    document.body.style.overflow = "hidden";
-  } else {
-    document.body.style.overflow = "auto";
-  }
+  // =====================================================
+  // PREVENT BACKGROUND SCROLL WHEN MODAL IS OPEN
+  // =====================================================
 
-  return () => {
-    document.body.style.overflow = "auto";
-  };
-}, [
-  showCreateModal,
-  showEditModal,
-  showDeleteModal,
-]);
+  useEffect(() => {
+    const modalOpen =
+      showCreateModal ||
+      showEditModal ||
+      showDeleteModal;
 
+    if (modalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+
+  }, [
+    showCreateModal,
+    showEditModal,
+    showDeleteModal,
+  ]);
+
+  // =====================================================
+  // LOADING
+  // =====================================================
 
   if (loading) {
     return (
@@ -108,10 +186,15 @@ useEffect(() => {
     );
   }
 
+  // =====================================================
+  // ERROR
+  // =====================================================
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F8F9FD]">
         <div className="text-center">
+
           <p className="text-lg font-semibold text-red-500">
             {error}
           </p>
@@ -122,97 +205,160 @@ useEffect(() => {
           >
             Retry
           </button>
+
         </div>
       </div>
     );
   }
 
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
     <div className="flex-1 min-h-screen bg-[#F8F9FD]">
-      {/* Header */}
+
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
       <Header variant="dashboard" />
 
-      {/* Page Content */}
+      {/* =================================================
+          PAGE CONTENT
+      ================================================= */}
+
       <div className="p-6">
-        {/* Heading */}
+
+        {/* =================================================
+            PAGE HEADING
+        ================================================= */}
+
         <div className="mb-8">
+
           <h1 className="text-[32px] font-bold text-[#16295A]">
             Plant Overview
           </h1>
 
           <p className="mt-2 text-[15px] text-[#667085]">
-            Monitor all waste processing plants and their operations
+            Monitor all waste processing plants and their
+            operations
           </p>
+
         </div>
 
-        {/* KPI Cards */}
+        {/* =================================================
+            KPI CARDS
+        ================================================= */}
+
         <PlantKPICards
           data={dashboardData}
         />
 
-        {/* Plant Locations */}
-       <PlantLocations
-  plants={plantLocations.map((location) => {
-    const plant = plants.find((p) => p.id === location.id);
+        {/* =================================================
+            PLANT LOCATIONS / MAP
+        ================================================= */}
 
+        <PlantLocations
+          plants={plantLocations.map(
+            (location) => {
 
-    return {
-      ...location,
-      plant_manager: plant?.plant_manager,
-      vehicles_enrolled: plant?.vehicles_enrolled,
-      capacity_ton_per_day: plant?.capacity_ton_per_day,
+              const plant =
+                plants.find(
+                  (p) =>
+                    p.id === location.id
+                );
 
-      latitude: location.latitude,
-      longitude: location.longitude,
-    };
-  })}
-/>
+              return {
+                ...location,
 
-        {/* Plant Directory */}
+                plant_manager:
+                  plant?.plant_manager,
+
+                vehicles_enrolled:
+                  plant?.vehicles_enrolled,
+
+                capacity_ton_per_day:
+                  plant?.capacity_ton_per_day,
+
+                latitude:
+                  location.latitude,
+
+                longitude:
+                  location.longitude,
+              };
+            }
+          )}
+        />
+
+        {/* =================================================
+            PLANT DIRECTORY
+        ================================================= */}
+
         <PlantDirectory
-  plants={plants}
-  pagination={pagination}
-  onCreatePlant={handleCreatePlant}
-  onEditPlant={handleEditPlant}
-  onDeletePlant={handleDeletePlant}
-/>
+          plants={plants}
+          pagination={pagination}
+          onCreatePlant={handleCreatePlant}
+          onEditPlant={handleEditPlant}
+          onDeletePlant={handleDeletePlant}
+        />
 
-{showCreateModal &&
-  createPortal(
-    <CreatePlantModal
-      onClose={() => setShowCreateModal(false)}
-      onSuccess={fetchDashboard}
-    />,
-    document.body
-  )}
+        {/* =================================================
+            CREATE PLANT MODAL
+        ================================================= */}
 
-{showEditModal &&
-  selectedPlant &&
-  createPortal(
-    <EditPlantModal
-      plant={selectedPlant}
-      onClose={() => {
-        setShowEditModal(false);
-        setSelectedPlant(null);
-      }}
-      onSuccess={fetchDashboard}
-    />,
-    document.body
-  )}
+        {showCreateModal &&
+          createPortal(
+            <CreatePlantModal
+              onClose={() =>
+                setShowCreateModal(false)
+              }
 
-{showDeleteModal &&
-  selectedPlant &&
-  createPortal(
-    <DeletePlantModal
-      plant={selectedPlant}
-      onClose={() => {
-        setShowDeleteModal(false);
-        setSelectedPlant(null);
-      }}
-      onSuccess={fetchDashboard}
-    />,
-    document.body
-  )}
+              onSuccess={fetchDashboard}
+            />,
+            document.body
+          )}
+
+        {/* =================================================
+            EDIT PLANT MODAL
+        ================================================= */}
+
+        {showEditModal &&
+          selectedPlant &&
+          createPortal(
+            <EditPlantModal
+              plant={selectedPlant}
+
+              onClose={() => {
+                setShowEditModal(false);
+                setSelectedPlant(null);
+              }}
+
+              onSuccess={fetchDashboard}
+            />,
+            document.body
+          )}
+
+        {/* =================================================
+            DELETE PLANT MODAL
+        ================================================= */}
+
+        {showDeleteModal &&
+          selectedPlant &&
+          createPortal(
+            <DeletePlantModal
+              plant={selectedPlant}
+
+              onClose={() => {
+                setShowDeleteModal(false);
+                setSelectedPlant(null);
+              }}
+
+              onSuccess={fetchDashboard}
+            />,
+            document.body
+          )}
+
       </div>
     </div>
   );
