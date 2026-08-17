@@ -5,6 +5,7 @@ import {
   GeoJSON,
   Polyline,
   CircleMarker,
+  Marker,
   Popup,
   useMap,
 } from "react-leaflet";
@@ -14,6 +15,7 @@ import "leaflet/dist/leaflet.css";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -27,29 +29,27 @@ import {
   Map as MapIcon,
   Loader2,
   Truck,
+  ChevronDown,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 
 import { ibbaluruBoundary } from "../../data/ibbaluruBoundary";
 
-/*
-====================================================
-API
-====================================================
-*/
+/* =========================================================
+   API
+========================================================= */
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5002";
+  "https://sewac-main.onrender.com/api";
 
-/*
-====================================================
-MAP COLORS
-====================================================
-
-Each vehicle gets a stable color.
-
-====================================================
-*/
+/* =========================================================
+   ROUTE COLORS
+========================================================= */
 
 const ROUTE_COLORS = [
   "#7C3AED",
@@ -64,21 +64,63 @@ const ROUTE_COLORS = [
   "#8B5CF6",
 ];
 
-/*
-====================================================
-HELPERS
-====================================================
-*/
+/* =========================================================
+   DEFAULT MAP
+========================================================= */
 
-/*
-Convert different date formats into:
+const DEFAULT_CENTER = [
+  12.9716,
+  77.5946,
+];
 
-YYYY-MM-DD
-*/
+const DEFAULT_ZOOM = 11;
+
+/* =========================================================
+   VEHICLE COLOR
+========================================================= */
+
+function getVehicleColor(
+  vehicleNumber,
+  index = 0,
+) {
+  if (!vehicleNumber) {
+    return ROUTE_COLORS[
+      index % ROUTE_COLORS.length
+    ];
+  }
+
+  let hash = 0;
+
+  for (
+    let i = 0;
+    i < vehicleNumber.length;
+    i++
+  ) {
+    hash =
+      vehicleNumber.charCodeAt(i) +
+      ((hash << 5) - hash);
+  }
+
+  return ROUTE_COLORS[
+    Math.abs(hash) %
+      ROUTE_COLORS.length
+  ];
+}
+
+/* =========================================================
+   DATE FORMATTER
+========================================================= */
 
 function formatDateForAPI(date) {
   if (!date) {
-    return new Date()
+    const fallback =
+      new Date();
+
+    fallback.setDate(
+      fallback.getDate() - 1,
+    );
+
+    return fallback
       .toISOString()
       .slice(0, 10);
   }
@@ -86,12 +128,6 @@ function formatDateForAPI(date) {
   if (
     typeof date === "string"
   ) {
-    /*
-    Already:
-
-    2026-08-16
-    */
-
     if (
       /^\d{4}-\d{2}-\d{2}$/.test(
         date,
@@ -99,10 +135,6 @@ function formatDateForAPI(date) {
     ) {
       return date;
     }
-
-    /*
-    ISO string
-    */
 
     const parsed =
       new Date(date);
@@ -120,7 +152,9 @@ function formatDateForAPI(date) {
     return date;
   }
 
-  if (date instanceof Date) {
+  if (
+    date instanceof Date
+  ) {
     return date
       .toISOString()
       .slice(0, 10);
@@ -131,33 +165,25 @@ function formatDateForAPI(date) {
     .slice(0, 10);
 }
 
-/*
-====================================================
-GET WARD FROM HEADER / STORAGE
-====================================================
+/* =========================================================
+   LOCAL STORAGE
+========================================================= */
 
-The preferred value is the prop.
-
-If the parent doesn't pass it yet,
-we also check common localStorage keys.
-
-====================================================
-*/
-
-function getStoredWardNo() {
-  const possibleKeys = [
-    "wardNo",
-    "wardId",
-    "selectedWard",
-    "selectedWardNo",
-    "headerWardNo",
-  ];
-
-  for (
-    const key of possibleKeys
+function getStoredValue(
+  ...keys
+) {
+  if (
+    typeof window ===
+    "undefined"
   ) {
+    return null;
+  }
+
+  for (const key of keys) {
     const value =
-      localStorage.getItem(key);
+      localStorage.getItem(
+        key,
+      );
 
     if (
       value !== null &&
@@ -168,14 +194,132 @@ function getStoredWardNo() {
     }
   }
 
-  return "";
+  return null;
 }
 
-/*
-====================================================
-FIT MAP TO ROUTES
-====================================================
-*/
+/* =========================================================
+   WARD NORMALIZER
+========================================================= */
+
+function normalizeWard(
+  value,
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const match =
+    String(value).match(
+      /\d+/,
+    );
+
+  return match
+    ? Number(match[0])
+    : null;
+}
+
+/* =========================================================
+   TRUCK ICON
+========================================================= */
+
+function createTruckIcon(
+  color,
+) {
+  return L.divIcon({
+    className:
+      "sewac-truck-marker",
+
+    html: `
+      <div
+        style="
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: white;
+          border: 3px solid ${color};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 5px 18px rgba(15,23,42,0.22);
+        "
+      >
+        <div
+          style="
+            width: 29px;
+            height: 29px;
+            border-radius: 50%;
+            background: ${color}18;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+          "
+        >
+          🚛
+        </div>
+      </div>
+    `,
+
+    iconSize: [
+      40,
+      40,
+    ],
+
+    iconAnchor: [
+      20,
+      20,
+    ],
+
+    popupAnchor: [
+      0,
+      -22,
+    ],
+  });
+}
+
+/* =========================================================
+   MAP RESIZE CONTROLLER
+========================================================= */
+
+function MapResizeController() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer =
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
+
+    const handleResize =
+      () => {
+        map.invalidateSize();
+      };
+
+    window.addEventListener(
+      "resize",
+      handleResize,
+    );
+
+    return () => {
+      clearTimeout(timer);
+
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      );
+    };
+  }, [map]);
+
+  return null;
+}
+
+/* =========================================================
+   ROUTE FITTER
+========================================================= */
 
 function FitRouteBounds({
   vehicles,
@@ -195,37 +339,38 @@ function FitRouteBounds({
     vehicles.forEach(
       (vehicle) => {
         if (
-          !vehicle.route ||
           !Array.isArray(
-            vehicle.route,
+            vehicle.points,
           )
         ) {
           return;
         }
 
-        vehicle.route.forEach(
+        vehicle.points.forEach(
           (point) => {
-            const latitude =
+            const lat =
               Number(
                 point.latitude,
               );
 
-            const longitude =
+            const lng =
               Number(
                 point.longitude,
               );
 
             if (
               Number.isFinite(
-                latitude,
+                lat,
               ) &&
               Number.isFinite(
-                longitude,
-              )
+                lng,
+              ) &&
+              lat !== 0 &&
+              lng !== 0
             ) {
               coordinates.push([
-                latitude,
-                longitude,
+                lat,
+                lng,
               ]);
             }
           },
@@ -234,7 +379,8 @@ function FitRouteBounds({
     );
 
     if (
-      coordinates.length === 0
+      coordinates.length ===
+      0
     ) {
       return;
     }
@@ -251,8 +397,8 @@ function FitRouteBounds({
         bounds,
         {
           padding: [
-            50,
-            50,
+            60,
+            60,
           ],
           maxZoom: 16,
           animate: true,
@@ -264,11 +410,9 @@ function FitRouteBounds({
   return null;
 }
 
-/*
-====================================================
-FIT WARD BOUNDARY
-====================================================
-*/
+/* =========================================================
+   BOUNDARY FITTER
+========================================================= */
 
 function FitBoundary({
   data,
@@ -293,9 +437,11 @@ function FitBoundary({
         bounds,
         {
           padding: [
-            30,
-            30,
+            40,
+            40,
           ],
+          maxZoom: 15,
+          animate: true,
         },
       );
     }
@@ -304,24 +450,64 @@ function FitBoundary({
   return null;
 }
 
-/*
-====================================================
-ROUTE POINT POPUP
-====================================================
-*/
+/* =========================================================
+   POPUP ROW
+========================================================= */
+
+function PopupRow({
+  label,
+  value,
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent:
+          "space-between",
+        gap: "12px",
+        fontSize: "11px",
+      }}
+    >
+      <span
+        style={{
+          color: "#64748B",
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </span>
+
+      <span
+        style={{
+          color: "#0F172A",
+          fontWeight: 600,
+          textAlign:
+            "right",
+          maxWidth: "170px",
+          wordBreak:
+            "break-word",
+        }}
+      >
+        {value ??
+          "—"}
+      </span>
+    </div>
+  );
+}
+
+/* =========================================================
+   ROUTE POINT POPUP
+========================================================= */
 
 function RoutePointPopup({
   point,
   vehicleNumber,
 }) {
-  if (!point) {
-    return null;
-  }
-
   return (
     <div
       style={{
-        minWidth: "240px",
+        minWidth:
+          "245px",
         fontFamily:
           "Inter, Arial, sans-serif",
       }}
@@ -329,18 +515,21 @@ function RoutePointPopup({
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginBottom: "10px",
-          paddingBottom: "8px",
+          alignItems:
+            "center",
+          gap: "9px",
+          marginBottom:
+            "10px",
+          paddingBottom:
+            "9px",
           borderBottom:
             "1px solid #E5E7EB",
         }}
       >
         <div
           style={{
-            width: "30px",
-            height: "30px",
+            width: "31px",
+            height: "31px",
             borderRadius:
               "50%",
             background:
@@ -359,20 +548,25 @@ function RoutePointPopup({
           <div
             style={{
               fontWeight: 700,
-              fontSize: "14px",
-              color: "#111827",
+              fontSize:
+                "14px",
+              color:
+                "#111827",
             }}
           >
             {vehicleNumber ||
-              point.vehicleNumber ||
+              point?.vehicleNumber ||
               "Vehicle"}
           </div>
 
           <div
             style={{
-              fontSize: "11px",
-              color: "#6B7280",
-              marginTop: "2px",
+              fontSize:
+                "11px",
+              color:
+                "#6B7280",
+              marginTop:
+                "2px",
             }}
           >
             Telemetry Point
@@ -383,57 +577,56 @@ function RoutePointPopup({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns:
-            "1fr",
           gap: "7px",
         }}
       >
         <PopupRow
           label="Latitude"
           value={
-            point.latitude
+            point?.latitude
           }
         />
 
         <PopupRow
           label="Longitude"
           value={
-            point.longitude
+            point?.longitude
           }
         />
 
         <PopupRow
           label="IoT Timestamp"
           value={
-            point.iotTimestamp
+            point?.iotTimestamp ||
+            point?.iottimestamp
           }
         />
 
         <PopupRow
           label="Wet Weight"
           value={
-            point.wetWeight
+            point?.wetWeight
           }
         />
 
         <PopupRow
           label="Dry Weight"
           value={
-            point.dryWeight
+            point?.dryWeight
           }
         />
 
         <PopupRow
           label="RFID EPC"
           value={
-            point.rfidEpc
+            point?.rfidEpc
           }
         />
 
         <PopupRow
           label="Ward No"
           value={
-            point.wardNo
+            point?.wardNo
           }
         />
       </div>
@@ -441,59 +634,272 @@ function RoutePointPopup({
   );
 }
 
-/*
-====================================================
-POPUP ROW
-====================================================
-*/
+/* =========================================================
+   SIMPLE MAP MARKER
+========================================================= */
 
-function PopupRow({
-  label,
-  value,
+function DataMarker({
+  item,
+  type,
 }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent:
-          "space-between",
-        gap: "12px",
-        fontSize: "11px",
-      }}
-    >
-      <span
-        style={{
-          color: "#6B7280",
-          fontWeight: 600,
-        }}
-      >
-        {label}
-      </span>
+  const latitude =
+    Number(
+      item?.latitude ??
+        item?.lat,
+    );
 
-      <span
-        style={{
-          color: "#111827",
-          fontWeight: 600,
-          textAlign: "right",
-          maxWidth: "160px",
-          wordBreak:
-            "break-word",
-        }}
-      >
-        {value ??
-          "—"}
-      </span>
-    </div>
+  const longitude =
+    Number(
+      item?.longitude ??
+        item?.lng ??
+        item?.lon,
+    );
+
+  if (
+    !Number.isFinite(
+      latitude,
+    ) ||
+    !Number.isFinite(
+      longitude,
+    )
+  ) {
+    return null;
+  }
+
+  let color =
+    "#7C3AED";
+
+  let icon =
+    "📍";
+
+  if (
+    type === "gvp"
+  ) {
+    color =
+      item?.severity ===
+        "HIGH" ||
+      item?.severity ===
+        "CRITICAL"
+        ? "#EF4444"
+        : item?.severity ===
+          "MEDIUM"
+        ? "#F59E0B"
+        : "#10B981";
+
+    icon = "🗑️";
+  }
+
+  if (
+    type === "plant"
+  ) {
+    color =
+      item?.status ===
+        "ACTIVE"
+        ? "#10B981"
+        : "#94A3B8";
+
+    icon = "🏭";
+  }
+
+  if (
+    type ===
+    "grievance"
+  ) {
+    color =
+      item?.priority ===
+        "CRITICAL"
+        ? "#DC2626"
+        : item?.priority ===
+          "HIGH"
+        ? "#F97316"
+        : "#F59E0B";
+
+    icon = "⚠️";
+  }
+
+  return (
+    <Marker
+      position={[
+        latitude,
+        longitude,
+      ]}
+      icon={L.divIcon({
+        className:
+          "sewac-data-marker",
+        html: `
+          <div
+            style="
+              width:36px;
+              height:36px;
+              border-radius:50%;
+              background:#fff;
+              border:3px solid ${color};
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              box-shadow:0 4px 15px rgba(15,23,42,.18);
+              font-size:15px;
+            "
+          >
+            ${icon}
+          </div>
+        `,
+        iconSize: [
+          36,
+          36,
+        ],
+        iconAnchor: [
+          18,
+          18,
+        ],
+      })}
+    >
+      <Popup>
+        <div
+          style={{
+            minWidth:
+              "210px",
+            fontFamily:
+              "Inter, Arial, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize:
+                "14px",
+              marginBottom:
+                "10px",
+              color:
+                "#0F172A",
+            }}
+          >
+            {type ===
+              "gvp" &&
+              "Garbage Vulnerable Point"}
+
+            {type ===
+              "plant" &&
+              "Waste Processing Plant"}
+
+            {type ===
+              "grievance" &&
+              "Customer Grievance"}
+          </div>
+
+          <div
+            style={{
+              display:
+                "grid",
+              gap: "7px",
+            }}
+          >
+            <PopupRow
+              label="Name"
+              value={
+                item?.name ||
+                item?.title ||
+                item?.locationName
+              }
+            />
+
+            <PopupRow
+              label="Ward"
+              value={
+                item?.wardNo
+              }
+            />
+
+            {type ===
+              "gvp" && (
+              <>
+                <PopupRow
+                  label="Severity"
+                  value={
+                    item?.severity
+                  }
+                />
+
+                <PopupRow
+                  label="Reports"
+                  value={
+                    item?.frequency ??
+                    item?.reports
+                  }
+                />
+
+                <PopupRow
+                  label="Status"
+                  value={
+                    item?.status
+                  }
+                />
+              </>
+            )}
+
+            {type ===
+              "plant" && (
+              <>
+                <PopupRow
+                  label="Status"
+                  value={
+                    item?.status
+                  }
+                />
+
+                <PopupRow
+                  label="Capacity"
+                  value={
+                    item?.capacity
+                  }
+                />
+
+                <PopupRow
+                  label="Current Load"
+                  value={
+                    item?.currentLoad
+                  }
+                />
+              </>
+            )}
+
+            {type ===
+              "grievance" && (
+              <>
+                <PopupRow
+                  label="Category"
+                  value={
+                    item?.category
+                  }
+                />
+
+                <PopupRow
+                  label="Priority"
+                  value={
+                    item?.priority
+                  }
+                />
+
+                <PopupRow
+                  label="Status"
+                  value={
+                    item?.status
+                  }
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </Popup>
+    </Marker>
   );
 }
 
-/*
-====================================================
-PLACEHOLDER VIEW
-====================================================
-*/
+/* =========================================================
+   EMPTY VIEW
+========================================================= */
 
-function PlaceholderView({
+function EmptyLayerView({
   icon: Icon,
   title,
   description,
@@ -507,21 +913,21 @@ function PlaceholderView({
         flex
         items-center
         justify-center
-        bg-white/75
-        backdrop-blur-[2px]
+        pointer-events-none
       "
     >
       <div
         className="
-          bg-white
-          rounded-3xl
+          bg-white/95
+          backdrop-blur-md
+          rounded-[24px]
           border
-          border-gray-100
+          border-slate-200
           shadow-[0_20px_60px_rgba(15,23,42,0.12)]
           px-10
           py-9
           text-center
-          max-w-[360px]
+          max-w-[390px]
         "
       >
         <div
@@ -538,7 +944,7 @@ function PlaceholderView({
           "
         >
           <Icon
-            size={26}
+            size={27}
             className="text-violet-600"
           />
         </div>
@@ -568,565 +974,345 @@ function PlaceholderView({
   );
 }
 
-/*
-====================================================
-MAIN COMPONENT
-====================================================
-*/
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
 
 export default function MapSection({
   mapView = "overview",
   selectedDate,
   wardNo,
+  selectedWard,
+  selectedDivision,
+  divisionName,
 }) {
-  /*
-  ==================================================
-  ROUTE DATA
-  ==================================================
-  */
+  /* =======================================================
+     VIEW
+  ======================================================= */
+
+  const [activeView, setActiveView] =
+    useState(mapView);
+
+  const [showViewMenu, setShowViewMenu] =
+    useState(false);
+
+  const menuRef =
+    useRef(null);
+
+  /* =======================================================
+     ROUTES
+  ======================================================= */
 
   const [routeData, setRouteData] =
     useState(null);
 
-  const [loading, setLoading] =
+  const [routeLoading, setRouteLoading] =
     useState(false);
 
-  const [error, setError] =
+  const [routeError, setRouteError] =
     useState("");
 
-  /*
-  ==================================================
-  RESOLVE DATE
-  ==================================================
-  */
+  /* =======================================================
+     RESOLVE WARD
+  ======================================================= */
+
+  const resolvedWardNo =
+    normalizeWard(
+      wardNo ??
+        selectedWard ??
+        getStoredValue(
+          "wardNo",
+          "wardId",
+          "selectedWard",
+          "selectedWardNo",
+          "headerWardNo",
+        ),
+    );
+
+  /* =======================================================
+     DATE
+  ======================================================= */
 
   const apiDate =
     formatDateForAPI(
-      selectedDate,
+      selectedDate ??
+        getStoredValue(
+          "selectedDate",
+          "dashboardDate",
+          "routeDate",
+        ),
     );
 
-  /*
-  ==================================================
-  RESOLVE WARD
-  ==================================================
-  */
+  /* =======================================================
+     MAP DATA PLACEHOLDERS
+     
+     These are deliberately state driven.
+     Replace their setters with API responses when
+     those endpoints are ready.
+  ======================================================= */
 
-  const resolvedWardNo =
-    wardNo ||
-    getStoredWardNo();
+  const [gvpData, setGvpData] =
+    useState([]);
 
-  /*
-  ==================================================
-  FETCH ROUTE MAP
-  ==================================================
+  const [plantData, setPlantData] =
+    useState([]);
 
-  Only fetch when:
+  const [grievanceData, setGrievanceData] =
+    useState([]);
 
-  mapView === route
-
-  ==================================================
-  */
+  /* =======================================================
+     KEEP VIEW IN SYNC WITH PARENT
+  ======================================================= */
 
   useEffect(() => {
     if (
-      mapView !== "route"
+      mapView &&
+      mapView !== activeView
     ) {
-      return;
+      setActiveView(mapView);
     }
+  }, [mapView]);
 
-    /*
-    No ward selected
-    */
+  /* =======================================================
+     CLOSE DROPDOWN
+  ======================================================= */
 
-    if (
-      !resolvedWardNo
-    ) {
-      setRouteData(null);
-
-      setError(
-        "Please select a ward from the header.",
-      );
-
-      return;
-    }
-
-    let cancelled =
-      false;
-
-    const fetchRoutes =
-      async () => {
-        try {
-          setLoading(true);
-          setError("");
-
-          setRouteData(null);
-
-          const url =
-            `${API_BASE_URL}/api/route-map` +
-            `?date=${encodeURIComponent(
-              apiDate,
-            )}` +
-            `&wardNo=${encodeURIComponent(
-              resolvedWardNo,
-            )}`;
-
-          console.log(
-            "====================================",
+  useEffect(() => {
+    const handleOutsideClick =
+      (event) => {
+        if (
+          menuRef.current &&
+          !menuRef.current.contains(
+            event.target,
+          )
+        ) {
+          setShowViewMenu(
+            false,
           );
-
-          console.log(
-            "🚛 FETCHING ROUTE MAP",
-          );
-
-          console.log(
-            "Date:",
-            apiDate,
-          );
-
-          console.log(
-            "Ward:",
-            resolvedWardNo,
-          );
-
-          console.log(
-            "URL:",
-            url,
-          );
-
-          console.log(
-            "====================================",
-          );
-
-          const response =
-            await fetch(url, {
-              method: "GET",
-              headers: {
-                Accept:
-                  "application/json",
-              },
-            });
-
-          const json =
-            await response.json();
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              json.message ||
-                "Failed to fetch route map.",
-            );
-          }
-
-          if (
-            cancelled
-          ) {
-            return;
-          }
-
-          /*
-          ==================================================
-          BACKEND RESPONSE
-
-          {
-            success: true,
-            date: "...",
-            wardNo: "...",
-            vehicles: [...]
-          }
-
-          OR:
-
-          {
-            success: true,
-            data: {
-              success: true,
-              date: "...",
-              wardNo: "...",
-              vehicles: [...]
-            }
-          }
-
-          Support BOTH.
-          ==================================================
-          */
-
-          const payload =
-            json?.data &&
-            typeof json.data ===
-              "object" &&
-            !Array.isArray(
-              json.data,
-            )
-              ? json.data
-              : json;
-
-          const vehicles =
-            Array.isArray(
-              payload?.vehicles,
-            )
-              ? payload.vehicles
-              : [];
-
-          setRouteData({
-            ...payload,
-            vehicles,
-          });
-
-          /*
-          If backend says no vehicles,
-          don't treat it as a technical error.
-          */
-
-          if (
-            vehicles.length ===
-            0
-          ) {
-            setError(
-              payload?.message ||
-                `No vehicles found for Ward ${resolvedWardNo} on ${apiDate}.`,
-            );
-          }
-        } catch (fetchError) {
-          console.error(
-            "❌ Route Map Error:",
-            fetchError,
-          );
-
-          if (
-            !cancelled
-          ) {
-            setError(
-              fetchError.message ||
-                "Failed to load route data.",
-            );
-
-            setRouteData(null);
-          }
-        } finally {
-          if (
-            !cancelled
-          ) {
-            setLoading(false);
-          }
         }
       };
 
-    fetchRoutes();
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick,
+    );
 
     return () => {
-      cancelled = true;
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick,
+      );
     };
-  }, [
-    mapView,
-    apiDate,
-    resolvedWardNo,
-  ]);
+  }, []);
 
-  /*
-  ==================================================
-  VEHICLE ROUTES
-  ==================================================
-  */
+  /* =======================================================
+     MAP VIEWS
+  ======================================================= */
 
-  const vehicles =
-    useMemo(() => {
+  const mapViews = [
+    {
+      id: "overview",
+      label:
+        "City Overview Map",
+      icon: MapIcon,
+      color:
+        "#2563EB",
+    },
+
+    {
+      id: "route",
+      label:
+        "Route Map",
+      icon: Route,
+      color:
+        "#7C3AED",
+    },
+
+    {
+      id: "gvp",
+      label:
+        "Garbage Vulnerable Points",
+      icon: MapPinned,
+      color:
+        "#16A34A",
+    },
+
+    {
+      id: "plants",
+      label:
+        "Plants Active",
+      icon: Factory,
+      color:
+        "#059669",
+    },
+
+    {
+      id: "grievances",
+      label:
+        "Customer Grievances",
+      icon: Megaphone,
+      color:
+        "#EC4899",
+    },
+  ];
+
+  const selectedMapView =
+    mapViews.find(
+      (view) =>
+        view.id ===
+        activeView,
+    ) ||
+    mapViews[0];
+
+  const ActiveIcon =
+    selectedMapView.icon;
+
+  /* =======================================================
+     FETCH ROUTES
+  ======================================================= */
+
+  const fetchRoutes =
+    async () => {
       if (
-        !routeData?.vehicles
+        !resolvedWardNo
       ) {
-        return [];
+        setRouteData(null);
+
+        setRouteError(
+          "Please select a ward from the header.",
+        );
+
+        return;
       }
 
-      return routeData.vehicles;
-    }, [routeData]);
+      setRouteLoading(true);
+      setRouteError("");
 
-  /*
-  ==================================================
-  RENDER
-  ==================================================
-  */
+      try {
+        const url =
+          `${API_BASE_URL}/route-map` +
+          `?date=${encodeURIComponent(
+            apiDate,
+          )}` +
+          `&wardNo=${encodeURIComponent(
+            resolvedWardNo,
+          )}`;
 
-  return (
-    <div
-      className="
-        bg-white
-        rounded-[28px]
-        border
-        border-gray-100
-        overflow-hidden
-        h-full
-        relative
-        shadow-sm
-      "
-    >
-      <MapContainer
-        center={[
-          12.9258,
-          77.659,
-        ]}
-        zoom={13}
-        zoomControl={false}
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      >
-        {/* =================================================
-            ZOOM
-        ================================================= */}
+        console.log(
+          "====================================",
+        );
 
-        <ZoomControl
-          position="topleft"
-        />
+        console.log(
+          "🚛 SEWAC ROUTE MAP",
+        );
 
-        {/* =================================================
-            BASE MAP
-        ================================================= */}
+        console.log(
+          "DATE:",
+          apiDate,
+        );
 
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        />
+        console.log(
+          "WARD:",
+          resolvedWardNo,
+        );
 
-        {/* =================================================
-            CITY OVERVIEW
-        ================================================= */}
+        console.log(
+          "URL:",
+          url,
+        );
 
-        {mapView ===
-          "overview" && (
-          <>
-            <FitBoundary
-              data={
-                ibbaluruBoundary
-              }
-            />
+        console.log(
+          "====================================",
+        );
 
-            <GeoJSON
-              data={
-                ibbaluruBoundary
-              }
-              style={{
-                color:
-                  "#10B981",
-                weight: 4,
-                opacity: 0.95,
-                fillColor:
-                  "#10B981",
-                fillOpacity:
-                  0.12,
-              }}
-              onEachFeature={(
-                feature,
-                layer,
-              ) => {
-                layer.bindPopup(`
-                  <div style="padding:4px">
-                    <strong>
-                      ${
-                        feature
-                          ?.properties
-                          ?.name ||
-                        "Ward"
-                      }
-                    </strong>
-                    <br/>
-                    Ward ID:
-                    ${
-                      feature
-                        ?.properties
-                        ?.wardId ??
-                      "—"
-                    }
-                  </div>
-                `);
-              }}
-            />
+        const response =
+          await fetch(url, {
+            method: "GET",
+            headers: {
+              Accept:
+                "application/json",
+            },
+          });
 
-            {/* Overview vehicle indicator */}
+        const json =
+          await response.json();
 
-            <CircleMarker
-              center={[
-                12.9021212,
-                77.6548327,
-              ]}
-              radius={18}
-              pathOptions={{
-                color:
-                  "#3B82F6",
-                weight: 3,
-                fillColor:
-                  "#FFFFFF",
-                fillOpacity:
-                  1,
-              }}
-            >
-              <Popup>
-                <strong>
-                  Vehicle Location
-                </strong>
-              </Popup>
-            </CircleMarker>
-          </>
-        )}
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            json?.message ||
+              `Route API returned HTTP ${response.status}`,
+          );
+        }
 
-        {/* =================================================
-            ROUTE MAP
-        ================================================= */}
+        /*
+          Support both:
 
-        {mapView ===
-          "route" && (
-          <>
-            <FitRouteBounds
-              vehicles={
-                vehicles
-              }
-            />
+          {
+            success:true,
+            vehicles:[]
+          }
 
-            {vehicles.map(
+          AND
+
+          {
+            success:true,
+            data:{
+              vehicles:[]
+            }
+          }
+        */
+
+        const payload =
+          json?.data &&
+          typeof json.data ===
+            "object" &&
+          !Array.isArray(
+            json.data,
+          )
+            ? json.data
+            : json;
+
+        const vehicles =
+          Array.isArray(
+            payload?.vehicles,
+          )
+            ? payload.vehicles
+            : [];
+
+        const normalizedVehicles =
+          vehicles
+            .map(
               (
                 vehicle,
                 vehicleIndex,
               ) => {
-                const color =
-                  ROUTE_COLORS[
-                    vehicleIndex %
-                      ROUTE_COLORS.length
-                  ];
-
-                /*
-                ==================================================
-                SORT ROUTE BY TIME
-
-                Backend should already return
-                time ordered data, but we sort
-                again defensively.
-                ==================================================
-                */
-
-                const route =
+                const rawPoints =
                   Array.isArray(
-                    vehicle.route,
+                    vehicle?.points,
                   )
-                    ? [
-                        ...vehicle.route,
-                      ].sort(
-                        (
-                          a,
-                          b,
-                        ) => {
-                          const timeA =
-                            new Date(
-                              a.iotTimestamp ||
-                                a.timestamp ||
-                                a.createdAt ||
-                                0,
-                            ).getTime();
-
-                          const timeB =
-                            new Date(
-                              b.iotTimestamp ||
-                                b.timestamp ||
-                                b.createdAt ||
-                                0,
-                            ).getTime();
-
-                          if (
-                            Number.isNaN(
-                              timeA,
-                            ) ||
-                            Number.isNaN(
-                              timeB,
-                            )
-                          ) {
-                            return 0;
-                          }
-
-                          return (
-                            timeA -
-                            timeB
-                          );
-                        },
+                    ? vehicle.points
+                    : Array.isArray(
+                        vehicle?.route,
                       )
+                    ? vehicle.route
                     : [];
 
-                const coordinates =
-                  route
+                const points =
+                  rawPoints
                     .map(
                       (
                         point,
-                      ) => [
-                        Number(
-                          point.latitude,
-                        ),
-                        Number(
-                          point.longitude,
-                        ),
-                      ],
-                    )
-                    .filter(
-                      (
-                        coordinate,
-                      ) =>
-                        Number.isFinite(
-                          coordinate[0],
-                        ) &&
-                        Number.isFinite(
-                          coordinate[1],
-                        ),
-                    );
-
-                if (
-                  coordinates.length ===
-                  0
-                ) {
-                  return null;
-                }
-
-                return (
-                  <div
-                    key={
-                      vehicle.vehicleNumber ||
-                      vehicleIndex
-                    }
-                  >
-                    {/* =================================================
-                        VEHICLE ROUTE LINE
-                    ================================================= */}
-
-                    <Polyline
-                      positions={
-                        coordinates
-                      }
-                      pathOptions={{
-                        color,
-                        weight: 5,
-                        opacity: 0.88,
-                        lineCap:
-                          "round",
-                        lineJoin:
-                          "round",
-                      }}
-                    />
-
-                    {/* =================================================
-                        TELEMETRY POINTS
-
-                        THICK DOTS
-                    ================================================= */}
-
-                    {route.map(
-                      (
-                        point,
-                        pointIndex,
                       ) => {
                         const latitude =
                           Number(
-                            point.latitude,
+                            point?.latitude,
                           );
 
                         const longitude =
                           Number(
-                            point.longitude,
+                            point?.longitude,
                           );
 
                         if (
@@ -1135,41 +1321,688 @@ export default function MapSection({
                           ) ||
                           !Number.isFinite(
                             longitude,
-                          )
+                          ) ||
+                          latitude ===
+                            0 ||
+                          longitude ===
+                            0
                         ) {
                           return null;
                         }
 
-                        return (
+                        return {
+                          ...point,
+
+                          latitude,
+
+                          longitude,
+
+                          position: [
+                            latitude,
+                            longitude,
+                          ],
+
+                          iotTimestamp:
+                            point?.iotTimestamp ||
+                            point?.iottimestamp ||
+                            point?.timestamp ||
+                            point?.createdAt ||
+                            null,
+                        };
+                      },
+                    )
+                    .filter(
+                      Boolean,
+                    );
+
+                /*
+                  Chronological sorting.
+                */
+
+                points.sort(
+                  (
+                    a,
+                    b,
+                  ) => {
+                    const timeA =
+                      new Date(
+                        a.iotTimestamp ||
+                          0,
+                      ).getTime();
+
+                    const timeB =
+                      new Date(
+                        b.iotTimestamp ||
+                          0,
+                      ).getTime();
+
+                    if (
+                      Number.isNaN(
+                        timeA,
+                      ) ||
+                      Number.isNaN(
+                        timeB,
+                      )
+                    ) {
+                      return 0;
+                    }
+
+                    return (
+                      timeA -
+                      timeB
+                    );
+                  },
+                );
+
+                const vehicleNumber =
+                  vehicle?.vehicleNumber ||
+                  vehicle?.vehicleNo ||
+                  vehicle?.registrationNumber ||
+                  `Vehicle ${
+                    vehicleIndex +
+                    1
+                  }`;
+
+                return {
+                  ...vehicle,
+
+                  vehicleNumber,
+
+                  points,
+
+                  color:
+                    getVehicleColor(
+                      vehicleNumber,
+                      vehicleIndex,
+                    ),
+                };
+              },
+            )
+            .filter(
+              (
+                vehicle,
+              ) =>
+                vehicle.points
+                  .length >
+                0,
+            );
+
+        setRouteData({
+          ...payload,
+          vehicles:
+            normalizedVehicles,
+        });
+
+        if (
+          normalizedVehicles.length ===
+          0
+        ) {
+          setRouteError(
+            payload?.message ||
+              `No route data available for Ward ${resolvedWardNo}.`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          "❌ ROUTE MAP ERROR:",
+          error,
+        );
+
+        setRouteData(
+          null,
+        );
+
+        setRouteError(
+          error?.message ||
+            "Unable to load route data.",
+        );
+      } finally {
+        setRouteLoading(
+          false,
+        );
+      }
+    };
+
+  /* =======================================================
+     ROUTE FETCH TRIGGER
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      activeView !==
+      "route"
+    ) {
+      return;
+    }
+
+    fetchRoutes();
+  }, [
+    activeView,
+    resolvedWardNo,
+    apiDate,
+  ]);
+
+  /* =======================================================
+     VEHICLES
+  ======================================================= */
+
+  const vehicles =
+    useMemo(
+      () =>
+        Array.isArray(
+          routeData?.vehicles,
+        )
+          ? routeData.vehicles
+          : [],
+      [routeData],
+    );
+
+  /* =======================================================
+     TOTAL GPS
+  ======================================================= */
+
+  const totalGpsPoints =
+    useMemo(
+      () =>
+        vehicles.reduce(
+          (
+            total,
+            vehicle,
+          ) =>
+            total +
+            vehicle.points
+              .length,
+          0,
+        ),
+      [vehicles],
+    );
+
+  /* =======================================================
+     OVERVIEW STATS
+  ======================================================= */
+
+  const overviewStats = [
+    {
+      label:
+        "Active Vehicles",
+      value:
+        vehicles.length ||
+        "—",
+      icon: Truck,
+    },
+
+    {
+      label:
+        "Vulnerable Points",
+      value:
+        gvpData.length ||
+        "—",
+      icon: AlertTriangle,
+    },
+
+    {
+      label:
+        "Active Plants",
+      value:
+        plantData.filter(
+          (plant) =>
+            String(
+              plant?.status,
+            ).toUpperCase() ===
+            "ACTIVE",
+        ).length ||
+        "—",
+      icon: Factory,
+    },
+
+    {
+      label:
+        "Open Grievances",
+      value:
+        grievanceData.filter(
+          (item) =>
+            String(
+              item?.status,
+            ).toUpperCase() !==
+            "RESOLVED",
+        ).length ||
+        "—",
+      icon: Megaphone,
+    },
+  ];
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <section
+      className="
+        w-full
+        rounded-[28px]
+        bg-white
+        border
+        border-slate-200
+        shadow-[0_2px_10px_rgba(15,23,42,0.05)]
+        p-6
+      "
+    >
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
+      <div
+        className="
+          mb-5
+          px-1
+          flex
+          items-end
+          justify-between
+          gap-5
+        "
+      >
+        <div>
+          <h2
+            className="
+              text-[23px]
+              font-semibold
+              tracking-[-0.02em]
+              text-slate-950
+            "
+          >
+            MAPS
+          </h2>
+
+          <p
+            className="
+              mt-1
+              text-[13px]
+              text-slate-500
+            "
+          >
+            City operations, vehicle
+            routes, vulnerable points,
+            plants and grievances
+          </p>
+        </div>
+
+        <div
+          className="
+            hidden
+            md:flex
+            items-center
+            gap-2
+            text-[12px]
+            font-medium
+            text-slate-500
+          "
+        >
+          {selectedDivision ||
+            divisionName ||
+            "All Divisions"}
+
+          <span className="text-slate-300">
+            /
+          </span>
+
+          {resolvedWardNo
+            ? `Ward ${resolvedWardNo}`
+            : "All Wards"}
+        </div>
+      </div>
+
+      {/* =================================================
+          MAP
+      ================================================= */}
+
+      <div
+        className="
+          relative
+          w-full
+          h-[700px]
+          overflow-hidden
+          rounded-[24px]
+          border
+          border-slate-200
+        "
+      >
+        <MapContainer
+          center={
+            DEFAULT_CENTER
+          }
+          zoom={
+            DEFAULT_ZOOM
+          }
+          zoomControl={false}
+          scrollWheelZoom
+          style={{
+            width: "100%",
+            height: "100%",
+            zIndex: 1,
+          }}
+        >
+          {/* =================================================
+              MAP RESIZE
+          ================================================= */}
+
+          <MapResizeController />
+
+          {/* =================================================
+              ZOOM
+          ================================================= */}
+
+          <ZoomControl
+            position="bottomright"
+          />
+
+          {/* =================================================
+              BASE MAP
+          ================================================= */}
+
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
+
+          {/* =================================================
+              CITY OVERVIEW
+          ================================================= */}
+
+          {activeView ===
+            "overview" && (
+            <>
+              <FitBoundary
+                data={
+                  ibbaluruBoundary
+                }
+              />
+
+              <GeoJSON
+                data={
+                  ibbaluruBoundary
+                }
+                style={{
+                  color:
+                    "#10B981",
+                  weight: 4,
+                  opacity: 0.95,
+                  fillColor:
+                    "#10B981",
+                  fillOpacity:
+                    0.10,
+                }}
+                onEachFeature={(
+                  feature,
+                  layer,
+                ) => {
+                  layer.bindPopup(`
+                    <div
+                      style="
+                        min-width:180px;
+                        font-family:Inter,Arial,sans-serif;
+                      "
+                    >
+                      <strong>
+                        ${
+                          feature
+                            ?.properties
+                            ?.name ||
+                          "Ward"
+                        }
+                      </strong>
+
+                      <br/>
+
+                      <span
+                        style="
+                          color:#64748B;
+                          font-size:12px;
+                        "
+                      >
+                        Ward ID:
+                        ${
+                          feature
+                            ?.properties
+                            ?.wardId ??
+                          "—"
+                        }
+                      </span>
+                    </div>
+                  `);
+                }}
+              />
+
+              {/* Current vehicle indicators */}
+
+              {vehicles.map(
+                (
+                  vehicle,
+                  index,
+                ) => {
+                  const latest =
+                    vehicle
+                      .points[
+                      vehicle
+                        .points
+                        .length -
+                        1
+                    ];
+
+                  if (
+                    !latest
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <Marker
+                      key={`overview-${vehicle.vehicleNumber}-${index}`}
+                      position={
+                        latest.position
+                      }
+                      icon={createTruckIcon(
+                        vehicle.color,
+                      )}
+                    >
+                      <Popup>
+                        <div
+                          style={{
+                            minWidth:
+                              "190px",
+                          }}
+                        >
+                          <strong>
+                            {
+                              vehicle.vehicleNumber
+                            }
+                          </strong>
+
+                          <br />
+
+                          <span>
+                            Active
+                            vehicle
+                          </span>
+
+                          <br />
+
+                          <span>
+                            Ward{" "}
+                            {
+                              resolvedWardNo
+                            }
+                          </span>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                },
+              )}
+
+              {/* GVP overview */}
+
+              {gvpData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`overview-gvp-${item?.id || index}`}
+                    item={item}
+                    type="gvp"
+                  />
+                ),
+              )}
+
+              {/* Plants overview */}
+
+              {plantData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`overview-plant-${item?.id || index}`}
+                    item={item}
+                    type="plant"
+                  />
+                ),
+              )}
+
+              {/* Grievances overview */}
+
+              {grievanceData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`overview-grievance-${item?.id || index}`}
+                    item={item}
+                    type="grievance"
+                  />
+                ),
+              )}
+            </>
+          )}
+
+          {/* =================================================
+              ROUTE MAP
+          ================================================= */}
+
+          {activeView ===
+            "route" && (
+            <>
+              <FitRouteBounds
+                vehicles={
+                  vehicles
+                }
+              />
+
+              {vehicles.map(
+                (
+                  vehicle,
+                  vehicleIndex,
+                ) => {
+                  const positions =
+                    vehicle.points.map(
+                      (
+                        point,
+                      ) =>
+                        point.position,
+                    );
+
+                  if (
+                    positions.length <
+                    1
+                  ) {
+                    return null;
+                  }
+
+                  const latest =
+                    vehicle
+                      .points[
+                      vehicle
+                        .points
+                        .length -
+                        1
+                    ];
+
+                  const start =
+                    positions[0];
+
+                  return (
+                    <div
+                      key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
+                    >
+                      {/* Route glow */}
+
+                      {positions.length >
+                        1 && (
+                        <Polyline
+                          positions={
+                            positions
+                          }
+                          pathOptions={{
+                            color:
+                              vehicle.color,
+                            weight: 9,
+                            opacity:
+                              0.14,
+                            lineCap:
+                              "round",
+                            lineJoin:
+                              "round",
+                          }}
+                        />
+                      )}
+
+                      {/* Main route */}
+
+                      {positions.length >
+                        1 && (
+                        <Polyline
+                          positions={
+                            positions
+                          }
+                          pathOptions={{
+                            color:
+                              vehicle.color,
+                            weight: 4,
+                            opacity:
+                              0.95,
+                            lineCap:
+                              "round",
+                            lineJoin:
+                              "round",
+                          }}
+                        />
+                      )}
+
+                      {/* Telemetry points */}
+
+                      {vehicle.points.map(
+                        (
+                          point,
+                          pointIndex,
+                        ) => (
                           <CircleMarker
-                            key={`${vehicle.vehicleNumber}-${pointIndex}`}
-                            center={[
-                              latitude,
-                              longitude,
-                            ]}
-                            radius={7}
+                            key={`${vehicle.vehicleNumber}-point-${pointIndex}`}
+                            center={
+                              point.position
+                            }
+                            radius={5}
                             pathOptions={{
                               color:
                                 "#FFFFFF",
                               weight: 2,
                               fillColor:
-                                color,
+                                vehicle.color,
                               fillOpacity:
-                                1,
-                            }}
-                            eventHandlers={{
-                              mouseover:
-                                (
-                                  event,
-                                ) => {
-                                  event.target.openPopup();
-                                },
+                                0.95,
                             }}
                           >
                             <Popup
-                              closeButton={
-                                true
-                              }
                               maxWidth={
                                 340
                               }
@@ -1184,30 +2017,29 @@ export default function MapSection({
                               />
                             </Popup>
                           </CircleMarker>
-                        );
-                      },
-                    )}
+                        ),
+                      )}
 
-                    {/* =================================================
-                        VEHICLE START POINT
-                    ================================================= */}
+                      {/* Start */}
 
-                    <CircleMarker
-                      center={
-                        coordinates[0]
-                      }
-                      radius={10}
-                      pathOptions={{
-                        color,
-                        weight: 3,
-                        fillColor:
-                          "#FFFFFF",
-                        fillOpacity:
-                          1,
-                      }}
-                    >
-                      <Popup>
-                        <div>
+                      <CircleMarker
+                        center={
+                          start
+                        }
+                        radius={
+                          9
+                        }
+                        pathOptions={{
+                          color:
+                            vehicle.color,
+                          weight: 3,
+                          fillColor:
+                            "#FFFFFF",
+                          fillOpacity:
+                            1,
+                        }}
+                      >
+                        <Popup>
                           <strong>
                             {
                               vehicle.vehicleNumber
@@ -1216,78 +2048,649 @@ export default function MapSection({
 
                           <br />
 
-                          <span>
-                            Route Start
-                          </span>
-                        </div>
-                      </Popup>
-                    </CircleMarker>
-
-                    {/* =================================================
-                        VEHICLE END POINT
-                    ================================================= */}
-
-                    {coordinates.length >
-                      1 && (
-                      <CircleMarker
-                        center={
-                          coordinates[
-                            coordinates.length -
-                              1
-                          ]
-                        }
-                        radius={10}
-                        pathOptions={{
-                          color,
-                          weight: 3,
-                          fillColor:
-                            color,
-                          fillOpacity:
-                            1,
-                        }}
-                      >
-                        <Popup>
-                          <div>
-                            <strong>
-                              {
-                                vehicle.vehicleNumber
-                              }
-                            </strong>
-
-                            <br />
-
-                            <span>
-                              Latest
-                              Position
-                            </span>
-                          </div>
+                          Route Start
                         </Popup>
                       </CircleMarker>
-                    )}
+
+                      {/* Latest */}
+
+                      {latest && (
+                        <Marker
+                          position={
+                            latest.position
+                          }
+                          icon={createTruckIcon(
+                            vehicle.color,
+                          )}
+                        >
+                          <Popup>
+                            <div
+                              style={{
+                                minWidth:
+                                  "200px",
+                              }}
+                            >
+                              <strong>
+                                {
+                                  vehicle.vehicleNumber
+                                }
+                              </strong>
+
+                              <br />
+
+                              <span
+                                style={{
+                                  color:
+                                    "#64748B",
+                                  fontSize:
+                                    "12px",
+                                }}
+                              >
+                                Latest
+                                vehicle
+                                position
+                              </span>
+
+                              <div
+                                style={{
+                                  marginTop:
+                                    "8px",
+                                }}
+                              >
+                                {latest.latitude.toFixed(
+                                  6,
+                                )}
+                                ,{" "}
+                                {latest.longitude.toFixed(
+                                  6,
+                                )}
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )}
+                    </div>
+                  );
+                },
+              )}
+            </>
+          )}
+
+          {/* =================================================
+              GVP
+          ================================================= */}
+
+          {activeView ===
+            "gvp" && (
+            <>
+              {gvpData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`gvp-${item?.id || index}`}
+                    item={item}
+                    type="gvp"
+                  />
+                ),
+              )}
+            </>
+          )}
+
+          {/* =================================================
+              PLANTS
+          ================================================= */}
+
+          {activeView ===
+            "plants" && (
+            <>
+              {plantData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`plant-${item?.id || index}`}
+                    item={item}
+                    type="plant"
+                  />
+                ),
+              )}
+            </>
+          )}
+
+          {/* =================================================
+              GRIEVANCES
+          ================================================= */}
+
+          {activeView ===
+            "grievances" && (
+            <>
+              {grievanceData.map(
+                (
+                  item,
+                  index,
+                ) => (
+                  <DataMarker
+                    key={`grievance-${item?.id || index}`}
+                    item={item}
+                    type="grievance"
+                  />
+                ),
+              )}
+            </>
+          )}
+        </MapContainer>
+
+        {/* =================================================
+            VIEW SELECTOR
+        ================================================= */}
+
+        <div
+          ref={menuRef}
+          className="
+            absolute
+            left-5
+            top-5
+            z-[1000]
+          "
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setShowViewMenu(
+                (
+                  previous,
+                ) =>
+                  !previous,
+              )
+            }
+            className="
+              w-[410px]
+              max-w-[calc(100vw-50px)]
+              h-[68px]
+              px-6
+              bg-white
+              rounded-[18px]
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.12)]
+              flex
+              items-center
+              justify-between
+              transition
+              hover:shadow-[0_12px_30px_rgba(15,23,42,0.16)]
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-4
+              "
+            >
+              <ActiveIcon
+                size={25}
+                strokeWidth={
+                  2
+                }
+                style={{
+                  color:
+                    selectedMapView.color,
+                }}
+              />
+
+              <span
+                className="
+                  text-[17px]
+                  font-semibold
+                  text-slate-700
+                "
+              >
+                {
+                  selectedMapView.label
+                }
+              </span>
+            </div>
+
+            <ChevronDown
+              size={21}
+              className={`
+                text-slate-500
+                transition-transform
+                ${
+                  showViewMenu
+                    ? "rotate-180"
+                    : ""
+                }
+              `}
+            />
+          </button>
+
+          {showViewMenu && (
+            <div
+              className="
+                absolute
+                top-[76px]
+                left-0
+                w-[410px]
+                max-w-[calc(100vw-50px)]
+                rounded-[18px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_15px_40px_rgba(15,23,42,0.16)]
+                overflow-hidden
+              "
+            >
+              {mapViews.map(
+                (
+                  view,
+                ) => {
+                  const Icon =
+                    view.icon;
+
+                  const isActive =
+                    activeView ===
+                    view.id;
+
+                  return (
+                    <button
+                      key={
+                        view.id
+                      }
+                      type="button"
+                      onClick={() => {
+                        setActiveView(
+                          view.id,
+                        );
+
+                        setShowViewMenu(
+                          false,
+                        );
+                      }}
+                      className={`
+                        w-full
+                        px-6
+                        py-4
+                        flex
+                        items-center
+                        justify-between
+                        transition
+                        ${
+                          isActive
+                            ? "bg-violet-50"
+                            : "bg-white hover:bg-slate-50"
+                        }
+                      `}
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-4
+                        "
+                      >
+                        <Icon
+                          size={22}
+                          style={{
+                            color:
+                              view.color,
+                          }}
+                        />
+
+                        <span
+                          className="
+                            text-[14px]
+                            font-medium
+                            text-slate-700
+                          "
+                        >
+                          {
+                            view.label
+                          }
+                        </span>
+                      </div>
+
+                      {isActive && (
+                        <CheckCircle2
+                          size={
+                            19
+                          }
+                          style={{
+                            color:
+                              view.color,
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* =================================================
+            MAP CONTEXT CARD
+        ================================================= */}
+
+        <div
+          className="
+            absolute
+            right-5
+            top-5
+            z-[1000]
+            flex
+            gap-3
+          "
+        >
+          {/* Division */}
+
+          <div
+            className="
+              min-w-[180px]
+              px-5
+              py-3
+              rounded-[16px]
+              bg-white
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+            "
+          >
+            <div
+              className="
+                text-[10px]
+                font-bold
+                tracking-[0.08em]
+                text-slate-400
+                uppercase
+              "
+            >
+              DIVISION
+            </div>
+
+            <div
+              className="
+                mt-1
+                text-[14px]
+                font-semibold
+                text-slate-700
+              "
+            >
+              {selectedDivision ||
+                divisionName ||
+                "All Divisions"}
+            </div>
+          </div>
+
+          {/* Ward */}
+
+          <div
+            className="
+              min-w-[150px]
+              px-5
+              py-3
+              rounded-[16px]
+              bg-white
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+            "
+          >
+            <div
+              className="
+                text-[10px]
+                font-bold
+                tracking-[0.08em]
+                text-slate-400
+                uppercase
+              "
+            >
+              WARD
+            </div>
+
+            <div
+              className="
+                mt-1
+                text-[14px]
+                font-semibold
+                text-slate-700
+              "
+            >
+              {resolvedWardNo
+                ? `Ward ${resolvedWardNo}`
+                : "All Wards"}
+            </div>
+          </div>
+        </div>
+
+        {/* =================================================
+            OVERVIEW STATS
+        ================================================= */}
+
+        {activeView ===
+          "overview" && (
+          <div
+            className="
+              absolute
+              left-5
+              bottom-5
+              z-[1000]
+              flex
+              gap-3
+            "
+          >
+            {overviewStats.map(
+              (
+                stat,
+              ) => {
+                const Icon =
+                  stat.icon;
+
+                return (
+                  <div
+                    key={
+                      stat.label
+                    }
+                    className="
+                      min-w-[145px]
+                      px-4
+                      py-3
+                      rounded-[16px]
+                      bg-white
+                      border
+                      border-slate-200
+                      shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+                    "
+                  >
+                    <div
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                      "
+                    >
+                      <Icon
+                        size={
+                          16
+                        }
+                        className="text-slate-400"
+                      />
+
+                      <span
+                        className="
+                          text-[10px]
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-slate-400
+                        "
+                      >
+                        {
+                          stat.label
+                        }
+                      </span>
+                    </div>
+
+                    <div
+                      className="
+                        mt-1
+                        text-[19px]
+                        font-bold
+                        text-slate-800
+                      "
+                    >
+                      {
+                        stat.value
+                      }
+                    </div>
                   </div>
                 );
               },
             )}
-          </>
+          </div>
         )}
-      </MapContainer>
 
-      {/* =================================================
-          ROUTE LOADING
-      ================================================= */}
+        {/* =================================================
+            ROUTE INFO
+        ================================================= */}
 
-      {mapView ===
-        "route" &&
-        loading && (
+        {activeView ===
+          "route" &&
+          !routeLoading &&
+          vehicles.length >
+            0 && (
+            <div
+              className="
+                absolute
+                left-5
+                bottom-5
+                z-[1000]
+                px-5
+                py-3
+                rounded-[16px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-5
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                  "
+                >
+                  <Truck
+                    size={
+                      17
+                    }
+                    className="text-slate-500"
+                  />
+
+                  <span
+                    className="
+                      text-[13px]
+                      font-semibold
+                      text-slate-700
+                    "
+                  >
+                    {
+                      vehicles.length
+                    }{" "}
+                    {vehicles.length ===
+                    1
+                      ? "Vehicle"
+                      : "Vehicles"}
+                  </span>
+                </div>
+
+                <div
+                  className="
+                    text-[12px]
+                    font-medium
+                    text-slate-500
+                  "
+                >
+                  {totalGpsPoints.toLocaleString()}{" "}
+                  GPS points
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* =================================================
+            ROUTE REFRESH
+        ================================================= */}
+
+        {activeView ===
+          "route" && (
+          <button
+            type="button"
+            onClick={
+              fetchRoutes
+            }
+            disabled={
+              routeLoading
+            }
+            className="
+              absolute
+              right-5
+              bottom-5
+              z-[1000]
+              w-[44px]
+              h-[44px]
+              rounded-full
+              bg-white
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              flex
+              items-center
+              justify-center
+              hover:bg-slate-50
+              transition
+            "
+            title="Refresh route"
+          >
+            <RefreshCw
+              size={18}
+              className={
+                routeLoading
+                  ? "animate-spin text-violet-600"
+                  : "text-slate-600"
+              }
+            />
+          </button>
+        )}
+
+        {/* =================================================
+            ROUTE LOADING
+        ================================================= */}
+
+        {activeView ===
+          "route" &&
+          routeLoading && (
           <div
             className="
               absolute
               inset-0
-              z-[700]
+              z-[900]
               flex
               items-center
               justify-center
-              bg-white/55
+              bg-white/45
               backdrop-blur-[2px]
               pointer-events-none
             "
@@ -1295,9 +2698,11 @@ export default function MapSection({
             <div
               className="
                 bg-white
-                rounded-2xl
+                rounded-[18px]
+                border
+                border-slate-200
                 shadow-[0_15px_40px_rgba(15,23,42,0.14)]
-                px-5
+                px-6
                 py-4
                 flex
                 items-center
@@ -1319,36 +2724,37 @@ export default function MapSection({
                   text-slate-700
                 "
               >
-                Loading vehicle routes...
+                Loading vehicle
+                routes...
               </span>
             </div>
           </div>
         )}
 
-      {/* =================================================
-          ROUTE ERROR / EMPTY
-      ================================================= */}
+        {/* =================================================
+            ROUTE ERROR
+        ================================================= */}
 
-      {mapView ===
-        "route" &&
-        !loading &&
-        error && (
+        {activeView ===
+          "route" &&
+          !routeLoading &&
+          routeError && (
           <div
             className="
               absolute
               left-1/2
               bottom-6
               -translate-x-1/2
-              z-[800]
+              z-[1000]
             "
           >
             <div
               className="
                 bg-white
                 border
-                border-gray-100
+                border-slate-200
                 shadow-[0_15px_40px_rgba(15,23,42,0.12)]
-                rounded-2xl
+                rounded-[16px]
                 px-5
                 py-3
                 flex
@@ -1369,50 +2775,65 @@ export default function MapSection({
                   text-slate-600
                 "
               >
-                {error}
+                {
+                  routeError
+                }
               </span>
             </div>
           </div>
         )}
 
-      {/* =================================================
-          GVP
-      ================================================= */}
+        {/* =================================================
+            GVP EMPTY
+        ================================================= */}
 
-      {mapView ===
-        "gvp" && (
-        <PlaceholderView
-          icon={MapPinned}
-          title="Garbage Vulnerable Points"
-          description="GVP locations will be displayed here."
-        />
-      )}
+        {activeView ===
+          "gvp" &&
+          gvpData.length ===
+            0 && (
+          <EmptyLayerView
+            icon={
+              MapPinned
+            }
+            title="Garbage Vulnerable Points"
+            description="The GVP layer is ready. Connect the GVP endpoint here and its locations will appear directly on the map."
+          />
+        )}
 
-      {/* =================================================
-          PLANTS
-      ================================================= */}
+        {/* =================================================
+            PLANTS EMPTY
+        ================================================= */}
 
-      {mapView ===
-        "plants" && (
-        <PlaceholderView
-          icon={Factory}
-          title="Plants Active"
-          description="Active waste processing plants will be displayed here."
-        />
-      )}
+        {activeView ===
+          "plants" &&
+          plantData.length ===
+            0 && (
+          <EmptyLayerView
+            icon={
+              Factory
+            }
+            title="Plants Active"
+            description="The plant layer is ready. Connect the plants endpoint here and active processing plants will appear on the map."
+          />
+        )}
 
-      {/* =================================================
-          GRIEVANCES
-      ================================================= */}
+        {/* =================================================
+            GRIEVANCES EMPTY
+        ================================================= */}
 
-      {mapView ===
-        "grievances" && (
-        <PlaceholderView
-          icon={Megaphone}
-          title="Customer Grievances"
-          description="Customer grievance locations will be displayed here."
-        />
-      )}
-    </div>
+        {activeView ===
+          "grievances" &&
+          grievanceData.length ===
+            0 && (
+          <EmptyLayerView
+            icon={
+              Megaphone
+            }
+            title="Customer Grievances"
+            description="The grievance layer is ready. Connect the grievances endpoint here and customer complaints will appear on the map."
+          />
+        )}
+      </div>
+    </section>
   );
 }
