@@ -2,8 +2,9 @@ const { PrismaClient: SewacClient } = require("../generated/sewac");
 
 const sewacPrisma = new SewacClient();
 
-const masterCitizenPrisma =
-  require("../config/masterCitizenPrisma");
+const masterCitizenPrisma = require("../config/masterCitizenPrisma");
+
+const telemetryDb = require("../config/telemetryDb");
 
 const logEdit = require("../utils/editLogger");
 
@@ -11,24 +12,13 @@ const logEdit = require("../utils/editLogger");
 |--------------------------------------------------------------------------
 | SAFE DATABASE IDENTIFIER
 |--------------------------------------------------------------------------
-|
-| Dynamic table names come from our own hierarchy metadata.
-| They are NEVER accepted directly from the client.
-|
-|--------------------------------------------------------------------------
 */
 
-const IDENTIFIER_REGEX =
-  /^[A-Za-z_][A-Za-z0-9_]*$/;
+const IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 const quoteIdentifier = (identifier) => {
-  if (
-    typeof identifier !== "string" ||
-    !IDENTIFIER_REGEX.test(identifier)
-  ) {
-    throw new Error(
-      `Unsafe database identifier: ${identifier}`
-    );
+  if (typeof identifier !== "string" || !IDENTIFIER_REGEX.test(identifier)) {
+    throw new Error(`Unsafe database identifier: ${identifier}`);
   }
 
   return `"${identifier.replace(/"/g, '""')}"`;
@@ -41,23 +31,14 @@ const quoteIdentifier = (identifier) => {
 */
 
 const parseId = (value, fieldName) => {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ""
-  ) {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
 
   const parsed = Number(value);
 
-  if (
-    !Number.isInteger(parsed) ||
-    parsed <= 0
-  ) {
-    throw new Error(
-      `${fieldName} must be a positive integer`
-    );
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${fieldName} must be a positive integer`);
   }
 
   return parsed;
@@ -70,10 +51,7 @@ const parseId = (value, fieldName) => {
 */
 
 const normalizeSearch = (value) => {
-  if (
-    value === undefined ||
-    value === null
-  ) {
+  if (value === undefined || value === null) {
     return "";
   }
 
@@ -82,49 +60,87 @@ const normalizeSearch = (value) => {
 
 /*
 |--------------------------------------------------------------------------
-| GEOGRAPHIC SCOPE
+| DATE VALIDATION
 |--------------------------------------------------------------------------
 |
-| Header selection:
+| YYYY-MM-DD
 |
-| cityId
-|   ↓
-| city_table
-|   ↓
-| city dynamic table
-|   ↓
-| zone
-|   ↓
-| zone dynamic table
-|   ↓
-| division
-|   ↓
-| division dynamic table
-|   ↓
-| ward
-|   ↓
-| actual citizen table
+| Example:
+|
+| 2026-08-16
+|      ↓
+| day_16082026
 |
 |--------------------------------------------------------------------------
 */
+
+const validateDate = (date) => {
+  const selectedDate = date || new Date().toISOString().split("T")[0];
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+    throw new Error("date must be in YYYY-MM-DD format");
+  }
+
+  const parsed = new Date(`${selectedDate}T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Invalid date");
+  }
+
+  const normalized = parsed.toISOString().split("T")[0];
+
+  if (normalized !== selectedDate) {
+    throw new Error("Invalid date");
+  }
+
+  return {
+    value: selectedDate,
+    date: parsed,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| DAY TABLE
+|--------------------------------------------------------------------------
+*/
+
+const getDayTableName = (date) => {
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+
+  const yyyy = date.getFullYear();
+
+  return `day_${dd}${mm}${yyyy}`;
+};
 
 /*
 |--------------------------------------------------------------------------
 | GET ALL WARDS
 |--------------------------------------------------------------------------
 |
-| Used when no geographic filter is supplied.
+| masterCitizenPrisma
+|
+| city_table
+|     ↓
+| city dynamic table
+|     ↓
+| zone dynamic table
+|     ↓
+| division dynamic table
+|     ↓
+| ward rows
 |
 |--------------------------------------------------------------------------
 */
 
 const getAllWardScope = async () => {
-  const cities =
-    await masterCitizenPrisma.city_table.findMany({
-      orderBy: {
-        city_id: "asc",
-      },
-    });
+  const cities = await masterCitizenPrisma.city_table.findMany({
+    orderBy: {
+      city_id: "asc",
+    },
+  });
 
   const wards = [];
 
@@ -133,65 +149,55 @@ const getAllWardScope = async () => {
       continue;
     }
 
-    const cityTable =
-      quoteIdentifier(city.city_table_name);
+    const cityTable = quoteIdentifier(city.city_table_name);
 
-    const zones =
-      await masterCitizenPrisma.$queryRawUnsafe(
-        `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM ${cityTable}
-          ORDER BY zone_id ASC
-        `
-      );
+    const zones = await masterCitizenPrisma.$queryRawUnsafe(
+      `
+              SELECT
+                zone_id,
+                zone_name,
+                zone_table_name
+              FROM ${cityTable}
+              ORDER BY zone_id ASC
+            `,
+    );
 
     for (const zone of zones) {
       if (!zone.zone_table_name) {
         continue;
       }
 
-      const zoneTable =
-        quoteIdentifier(
-          zone.zone_table_name
-        );
+      const zoneTable = quoteIdentifier(zone.zone_table_name);
 
-      const divisions =
-        await masterCitizenPrisma.$queryRawUnsafe(
-          `
-            SELECT
-              division_id,
-              division_name,
-              division_table_name
-            FROM ${zoneTable}
-            ORDER BY division_id ASC
-          `
-        );
+      const divisions = await masterCitizenPrisma.$queryRawUnsafe(
+        `
+                SELECT
+                  division_id,
+                  division_name,
+                  division_table_name
+                FROM ${zoneTable}
+                ORDER BY division_id ASC
+              `,
+      );
 
       for (const division of divisions) {
         if (!division.division_table_name) {
           continue;
         }
 
-        const divisionTable =
-          quoteIdentifier(
-            division.division_table_name
-          );
+        const divisionTable = quoteIdentifier(division.division_table_name);
 
-        const wardRows =
-          await masterCitizenPrisma.$queryRawUnsafe(
-            `
-              SELECT
-                ward_id,
-                ward_no,
-                ward_name,
-                ward_table_name
-              FROM ${divisionTable}
-              ORDER BY ward_no ASC
-            `
-          );
+        const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
+          `
+                  SELECT
+                    ward_id,
+                    ward_no,
+                    ward_name,
+                    ward_table_name
+                  FROM ${divisionTable}
+                  ORDER BY ward_no ASC
+                `,
+        );
 
         for (const ward of wardRows) {
           wards.push({
@@ -203,23 +209,17 @@ const getAllWardScope = async () => {
 
             zoneName: zone.zone_name,
 
-            divisionId:
-              Number(division.division_id),
+            divisionId: Number(division.division_id),
 
-            divisionName:
-              division.division_name,
+            divisionName: division.division_name,
 
             wardId: Number(ward.ward_id),
 
-            wardNo:
-              ward.ward_no === null
-                ? null
-                : Number(ward.ward_no),
+            wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
 
             wardName: ward.ward_name,
 
-            wardTableName:
-              ward.ward_table_name,
+            wardTableName: ward.ward_table_name,
           });
         }
       }
@@ -231,302 +231,207 @@ const getAllWardScope = async () => {
 
 /*
 |--------------------------------------------------------------------------
-| GET SELECTED WARD SCOPE
-|--------------------------------------------------------------------------
-|
-| This is the important part.
-|
-| We DO NOT search citizens using:
-|
-| city = "Bangalore"
-| ward = "Ibbalur"
-|
-| Instead we use the IDs from the Header to navigate
-| the actual hierarchy.
-|
+| SELECTED GEOGRAPHIC SCOPE
 |--------------------------------------------------------------------------
 */
 
-const getSelectedWardScope = async ({
-  cityId,
-  zoneId,
-  divisionId,
-  wardId,
-}) => {
-  const selectedCityId =
-    parseId(cityId, "cityId");
+const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
+  const selectedCityId = parseId(cityId, "cityId");
 
-  const selectedZoneId =
-    parseId(zoneId, "zoneId");
+  const selectedZoneId = parseId(zoneId, "zoneId");
 
-  const selectedDivisionId =
-    parseId(
-      divisionId,
-      "divisionId"
-    );
+  const selectedDivisionId = parseId(divisionId, "divisionId");
 
-  const selectedWardId =
-    parseId(
-      wardId,
-      "wardId"
-    );
+  const selectedWardId = parseId(wardId, "wardId");
 
   /*
-  |--------------------------------------------------------------------------
-  | Validate hierarchy
-  |--------------------------------------------------------------------------
-  */
+    |--------------------------------------------------------------------------
+    | HIERARCHY VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
-  if (
-    selectedZoneId &&
-    !selectedCityId
-  ) {
-    throw new Error(
-      "zoneId requires cityId"
-    );
+  if (selectedZoneId && !selectedCityId) {
+    throw new Error("zoneId requires cityId");
   }
 
-  if (
-    selectedDivisionId &&
-    !selectedZoneId
-  ) {
-    throw new Error(
-      "divisionId requires zoneId"
-    );
+  if (selectedDivisionId && !selectedZoneId) {
+    throw new Error("divisionId requires zoneId");
   }
 
-  if (
-    selectedWardId &&
-    !selectedDivisionId
-  ) {
-    throw new Error(
-      "wardId requires divisionId"
-    );
+  if (selectedWardId && !selectedDivisionId) {
+    throw new Error("wardId requires divisionId");
   }
 
   /*
-  |--------------------------------------------------------------------------
-  | No filter
-  |--------------------------------------------------------------------------
-  */
+    |--------------------------------------------------------------------------
+    | NO FILTER
+    |--------------------------------------------------------------------------
+    */
 
   if (!selectedCityId) {
     return {
       filtered: false,
-      wards:
-        await getAllWardScope(),
+      wards: await getAllWardScope(),
     };
   }
 
   /*
-  |--------------------------------------------------------------------------
-  | CITY
-  |--------------------------------------------------------------------------
-  */
+    |--------------------------------------------------------------------------
+    | CITY
+    |--------------------------------------------------------------------------
+    */
 
-  const city =
-    await masterCitizenPrisma.city_table.findUnique({
-      where: {
-        city_id: selectedCityId,
-      },
-    });
+  const city = await masterCitizenPrisma.city_table.findUnique({
+    where: {
+      city_id: selectedCityId,
+    },
+  });
 
   if (!city) {
-    throw new Error(
-      "City not found"
-    );
+    throw new Error("City not found");
   }
 
   if (!city.city_table_name) {
-    throw new Error(
-      "City has no dynamic table registered"
-    );
+    throw new Error("City has no dynamic table registered");
   }
 
-  const cityTable =
-    quoteIdentifier(
-      city.city_table_name
-    );
+  const cityTable = quoteIdentifier(city.city_table_name);
 
   /*
-  |--------------------------------------------------------------------------
-  | CITY → ZONE
-  |--------------------------------------------------------------------------
-  */
+    |--------------------------------------------------------------------------
+    | CITY → ZONES
+    |--------------------------------------------------------------------------
+    */
 
-  const zones =
-    await masterCitizenPrisma.$queryRawUnsafe(
-      selectedZoneId
-        ? `
-            SELECT
-              zone_id,
-              zone_name,
-              zone_table_name
-            FROM ${cityTable}
-            WHERE zone_id = $1
-            ORDER BY zone_id ASC
-          `
-        : `
-            SELECT
-              zone_id,
-              zone_name,
-              zone_table_name
-            FROM ${cityTable}
-            ORDER BY zone_id ASC
-          `,
-      ...(selectedZoneId
-        ? [selectedZoneId]
-        : [])
-    );
+  const zones = await masterCitizenPrisma.$queryRawUnsafe(
+    selectedZoneId
+      ? `
+                SELECT
+                  zone_id,
+                  zone_name,
+                  zone_table_name
+                FROM ${cityTable}
+                WHERE zone_id = $1
+                ORDER BY zone_id ASC
+              `
+      : `
+                SELECT
+                  zone_id,
+                  zone_name,
+                  zone_table_name
+                FROM ${cityTable}
+                ORDER BY zone_id ASC
+              `,
+    ...(selectedZoneId ? [selectedZoneId] : []),
+  );
 
-  if (
-    selectedZoneId &&
-    zones.length === 0
-  ) {
-    throw new Error(
-      "Zone not found in selected city"
-    );
+  if (selectedZoneId && zones.length === 0) {
+    throw new Error("Zone not found in selected city");
   }
 
   const wards = [];
 
   /*
-  |--------------------------------------------------------------------------
-  | ZONE → DIVISION
-  |--------------------------------------------------------------------------
-  */
+    |--------------------------------------------------------------------------
+    | ZONE → DIVISION
+    |--------------------------------------------------------------------------
+    */
 
   for (const zone of zones) {
     if (!zone.zone_table_name) {
       continue;
     }
 
-    const zoneTable =
-      quoteIdentifier(
-        zone.zone_table_name
-      );
+    const zoneTable = quoteIdentifier(zone.zone_table_name);
 
-    const divisions =
-      await masterCitizenPrisma.$queryRawUnsafe(
-        selectedDivisionId
-          ? `
-              SELECT
-                division_id,
-                division_name,
-                division_table_name
-              FROM ${zoneTable}
-              WHERE division_id = $1
-              ORDER BY division_id ASC
-            `
-          : `
-              SELECT
-                division_id,
-                division_name,
-                division_table_name
-              FROM ${zoneTable}
-              ORDER BY division_id ASC
-            `,
-        ...(selectedDivisionId
-          ? [selectedDivisionId]
-          : [])
-      );
+    const divisions = await masterCitizenPrisma.$queryRawUnsafe(
+      selectedDivisionId
+        ? `
+                  SELECT
+                    division_id,
+                    division_name,
+                    division_table_name
+                  FROM ${zoneTable}
+                  WHERE division_id = $1
+                  ORDER BY division_id ASC
+                `
+        : `
+                  SELECT
+                    division_id,
+                    division_name,
+                    division_table_name
+                  FROM ${zoneTable}
+                  ORDER BY division_id ASC
+                `,
+      ...(selectedDivisionId ? [selectedDivisionId] : []),
+    );
 
-    if (
-      selectedDivisionId &&
-      divisions.length === 0
-    ) {
-      throw new Error(
-        "Division not found in selected zone"
-      );
+    if (selectedDivisionId && divisions.length === 0) {
+      throw new Error("Division not found in selected zone");
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | DIVISION → WARD
-    |--------------------------------------------------------------------------
-    */
+      |--------------------------------------------------------------------------
+      | DIVISION → WARD
+      |--------------------------------------------------------------------------
+      */
 
     for (const division of divisions) {
       if (!division.division_table_name) {
         continue;
       }
 
-      const divisionTable =
-        quoteIdentifier(
-          division.division_table_name
-        );
+      const divisionTable = quoteIdentifier(division.division_table_name);
 
-      const wardRows =
-        await masterCitizenPrisma.$queryRawUnsafe(
-          selectedWardId
-            ? `
-                SELECT
-                  ward_id,
-                  ward_no,
-                  ward_name,
-                  ward_table_name
-                FROM ${divisionTable}
-                WHERE ward_id = $1
-                ORDER BY ward_no ASC
-              `
-            : `
-                SELECT
-                  ward_id,
-                  ward_no,
-                  ward_name,
-                  ward_table_name
-                FROM ${divisionTable}
-                ORDER BY ward_no ASC
-              `,
-          ...(selectedWardId
-            ? [selectedWardId]
-            : [])
-        );
+      const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
+        selectedWardId
+          ? `
+                    SELECT
+                      ward_id,
+                      ward_no,
+                      ward_name,
+                      ward_table_name
+                    FROM ${divisionTable}
+                    WHERE ward_id = $1
+                    ORDER BY ward_no ASC
+                  `
+          : `
+                    SELECT
+                      ward_id,
+                      ward_no,
+                      ward_name,
+                      ward_table_name
+                    FROM ${divisionTable}
+                    ORDER BY ward_no ASC
+                  `,
+        ...(selectedWardId ? [selectedWardId] : []),
+      );
 
-      if (
-        selectedWardId &&
-        wardRows.length === 0
-      ) {
-        throw new Error(
-          "Ward not found in selected division"
-        );
+      if (selectedWardId && wardRows.length === 0) {
+        throw new Error("Ward not found in selected division");
       }
 
       for (const ward of wardRows) {
         wards.push({
-          cityId:
-            selectedCityId,
+          cityId: selectedCityId,
 
-          cityName:
-            city.city_name,
+          cityName: city.city_name,
 
-          zoneId:
-            Number(zone.zone_id),
+          zoneId: Number(zone.zone_id),
 
-          zoneName:
-            zone.zone_name,
+          zoneName: zone.zone_name,
 
-          divisionId:
-            Number(
-              division.division_id
-            ),
+          divisionId: Number(division.division_id),
 
-          divisionName:
-            division.division_name,
+          divisionName: division.division_name,
 
-          wardId:
-            Number(ward.ward_id),
+          wardId: Number(ward.ward_id),
 
-          wardNo:
-            ward.ward_no === null
-              ? null
-              : Number(ward.ward_no),
+          wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
 
-          wardName:
-            ward.ward_name,
+          wardName: ward.ward_name,
 
-          wardTableName:
-            ward.ward_table_name,
+          wardTableName: ward.ward_table_name,
         });
       }
     }
@@ -540,127 +445,74 @@ const getSelectedWardScope = async ({
 
 /*
 |--------------------------------------------------------------------------
-| GET CITIZENS FROM A WARD TABLE
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| This reads the ACTUAL CURRENT citizen table.
-|
-| It does NOT read master_citizen_data.
-|
+| GET CITIZENS FROM PHYSICAL WARD TABLE
 |--------------------------------------------------------------------------
 */
 
-const getCitizensFromWardTable = async (
-  ward
-) => {
+const getCitizensFromWardTable = async (ward) => {
   if (!ward.wardTableName) {
     return [];
   }
 
-  const table =
-    quoteIdentifier(
-      ward.wardTableName
-    );
+  const table = quoteIdentifier(ward.wardTableName);
 
   try {
-    const rows =
-      await masterCitizenPrisma.$queryRawUnsafe(
-        `
-          SELECT
-
-            id,
-
-            "phoneNumber",
-
-            "area",
-
-            "wasteGeneratorTypes",
-
-            "houseNumber",
-
-            "floorNumber",
-
-            "householdType",
-
-            "personName",
-
-            "contactNumber",
-
-            "numberOfPeople",
-
-            "buildingPhoto",
-
-            "createdAt",
-
-            "updatedAt",
-
-            "dryRFID",
-
-            "drySlno",
-
-            "wetRFID",
-
-            "wetSlno",
-
-            lat,
-
-            lng
-
-          FROM ${table}
-
-          ORDER BY
-            "createdAt" DESC,
-            id DESC
-        `
-      );
+    const rows = await masterCitizenPrisma.$queryRawUnsafe(
+      `
+              SELECT
+                id,
+                "phoneNumber",
+                "area",
+                "wasteGeneratorTypes",
+                "houseNumber",
+                "floorNumber",
+                "householdType",
+                "personName",
+                "contactNumber",
+                "numberOfPeople",
+                "buildingPhoto",
+                "createdAt",
+                "updatedAt",
+                "dryRFID",
+                "drySlno",
+                "wetRFID",
+                "wetSlno",
+                lat,
+                lng
+              FROM ${table}
+              ORDER BY
+                "createdAt" DESC,
+                id DESC
+            `,
+    );
 
     return rows.map((citizen) => ({
       ...citizen,
 
-      cityId:
-        ward.cityId,
+      cityId: ward.cityId,
 
-      cityName:
-        ward.cityName,
+      cityName: ward.cityName,
 
-      zoneId:
-        ward.zoneId,
+      zoneId: ward.zoneId,
 
-      zoneName:
-        ward.zoneName,
+      zoneName: ward.zoneName,
 
-      divisionId:
-        ward.divisionId,
+      divisionId: ward.divisionId,
 
-      divisionName:
-        ward.divisionName,
+      divisionName: ward.divisionName,
 
-      wardId:
-        ward.wardId,
+      wardId: ward.wardId,
 
-      wardNo:
-        ward.wardNo,
+      wardNo: ward.wardNo,
 
-      wardName:
-        ward.wardName,
+      wardName: ward.wardName,
 
-      wardTableName:
-        ward.wardTableName,
+      wardTableName: ward.wardTableName,
     }));
   } catch (error) {
-    /*
-    |--------------------------------------------------------------------------
-    | Ward table may be registered but physically absent.
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      error?.code === "42P01"
-    ) {
+    if (error?.code === "42P01") {
       console.warn(
-        `Waste Generator: ward table ${ward.wardTableName} does not exist.`
+        `Waste Generator: ward table ${ward.wardTableName} does not exist.`,
       );
 
       return [];
@@ -672,20 +524,16 @@ const getCitizensFromWardTable = async (
 
 /*
 |--------------------------------------------------------------------------
-| SEARCH CURRENT CITIZENS
+| SEARCH
 |--------------------------------------------------------------------------
 */
 
-const citizenMatchesSearch = (
-  citizen,
-  search
-) => {
+const citizenMatchesSearch = (citizen, search) => {
   if (!search) {
     return true;
   }
 
-  const value =
-    search.toLowerCase();
+  const value = search.toLowerCase();
 
   const fields = [
     citizen.phoneNumber,
@@ -701,10 +549,757 @@ const citizenMatchesSearch = (
     (field) =>
       field !== null &&
       field !== undefined &&
-      String(field)
-        .toLowerCase()
-        .includes(value)
+      String(field).toLowerCase().includes(value),
   );
+};
+
+/*
+|--------------------------------------------------------------------------
+| DAY TABLE → VEHICLE TABLES
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| The day table now uses vehicle_id.
+|
+| vehicle_id
+|      ↓
+| vehicle_master
+|      ↓
+| vehicle_table_name
+|
+| ward_no is still used to scope telemetry geographically.
+|--------------------------------------------------------------------------
+*/
+
+const getVehicleTablesForDate = async (date, wardNos = null) => {
+  const dayTable = getDayTableName(date);
+
+  const dayIdentifier = quoteIdentifier(dayTable);
+
+  /*
+    |--------------------------------------------------------------------------
+    | No selected wards
+    |--------------------------------------------------------------------------
+    */
+
+  if (Array.isArray(wardNos) && wardNos.length === 0) {
+    return [];
+  }
+
+  try {
+    const rows = await telemetryDb.$queryRawUnsafe(
+      Array.isArray(wardNos)
+        ? `
+                  SELECT
+                    d.vehicle_id,
+                    d.vehicle_table_name,
+                    d.ward_no
+                  FROM ${dayIdentifier} d
+                  INNER JOIN vehicle_master vm
+                    ON vm.vehicle_id = d.vehicle_id
+                  WHERE d.ward_no =
+                        ANY($1::integer[])
+                  ORDER BY
+                    d.vehicle_id ASC
+                `
+        : `
+                  SELECT
+                    d.vehicle_id,
+                    d.vehicle_table_name,
+                    d.ward_no
+                  FROM ${dayIdentifier} d
+                  INNER JOIN vehicle_master vm
+                    ON vm.vehicle_id = d.vehicle_id
+                  ORDER BY
+                    d.vehicle_id ASC
+                `,
+      ...(Array.isArray(wardNos) ? [wardNos] : []),
+    );
+
+    return rows
+      .filter(
+        (row) =>
+          row.vehicle_table_name &&
+          typeof row.vehicle_table_name === "string" &&
+          IDENTIFIER_REGEX.test(row.vehicle_table_name),
+      )
+      .map((row) => ({
+        vehicleId: row.vehicle_id,
+
+        vehicleTableName: row.vehicle_table_name,
+
+        wardNo:
+          row.ward_no === null || row.ward_no === undefined
+            ? null
+            : Number(row.ward_no),
+      }));
+  } catch (error) {
+    /*
+      |--------------------------------------------------------------------------
+      | Missing day table = NO DATA
+      |--------------------------------------------------------------------------
+      |
+      | This is expected when admin selects a date
+      | for which telemetry has not been created.
+      |--------------------------------------------------------------------------
+      */
+
+    if (error?.code === "42P01") {
+      console.warn(
+        `Waste Generator: telemetry day table ${dayTable} does not exist.`,
+      );
+
+      return [];
+    }
+
+    throw error;
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| TELEMETRY UNION
+|--------------------------------------------------------------------------
+*/
+
+const buildTelemetryUnion = (vehicleTables) => {
+  if (!Array.isArray(vehicleTables) || vehicleTables.length === 0) {
+    return null;
+  }
+
+  return vehicleTables
+    .filter(
+      ({ vehicleTableName }) =>
+        vehicleTableName &&
+        typeof vehicleTableName === "string" &&
+        IDENTIFIER_REGEX.test(vehicleTableName),
+    )
+    .map(({ vehicleTableName }) => {
+      const table = quoteIdentifier(vehicleTableName);
+
+      return `
+            SELECT
+              id,
+
+              iottimestamp,
+
+              receivedtimestamp,
+
+              citizenid,
+
+              latitude,
+
+              longitude,
+
+              wetweight,
+
+              dryweight,
+
+              otherweight,
+
+              cumulativeweight,
+
+              vehiclenumber,
+
+              unitnumber,
+
+              remarks,
+
+              citizencontact
+
+            FROM ${table}
+          `;
+    })
+    .join("\nUNION ALL\n");
+};
+
+/*
+|--------------------------------------------------------------------------
+| TELEMETRY ROWS
+|--------------------------------------------------------------------------
+*/
+
+const getTelemetryRows = async (vehicleTables, selectedDate) => {
+  const unionSql = buildTelemetryUnion(vehicleTables);
+
+  if (!unionSql) {
+    return [];
+  }
+
+  try {
+    const result = await telemetryDb.$queryRawUnsafe(
+      `
+              SELECT
+
+                id,
+
+                iottimestamp
+                  AS "iotTimestamp",
+
+                receivedtimestamp
+                  AS "receivedTimestamp",
+
+                citizenid
+                  AS "citizenId",
+
+                latitude,
+
+                longitude,
+
+                wetweight
+                  AS "wetWeight",
+
+                dryweight
+                  AS "dryWeight",
+
+                otherweight
+                  AS "otherWeight",
+
+                cumulativeweight
+                  AS "cumulativeWeight",
+
+                vehiclenumber
+                  AS "vehicleNumber",
+
+                unitnumber
+                  AS "unitNumber",
+
+                remarks,
+
+                citizencontact
+                  AS "citizenContact"
+
+              FROM (
+                ${unionSql}
+              ) telemetry
+
+              WHERE iottimestamp >=
+                    $1::date
+
+                AND iottimestamp <
+                    (
+                      $1::date +
+                      INTERVAL '1 day'
+                    )
+
+              ORDER BY
+                vehiclenumber ASC,
+                iottimestamp ASC,
+                id ASC
+            `,
+      selectedDate,
+    );
+
+    return result;
+  } catch (error) {
+    /*
+      |--------------------------------------------------------------------------
+      | Missing physical vehicle table
+      |--------------------------------------------------------------------------
+      */
+
+    if (error?.code === "42P01") {
+      console.warn(
+        "Waste Generator: one or more vehicle telemetry tables do not exist.",
+      );
+
+      return [];
+    }
+
+    throw error;
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| CITIZEN COUNT FOR SELECTED WARDS
+|--------------------------------------------------------------------------
+*/
+
+const getCitizenCountForWards = async (wards) => {
+  if (!Array.isArray(wards) || wards.length === 0) {
+    return 0;
+  }
+
+  let total = 0;
+
+  for (const ward of wards) {
+    if (!ward.wardTableName) {
+      continue;
+    }
+
+    const table = quoteIdentifier(ward.wardTableName);
+
+    try {
+      const result = await masterCitizenPrisma.$queryRawUnsafe(
+        `
+                SELECT
+                  COUNT(*)::bigint
+                    AS total
+                FROM ${table}
+              `,
+      );
+
+      total += Number(result?.[0]?.total || 0);
+    } catch (error) {
+      if (error?.code === "42P01") {
+        console.warn(
+          `Waste Generator: ward table ${ward.wardTableName} does not exist.`,
+        );
+
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  return total;
+};
+
+/*
+|--------------------------------------------------------------------------
+| SUMMARY KPIs
+|--------------------------------------------------------------------------
+|
+| DATE + CITY + ZONE + DIVISION + WARD
+|--------------------------------------------------------------------------
+*/
+
+const getSummary = async ({
+  date,
+  cityId,
+  zoneId,
+  divisionId,
+  wardId,
+} = {}) => {
+  /*
+    |--------------------------------------------------------------------------
+    | 1. DATE
+    |--------------------------------------------------------------------------
+    */
+
+  const { value: selectedDate, date: dateObject } = validateDate(date);
+
+  /*
+    |--------------------------------------------------------------------------
+    | 2. GEOGRAPHIC SCOPE
+    |--------------------------------------------------------------------------
+    */
+
+  const wardScope = await getSelectedWardScope({
+    cityId,
+    zoneId,
+    divisionId,
+    wardId,
+  });
+
+  const wards = wardScope.wards || [];
+
+  if (wards.length === 0) {
+    return {
+      totalWasteGenerators: 0,
+
+      activeWasteGenerators: 0,
+
+      inactiveWasteGenerators: 0,
+
+      totalWasteGenerated: 0,
+
+      averageWaste: 0,
+
+      aboveAverage: 0,
+
+      belowAverage: 0,
+    };
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 3. WARD NUMBERS
+    |--------------------------------------------------------------------------
+    */
+
+  const wardNos = wards
+    .map((ward) => Number(ward.wardNo))
+    .filter((wardNo) => Number.isInteger(wardNo));
+
+  if (wardNos.length === 0) {
+    return {
+      totalWasteGenerators: await getCitizenCountForWards(wards),
+
+      activeWasteGenerators: 0,
+
+      inactiveWasteGenerators: 0,
+
+      totalWasteGenerated: 0,
+
+      averageWaste: 0,
+
+      aboveAverage: 0,
+
+      belowAverage: 0,
+    };
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 4. TOTAL REGISTERED GENERATORS
+    |--------------------------------------------------------------------------
+    |
+    | This is geographic-only.
+    |
+    | Date does NOT change the registered
+    | citizen count.
+    |--------------------------------------------------------------------------
+    */
+
+  const totalWasteGenerators = await getCitizenCountForWards(wards);
+
+  /*
+    |--------------------------------------------------------------------------
+    | 5. SELECTED DATE VEHICLE TABLES
+    |--------------------------------------------------------------------------
+    */
+
+  const vehicleTables = await getVehicleTablesForDate(dateObject, wardNos);
+
+  /*
+    |--------------------------------------------------------------------------
+    | NO DAY TABLE / NO TELEMETRY
+    |--------------------------------------------------------------------------
+    |
+    | Header remains valid.
+    | Directory remains valid.
+    | KPI telemetry values become zero.
+    |--------------------------------------------------------------------------
+    */
+
+  if (vehicleTables.length === 0) {
+    return {
+      totalWasteGenerators,
+
+      activeWasteGenerators: 0,
+
+      inactiveWasteGenerators: totalWasteGenerators,
+
+      totalWasteGenerated: 0,
+
+      averageWaste: 0,
+
+      aboveAverage: 0,
+
+      belowAverage: 0,
+    };
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 6. TELEMETRY
+    |--------------------------------------------------------------------------
+    */
+
+  const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
+
+  /*
+    |--------------------------------------------------------------------------
+    | 7. GROUP WASTE BY CITIZEN
+    |--------------------------------------------------------------------------
+    */
+
+  const citizenWaste = new Map();
+
+  for (const row of telemetryRows) {
+    if (row.citizenId === null || row.citizenId === undefined) {
+      continue;
+    }
+
+    const citizenId = String(row.citizenId).trim();
+
+    if (!citizenId) {
+      continue;
+    }
+
+    const wet = Number(row.wetWeight || 0);
+
+    const dry = Number(row.dryWeight || 0);
+
+    const other = Number(row.otherWeight || 0);
+
+    const waste = wet + dry + other;
+
+    const existing = citizenWaste.get(citizenId) || 0;
+
+    citizenWaste.set(citizenId, existing + waste);
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 8. TOTAL WASTE GENERATED
+    |--------------------------------------------------------------------------
+    */
+
+  let totalWasteGenerated = 0;
+
+  for (const waste of citizenWaste.values()) {
+    totalWasteGenerated += waste;
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 9. ACTIVE GENERATORS
+    |--------------------------------------------------------------------------
+    |
+    | A generator is active for the selected date
+    | when telemetry exists for that citizen.
+    |--------------------------------------------------------------------------
+    */
+
+  const activeWasteGenerators = Math.min(
+    citizenWaste.size,
+    totalWasteGenerators,
+  );
+
+  /*
+    |--------------------------------------------------------------------------
+    | 10. INACTIVE
+    |--------------------------------------------------------------------------
+    */
+
+  const inactiveWasteGenerators = Math.max(
+    totalWasteGenerators - activeWasteGenerators,
+    0,
+  );
+
+  /*
+    |--------------------------------------------------------------------------
+    | 11. AVERAGE
+    |--------------------------------------------------------------------------
+    */
+
+  const wasteValues = Array.from(citizenWaste.values());
+
+  const averageWaste =
+    wasteValues.length > 0 ? totalWasteGenerated / wasteValues.length : 0;
+
+  /*
+    |--------------------------------------------------------------------------
+    | 12. ABOVE / BELOW AVERAGE
+    |--------------------------------------------------------------------------
+    */
+
+  let aboveAverage = 0;
+
+  let belowAverage = 0;
+
+  for (const value of wasteValues) {
+    if (value >= averageWaste) {
+      aboveAverage += 1;
+    } else {
+      belowAverage += 1;
+    }
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | FINAL
+    |--------------------------------------------------------------------------
+    */
+
+  return {
+    totalWasteGenerators,
+
+    activeWasteGenerators,
+
+    inactiveWasteGenerators,
+
+    totalWasteGenerated,
+
+    averageWaste,
+
+    aboveAverage,
+
+    belowAverage,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| GVP TREND
+|--------------------------------------------------------------------------
+|
+| DATE + CITY + ZONE + DIVISION + WARD
+|--------------------------------------------------------------------------
+|
+| Existing GVP rule preserved:
+|
+| unitNumber exists
+| AND unitNumber does NOT contain UHF
+| AND remarks === "O"
+| AND citizenContact is empty
+|
+|--------------------------------------------------------------------------
+*/
+
+const getGVPTrend = async ({
+  date,
+  cityId,
+  zoneId,
+  divisionId,
+  wardId,
+} = {}) => {
+  /*
+    |--------------------------------------------------------------------------
+    | 1. DATE
+    |--------------------------------------------------------------------------
+    */
+
+  const { value: selectedDate, date: dateObject } = validateDate(date);
+
+  /*
+    |--------------------------------------------------------------------------
+    | 2. GEOGRAPHIC SCOPE
+    |--------------------------------------------------------------------------
+    */
+
+  const wardScope = await getSelectedWardScope({
+    cityId,
+    zoneId,
+    divisionId,
+    wardId,
+  });
+
+  const wards = wardScope.wards || [];
+
+  if (wards.length === 0) {
+    return [];
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 3. WARD NUMBERS
+    |--------------------------------------------------------------------------
+    */
+
+  const wardNos = wards
+    .map((ward) => Number(ward.wardNo))
+    .filter((wardNo) => Number.isInteger(wardNo));
+
+  if (wardNos.length === 0) {
+    return [];
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 4. VEHICLE TABLES
+    |--------------------------------------------------------------------------
+    */
+
+  const vehicleTables = await getVehicleTablesForDate(dateObject, wardNos);
+
+  if (vehicleTables.length === 0) {
+    return [];
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 5. TELEMETRY
+    |--------------------------------------------------------------------------
+    */
+
+  const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
+
+  if (telemetryRows.length === 0) {
+    return [];
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | 6. GVP CALCULATION
+    |--------------------------------------------------------------------------
+    |
+    | Cumulative weight is maintained independently
+    | per vehicle.
+    |
+    | We therefore calculate:
+    |
+    | current cumulative
+    |      -
+    | previous cumulative
+    |
+    | rather than comparing different vehicles.
+    |--------------------------------------------------------------------------
+    */
+
+  const previousCumulative = new Map();
+
+  let totalGVP = 0;
+
+  for (const row of telemetryRows) {
+    const vehicleNumber = row.vehicleNumber
+      ? String(row.vehicleNumber).trim()
+      : "";
+
+    if (!vehicleNumber) {
+      continue;
+    }
+
+    const current = Number(row.cumulativeWeight || 0);
+
+    const previous = previousCumulative.get(vehicleNumber) || 0;
+
+    const actualWaste = Math.max(current - previous, 0);
+
+    /*
+      |--------------------------------------------------------------------------
+      | Existing GVP qualification
+      |--------------------------------------------------------------------------
+      */
+
+    const unitNumber = row.unitNumber ? String(row.unitNumber) : "";
+
+    const citizenContact = row.citizenContact;
+
+    const isGVP =
+      Boolean(unitNumber) &&
+      !unitNumber.toUpperCase().includes("UHF") &&
+      row.remarks === "O" &&
+      (citizenContact === null ||
+        citizenContact === undefined ||
+        String(citizenContact).trim() === "");
+
+    if (isGVP) {
+      totalGVP += actualWaste;
+    }
+
+    /*
+      |--------------------------------------------------------------------------
+      | ALWAYS advance vehicle cumulative state
+      |--------------------------------------------------------------------------
+      */
+
+    previousCumulative.set(vehicleNumber, current);
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    |
+    | GVPGen currently expects an array.
+    |--------------------------------------------------------------------------
+    */
+
+  return [
+    {
+      date: selectedDate,
+
+      value: Number(totalGVP.toFixed(2)),
+
+      color: totalGVP >= 6500 ? "#DC2626" : "#16A34A",
+    },
+  ];
 };
 
 /*
@@ -712,742 +1307,358 @@ const citizenMatchesSearch = (
 | GET ALL CURRENT WASTE GENERATORS
 |--------------------------------------------------------------------------
 |
-| Query parameters supported:
+| DIRECTORY:
 |
-| ?page=1
-| ?limit=10
-| ?search=...
-| ?cityId=...
-| ?zoneId=...
-| ?divisionId=...
-| ?wardId=...
+| City
+|   ↓
+| Zone
+|   ↓
+| Division
+|   ↓
+| Ward
 |
+| NO DATE
 |--------------------------------------------------------------------------
 */
 
-const getAllWasteGenerators =
-  async (query = {}) => {
-    const page =
-      Number(query.page) || 1;
+const getAllWasteGenerators = async (query = {}) => {
+  const page = Number(query.page) || 1;
 
-    const limit =
-      Number(query.limit) || 10;
+  const limit = Number(query.limit) || 10;
 
-    const safePage =
-      page < 1 ? 1 : page;
+  const safePage = page < 1 ? 1 : page;
 
-    const safeLimit =
-      limit < 1
-        ? 10
-        : Math.min(limit, 100);
+  const safeLimit = limit < 1 ? 10 : Math.min(limit, 100);
 
-    const search =
-      normalizeSearch(
-        query.search
-      );
+  const search = normalizeSearch(query.search);
 
-    /*
+  const wardScope = await getSelectedWardScope({
+    cityId: query.cityId,
+
+    zoneId: query.zoneId,
+
+    divisionId: query.divisionId,
+
+    wardId: query.wardId,
+  });
+
+  const wards = wardScope.wards || [];
+
+  let citizens = [];
+
+  for (const ward of wards) {
+    const rows = await getCitizensFromWardTable(ward);
+
+    citizens.push(...rows);
+  }
+
+  /*
     |--------------------------------------------------------------------------
-    | Resolve Header geographic selection
-    |--------------------------------------------------------------------------
-    */
-
-    const wardScope =
-      await getSelectedWardScope({
-        cityId:
-          query.cityId,
-
-        zoneId:
-          query.zoneId,
-
-        divisionId:
-          query.divisionId,
-
-        wardId:
-          query.wardId,
-      });
-
-    const wards =
-      wardScope.wards || [];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load citizens from physical ward tables
+    | SEARCH
     |--------------------------------------------------------------------------
     */
 
-    let citizens = [];
-
-    for (const ward of wards) {
-      const rows =
-        await getCitizensFromWardTable(
-          ward
-        );
-
-      citizens.push(
-        ...rows
-      );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Search
-    |--------------------------------------------------------------------------
-    */
-
-    if (search) {
-      citizens =
-        citizens.filter(
-          (citizen) =>
-            citizenMatchesSearch(
-              citizen,
-              search
-            )
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sort newest first
-    |--------------------------------------------------------------------------
-    */
-
-    citizens.sort(
-      (a, b) => {
-        const dateA =
-          a.createdAt
-            ? new Date(a.createdAt).getTime()
-            : 0;
-
-        const dateB =
-          b.createdAt
-            ? new Date(b.createdAt).getTime()
-            : 0;
-
-        if (dateB !== dateA) {
-          return dateB - dateA;
-        }
-
-        return (
-          Number(b.id || 0) -
-          Number(a.id || 0)
-        );
-      }
+  if (search) {
+    citizens = citizens.filter((citizen) =>
+      citizenMatchesSearch(citizen, search),
     );
+  }
 
-    /*
+  /*
     |--------------------------------------------------------------------------
-    | Pagination
-    |--------------------------------------------------------------------------
-    */
-
-    const total =
-      citizens.length;
-
-    const totalPages =
-      Math.ceil(
-        total / safeLimit
-      );
-
-    const skip =
-      (safePage - 1) *
-      safeLimit;
-
-    const paginated =
-      citizens.slice(
-        skip,
-        skip + safeLimit
-      );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Return
+    | SORT
     |--------------------------------------------------------------------------
     */
 
-    return {
-      wasteGenerators:
-        paginated,
+  citizens.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
 
-      pagination: {
-        page: safePage,
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
-        limit: safeLimit,
+    if (dateB !== dateA) {
+      return dateB - dateA;
+    }
 
-        total,
+    return Number(b.id || 0) - Number(a.id || 0);
+  });
 
-        totalPages,
-      },
+  /*
+    |--------------------------------------------------------------------------
+    | PAGINATION
+    |--------------------------------------------------------------------------
+    */
 
-      filter: {
-        cityId:
-          parseId(
-            query.cityId,
-            "cityId"
-          ),
+  const total = citizens.length;
 
-        zoneId:
-          parseId(
-            query.zoneId,
-            "zoneId"
-          ),
+  const totalPages = Math.ceil(total / safeLimit);
 
-        divisionId:
-          parseId(
-            query.divisionId,
-            "divisionId"
-          ),
+  const skip = (safePage - 1) * safeLimit;
 
-        wardId:
-          parseId(
-            query.wardId,
-            "wardId"
-          ),
-      },
-    };
+  const paginated = citizens.slice(skip, skip + safeLimit);
+
+  return {
+    wasteGenerators: paginated,
+
+    pagination: {
+      page: safePage,
+
+      limit: safeLimit,
+
+      total,
+
+      totalPages,
+    },
+
+    filter: {
+      cityId: parseId(query.cityId, "cityId"),
+
+      zoneId: parseId(query.zoneId, "zoneId"),
+
+      divisionId: parseId(query.divisionId, "divisionId"),
+
+      wardId: parseId(query.wardId, "wardId"),
+    },
   };
+};
 
 /*
 |--------------------------------------------------------------------------
 | FIND CURRENT CITIZEN BY PHONE
 |--------------------------------------------------------------------------
-|
-| Searches physical ward citizen tables.
-|
-|--------------------------------------------------------------------------
 */
 
-const getWasteGeneratorByPhone =
-  async (
-    phoneNumber,
-    query = {}
-  ) => {
-    if (!phoneNumber) {
-      throw new Error(
-        "Phone number is required"
-      );
+const getWasteGeneratorByPhone = async (phoneNumber, query = {}) => {
+  if (!phoneNumber) {
+    throw new Error("Phone number is required");
+  }
+
+  const wardScope = await getSelectedWardScope({
+    cityId: query.cityId,
+
+    zoneId: query.zoneId,
+
+    divisionId: query.divisionId,
+
+    wardId: query.wardId,
+  });
+
+  const wards = wardScope.wards || [];
+
+  for (const ward of wards) {
+    if (!ward.wardTableName) {
+      continue;
     }
 
-    const wardScope =
-      await getSelectedWardScope({
-        cityId:
-          query.cityId,
+    const table = quoteIdentifier(ward.wardTableName);
 
-        zoneId:
-          query.zoneId,
-
-        divisionId:
-          query.divisionId,
-
-        wardId:
-          query.wardId,
-      });
-
-    const wards =
-      wardScope.wards || [];
-
-    for (const ward of wards) {
-      if (!ward.wardTableName) {
-        continue;
-      }
-
-      const table =
-        quoteIdentifier(
-          ward.wardTableName
-        );
-
-      const rows =
-        await masterCitizenPrisma.$queryRawUnsafe(
-          `
-            SELECT
-
-              id,
-
-              "phoneNumber",
-
-              "area",
-
-              "wasteGeneratorTypes",
-
-              "houseNumber",
-
-              "floorNumber",
-
-              "householdType",
-
-              "personName",
-
-              "contactNumber",
-
-              "numberOfPeople",
-
-              "buildingPhoto",
-
-              "createdAt",
-
-              "updatedAt",
-
-              "dryRFID",
-
-              "drySlno",
-
-              "wetRFID",
-
-              "wetSlno",
-
-              lat,
-
-              lng
-
-            FROM ${table}
-
-            WHERE "phoneNumber" = $1
-
-            LIMIT 1
-          `,
-          phoneNumber
-        );
-
-      if (rows.length > 0) {
-        return {
-          ...rows[0],
-
-          cityId:
-            ward.cityId,
-
-          cityName:
-            ward.cityName,
-
-          zoneId:
-            ward.zoneId,
-
-          zoneName:
-            ward.zoneName,
-
-          divisionId:
-            ward.divisionId,
-
-          divisionName:
-            ward.divisionName,
-
-          wardId:
-            ward.wardId,
-
-          wardNo:
-            ward.wardNo,
-
-          wardName:
-            ward.wardName,
-
-          wardTableName:
-            ward.wardTableName,
-        };
-      }
-    }
-
-    throw new Error(
-      "Waste Generator not found"
+    const rows = await masterCitizenPrisma.$queryRawUnsafe(
+      `
+              SELECT
+                id,
+                "phoneNumber",
+                "area",
+                "wasteGeneratorTypes",
+                "houseNumber",
+                "floorNumber",
+                "householdType",
+                "personName",
+                "contactNumber",
+                "numberOfPeople",
+                "buildingPhoto",
+                "createdAt",
+                "updatedAt",
+                "dryRFID",
+                "drySlno",
+                "wetRFID",
+                "wetSlno",
+                lat,
+                lng
+              FROM ${table}
+              WHERE "phoneNumber" = $1
+              LIMIT 1
+            `,
+      phoneNumber,
     );
-  };
+
+    if (rows.length > 0) {
+      return {
+        ...rows[0],
+
+        cityId: ward.cityId,
+
+        cityName: ward.cityName,
+
+        zoneId: ward.zoneId,
+
+        zoneName: ward.zoneName,
+
+        divisionId: ward.divisionId,
+
+        divisionName: ward.divisionName,
+
+        wardId: ward.wardId,
+
+        wardNo: ward.wardNo,
+
+        wardName: ward.wardName,
+
+        wardTableName: ward.wardTableName,
+      };
+    }
+  }
+
+  throw new Error("Waste Generator not found");
+};
 
 /*
 |--------------------------------------------------------------------------
 | UPDATE CURRENT CITIZEN
 |--------------------------------------------------------------------------
-|
-| The current citizen belongs to a physical ward table.
-|
-| We first find the citizen.
-| Then we update that exact physical table.
-|
-|--------------------------------------------------------------------------
 */
 
-const updateWasteGenerator =
-  async (
-    phoneNumber,
-    body,
-    req
-  ) => {
-    const existing =
-      await getWasteGeneratorByPhone(
-        phoneNumber
-      );
+const updateWasteGenerator = async (phoneNumber, body, req) => {
+  const existing = await getWasteGeneratorByPhone(phoneNumber);
 
-    if (!existing) {
-      throw new Error(
-        "Waste Generator not found"
-      );
+  if (!existing) {
+    throw new Error("Waste Generator not found");
+  }
+
+  const table = quoteIdentifier(existing.wardTableName);
+
+  const allowedFields = [
+    "personName",
+    "phoneNumber",
+    "area",
+    "wasteGeneratorTypes",
+    "houseNumber",
+    "floorNumber",
+    "householdType",
+    "contactNumber",
+    "numberOfPeople",
+    "buildingPhoto",
+    "dryRFID",
+    "drySlno",
+    "wetRFID",
+    "wetSlno",
+    "lat",
+    "lng",
+  ];
+
+  const updates = {};
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      updates[field] = body[field];
     }
+  }
 
-    const table =
-      quoteIdentifier(
-        existing.wardTableName
-      );
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No valid fields supplied for update");
+  }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Only allow editable citizen fields.
-    |--------------------------------------------------------------------------
-    |
-    | We intentionally DO NOT allow the client to change:
-    |
-    | city
-    | zone
-    | division
-    | ward
-    |
-    | because geographic membership belongs to the hierarchy.
-    |
-    */
+  const setParts = [];
 
-    const allowedFields = [
-      "personName",
-      "phoneNumber",
-      "area",
-      "wasteGeneratorTypes",
-      "houseNumber",
-      "floorNumber",
-      "householdType",
-      "contactNumber",
-      "numberOfPeople",
-      "buildingPhoto",
-      "dryRFID",
-      "drySlno",
-      "wetRFID",
-      "wetSlno",
-      "lat",
-      "lng",
-    ];
+  const values = [];
 
-    const updates = {};
-    
-    for (const field of allowedFields) {
-      if (
-        Object.prototype.hasOwnProperty.call(
-          body,
-          field
-        )
-      ) {
-        updates[field] =
-          body[field];
-      }
-    }
+  let parameterIndex = 1;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Nothing to update
-    |--------------------------------------------------------------------------
-    */
+  for (const [field, value] of Object.entries(updates)) {
+    const quotedField = quoteIdentifier(field);
 
-    if (
-      Object.keys(updates).length === 0
-    ) {
-      throw new Error(
-        "No valid fields supplied for update"
-      );
-    }
+    setParts.push(`${quotedField} = $${parameterIndex}`);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Build SET clause
-    |--------------------------------------------------------------------------
-    */
+    values.push(value);
 
-    const setParts = [];
+    parameterIndex++;
+  }
 
-    const values = [];
+  setParts.push(`"updatedAt" = CURRENT_TIMESTAMP`);
 
-    let parameterIndex = 1;
-
-    for (
-      const [field, value]
-      of Object.entries(updates)
-    ) {
-      const quotedField =
-        quoteIdentifier(
-          field
-        );
-
-      setParts.push(
-        `${quotedField} = $${parameterIndex}`
-      );
-
-      values.push(value);
-
-      parameterIndex++;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | updatedAt
-    |--------------------------------------------------------------------------
-    */
-
-    setParts.push(
-      `"updatedAt" = CURRENT_TIMESTAMP`
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE
-    |--------------------------------------------------------------------------
-    */
-
-    const query = `
+  const query = `
       UPDATE ${table}
-
       SET
         ${setParts.join(",\n        ")}
-
       WHERE
         "phoneNumber" = $${parameterIndex}
-
-      RETURNING
-        *
+      RETURNING *
     `;
 
-    values.push(
-      phoneNumber
-    );
+  values.push(phoneNumber);
 
-    const result =
-      await masterCitizenPrisma.$queryRawUnsafe(
-        query,
-        ...values
-      );
+  const result = await masterCitizenPrisma.$queryRawUnsafe(query, ...values);
 
-    if (
-      !result ||
-      result.length === 0
-    ) {
-      throw new Error(
-        "Waste Generator not found"
-      );
-    }
+  if (!result || result.length === 0) {
+    throw new Error("Waste Generator not found");
+  }
 
-    const updated =
-      result[0];
+  const updated = result[0];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Audit log
-    |--------------------------------------------------------------------------
-    */
+  await logEdit({
+    user: req.user,
 
-    await logEdit({
-      user:
-        req.user,
+    req,
 
-      req,
+    module: "Waste Generators",
 
-      module:
-        "Waste Generators",
+    action: "UPDATE",
 
-      action:
-        "UPDATE",
+    recordId: updated.phoneNumber,
 
-      recordId:
-        updated.phoneNumber,
+    description: `Updated Waste Generator ${updated.personName}`,
+  });
 
-      description:
-        `Updated Waste Generator ${updated.personName}`,
-    });
+  return {
+    ...updated,
 
-    return {
-      ...updated,
+    cityId: existing.cityId,
 
-      cityId:
-        existing.cityId,
+    cityName: existing.cityName,
 
-      cityName:
-        existing.cityName,
+    zoneId: existing.zoneId,
 
-      zoneId:
-        existing.zoneId,
+    zoneName: existing.zoneName,
 
-      zoneName:
-        existing.zoneName,
+    divisionId: existing.divisionId,
 
-      divisionId:
-        existing.divisionId,
+    divisionName: existing.divisionName,
 
-      divisionName:
-        existing.divisionName,
+    wardId: existing.wardId,
 
-      wardId:
-        existing.wardId,
+    wardNo: existing.wardNo,
 
-      wardNo:
-        existing.wardNo,
+    wardName: existing.wardName,
 
-      wardName:
-        existing.wardName,
-
-      wardTableName:
-        existing.wardTableName,
-    };
+    wardTableName: existing.wardTableName,
   };
+};
 
 /*
 |--------------------------------------------------------------------------
 | CREATE
 |--------------------------------------------------------------------------
 |
-| Kept here so the existing backend does not break if the route
-| still exists.
-|
-| Your frontend no longer needs to expose Create.
-|
+| Disabled because citizens are managed through
+| the physical ward tables.
 |--------------------------------------------------------------------------
 */
 
-const createWasteGenerator =
-  async (
-    body,
-    req
-  ) => {
-    throw new Error(
-      "Creating Waste Generators is disabled. Citizens are managed through the ward citizen tables."
-    );
-  };
+const createWasteGenerator = async (body, req) => {
+  throw new Error(
+    "Creating Waste Generators is disabled. Citizens are managed through the ward citizen tables.",
+  );
+};
 
 /*
 |--------------------------------------------------------------------------
 | DELETE
 |--------------------------------------------------------------------------
-|
-| Kept here for backend compatibility.
-|
-| Your frontend no longer exposes Delete.
-|
-|--------------------------------------------------------------------------
 */
 
-const deleteWasteGenerator =
-  async (
-    phoneNumber,
-    req
-  ) => {
-    throw new Error(
-      "Deleting Waste Generators is disabled. Current citizen records are managed through the ward citizen tables."
-    );
-  };
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY
-|--------------------------------------------------------------------------
-|
-| Current citizens only.
-|
-| No historical data.
-| No date.
-|
-|--------------------------------------------------------------------------
-*/
-
-const getSummary =
-  async ({
-    cityId,
-    zoneId,
-    divisionId,
-    wardId,
-  } = {}) => {
-    const wardScope =
-      await getSelectedWardScope({
-        cityId,
-        zoneId,
-        divisionId,
-        wardId,
-      });
-
-    const wards =
-      wardScope.wards || [];
-
-    let totalWasteGenerators = 0;
-
-    for (const ward of wards) {
-      if (!ward.wardTableName) {
-        continue;
-      }
-
-      const table =
-        quoteIdentifier(
-          ward.wardTableName
-        );
-
-      try {
-        const result =
-          await masterCitizenPrisma.$queryRawUnsafe(
-            `
-              SELECT
-                COUNT(*)::bigint AS total
-              FROM ${table}
-            `
-          );
-
-        totalWasteGenerators +=
-          Number(
-            result?.[0]?.total || 0
-          );
-      } catch (error) {
-        if (
-          error?.code === "42P01"
-        ) {
-          continue;
-        }
-
-        throw error;
-      }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Summary is deliberately based on CURRENT citizen records only.
-    |--------------------------------------------------------------------------
-    */
-
-    return {
-      totalWasteGenerators,
-
-      activeWasteGenerators:
-        totalWasteGenerators,
-
-      inactiveWasteGenerators:
-        0,
-
-      totalWasteGenerated:
-        0,
-
-      averageWaste:
-        0,
-
-      aboveAverage:
-        0,
-
-      belowAverage:
-        0,
-    };
-  };
-
-/*
-|--------------------------------------------------------------------------
-| GVP TREND
-|--------------------------------------------------------------------------
-|
-| Historical/telemetry functionality is intentionally not mixed
-| into current citizen retrieval.
-|
-| Keep endpoint compatibility.
-|
-|--------------------------------------------------------------------------
-*/
-
-const getGVPTrend =
-  async () => {
-    return [];
-  };
+const deleteWasteGenerator = async (phoneNumber, req) => {
+  throw new Error(
+    "Deleting Waste Generators is disabled. Current citizen records are managed through the ward citizen tables.",
+  );
+};
 
 /*
 |--------------------------------------------------------------------------

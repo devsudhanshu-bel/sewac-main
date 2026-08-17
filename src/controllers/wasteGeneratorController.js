@@ -17,12 +17,7 @@ exports.getAllWasteGenerators = async (req, res) => {
     READ HEADER GEOGRAPHIC FILTERS
     ===========================================
     */
-    const {
-      cityId,
-      zoneId,
-      divisionId,
-      wardId,
-    } = req.query;
+    const { cityId, zoneId, divisionId, wardId } = req.query;
 
     const data = await wasteGeneratorService.getAllWasteGenerators({
       ...req.query,
@@ -83,14 +78,10 @@ exports.getSummary = async (req, res) => {
     ===========================================
     */
 
-    const {
-      cityId,
-      zoneId,
-      divisionId,
-      wardId,
-    } = req.query;
+    const { date, cityId, zoneId, divisionId, wardId } = req.query;
 
     const data = await wasteGeneratorService.getSummary({
+      date,
       cityId,
       zoneId,
       divisionId,
@@ -125,50 +116,29 @@ exports.getDirectory = async (req, res) => {
       zoneId,
       divisionId,
       wardId,
+      search,
     } = req.query;
 
-    const pageNumber = Number(page);
-    const pageSize = Number(limit);
-
-    /*
-    ===========================================
-    HEADER FILTERS
-
-    These are currently passed through so the
-    directory service/API can use the same
-    geographic scope.
-
-    The existing telemetry query itself is
-    intentionally NOT changed here.
-    ===========================================
-    */
-
-    const directory = await sewacPrisma.telemetry_log.groupBy({
-      by: ["wet_rfid"],
-      _sum: {
-        weightCollected: true,
-        weightGenerated: true,
-      },
-      _max: {
-        collectionDate: true,
-      },
-      skip: (pageNumber - 1) * pageSize,
-      take: pageSize,
+    const directory = await wasteGeneratorService.getAllWasteGenerators({
+      page,
+      limit,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+      search,
     });
 
     res.status(200).json({
-      page: pageNumber,
-      limit: pageSize,
-
-      /*
-      Keep the existing response data unchanged.
-      */
+      success: true,
       data: directory,
     });
   } catch (error) {
+    console.error("Waste Generator Directory Error:", error);
+
     res.status(500).json({
-      error: "Failed to fetch directory",
-      details: error.message,
+      success: false,
+      message: error.message,
     });
   }
 };
@@ -184,33 +154,6 @@ GVP = Total Waste Collected - Total Waste Generated
 
 ===========================================
 */
-exports.getGvpTrend = async (req, res) => {
-  try {
-    const trend = await sewacPrisma.telemetry_log.groupBy({
-      by: ["ward"],
-      _sum: {
-        weightCollected: true,
-        weightGenerated: true,
-      },
-    });
-
-    const result = trend.map((item) => ({
-      ward: item.ward,
-      totalCollected: item._sum.weightCollected || 0,
-      totalGenerated: item._sum.weightGenerated || 0,
-      gvp:
-        (item._sum.weightCollected || 0) -
-        (item._sum.weightGenerated || 0),
-    }));
-
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to fetch GVP trend",
-      details: error.message,
-    });
-  }
-};
 
 exports.createWasteGenerator = async (req, res) => {
   try {
@@ -272,14 +215,22 @@ exports.deleteWasteGenerator = async (req, res) => {
 
 exports.getGVPTrend = async (req, res) => {
   try {
-    const data = await wasteGeneratorService.getGVPTrend();
+    const { date, cityId, zoneId, divisionId, wardId } = req.query;
 
-    res.json({
+    const data = await wasteGeneratorService.getGVPTrend({
+      date,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
+
+    res.status(200).json({
       success: true,
       data,
     });
   } catch (error) {
-    console.error(error);
+    console.error("GVP Trend Error:", error);
 
     res.status(500).json({
       success: false,
