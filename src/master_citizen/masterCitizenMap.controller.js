@@ -1,33 +1,14 @@
 const {
   getCityMapData,
-} = require("./masterCitizenMap.service");
+  getZoneDivisions,
+  getDivisionWards,
+} =
+  require("./masterCitizenMap.service");
 
 
-/**
- * ============================================================
- * GET COMPLETE CITY MAP
- * ============================================================
- *
- * GET
- *
- * /api/master-citizen/map/city/:cityId
- *
- *
- * RESPONSE:
- *
- * CITY
- *   ↓
- * ZONES
- *   ↓
- * DIVISIONS
- *   ↓
- * WARDS
- *
- *
- * NO CITIZEN DATA.
- *
- * ============================================================
- */
+// ============================================================
+// GET CITY MAP
+// ============================================================
 
 async function getCityMapDataController(
   req,
@@ -38,7 +19,8 @@ async function getCityMapDataController(
 
     const {
       cityId,
-    } = req.params;
+    } =
+      req.params;
 
 
     console.log("");
@@ -52,170 +34,20 @@ async function getCityMapDataController(
     );
 
     console.log(
-      "============================================================"
-    );
-
-    console.log(
       "City ID:",
       cityId
     );
 
+    console.log(
+      "============================================================"
+    );
 
-    /**
-     * --------------------------------------------------------
-     * FETCH COMPLETE HIERARCHY
-     * --------------------------------------------------------
-     */
 
     const data =
       await getCityMapData(
         cityId
       );
 
-
-    /**
-     * --------------------------------------------------------
-     * VALIDATION
-     * --------------------------------------------------------
-     */
-
-    if (
-      !data ||
-      !data.city
-    ) {
-
-      throw new Error(
-        "City map data was not returned by the service."
-      );
-
-    }
-
-
-    const zones =
-      Array.isArray(
-        data.zones
-      )
-        ? data.zones
-        : [];
-
-
-    const totalZones =
-      zones.length;
-
-
-    const totalDivisions =
-      zones.reduce(
-        (
-          total,
-          zone
-        ) =>
-          total +
-          (
-            Array.isArray(
-              zone?.divisions
-            )
-              ? zone.divisions.length
-              : 0
-          ),
-        0
-      );
-
-
-    const totalWards =
-      zones.reduce(
-        (
-          zoneTotal,
-          zone
-        ) => {
-
-          const divisions =
-            Array.isArray(
-              zone?.divisions
-            )
-              ? zone.divisions
-              : [];
-
-
-          return (
-            zoneTotal +
-            divisions.reduce(
-              (
-                divisionTotal,
-                division
-              ) => {
-
-                const wards =
-                  Array.isArray(
-                    division?.wards
-                  )
-                    ? division.wards
-                    : [];
-
-
-                return (
-                  divisionTotal +
-                  wards.length
-                );
-
-              },
-              0
-            )
-          );
-
-        },
-        0
-      );
-
-
-    /**
-     * --------------------------------------------------------
-     * LOG
-     * --------------------------------------------------------
-     */
-
-    console.log(
-      "------------------------------------------------------------"
-    );
-
-    console.log(
-      "✅ CITY MAP LOADED"
-    );
-
-    console.log(
-      "City:",
-      data.city.cityName
-    );
-
-    console.log(
-      "Zones:",
-      totalZones
-    );
-
-    console.log(
-      "Divisions:",
-      totalDivisions
-    );
-
-    console.log(
-      "Wards:",
-      totalWards
-    );
-
-    console.log(
-      "Citizen data:",
-      "NOT LOADED"
-    );
-
-    console.log(
-      "------------------------------------------------------------"
-    );
-
-
-    /**
-     * --------------------------------------------------------
-     * RESPONSE
-     * --------------------------------------------------------
-     */
 
     return res
       .status(200)
@@ -227,17 +59,11 @@ async function getCityMapDataController(
         city:
           data.city,
 
-        summary: {
+        summary:
+          data.summary,
 
-          totalZones,
-
-          totalDivisions,
-
-          totalWards,
-
-        },
-
-        zones,
+        zones:
+          data.zones,
 
       });
 
@@ -245,27 +71,16 @@ async function getCityMapDataController(
     error
   ) {
 
-    console.error("");
-
     console.error(
-      "============================================================"
-    );
-
-    console.error(
-      "❌ CITY MAP ERROR"
-    );
-
-    console.error(
-      "============================================================"
-    );
-
-    console.error(
+      "❌ CITY MAP ERROR:",
       error
     );
 
 
     return res
-      .status(500)
+      .status(
+        error?.status || 500
+      )
       .json({
 
         success:
@@ -282,8 +97,201 @@ async function getCityMapDataController(
 }
 
 
+// ============================================================
+// GET ZONE DIVISIONS
+// ============================================================
+
+async function getZoneDivisionsController(
+  req,
+  res
+) {
+
+  try {
+
+    const {
+      zoneTableName,
+    } =
+      req.params;
+
+
+    console.log("");
+
+    console.log(
+      "============================================================"
+    );
+
+    console.log(
+      "🏢 ZONE DIVISIONS REQUEST"
+    );
+
+    console.log(
+      "Zone Table:",
+      zoneTableName
+    );
+
+    console.log(
+      "============================================================"
+    );
+
+
+    const data =
+      await getZoneDivisions(
+        zoneTableName
+      );
+
+
+    return res
+      .status(200)
+      .json({
+
+        success:
+          true,
+
+        zoneTableName:
+          data.zoneTableName,
+
+        totalDivisions:
+          data.totalDivisions,
+
+        totalWards:
+          data.totalWards,
+
+        divisions:
+          data.divisions,
+
+      });
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "❌ ZONE DIVISIONS ERROR:",
+      error
+    );
+
+
+    return res
+      .status(
+        error?.status || 500
+      )
+      .json({
+
+        success:
+          false,
+
+        message:
+          error?.message ||
+          "Failed to fetch zone divisions.",
+
+      });
+
+  }
+
+}
+
+
+// ============================================================
+// GET DIVISION WARDS
+// ============================================================
+
+async function getDivisionWardsController(
+  req,
+  res
+) {
+
+  try {
+
+    const {
+      divisionTableName,
+    } =
+      req.params;
+
+
+    console.log("");
+
+    console.log(
+      "============================================================"
+    );
+
+    console.log(
+      "📍 DIVISION WARDS REQUEST"
+    );
+
+    console.log(
+      "Division Table:",
+      divisionTableName
+    );
+
+    console.log(
+      "============================================================"
+    );
+
+
+    const data =
+      await getDivisionWards(
+        divisionTableName
+      );
+
+
+    return res
+      .status(200)
+      .json({
+
+        success:
+          true,
+
+        divisionTableName:
+          data.divisionTableName,
+
+        totalWards:
+          data.totalWards,
+
+        wards:
+          data.wards,
+
+      });
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "❌ DIVISION WARDS ERROR:",
+      error
+    );
+
+
+    return res
+      .status(
+        error?.status || 500
+      )
+      .json({
+
+        success:
+          false,
+
+        message:
+          error?.message ||
+          "Failed to fetch division wards.",
+
+      });
+
+  }
+
+}
+
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
 module.exports = {
 
   getCityMapDataController,
+
+  getZoneDivisionsController,
+
+  getDivisionWardsController,
 
 };
