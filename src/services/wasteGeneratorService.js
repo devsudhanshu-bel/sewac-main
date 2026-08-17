@@ -1162,6 +1162,7 @@ const getGVPTrend = async ({
     const citizenContact = row.citizenContact;
 
     const isGVP =
+      Boolean(unitNumber) &&
       !unitNumber.toUpperCase().includes("UHF") &&
       row.remarks === "O" &&
       (citizenContact === null ||
