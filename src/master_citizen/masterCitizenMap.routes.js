@@ -14,7 +14,7 @@ const {
 
 /**
  * ============================================================
- * COMPLETE CITY MAP ENDPOINT
+ * COMPLETE CITY MAP
  * ============================================================
  *
  * GET
@@ -22,49 +22,18 @@ const {
  * /api/master-citizen/map/city/:cityId
  *
  *
- * HIERARCHY:
+ * RETURNS:
  *
- * CITY
+ * City
  *   ↓
- *   boundary
+ * Zones
  *   ↓
- * ZONES
+ * Divisions
  *   ↓
- *   boundary
- *   ↓
- * DIVISIONS
- *   ↓
- *   boundary
- *   ↓
- * WARDS
- *   ↓
- *   boundary
+ * Wards
  *
  *
- * Example:
- *
- * GET
- * /api/master-citizen/map/city/1
- *
- *
- * Response contains ONLY:
- *
- * - City information
- * - City geo boundary
- * - Zone information
- * - Zone geo boundaries
- * - Division information
- * - Division geo boundaries
- * - Ward information
- * - Ward geo boundaries
- *
- *
- * NO:
- *
- * - Citizens
- * - Citizen records
- * - Citizen counts
- * - Citizen table data
+ * NO CITIZEN DATA.
  *
  * ============================================================
  */
@@ -74,12 +43,6 @@ router.get(
   getCityMapDataController
 );
 
-
-/**
- * ============================================================
- * EXPORT ROUTER
- * ============================================================
- */
 
 module.exports =
   router;

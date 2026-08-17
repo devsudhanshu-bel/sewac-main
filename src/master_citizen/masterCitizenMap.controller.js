@@ -1,7 +1,6 @@
 const {
   getCityMapData,
-} =
-  require("./masterCitizenMap.service");
+} = require("./masterCitizenMap.service");
 
 
 /**
@@ -14,7 +13,7 @@ const {
  * /api/master-citizen/map/city/:cityId
  *
  *
- * HIERARCHY:
+ * RESPONSE:
  *
  * CITY
  *   ↓
@@ -24,8 +23,6 @@ const {
  *   ↓
  * WARDS
  *
- *
- * ONLY GEOGRAPHICAL DATA.
  *
  * NO CITIZEN DATA.
  *
@@ -39,16 +36,9 @@ async function getCityMapDataController(
 
   try {
 
-    /**
-     * ========================================================
-     * 1. GET CITY ID
-     * ========================================================
-     */
-
     const {
       cityId,
-    } =
-      req.params;
+    } = req.params;
 
 
     console.log("");
@@ -72,9 +62,9 @@ async function getCityMapDataController(
 
 
     /**
-     * ========================================================
-     * 2. FETCH CITY HIERARCHY
-     * ========================================================
+     * --------------------------------------------------------
+     * FETCH COMPLETE HIERARCHY
+     * --------------------------------------------------------
      */
 
     const data =
@@ -84,9 +74,9 @@ async function getCityMapDataController(
 
 
     /**
-     * ========================================================
-     * 3. VALIDATE SERVICE RESPONSE
-     * ========================================================
+     * --------------------------------------------------------
+     * VALIDATION
+     * --------------------------------------------------------
      */
 
     if (
@@ -101,12 +91,6 @@ async function getCityMapDataController(
     }
 
 
-    /**
-     * ========================================================
-     * 4. NORMALIZE DATA
-     * ========================================================
-     */
-
     const zones =
       Array.isArray(
         data.zones
@@ -115,30 +99,78 @@ async function getCityMapDataController(
         : [];
 
 
-    const summary = {
+    const totalZones =
+      zones.length;
 
-      totalZones:
-        Number(
-          data?.summary?.totalZones || 0
-        ),
 
-      totalDivisions:
-        Number(
-          data?.summary?.totalDivisions || 0
-        ),
+    const totalDivisions =
+      zones.reduce(
+        (
+          total,
+          zone
+        ) =>
+          total +
+          (
+            Array.isArray(
+              zone?.divisions
+            )
+              ? zone.divisions.length
+              : 0
+          ),
+        0
+      );
 
-      totalWards:
-        Number(
-          data?.summary?.totalWards || 0
-        ),
 
-    };
+    const totalWards =
+      zones.reduce(
+        (
+          zoneTotal,
+          zone
+        ) => {
+
+          const divisions =
+            Array.isArray(
+              zone?.divisions
+            )
+              ? zone.divisions
+              : [];
+
+
+          return (
+            zoneTotal +
+            divisions.reduce(
+              (
+                divisionTotal,
+                division
+              ) => {
+
+                const wards =
+                  Array.isArray(
+                    division?.wards
+                  )
+                    ? division.wards
+                    : [];
+
+
+                return (
+                  divisionTotal +
+                  wards.length
+                );
+
+              },
+              0
+            )
+          );
+
+        },
+        0
+      );
 
 
     /**
-     * ========================================================
-     * 5. LOG RESULT
-     * ========================================================
+     * --------------------------------------------------------
+     * LOG
+     * --------------------------------------------------------
      */
 
     console.log(
@@ -156,17 +188,17 @@ async function getCityMapDataController(
 
     console.log(
       "Zones:",
-      summary.totalZones
+      totalZones
     );
 
     console.log(
       "Divisions:",
-      summary.totalDivisions
+      totalDivisions
     );
 
     console.log(
       "Wards:",
-      summary.totalWards
+      totalWards
     );
 
     console.log(
@@ -180,9 +212,9 @@ async function getCityMapDataController(
 
 
     /**
-     * ========================================================
-     * 6. RESPONSE
-     * ========================================================
+     * --------------------------------------------------------
+     * RESPONSE
+     * --------------------------------------------------------
      */
 
     return res
@@ -195,19 +227,23 @@ async function getCityMapDataController(
         city:
           data.city,
 
-        summary,
+        summary: {
+
+          totalZones,
+
+          totalDivisions,
+
+          totalWards,
+
+        },
 
         zones,
 
       });
 
-  } catch (error) {
-
-    /**
-     * ========================================================
-     * ERROR
-     * ========================================================
-     */
+  } catch (
+    error
+  ) {
 
     console.error("");
 
@@ -245,12 +281,6 @@ async function getCityMapDataController(
 
 }
 
-
-/**
- * ============================================================
- * EXPORTS
- * ============================================================
- */
 
 module.exports = {
 
