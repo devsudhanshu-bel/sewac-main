@@ -85,13 +85,15 @@ export default function GVPGen() {
     <div
       ref={sectionRef}
       className="
-        mt-5
-        bg-white
-        rounded-3xl
-        border
-        border-slate-200
-        shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-      "
+  bg-white
+  rounded-3xl
+  border
+  border-slate-200
+  shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+  h-full
+  flex
+  flex-col
+"
     >
       {/* ================= Header ================= */}
 
@@ -154,7 +156,7 @@ export default function GVPGen() {
 
       {/* ================= Chart ================= */}
 
-      <div className="h-[250px] pr-5 pb-4">
+      <div className="flex-1 min-h-[250px] pr-5 pb-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}

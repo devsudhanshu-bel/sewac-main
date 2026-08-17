@@ -164,13 +164,13 @@ export default function WasteGenerators() {
         >
           {/* ================= Collection Point ================= */}
 
-          <div className="min-w-0">
+          <div className="min-w-0 h-full">
             <WasteGenMap />
           </div>
 
           {/* ================= GVP Generation Trend ================= */}
 
-          <div className="min-w-0">
+          <div className="min-w-0 h-full">
             <GVPGen />
           </div>
         </section>

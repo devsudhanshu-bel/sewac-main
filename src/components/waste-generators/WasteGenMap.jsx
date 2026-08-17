@@ -33,7 +33,7 @@ export default function WasteGenMap() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="grid grid-cols-1 gap-5 mt-5">
+    <section ref={sectionRef} className="grid grid-cols-1 gap-5 h-full">
       {/* ================= Collection Point ================= */}
 
       <div
@@ -46,6 +46,7 @@ export default function WasteGenMap() {
           shadow-[0_2px_12px_rgba(0,0,0,0.04)]
           overflow-hidden
           w-full
+          h-full
         "
       >
         {/* Header */}
