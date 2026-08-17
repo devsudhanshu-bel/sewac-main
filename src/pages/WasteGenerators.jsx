@@ -37,6 +37,28 @@ export default function WasteGenerators() {
 
   /*
   |--------------------------------------------------------------------------
+  | DIRECTORY PAGINATION
+  |--------------------------------------------------------------------------
+  */
+
+  const [directoryPage, setDirectoryPage] = useState(1);
+
+  const [directoryPageSize, setDirectoryPageSize] = useState(10);
+
+  const [directoryTotal, setDirectoryTotal] = useState(0);
+
+  const [directoryTotalPages, setDirectoryTotalPages] = useState(0);
+
+  /*
+  |--------------------------------------------------------------------------
+  | DIRECTORY SEARCH
+  |--------------------------------------------------------------------------
+  */
+
+  const [directorySearch, setDirectorySearch] = useState("");
+
+  /*
+  |--------------------------------------------------------------------------
   | SELECTED DATE
   |--------------------------------------------------------------------------
   |
@@ -126,7 +148,7 @@ export default function WasteGenerators() {
 
       /*
         |--------------------------------------------------------------------------
-        | API
+        | SUMMARY REQUEST
         |--------------------------------------------------------------------------
         */
 
@@ -155,9 +177,18 @@ export default function WasteGenerators() {
   |
   | IMPORTANT:
   |
-  | There is NO date parameter here.
+  | NO selectedDate is sent here.
   |
-  | Directory reads the current citizen/master data.
+  | Directory is based on current Helper DB citizen data.
+  |
+  | Backend handles:
+  |
+  | - City
+  | - Zone
+  | - Division
+  | - Ward
+  | - Search
+  | - Pagination
   |--------------------------------------------------------------------------
   */
 
@@ -165,6 +196,10 @@ export default function WasteGenerators() {
     try {
       if (!selectedCity?.city_id) {
         setCitizens([]);
+
+        setDirectoryTotal(0);
+
+        setDirectoryTotalPages(0);
 
         return;
       }
@@ -179,9 +214,19 @@ export default function WasteGenerators() {
         |--------------------------------------------------------------------------
         */
 
-      params.set("page", "1");
+      params.set("page", String(directoryPage));
 
-      params.set("limit", "100");
+      params.set("limit", String(directoryPageSize));
+
+      /*
+        |--------------------------------------------------------------------------
+        | SEARCH
+        |--------------------------------------------------------------------------
+        */
+
+      if (directorySearch.trim()) {
+        params.set("search", directorySearch.trim());
+      }
 
       /*
         |--------------------------------------------------------------------------
@@ -223,7 +268,7 @@ export default function WasteGenerators() {
 
       /*
         |--------------------------------------------------------------------------
-        | DIRECTORY API
+        | DIRECTORY REQUEST
         |--------------------------------------------------------------------------
         */
 
@@ -231,33 +276,56 @@ export default function WasteGenerators() {
         `/api/waste-generators/directory?${params.toString()}`,
       );
 
+      const responseData = response?.data?.data;
+
       /*
         |--------------------------------------------------------------------------
-        | RESPONSE NORMALIZATION
+        | RECORDS
         |--------------------------------------------------------------------------
         */
 
-      const responseData = response?.data?.data;
+      const rows = Array.isArray(responseData?.wasteGenerators)
+        ? responseData.wasteGenerators
+        : [];
 
-      let rows = [];
+      /*
+        |--------------------------------------------------------------------------
+        | PAGINATION RESPONSE
+        |--------------------------------------------------------------------------
+        */
 
-      if (Array.isArray(responseData)) {
-        rows = responseData;
-      } else if (Array.isArray(responseData?.wasteGenerators)) {
-        rows = responseData.wasteGenerators;
-      } else if (Array.isArray(response?.data?.wasteGenerators)) {
-        rows = response.data.wasteGenerators;
-      }
+      const pagination = responseData?.pagination || {};
+
+      const total = Number(pagination.total || 0);
+
+      const totalPages = Number(pagination.totalPages || 0);
+
+      /*
+        |--------------------------------------------------------------------------
+        | UPDATE STATE
+        |--------------------------------------------------------------------------
+        */
 
       setCitizens(rows);
+
+      setDirectoryTotal(total);
+
+      setDirectoryTotalPages(totalPages);
     } catch (error) {
       console.error("Waste Generator Directory Error:", error);
 
       setCitizens([]);
+
+      setDirectoryTotal(0);
+
+      setDirectoryTotalPages(0);
     } finally {
       setDirectoryLoading(false);
     }
   }, [
+    directoryPage,
+    directoryPageSize,
+    directorySearch,
     selectedCity?.city_id,
     selectedZone?.zone_id,
     selectedDivision?.division_id,
@@ -279,31 +347,56 @@ export default function WasteGenerators() {
   | DIRECTORY EFFECT
   |--------------------------------------------------------------------------
   |
-  | Notice:
-  |
-  | selectedDate is intentionally NOT included.
+  | Small debounce prevents an API request for every individual
+  | keystroke while searching.
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    loadDirectory();
+    const timer = setTimeout(() => {
+      loadDirectory();
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [loadDirectory]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | RESET DIRECTORY PAGE WHEN FILTERS CHANGE
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    setDirectoryPage(1);
+  }, [
+    selectedCity?.city_id,
+    selectedZone?.zone_id,
+    selectedDivision?.division_id,
+    selectedWard?.ward_id,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | RESET DIRECTORY PAGE WHEN SEARCH CHANGES
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    setDirectoryPage(1);
+  }, [directorySearch]);
 
   /*
   |--------------------------------------------------------------------------
   | GET ACTUAL WARD NUMBER
   |--------------------------------------------------------------------------
   |
-  | The sync endpoint requires:
+  | Sync endpoint requires:
   |
-  | /sync/ward/:wardNo
+  | POST /api/master-citizen/sync/ward/:wardNo
   |
-  | NOT:
-  |
-  | /sync/ward/:wardId
-  |
-  | We support both possible frontend property names so the
-  | Header implementation does not need to be changed.
+  | NOT ward_id.
   |--------------------------------------------------------------------------
   */
 
@@ -343,22 +436,6 @@ export default function WasteGenerators() {
   |--------------------------------------------------------------------------
   | SYNC SELECTED WARD
   |--------------------------------------------------------------------------
-  |
-  | POST
-  | /api/master-citizen/sync/ward/:wardNo
-  |
-  | The backend service then:
-  |
-  | wardNo
-  |   ↓
-  | Master Citizen ward registry
-  |   ↓
-  | Helper DB citizens
-  |   ↓
-  | matching ward
-  |   ↓
-  | bulk upsert into physical ward table
-  |--------------------------------------------------------------------------
   */
 
   const handleSync = useCallback(async () => {
@@ -366,12 +443,7 @@ export default function WasteGenerators() {
 
     /*
       |--------------------------------------------------------------------------
-      | NO WARD SELECTED
-      |--------------------------------------------------------------------------
-      |
-      | The endpoint is explicitly ward-wise.
-      |
-      | We do not randomly sync a ward when only a division/zone is selected.
+      | WARD REQUIRED
       |--------------------------------------------------------------------------
       */
 
@@ -386,7 +458,7 @@ export default function WasteGenerators() {
 
       /*
         |--------------------------------------------------------------------------
-        | ACTUAL SYNC ENDPOINT
+        | ACTUAL MASTER CITIZEN SYNC
         |--------------------------------------------------------------------------
         */
 
@@ -394,7 +466,7 @@ export default function WasteGenerators() {
 
       /*
         |--------------------------------------------------------------------------
-        | REFRESH DIRECTORY AFTER SYNC
+        | REFRESH CURRENT DIRECTORY PAGE
         |--------------------------------------------------------------------------
         */
 
@@ -424,16 +496,6 @@ export default function WasteGenerators() {
   /*
   |--------------------------------------------------------------------------
   | UPDATE
-  |--------------------------------------------------------------------------
-  |
-  | Keep the existing Update action.
-  |
-  | WasteGenDir calls:
-  |
-  | onUpdate(citizen)
-  |
-  | The parent can therefore connect this to the existing update
-  | modal/workflow without changing the Directory's data source.
   |--------------------------------------------------------------------------
   */
 
@@ -530,9 +592,22 @@ export default function WasteGenerators() {
         <section className="mt-5 mb-8">
           <WasteGenDir
             citizens={citizens}
+            search={directorySearch}
+            onSearch={setDirectorySearch}
             onUpdate={handleUpdate}
             onSync={handleSync}
             syncing={syncing || directoryLoading}
+            loading={directoryLoading}
+            page={directoryPage}
+            pageSize={directoryPageSize}
+            total={directoryTotal}
+            totalPages={directoryTotalPages}
+            onPageChange={setDirectoryPage}
+            onPageSizeChange={(size) => {
+              setDirectoryPageSize(size);
+
+              setDirectoryPage(1);
+            }}
           />
         </section>
       </div>

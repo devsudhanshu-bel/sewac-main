@@ -1,74 +1,113 @@
-import { Search, RefreshCw, Pencil } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export default function WasteGeneratorDirectory({
   citizens = [],
+
+  search = "",
+
+  onSearch,
+
   onUpdate,
+
   onSync,
+
   syncing = false,
+
+  loading = false,
+
+  page = 1,
+
+  pageSize = 10,
+
+  total = 0,
+
+  totalPages = 0,
+
+  onPageChange,
+
+  onPageSizeChange,
 }) {
   /*
   |--------------------------------------------------------------------------
-  | SEARCH
+  | PAGE NUMBERS
+  |--------------------------------------------------------------------------
+  |
+  | We don't render hundreds of page buttons.
+  |
+  | Example:
+  |
+  | 1 2 3 ... 73 74 75
   |--------------------------------------------------------------------------
   */
 
-  const [search, setSearch] = useState("");
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 0) {
+      return [];
+    }
+
+    /*
+      |--------------------------------------------------------------------------
+      | Small number of pages
+      |--------------------------------------------------------------------------
+      */
+
+    if (totalPages <= 7) {
+      return Array.from(
+        {
+          length: totalPages,
+        },
+        (_, index) => index + 1,
+      );
+    }
+
+    /*
+      |--------------------------------------------------------------------------
+      | Large number of pages
+      |--------------------------------------------------------------------------
+      */
+
+    const pages = [];
+
+    pages.push(1);
+
+    if (page > 4) {
+      pages.push("...");
+    }
+
+    const start = Math.max(2, page - 1);
+
+    const end = Math.min(totalPages - 1, page + 1);
+
+    for (let number = start; number <= end; number++) {
+      pages.push(number);
+    }
+
+    if (page < totalPages - 3) {
+      pages.push("...");
+    }
+
+    pages.push(totalPages);
+
+    return pages;
+  }, [page, totalPages]);
 
   /*
   |--------------------------------------------------------------------------
-  | LOCAL SEARCH
-  |--------------------------------------------------------------------------
-  |
-  | The backend already applies the geographic filters.
-  |
-  | This search operates on the currently loaded Directory records.
+  | DISPLAY RANGE
   |--------------------------------------------------------------------------
   */
 
-  const filteredCitizens = useMemo(() => {
-    const value = search.toLowerCase().trim();
+  const startRecord = total === 0 ? 0 : (page - 1) * pageSize + 1;
 
-    if (!value) {
-      return citizens;
-    }
-
-    return citizens.filter((citizen) => {
-      const searchableFields = [
-        citizen.personName,
-
-        citizen.phoneNumber,
-
-        citizen.contactNumber,
-
-        citizen.wetRFID,
-
-        citizen.dryRFID,
-
-        citizen.wetSlno,
-
-        citizen.drySlno,
-
-        citizen.area,
-
-        citizen.wardName,
-
-        citizen.wardNo,
-
-        citizen.zoneName,
-
-        citizen.divisionName,
-      ];
-
-      return searchableFields.some(
-        (field) =>
-          field !== null &&
-          field !== undefined &&
-          String(field).toLowerCase().includes(value),
-      );
-    });
-  }, [citizens, search]);
+  const endRecord = total === 0 ? 0 : Math.min(page * pageSize, total);
 
   /*
   |--------------------------------------------------------------------------
@@ -170,7 +209,7 @@ export default function WasteGeneratorDirectory({
               <input
                 type="text"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => onSearch?.(event.target.value)}
                 placeholder="Search by name, phone number, Wet RFID"
                 className="
                   w-full
@@ -229,7 +268,11 @@ export default function WasteGeneratorDirectory({
       {/* TABLE                                                            */}
       {/* ================================================================ */}
 
-      <div className="overflow-x-auto">
+      <div
+        className="
+          overflow-x-auto
+        "
+      >
         <table
           className="
             w-full
@@ -385,23 +428,40 @@ export default function WasteGeneratorDirectory({
           {/* ========================================================== */}
 
           <tbody>
-            {filteredCitizens.length === 0 ? (
+            {loading ? (
               <tr>
                 <td
                   colSpan={10}
                   className="
                     px-6
-                    py-12
+                    py-14
                     text-center
                     text-[14px]
                     text-gray-500
                   "
                 >
-                  No waste generators found.
+                  Loading waste generators...
+                </td>
+              </tr>
+            ) : citizens.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={10}
+                  className="
+                    px-6
+                    py-14
+                    text-center
+                    text-[14px]
+                    text-gray-500
+                  "
+                >
+                  {search.trim()
+                    ? "No waste generators found for this search."
+                    : "No waste generators found."}
                 </td>
               </tr>
             ) : (
-              filteredCitizens.map((citizen, index) => (
+              citizens.map((citizen, index) => (
                 <tr
                   key={
                     citizen.id ??
@@ -427,7 +487,7 @@ export default function WasteGeneratorDirectory({
                         text-gray-600
                       "
                   >
-                    {index + 1}
+                    {(page - 1) * pageSize + index + 1}
                   </td>
 
                   {/* ==================================================
@@ -542,10 +602,10 @@ export default function WasteGeneratorDirectory({
                           "
                       >
                         {citizen.wardName ||
-                        (citizen.wardNo !== null &&
-                          citizen.wardNo !== undefined)
-                          ? `Ward ${citizen.wardNo}`
-                          : "N/A"}
+                          (citizen.wardNo !== null &&
+                          citizen.wardNo !== undefined
+                            ? `Ward ${citizen.wardNo}`
+                            : "N/A")}
                       </span>
 
                       <span
@@ -683,7 +743,7 @@ export default function WasteGeneratorDirectory({
       </div>
 
       {/* ================================================================ */}
-      {/* FOOTER                                                           */}
+      {/* PAGINATION FOOTER                                               */}
       {/* ================================================================ */}
 
       <div
@@ -693,10 +753,17 @@ export default function WasteGeneratorDirectory({
           border-t
           border-gray-100
           flex
-          items-center
-          justify-between
+          flex-col
+          lg:flex-row
+          lg:items-center
+          lg:justify-between
+          gap-4
         "
       >
+        {/* ============================================================ */}
+        {/* RESULT COUNT                                                  */}
+        {/* ============================================================ */}
+
         <p
           className="
             text-[13px]
@@ -710,10 +777,191 @@ export default function WasteGeneratorDirectory({
               text-gray-700
             "
           >
-            {filteredCitizens.length}
+            {startRecord}
+          </span>
+          {" – "}
+          <span
+            className="
+              font-semibold
+              text-gray-700
+            "
+          >
+            {endRecord}
+          </span>
+          {" of "}
+          <span
+            className="
+              font-semibold
+              text-gray-700
+            "
+          >
+            {total}
           </span>{" "}
           waste generators
         </p>
+
+        {/* ============================================================ */}
+        {/* PAGINATION CONTROLS                                           */}
+        {/* ============================================================ */}
+
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
+          {/* ========================================================== */}
+          {/* ROWS PER PAGE                                               */}
+          {/* ========================================================== */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+            <span
+              className="
+                text-[13px]
+                text-gray-500
+                whitespace-nowrap
+              "
+            >
+              Rows:
+            </span>
+
+            <select
+              value={pageSize}
+              onChange={(event) =>
+                onPageSizeChange?.(Number(event.target.value))
+              }
+              className="
+                h-9
+                px-3
+                rounded-lg
+                border
+                border-gray-200
+                bg-white
+                text-[13px]
+                text-gray-700
+                outline-none
+                focus:border-violet-400
+              "
+            >
+              <option value={10}>10</option>
+
+              <option value={20}>20</option>
+
+              <option value={50}>50</option>
+            </select>
+          </div>
+
+          {/* ========================================================== */}
+          {/* PREVIOUS                                                    */}
+          {/* ========================================================== */}
+
+          <button
+            type="button"
+            disabled={page <= 1 || loading}
+            onClick={() => onPageChange?.(page - 1)}
+            className="
+              w-9
+              h-9
+              rounded-lg
+              border
+              border-gray-200
+              flex
+              items-center
+              justify-center
+              text-gray-600
+              hover:bg-gray-50
+              disabled:opacity-40
+              disabled:cursor-not-allowed
+            "
+            title="Previous page"
+          >
+            <ChevronLeft size={17} />
+          </button>
+
+          {/* ========================================================== */}
+          {/* PAGE NUMBERS                                                 */}
+          {/* ========================================================== */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-1
+            "
+          >
+            {pageNumbers.map((pageNumber, index) =>
+              pageNumber === "..." ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="
+                      w-8
+                      text-center
+                      text-[13px]
+                      text-gray-400
+                    "
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => onPageChange?.(pageNumber)}
+                  className={`
+                      w-9
+                      h-9
+                      rounded-lg
+                      text-[13px]
+                      font-medium
+                      transition
+                      ${
+                        pageNumber === page
+                          ? "bg-[#6D28D9] text-white"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }
+                    `}
+                >
+                  {pageNumber}
+                </button>
+              ),
+            )}
+          </div>
+
+          {/* ========================================================== */}
+          {/* NEXT                                                         */}
+          {/* ========================================================== */}
+
+          <button
+            type="button"
+            disabled={page >= totalPages || loading || totalPages === 0}
+            onClick={() => onPageChange?.(page + 1)}
+            className="
+              w-9
+              h-9
+              rounded-lg
+              border
+              border-gray-200
+              flex
+              items-center
+              justify-center
+              text-gray-600
+              hover:bg-gray-50
+              disabled:opacity-40
+              disabled:cursor-not-allowed
+            "
+            title="Next page"
+          >
+            <ChevronRight size={17} />
+          </button>
+        </div>
       </div>
     </div>
   );
