@@ -171,7 +171,13 @@ export default function WasteGenerators() {
           {/* ================= GVP Generation Trend ================= */}
 
           <div className="min-w-0 h-full">
-            <GVPGen />
+            <GVPGen
+              selectedDate={selectedDate}
+              selectedCity={selectedCity}
+              selectedZone={selectedZone}
+              selectedDivision={selectedDivision}
+              selectedWard={selectedWard}
+            />
           </div>
         </section>
 
