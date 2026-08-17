@@ -49,6 +49,35 @@ const complaintRoutes =
 
 
 // =====================================================
+// ROUTE MAP
+// =====================================================
+//
+// Reads:
+//
+// Header date
+// Header ward number
+//
+// Then:
+//
+// master_telemetry_db
+//       ↓
+// selected date day table
+//       ↓
+// selected ward
+//       ↓
+// vehicles
+//       ↓
+// individual vehicle tables
+//       ↓
+// latitude / longitude + complete telemetry rows
+//
+// =====================================================
+
+const routeMapRoutes =
+  require("./routes/routeMap.routes");
+
+
+// =====================================================
 // HISTORICAL DATABASE ROUTES
 // =====================================================
 
@@ -323,6 +352,41 @@ app.use(
 app.use(
   "/api/complaints",
   complaintRoutes
+);
+
+
+// =====================================================
+// ROUTE MAP API
+// =====================================================
+//
+// GET:
+//
+// /api/route-map?date=2026-08-16&wardNo=20
+//
+// Example:
+//
+// /api/route-map
+//     ?date=2026-08-16
+//     &wardNo=20
+//
+// The route-map service will:
+//
+// 1. Read the selected date.
+// 2. Read the selected ward number.
+// 3. Locate that day's telemetry table.
+// 4. Find vehicles belonging to that ward.
+// 5. Open each vehicle's telemetry table.
+// 6. Read ALL telemetry records.
+// 7. Order them by timestamp.
+// 8. Return every latitude/longitude.
+// 9. Return the complete telemetry information
+//    required by the frontend hover popup.
+//
+// =====================================================
+
+app.use(
+  "/api/route-map",
+  routeMapRoutes
 );
 
 
