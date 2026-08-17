@@ -1,33 +1,30 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 const AuthCallback = () => {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+
+    console.log("AUTH CALLBACK URL:", window.location.href);
+    console.log("AUTH CALLBACK TOKEN:", token);
+
     if (!token) {
-      window.location.replace("https://app-authentication-frontend.onrender.com");
+      console.error("NO TOKEN RECEIVED FROM CMADS");
       return;
     }
 
+    // Store the JWT in the SEWAC frontend's own session.
     sessionStorage.setItem("token", token);
 
-    navigate("/dashboard/admin/overview", {
-      replace: true,
-    });
-  }, [navigate]);
+    console.log("SEWAC TOKEN STORED:", sessionStorage.getItem("token"));
+
+    // Direct browser navigation.
+    window.location.replace("/dashboard/admin/overview");
+  }, []);
 
   return (
-    <div
-      style={{
-        fontSize: "40px",
-        color: "red",
-        padding: "100px",
-      }}
-    >
-      AUTH CALLBACK PAGE
+    <div className="min-h-screen flex items-center justify-center">
+      <p>Authenticating...</p>
     </div>
   );
 };
