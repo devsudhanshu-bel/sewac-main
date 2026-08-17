@@ -1252,8 +1252,6 @@ const getAllWasteGenerators = async (query = {}) => {
     zoneId: query.zoneId,
 
     divisionId: query.divisionId,
-
-    wardId: query.wardId,
   });
 
   const wards = wardScope.wards || [];
