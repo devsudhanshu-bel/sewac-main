@@ -7,21 +7,48 @@ import {
 import {
   ChevronDown,
   Check,
+  Map,
   Route,
   MapPinned,
   Factory,
   Megaphone,
-  Map,
 } from "lucide-react";
 
 import { gsap } from "gsap";
 
+import { useFilters } from "../../contexts/FilterContext";
+
 import MapSection from "../dashboard/MapSection";
 
 /*
-=============================================================
-MAP VIEWS
-=============================================================
+============================================================
+CITY OVERVIEW MAP
+============================================================
+
+IMPORTANT:
+
+The Header is the SINGLE SOURCE OF TRUTH for:
+
+    City
+    Zone
+    Division
+    Ward
+
+We DO NOT create another Division/Ward state here.
+
+The flow is:
+
+Header
+   ↓
+FilterContext
+   ↓
+CityOverviewMap
+   ↓
+MapSection
+   ↓
+/api/route-map?date=...&wardNo=...
+
+============================================================
 */
 
 const mapViews = [
@@ -62,142 +89,118 @@ const mapViews = [
 ];
 
 /*
-=============================================================
-DIVISION OPTIONS
-=============================================================
+============================================================
+HELPER
+============================================================
 */
 
-const divisionOptions = [
-  "All Divisions",
-  "Division 1",
-  "Division 2",
-  "Division 3",
-];
+function getWardNumber(selectedWard) {
+  if (!selectedWard) {
+    return "";
+  }
 
-/*
-=============================================================
-WARD OPTIONS
+  /*
+  Header / FilterContext ward structure:
 
-IMPORTANT:
+  {
+    wardId,
+    wardNo,
+    wardName,
+    divisionId,
+    divisionName,
+    ...
+  }
 
-These are the ward numbers currently available in the
-system/test data.
+  We ONLY need wardNo for the route API.
+  */
 
-You can expand this later from the master citizen API.
-=============================================================
-*/
-
-const wardOptions = [
-  "All Wards",
-  "Ward 1",
-  "Ward 2",
-  "Ward 3",
-  "Ward 20",
-  "Ward 216",
-];
-
-/*
-=============================================================
-HELPERS
-=============================================================
-*/
-
-function getWardNumber(value) {
   if (
-    value === null ||
-    value === undefined
+    selectedWard.wardNo !== undefined &&
+    selectedWard.wardNo !== null &&
+    selectedWard.wardNo !== ""
   ) {
-    return null;
+    return String(selectedWard.wardNo);
+  }
+
+  /*
+  Defensive fallbacks in case an older object
+  is still being returned somewhere.
+  */
+
+  if (
+    selectedWard.ward_no !== undefined &&
+    selectedWard.ward_no !== null &&
+    selectedWard.ward_no !== ""
+  ) {
+    return String(selectedWard.ward_no);
   }
 
   if (
-    value === "All Wards" ||
-    value === ""
+    selectedWard.wardId !== undefined &&
+    selectedWard.wardId !== null &&
+    selectedWard.wardId !== ""
   ) {
-    return null;
+    return String(selectedWard.wardId);
   }
 
-  const match =
-    String(value).match(/\d+/);
+  if (
+    typeof selectedWard === "number" ||
+    typeof selectedWard === "string"
+  ) {
+    const value = String(selectedWard);
 
-  if (!match) {
-    return null;
+    if (value !== "All Wards") {
+      return value;
+    }
   }
 
-  return Number(match[0]);
+  return "";
 }
 
 /*
-=============================================================
-COMPONENT
-=============================================================
+============================================================
+MAIN COMPONENT
+============================================================
 */
 
-export default function CityOverviewMap() {
+export default function CityOverviewMap({
+  selectedDate,
+}) {
   /*
-  ===========================================================
-  MAP VIEW
-  ===========================================================
+  ==========================================================
+  HEADER FILTER CONTEXT
+  ==========================================================
+
+  THESE ARE THE SAME VALUES USED BY HEADER.JSX.
+
+  DO NOT create separate local states for them.
+
+  ==========================================================
   */
 
-  const [
-    selectedView,
-    setSelectedView,
-  ] = useState(
-    mapViews[0]
-  );
-
-  /*
-  ===========================================================
-  MAP VIEW DROPDOWN
-  ===========================================================
-  */
-
-  const [
-    mapViewOpen,
-    setMapViewOpen,
-  ] = useState(false);
-
-  /*
-  ===========================================================
-  ROUTE FILTERS
-  ===========================================================
-  */
-
-  const [
+  const {
+    selectedCity,
+    selectedZone,
     selectedDivision,
-    setSelectedDivision,
-  ] = useState(
-    "All Divisions"
-  );
-
-  const [
     selectedWard,
-    setSelectedWard,
-  ] = useState(
-    "All Wards"
-  );
+  } = useFilters();
 
   /*
-  ===========================================================
-  FILTER DROPDOWN STATES
-  ===========================================================
+  ==========================================================
+  MAP VIEW STATE
+  ==========================================================
   */
 
-  const [
-    divisionOpen,
-    setDivisionOpen,
-  ] = useState(false);
+  const [selectedView, setSelectedView] =
+    useState(mapViews[0]);
 
-  const [
-    wardOpen,
-    setWardOpen,
-  ] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
   /*
-  ===========================================================
+  ==========================================================
   REFS
-  ===========================================================
+  ==========================================================
   */
 
   const sectionRef =
@@ -209,227 +212,306 @@ export default function CityOverviewMap() {
   const mapRef =
     useRef(null);
 
-  const mapViewRef =
+  const controlsRef =
     useRef(null);
 
-  const divisionRef =
-    useRef(null);
-
-  const wardRef =
+  const dropdownRef =
     useRef(null);
 
   /*
-  ===========================================================
-  INITIAL ANIMATION
-  ===========================================================
+  ==========================================================
+  RESOLVE WARD
+  ==========================================================
+
+  Example:
+
+  Header:
+
+      Ward 216
+
+  becomes:
+
+      "216"
+
+  and MapSection receives:
+
+      wardNo="216"
+
+  ==========================================================
+  */
+
+  const wardNo =
+    getWardNumber(selectedWard);
+
+  /*
+  ==========================================================
+  RESOLVE DATE
+  ==========================================================
+
+  If the parent already supplies selectedDate,
+  we use it.
+
+  Otherwise use today's date.
+
+  ==========================================================
+  */
+
+  const resolvedDate =
+    selectedDate ||
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  /*
+  ==========================================================
+  DEBUG
+
+  Keep these logs temporarily while testing.
+
+  They will show exactly what the Header is giving us.
+  ==========================================================
   */
 
   useEffect(() => {
-    const timeline =
-      gsap.timeline({
-        defaults: {
-          ease: "power3.out",
-        },
-      });
+    console.log(
+      "==============================================",
+    );
 
-    if (
-      sectionRef.current
-    ) {
-      timeline.from(
-        sectionRef.current,
-        {
-          opacity: 0,
-          y: 25,
-          duration: 0.45,
-        }
-      );
+    console.log(
+      "CITY OVERVIEW MAP — HEADER FILTER STATE",
+    );
+
+    console.log(
+      "City:",
+      selectedCity,
+    );
+
+    console.log(
+      "Zone:",
+      selectedZone,
+    );
+
+    console.log(
+      "Division:",
+      selectedDivision,
+    );
+
+    console.log(
+      "Ward:",
+      selectedWard,
+    );
+
+    console.log(
+      "Resolved Ward Number:",
+      wardNo,
+    );
+
+    console.log(
+      "Selected Date:",
+      resolvedDate,
+    );
+
+    console.log(
+      "Map View:",
+      selectedView.id,
+    );
+
+    console.log(
+      "==============================================",
+    );
+  }, [
+    selectedCity,
+    selectedZone,
+    selectedDivision,
+    selectedWard,
+    wardNo,
+    resolvedDate,
+    selectedView.id,
+  ]);
+
+  /*
+  ==========================================================
+  PAGE LOAD ANIMATION
+  ==========================================================
+  */
+
+  useEffect(() => {
+    const tl = gsap.timeline({
+      defaults: {
+        ease: "power3.out",
+      },
+    });
+
+    if (sectionRef.current) {
+      tl.from(sectionRef.current, {
+        opacity: 0,
+        y: 28,
+        duration: 0.45,
+      });
     }
 
-    if (
-      headerRef.current
-    ) {
-      timeline.from(
+    if (headerRef.current) {
+      tl.from(
         headerRef.current,
         {
           opacity: 0,
-          y: 15,
-          duration: 0.35,
+          y: 18,
+          duration: 0.45,
         },
-        "-=0.2"
+        "-=0.25",
       );
     }
 
-    if (
-      mapRef.current
-    ) {
-      timeline.from(
+    if (mapRef.current) {
+      tl.from(
         mapRef.current,
         {
           opacity: 0,
           scale: 0.985,
-          duration: 0.65,
+          duration: 0.8,
         },
-        "-=0.15"
+        "-=0.2",
+      );
+    }
+
+    if (controlsRef.current) {
+      tl.from(
+        controlsRef.current,
+        {
+          opacity: 0,
+          x: -18,
+          duration: 0.55,
+        },
+        "-=0.55",
       );
     }
 
     return () => {
-      timeline.kill();
+      tl.kill();
     };
   }, []);
 
   /*
-  ===========================================================
-  CLOSE ALL DROPDOWNS WHEN CLICKING OUTSIDE
-  ===========================================================
+  ==========================================================
+  DROPDOWN ANIMATION
+  ==========================================================
   */
 
   useEffect(() => {
-    function handleOutsideClick(
-      event
-    ) {
-      const target =
-        event.target;
-
-      if (
-        mapViewRef.current &&
-        !mapViewRef.current.contains(
-          target
-        )
-      ) {
-        setMapViewOpen(false);
-      }
-
-      if (
-        divisionRef.current &&
-        !divisionRef.current.contains(
-          target
-        )
-      ) {
-        setDivisionOpen(false);
-      }
-
-      if (
-        wardRef.current &&
-        !wardRef.current.contains(
-          target
-        )
-      ) {
-        setWardOpen(false);
-      }
+    if (!dropdownRef.current) {
+      return;
     }
 
-    document.addEventListener(
-      "mousedown",
-      handleOutsideClick
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleOutsideClick
+    if (open) {
+      gsap.fromTo(
+        dropdownRef.current,
+        {
+          opacity: 0,
+          y: -10,
+          scale: 0.98,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.28,
+          ease: "power2.out",
+        },
       );
-    };
-  }, []);
+    }
+  }, [open]);
 
   /*
-  ===========================================================
+  ==========================================================
   MAP VIEW SELECTION
-
-  IMPORTANT:
-
-  DO NOT wait for GSAP before changing state.
-
-  The state changes immediately.
-  ===========================================================
+  ==========================================================
   */
 
-  const handleSelectMapView =
-    (view) => {
-      setSelectedView(view);
-      setMapViewOpen(false);
+  const handleSelect = (item) => {
+    if (
+      item.id ===
+      selectedView.id
+    ) {
+      setOpen(false);
 
-      /*
-      Small visual animation only.
-      It does NOT control React state.
-      */
+      return;
+    }
 
-      requestAnimationFrame(() => {
-        if (
-          mapRef.current
-        ) {
-          gsap.fromTo(
-            mapRef.current,
-            {
-              opacity: 0.65,
-              scale: 0.995,
-            },
-            {
-              opacity: 1,
-              scale: 1,
-              duration: 0.3,
-              ease: "power3.out",
-            }
-          );
-        }
-      });
-    };
+    /*
+    Animate map out first.
+    */
 
-  /*
-  ===========================================================
-  DIVISION CHANGE
-  ===========================================================
-  */
+    if (mapRef.current) {
+      gsap.to(
+        mapRef.current,
+        {
+          opacity: 0,
+          scale: 0.992,
+          duration: 0.18,
+          ease: "power2.out",
 
-  const handleDivisionChange =
-    (division) => {
-      setSelectedDivision(
-        division
+          onComplete: () => {
+            setSelectedView(item);
+
+            requestAnimationFrame(() => {
+              if (mapRef.current) {
+                gsap.to(
+                  mapRef.current,
+                  {
+                    opacity: 1,
+                    scale: 1,
+                    duration: 0.35,
+                    ease: "power3.out",
+                  },
+                );
+              }
+            });
+          },
+        },
       );
+    } else {
+      setSelectedView(item);
+    }
 
-      /*
-      When division changes,
-      reset ward because the ward
-      belongs to that division.
-      */
-
-      setSelectedWard(
-        "All Wards"
-      );
-
-      setDivisionOpen(false);
-    };
+    setOpen(false);
+  };
 
   /*
-  ===========================================================
-  WARD CHANGE
-  ===========================================================
+  ==========================================================
+  CURRENT FILTER LABELS
+  ==========================================================
   */
 
-  const handleWardChange =
-    (ward) => {
-      setSelectedWard(
-        ward
-      );
+  const cityLabel =
+    selectedCity?.cityName ||
+    selectedCity?.city_name ||
+    selectedCity?.name ||
+    "All Cities";
 
-      setWardOpen(false);
-    };
+  const zoneLabel =
+    selectedZone?.zoneName ||
+    selectedZone?.zone_name ||
+    selectedZone?.name ||
+    "All Zones";
+
+  const divisionLabel =
+    selectedDivision?.divisionName ||
+    selectedDivision?.division_name ||
+    selectedDivision?.name ||
+    "All Divisions";
+
+  const wardLabel =
+    selectedWard?.wardName ||
+    selectedWard?.ward_name ||
+    selectedWard?.name ||
+    (wardNo
+      ? `Ward ${wardNo}`
+      : "All Wards");
 
   /*
-  ===========================================================
-  NORMALIZED VALUES FOR MAPSECTION
-  ===========================================================
-  */
-
-  const selectedWardNumber =
-    getWardNumber(
-      selectedWard
-    );
-
-  /*
-  ===========================================================
+  ==========================================================
   RENDER
-  ===========================================================
+  ==========================================================
   */
 
   return (
@@ -447,9 +529,10 @@ export default function CityOverviewMap() {
           overflow-hidden
         "
       >
-        {/* =================================================
+
+        {/* ==================================================
             HEADER
-        ================================================= */}
+        ================================================== */}
 
         <div
           ref={headerRef}
@@ -471,9 +554,9 @@ export default function CityOverviewMap() {
           </h2>
         </div>
 
-        {/* =================================================
-            MAP WRAPPER
-        ================================================= */}
+        {/* ==================================================
+            MAP
+        ================================================== */}
 
         <div
           className="
@@ -484,13 +567,6 @@ export default function CityOverviewMap() {
             overflow-hidden
           "
         >
-          {/* =================================================
-              ACTUAL MAP
-
-              z-0
-
-              Controls are placed ABOVE this.
-          ================================================= */}
 
           <div
             ref={mapRef}
@@ -500,71 +576,68 @@ export default function CityOverviewMap() {
               z-0
             "
           >
+
+            {/* ==================================================
+                MAP SECTION
+
+                IMPORTANT:
+
+                wardNo comes directly from Header.
+
+                selectedDivision is also passed for future
+                division-level filtering, but the current
+                backend route API filters by wardNo.
+
+                The MapSection currently accepts wardNo.
+            ================================================== */}
+
             <MapSection
-              mapView={
-                selectedView.id
-              }
-
-              selectedDivision={
-                selectedDivision
-              }
-
-              selectedWard={
-                selectedWard
-              }
-
-              selectedWardNumber={
-                selectedWardNumber
-              }
+              key={`${selectedView.id}-${wardNo}-${resolvedDate}`}
+              mapView={selectedView.id}
+              selectedDate={resolvedDate}
+              wardNo={wardNo}
             />
+
           </div>
 
-          {/* =================================================
+          {/* ==================================================
               MAP VIEW CONTROL
-
-              LEFT SIDE
-          ================================================= */}
+          ================================================== */}
 
           <div
-            ref={mapViewRef}
+            ref={controlsRef}
             className="
               absolute
               top-6
               left-6
-              z-[3000]
+              z-[1000]
               w-[375px]
             "
           >
-            {/* -----------------------------------------------
-                LABEL
-            ----------------------------------------------- */}
 
             <p
               className="
-                mb-3
                 text-[13px]
                 font-medium
                 text-gray-700
+                mb-3
               "
             >
               Select Map View
             </p>
 
-            {/* -----------------------------------------------
+            {/* ==================================================
                 SELECTED VIEW BUTTON
-            ----------------------------------------------- */}
+            ================================================== */}
 
             <button
               type="button"
               onClick={() =>
-                setMapViewOpen(
-                  (previous) =>
-                    !previous
+                setOpen(
+                  (prev) => !prev,
                 )
               }
               className="
-                relative
-                z-[3001]
                 w-full
                 h-[60px]
                 bg-white/95
@@ -578,11 +651,12 @@ export default function CityOverviewMap() {
                 justify-between
                 shadow-[0_12px_35px_rgba(15,23,42,0.12)]
                 hover:border-violet-300
-                hover:shadow-[0_18px_45px_rgba(15,23,42,0.16)]
+                hover:shadow-[0_18px_40px_rgba(15,23,42,0.15)]
                 transition-all
-                duration-200
+                duration-300
               "
             >
+
               <div
                 className="
                   flex
@@ -590,6 +664,7 @@ export default function CityOverviewMap() {
                   gap-4
                 "
               >
+
                 {(() => {
                   const Icon =
                     selectedView.icon;
@@ -611,47 +686,50 @@ export default function CityOverviewMap() {
                     text-[#334155]
                   "
                 >
-                  {
-                    selectedView.label
-                  }
+                  {selectedView.label}
                 </span>
+
               </div>
 
               <ChevronDown
                 size={20}
                 className={`
                   text-gray-700
-                  transition-transform
-                  duration-200
+                  transition-all
+                  duration-300
                   ${
-                    mapViewOpen
+                    open
                       ? "rotate-180"
                       : ""
                   }
                 `}
               />
+
             </button>
 
-            {/* =================================================
+            {/* ==================================================
                 MAP VIEW OPTIONS
-            ================================================= */}
+            ================================================== */}
 
-            {mapViewOpen && (
+            {open && (
               <div
+                ref={dropdownRef}
                 className="
-                  relative
-                  z-[3002]
                   mt-2
-                  bg-white
+                  bg-white/95
+                  backdrop-blur-2xl
                   rounded-2xl
                   border
                   border-[#EEF1F6]
                   shadow-[0_20px_45px_rgba(15,23,42,0.18)]
                   overflow-hidden
+                  origin-top
                 "
               >
+
                 {mapViews.map(
                   (item) => {
+
                     const Icon =
                       item.icon;
 
@@ -661,13 +739,11 @@ export default function CityOverviewMap() {
 
                     return (
                       <button
-                        key={
-                          item.id
-                        }
                         type="button"
+                        key={item.id}
                         onClick={() =>
-                          handleSelectMapView(
-                            item
+                          handleSelect(
+                            item,
                           )
                         }
                         className={`
@@ -687,6 +763,7 @@ export default function CityOverviewMap() {
                           }
                         `}
                       >
+
                         <div
                           className="
                             flex
@@ -694,6 +771,7 @@ export default function CityOverviewMap() {
                             gap-4
                           "
                         >
+
                           <Icon
                             size={21}
                             className={
@@ -709,10 +787,9 @@ export default function CityOverviewMap() {
                               text-left
                             "
                           >
-                            {
-                              item.label
-                            }
+                            {item.label}
                           </span>
+
                         </div>
 
                         {isSelected && (
@@ -723,24 +800,31 @@ export default function CityOverviewMap() {
                             "
                           />
                         )}
+
                       </button>
                     );
-                  }
+                  },
                 )}
+
               </div>
             )}
+
           </div>
 
-          {/* =================================================
-              ROUTE MAP FILTERS
+          {/* ==================================================
+              HEADER FILTER STATUS
 
-              RIGHT SIDE
+              IMPORTANT:
 
-              THESE ARE ALWAYS RENDERED FOR ROUTE MAP.
+              These are NOT independent filters.
 
-              HIGH Z-INDEX IS IMPORTANT BECAUSE LEAFLET
-              OTHERWISE CAN COVER THESE CONTROLS.
-          ================================================= */}
+              They simply DISPLAY the values selected
+              in the Header.
+
+              Clicking/changing them here is intentionally
+              impossible.
+
+          ================================================== */}
 
           {selectedView.id ===
             "route" && (
@@ -749,350 +833,165 @@ export default function CityOverviewMap() {
                 absolute
                 top-6
                 right-6
-                z-[3000]
+                z-[1000]
                 flex
-                items-start
-                gap-4
+                items-center
+                gap-3
               "
             >
-              {/* =================================================
-                  DIVISION FILTER
-              ================================================= */}
+
+              {/* ==================================================
+                  DIVISION STATUS
+              ================================================== */}
 
               <div
-                ref={divisionRef}
                 className="
-                  relative
-                  w-[290px]
+                  h-[56px]
+                  min-w-[240px]
+                  px-5
+                  bg-white/95
+                  backdrop-blur-xl
+                  rounded-2xl
+                  border
+                  border-[#E7EAF1]
+                  shadow-[0_12px_35px_rgba(15,23,42,0.12)]
+                  flex
+                  flex-col
+                  justify-center
                 "
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDivisionOpen(
-                      (previous) =>
-                        !previous
-                    );
 
-                    setWardOpen(
-                      false
-                    );
-                  }}
+                <span
                   className="
-                    relative
-                    z-[3001]
-                    appearance-none
-                    w-full
-                    h-[56px]
-                    bg-white/95
-                    backdrop-blur-xl
-                    rounded-2xl
-                    border
-                    border-[#E7EAF1]
-                    px-5
-                    pr-12
-                    text-[15px]
-                    font-semibold
-                    text-[#334155]
-                    text-left
-                    shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-                    hover:border-violet-300
-                    hover:shadow-[0_18px_45px_rgba(15,23,42,0.16)]
-                    transition-all
-                    duration-200
+                    text-[10px]
+                    font-medium
+                    uppercase
+                    tracking-wide
+                    text-slate-400
                   "
                 >
-                  {
-                    selectedDivision
-                  }
+                  Division
+                </span>
 
-                  <ChevronDown
-                    size={19}
-                    className={`
-                      absolute
-                      right-5
-                      top-1/2
-                      -translate-y-1/2
-                      text-gray-600
-                      transition-transform
-                      duration-200
-                      ${
-                        divisionOpen
-                          ? "rotate-180"
-                          : ""
-                      }
-                    `}
-                  />
-                </button>
+                <span
+                  className="
+                    text-[14px]
+                    font-semibold
+                    text-[#334155]
+                    truncate
+                  "
+                >
+                  {divisionLabel}
+                </span>
 
-                {/* ---------------------------------------------
-                    DIVISION MENU
-                --------------------------------------------- */}
-
-                {divisionOpen && (
-                  <div
-                    className="
-                      absolute
-                      top-[62px]
-                      left-0
-                      z-[3002]
-                      w-full
-                      overflow-hidden
-                      rounded-2xl
-                      border
-                      border-[#EEF1F6]
-                      bg-white
-                      shadow-[0_20px_45px_rgba(15,23,42,0.18)]
-                    "
-                  >
-                    {divisionOptions.map(
-                      (
-                        division
-                      ) => (
-                        <button
-                          key={
-                            division
-                          }
-                          type="button"
-                          onClick={() =>
-                            handleDivisionChange(
-                              division
-                            )
-                          }
-                          className={`
-                            w-full
-                            px-5
-                            py-4
-                            flex
-                            items-center
-                            justify-between
-                            text-left
-                            text-[14px]
-                            font-medium
-                            transition
-                            ${
-                              selectedDivision ===
-                              division
-                                ? "bg-violet-50 text-violet-700"
-                                : "text-slate-700 hover:bg-gray-50"
-                            }
-                          `}
-                        >
-                          <span>
-                            {
-                              division
-                            }
-                          </span>
-
-                          {selectedDivision ===
-                            division && (
-                            <Check
-                              size={
-                                17
-                              }
-                              className="
-                                text-violet-600
-                              "
-                            />
-                          )}
-                        </button>
-                      )
-                    )}
-                  </div>
-                )}
               </div>
 
-              {/* =================================================
-                  WARD FILTER
-              ================================================= */}
+              {/* ==================================================
+                  WARD STATUS
+              ================================================== */}
 
               <div
-                ref={wardRef}
                 className="
-                  relative
-                  w-[290px]
+                  h-[56px]
+                  min-w-[240px]
+                  px-5
+                  bg-white/95
+                  backdrop-blur-xl
+                  rounded-2xl
+                  border
+                  border-[#E7EAF1]
+                  shadow-[0_12px_35px_rgba(15,23,42,0.12)]
+                  flex
+                  flex-col
+                  justify-center
                 "
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWardOpen(
-                      (previous) =>
-                        !previous
-                    );
 
-                    setDivisionOpen(
-                      false
-                    );
-                  }}
+                <span
                   className="
-                    relative
-                    z-[3001]
-                    appearance-none
-                    w-full
-                    h-[56px]
-                    bg-white/95
-                    backdrop-blur-xl
-                    rounded-2xl
-                    border
-                    border-[#E7EAF1]
-                    px-5
-                    pr-12
-                    text-[15px]
-                    font-semibold
-                    text-[#334155]
-                    text-left
-                    shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-                    hover:border-violet-300
-                    hover:shadow-[0_18px_45px_rgba(15,23,42,0.16)]
-                    transition-all
-                    duration-200
+                    text-[10px]
+                    font-medium
+                    uppercase
+                    tracking-wide
+                    text-slate-400
                   "
                 >
-                  {
-                    selectedWard
-                  }
+                  Ward
+                </span>
 
-                  <ChevronDown
-                    size={19}
-                    className={`
-                      absolute
-                      right-5
-                      top-1/2
-                      -translate-y-1/2
-                      text-gray-600
-                      transition-transform
-                      duration-200
-                      ${
-                        wardOpen
-                          ? "rotate-180"
-                          : ""
-                      }
-                    `}
-                  />
-                </button>
+                <span
+                  className="
+                    text-[14px]
+                    font-semibold
+                    text-[#334155]
+                    truncate
+                  "
+                >
+                  {wardNo
+                    ? `${wardLabel} (${wardNo})`
+                    : wardLabel}
+                </span>
 
-                {/* ---------------------------------------------
-                    WARD MENU
-                --------------------------------------------- */}
-
-                {wardOpen && (
-                  <div
-                    className="
-                      absolute
-                      top-[62px]
-                      left-0
-                      z-[3002]
-                      w-full
-                      max-h-[360px]
-                      overflow-y-auto
-                      rounded-2xl
-                      border
-                      border-[#EEF1F6]
-                      bg-white
-                      shadow-[0_20px_45px_rgba(15,23,42,0.18)]
-                    "
-                  >
-                    {wardOptions.map(
-                      (ward) => (
-                        <button
-                          key={
-                            ward
-                          }
-                          type="button"
-                          onClick={() =>
-                            handleWardChange(
-                              ward
-                            )
-                          }
-                          className={`
-                            w-full
-                            px-5
-                            py-4
-                            flex
-                            items-center
-                            justify-between
-                            text-left
-                            text-[14px]
-                            font-medium
-                            transition
-                            ${
-                              selectedWard ===
-                              ward
-                                ? "bg-violet-50 text-violet-700"
-                                : "text-slate-700 hover:bg-gray-50"
-                            }
-                          `}
-                        >
-                          <span>
-                            {
-                              ward
-                            }
-                          </span>
-
-                          {selectedWard ===
-                            ward && (
-                            <Check
-                              size={
-                                17
-                              }
-                              className="
-                                text-violet-600
-                              "
-                            />
-                          )}
-                        </button>
-                      )
-                    )}
-                  </div>
-                )}
               </div>
+
             </div>
           )}
 
-          {/* =================================================
-              ROUTE FILTER STATUS
+          {/* ==================================================
+              NO WARD SELECTED OVERLAY
 
-              SMALL STATUS BOX WHEN NOTHING IS SELECTED
-          ================================================= */}
+              Only shown for Route Map.
+
+          ================================================== */}
 
           {selectedView.id ===
             "route" &&
-            selectedWard ===
-              "All Wards" && (
+            !wardNo && (
               <div
                 className="
                   absolute
-                  bottom-6
                   left-1/2
+                  bottom-10
                   -translate-x-1/2
-                  z-[2000]
-                  pointer-events-none
+                  z-[900]
+                  bg-white/95
+                  backdrop-blur-xl
+                  rounded-2xl
+                  border
+                  border-violet-100
+                  shadow-[0_15px_40px_rgba(15,23,42,0.12)]
+                  px-6
+                  py-4
+                  flex
+                  items-center
+                  gap-3
                 "
               >
+
                 <div
                   className="
+                    w-9
+                    h-9
+                    rounded-xl
+                    bg-violet-50
                     flex
                     items-center
-                    gap-3
-                    rounded-2xl
-                    bg-white/95
-                    backdrop-blur-xl
-                    border
-                    border-gray-100
-                    px-5
-                    py-3
-                    shadow-[0_15px_40px_rgba(15,23,42,0.12)]
+                    justify-center
                   "
                 >
+
                   <Route
-                    size={19}
+                    size={18}
                     className="
                       text-violet-600
                     "
                   />
 
-                  <span
+                </div>
+
+                <div>
+
+                  <p
                     className="
                       text-[13px]
                       font-semibold
@@ -1100,12 +999,26 @@ export default function CityOverviewMap() {
                     "
                   >
                     Please select a ward
-                    from the filters.
-                  </span>
+                  </p>
+
+                  <p
+                    className="
+                      text-[11px]
+                      text-slate-400
+                      mt-0.5
+                    "
+                  >
+                    Choose a ward from the Header
+                    to view vehicle routes.
+                  </p>
+
                 </div>
+
               </div>
             )}
+
         </div>
+
       </div>
     </section>
   );
