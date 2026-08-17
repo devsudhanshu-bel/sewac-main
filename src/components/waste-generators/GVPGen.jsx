@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
-import { gsap } from "gsap";
 
 import {
   ResponsiveContainer,
@@ -9,121 +8,83 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ReferenceLine,
   Tooltip,
-  LabelList,
 } from "recharts";
 
-function Dot(props) {
-  const { cx, cy, payload } = props;
-
-  return (
-    <g>
-      <circle
-        cx={cx}
-        cy={cy}
-        r={5}
-        fill={payload?.color || "#16A34A"}
-        stroke="#ffffff"
-        strokeWidth={2}
-      />
-    </g>
-  );
-}
-
-function ValueLabel({ x, y, value }) {
-  const color = Number(value) >= 6500 ? "#DC2626" : "#16A34A";
-
-  return (
-    <text
-      x={x}
-      y={y - 12}
-      textAnchor="middle"
-      fontSize="11"
-      fontWeight="700"
-      fill={color}
-    >
-      {Number(value).toFixed(1)} Kg
-    </text>
-  );
-}
+/*
+|--------------------------------------------------------------------------
+| GVP GENERATION TREND
+|--------------------------------------------------------------------------
+|
+| Shows GVP for ALL wards under the selected:
+|
+| City
+|   ↓
+| Zone
+|   ↓
+| Division
+|   ↓
+| Date
+|
+| IMPORTANT:
+|
+| selectedWard is intentionally NOT used here.
+|
+| The graph always shows every ward belonging to the
+| selected division for the selected date.
+|
+|--------------------------------------------------------------------------
+*/
 
 export default function GVPGen({
   selectedDate,
   selectedCity,
   selectedZone,
   selectedDivision,
-  selectedWard,
 }) {
   const [data, setData] = useState([]);
 
-  const sectionRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState("");
 
   /*
   |--------------------------------------------------------------------------
-  | GSAP ANIMATION
+  | LOAD GVP DATA
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      requestAnimationFrame(() => {
-        if (sectionRef.current) {
-          gsap.from(sectionRef.current, {
-            opacity: 0,
-            y: 10,
-            duration: 0.35,
-            ease: "power2.out",
-          });
-        }
-      });
-    }, sectionRef);
+    let cancelled = false;
 
-    return () => ctx.revert();
-  }, []);
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD GVP / WARD TREND
-  |--------------------------------------------------------------------------
-  |
-  | The graph follows the Header filters + selected date.
-  |
-  | The backend is responsible for resolving:
-  |
-  | City
-  |   ↓
-  | Zone
-  |   ↓
-  | Division
-  |   ↓
-  | Wards
-  |   ↓
-  | day_DDMMYYYY
-  |   ↓
-  | Vehicle telemetry tables
-  |   ↓
-  | GVP / generation per ward
-  |
-  */
-
-  useEffect(() => {
-    const loadTrend = async () => {
+    const loadGVP = async () => {
       try {
         /*
         |--------------------------------------------------------------------------
-        | City is required
+        | CITY IS REQUIRED
         |--------------------------------------------------------------------------
         */
 
         if (!selectedCity?.city_id) {
-          setData([]);
+          if (!cancelled) {
+            setData([]);
+            setError("");
+          }
+
           return;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Build query
+        | BUILD QUERY
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | selectedWard is NOT sent.
+        |
+        | Therefore the backend returns ALL wards under
+        | the selected division.
         |--------------------------------------------------------------------------
         */
 
@@ -145,93 +106,189 @@ export default function GVPGen({
 
         /*
         |--------------------------------------------------------------------------
-        | Ward is passed because it is part of the Header filter flow.
-        |
-        | The backend should use the division's ward scope for the graph,
-        | so the graph can display ward-wise statistics.
+        | REQUEST
         |--------------------------------------------------------------------------
         */
 
-        if (selectedWard?.ward_id) {
-          params.set("wardId", selectedWard.ward_id);
+        if (!cancelled) {
+          setLoading(true);
+          setError("");
+        }
+
+        const response = await api.get(
+          `/api/waste-generators/gvp-trend?${params.toString()}`,
+        );
+
+        if (cancelled) {
+          return;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | API
+        | NORMALIZE RESPONSE
         |--------------------------------------------------------------------------
         */
 
-        const res = await api.get(
-          `/api/waste-generators/gvp-trend?${params.toString()}`,
-        );
+        const raw = response?.data?.data ?? response?.data ?? [];
+
+        const rows = Array.isArray(raw) ? raw : [];
 
         /*
         |--------------------------------------------------------------------------
-        | Normalize API response
+        | NORMALIZE WARD DATA
         |--------------------------------------------------------------------------
         */
 
-        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+        const normalized = rows
+          .map((row, index) => {
+            const wardNo = Number(row?.wardNo ?? row?.ward_no ?? 0);
 
-        const normalized = rows.map((row) => {
-          const value = Number(
-            row.gvp ?? row.value ?? row.wasteGenerated ?? row.totalWaste ?? 0,
-          );
+            const wardName = String(
+              row?.wardName ?? row?.ward_name ?? `Ward ${wardNo || index + 1}`,
+            );
 
-          return {
-            ...row,
+            const value = Number(
+              row?.gvp ?? row?.value ?? row?.totalGVP ?? row?.totalGvp ?? 0,
+            );
 
-            /*
-                | Prefer wardName from backend.
-                | Fall back to ward number if necessary.
-                */
+            return {
+              wardNo,
 
-            wardName:
-              row.wardName ??
-              row.ward_name ??
-              `Ward ${row.wardNo ?? row.ward_no ?? ""}`,
+              wardName,
 
-            wardNo: row.wardNo ?? row.ward_no ?? null,
+              value: Number.isFinite(value) ? value : 0,
+            };
+          })
+          /*
+          |--------------------------------------------------------------------------
+          | SORT BY WARD NUMBER
+          |--------------------------------------------------------------------------
+          */
 
-            value,
-
-            color: value >= 6500 ? "#DC2626" : "#16A34A",
-          };
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Sort wards numerically
-        |--------------------------------------------------------------------------
-        */
-
-        normalized.sort(
-          (a, b) => Number(a.wardNo ?? 0) - Number(b.wardNo ?? 0),
-        );
+          .sort((a, b) => Number(a.wardNo || 0) - Number(b.wardNo || 0));
 
         setData(normalized);
       } catch (err) {
-        console.error("GVP Generation Trend Error:", err);
+        console.error("GVP Trend Error:", err);
 
-        /*
-        |--------------------------------------------------------------------------
-        | No data / missing day table
-        |--------------------------------------------------------------------------
-        */
+        if (!cancelled) {
+          setData([]);
 
-        setData([]);
+          setError(err?.response?.data?.message || "Unable to load GVP trend");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    loadTrend();
+    loadGVP();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     selectedDate,
     selectedCity?.city_id,
     selectedZone?.zone_id,
     selectedDivision?.division_id,
-    selectedWard?.ward_id,
   ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Y-AXIS DOMAIN
+  |--------------------------------------------------------------------------
+  |
+  | Scale according to actual GVP data.
+  |
+  | No 6500 KG threshold is used.
+  |--------------------------------------------------------------------------
+  */
+
+  const yDomain = useMemo(() => {
+    if (!data.length) {
+      return [0, 100];
+    }
+
+    const values = data
+      .map((row) => Number(row.value || 0))
+      .filter((value) => Number.isFinite(value));
+
+    const maxValue = values.length > 0 ? Math.max(...values) : 0;
+
+    /*
+    |--------------------------------------------------------------------------
+    | ALL ZERO
+    |--------------------------------------------------------------------------
+    */
+
+    if (maxValue <= 0) {
+      return [0, 100];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD 20% HEADROOM
+    |--------------------------------------------------------------------------
+    */
+
+    const padded = maxValue * 1.2;
+
+    /*
+    |--------------------------------------------------------------------------
+    | KEEP A REASONABLE MINIMUM
+    |--------------------------------------------------------------------------
+    */
+
+    return [0, Math.max(10, Math.ceil(padded))];
+  }, [data]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | TOOLTIP
+  |--------------------------------------------------------------------------
+  */
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || payload.length === 0) {
+      return null;
+    }
+
+    const value = Number(payload[0]?.value || 0);
+
+    const wardNo = payload[0]?.payload?.wardNo;
+
+    return (
+      <div
+        className="
+          rounded-lg
+          border
+          border-slate-200
+          bg-white
+          px-4
+          py-3
+          shadow-lg
+        "
+      >
+        <div className="text-[12px] font-semibold text-[#16295A]">{label}</div>
+
+        {wardNo ? (
+          <div className="mt-1 text-[11px] text-slate-500">
+            Ward No: {wardNo}
+          </div>
+        ) : null}
+
+        <div className="mt-2 text-[13px] font-semibold text-green-600">
+          GVP:{" "}
+          {value.toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+          })}{" "}
+          Kg
+        </div>
+      </div>
+    );
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -241,179 +298,159 @@ export default function GVPGen({
 
   return (
     <div
-      ref={sectionRef}
       className="
-        bg-white
-        rounded-3xl
+        w-full
+        h-full
+        min-h-[450px]
+        rounded-[24px]
         border
         border-slate-200
-        shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-        h-full
-        flex
-        flex-col
+        bg-white
+        shadow-sm
+        overflow-hidden
       "
     >
-      {/* ================= Header ================= */}
+      {/* ================================================================ */}
+      {/* HEADER                                                           */}
+      {/* ================================================================ */}
 
-      <div
-        className="
-          px-6
-          pt-5
-          pb-2
-          flex
-          items-center
-          justify-between
-        "
-      >
-        <h2
-          className="
-            text-[15px]
-            font-semibold
-            text-[#16295A]
-          "
-        >
+      <div className="flex items-center justify-between px-6 pt-5 pb-3">
+        <h2 className="text-[18px] font-semibold text-[#16295A]">
           GVP Generation Trend
         </h2>
 
-        {/* ================================================================ */}
-        {/* NO VIEW-BY FILTER HERE                                          */}
-        {/* ================================================================ */}
-
-        <span
-          className="
-            text-[11px]
-            text-slate-500
-          "
-        >
-          {selectedDate || ""}
-        </span>
+        <span className="text-[12px] text-slate-500">{selectedDate || ""}</span>
       </div>
 
-      {/* ================= Chart ================= */}
+      {/* ================================================================ */}
+      {/* CONTENT                                                          */}
+      {/* ================================================================ */}
 
-      <div
-        className="
-          flex-1
-          min-h-[250px]
-          pr-5
-          pb-4
-        "
-      >
-        {data.length === 0 ? (
-          <div
-            className="
-              h-full
-              flex
-              items-center
-              justify-center
-              text-sm
-              text-slate-400
-            "
-          >
-            No GVP data found
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={data}
-              margin={{
-                top: 30,
-                right: 20,
-                left: 5,
-                bottom: 25,
-              }}
-            >
-              <CartesianGrid vertical={false} stroke="#F2F4F7" />
-
-              {/* ================= Ward Axis ================= */}
-
-              <XAxis
-                dataKey="wardName"
-                tick={{
-                  fontSize: 11,
-                  fill: "#475569",
-                  fontWeight: 600,
+      <div className="px-4 pb-5">
+        <div
+          className="
+            w-full
+            h-[370px]
+          "
+        >
+          {loading ? (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              Loading GVP data...
+            </div>
+          ) : error ? (
+            <div className="flex h-full items-center justify-center text-sm text-red-500">
+              {error}
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">
+              No GVP data available for the selected date and division.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={data}
+                margin={{
+                  top: 20,
+                  right: 25,
+                  left: 10,
+                  bottom: 70,
                 }}
-                axisLine={false}
-                tickLine={false}
-                interval={0}
-                angle={-25}
-                textAnchor="end"
-                height={55}
-              />
-
-              {/* ================= GVP Axis ================= */}
-
-              <YAxis
-                ticks={[0, 3000, 6000, 9000, 12000, 15000]}
-                tick={{
-                  fontSize: 11,
-                  fill: "#475569",
-                }}
-                axisLine={false}
-                tickLine={false}
-                width={45}
-                tickFormatter={(value) =>
-                  value === 0 ? "0" : `${value / 1000}K`
-                }
-              />
-
-              {/* ================= Threshold ================= */}
-
-              <ReferenceLine
-                y={6500}
-                stroke="#EF4444"
-                strokeDasharray="6 4"
-                strokeWidth={1.5}
-                label={{
-                  value: "Threshold = 6,500 Kg",
-                  position: "insideTopLeft",
-                  fill: "#DC2626",
-                  fontSize: 11,
-                  fontWeight: 600,
-                }}
-              />
-
-              {/* ================= Tooltip ================= */}
-
-              <Tooltip
-                cursor={false}
-                formatter={(value) => [
-                  `${Number(value).toLocaleString()} Kg`,
-                  "GVP Generated",
-                ]}
-                labelFormatter={(label) => `Ward: ${label}`}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: "1px solid #E2E8F0",
-                  boxShadow: "0 6px 18px rgba(0,0,0,.08)",
-                  fontSize: 12,
-                }}
-              />
-
-              {/* ================= GVP Line ================= */}
-
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="#6D28D9"
-                strokeWidth={3}
-                dot={<Dot />}
-                activeDot={{
-                  r: 6,
-                  fill: "#6D28D9",
-                  stroke: "#ffffff",
-                  strokeWidth: 2,
-                }}
-                animationBegin={250}
-                animationDuration={900}
-                animationEasing="ease-out"
               >
-                <LabelList dataKey="value" content={<ValueLabel />} />
-              </Line>
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+                {/* ====================================================== */}
+                {/* GRID                                                     */}
+                {/* ====================================================== */}
+
+                <CartesianGrid
+                  stroke="#E9EEF5"
+                  strokeDasharray="0"
+                  vertical={false}
+                />
+
+                {/* ====================================================== */}
+                {/* X AXIS — WARDS                                           */}
+                {/* ====================================================== */}
+
+                <XAxis
+                  dataKey="wardName"
+                  interval="preserveStartEnd"
+                  tick={{
+                    fontSize: 10,
+                    fill: "#475569",
+                    fontWeight: 500,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  angle={-25}
+                  textAnchor="end"
+                  height={75}
+                />
+
+                {/* ====================================================== */}
+                {/* Y AXIS — GVP KG                                          */}
+                {/* ====================================================== */}
+
+                <YAxis
+                  domain={yDomain}
+                  allowDataOverflow={false}
+                  tick={{
+                    fontSize: 11,
+                    fill: "#475569",
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={50}
+                  tickFormatter={(value) => {
+                    if (value >= 1000) {
+                      return `${(value / 1000).toFixed(
+                        value >= 10000 ? 0 : 1,
+                      )}K`;
+                    }
+
+                    return value;
+                  }}
+                />
+
+                {/* ====================================================== */}
+                {/* TOOLTIP                                                  */}
+                {/* ====================================================== */}
+
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={{
+                    stroke: "#CBD5E1",
+                    strokeDasharray: "4 4",
+                  }}
+                />
+
+                {/* ====================================================== */}
+                {/* GVP LINE                                                  */}
+                {/* ====================================================== */}
+
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#16A34A"
+                  strokeWidth={2.5}
+                  dot={{
+                    r: 4,
+                    fill: "#16A34A",
+                    stroke: "#FFFFFF",
+                    strokeWidth: 2,
+                  }}
+                  activeDot={{
+                    r: 6,
+                    fill: "#16A34A",
+                    stroke: "#FFFFFF",
+                    strokeWidth: 2,
+                  }}
+                  animationBegin={150}
+                  animationDuration={700}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
     </div>
   );

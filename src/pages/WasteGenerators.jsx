@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+
 import Header from "../components/layouts/Header";
+
 import api from "../api/axios";
 
 import WasteGenKPIs from "../components/waste-generators/WasteGenKPIs";
+
 import WasteGenMap from "../components/waste-generators/WasteGenMap";
+
 import GVPGen from "../components/waste-generators/GVPGen";
+
 import WasteGenDir from "../components/waste-generators/WasteGenDir";
 
 import { useFilters } from "../contexts/FilterContext";
@@ -41,56 +46,72 @@ export default function WasteGenerators() {
     try {
       if (!selectedCity?.city_id) {
         setSummary(null);
+
         return;
       }
 
       const params = new URLSearchParams();
 
       /*
-       * DATE
-       */
+      |--------------------------------------------------------------------------
+      | DATE
+      |--------------------------------------------------------------------------
+      */
 
       params.set("date", selectedDate);
 
       /*
-       * CITY
-       */
+      |--------------------------------------------------------------------------
+      | CITY
+      |--------------------------------------------------------------------------
+      */
 
       params.set("cityId", selectedCity.city_id);
 
       /*
-       * ZONE
-       */
+      |--------------------------------------------------------------------------
+      | ZONE
+      |--------------------------------------------------------------------------
+      */
 
       if (selectedZone?.zone_id) {
         params.set("zoneId", selectedZone.zone_id);
       }
 
       /*
-       * DIVISION
-       */
+      |--------------------------------------------------------------------------
+      | DIVISION
+      |--------------------------------------------------------------------------
+      */
 
       if (selectedDivision?.division_id) {
         params.set("divisionId", selectedDivision.division_id);
       }
 
       /*
-       * WARD
-       */
+      |--------------------------------------------------------------------------
+      | WARD
+      |--------------------------------------------------------------------------
+      |
+      | KPI cards continue to respect the selected ward.
+      |
+      */
 
       if (selectedWard?.ward_id) {
         params.set("wardId", selectedWard.ward_id);
       }
 
       /*
-       * FINAL REQUEST
-       */
+      |--------------------------------------------------------------------------
+      | SUMMARY REQUEST
+      |--------------------------------------------------------------------------
+      */
 
-      const res = await api.get(
+      const response = await api.get(
         `/api/waste-generators/summary?${params.toString()}`,
       );
 
-      setSummary(res.data?.data || null);
+      setSummary(response?.data?.data || null);
     } catch (err) {
       console.error("Waste Generator Summary Error:", err);
 
@@ -122,14 +143,20 @@ export default function WasteGenerators() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      {/* ================= Header ================= */}
+      {/* ================================================================ */}
+      {/* HEADER                                                           */}
+      {/* ================================================================ */}
 
       <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
-      {/* ================= Page ================= */}
+      {/* ================================================================ */}
+      {/* PAGE                                                             */}
+      {/* ================================================================ */}
 
       <div className="w-full px-8 py-7 overflow-x-hidden">
-        {/* ================= Title ================= */}
+        {/* ============================================================ */}
+        {/* TITLE                                                          */}
+        {/* ============================================================ */}
 
         <div>
           <h1 className="text-[34px] font-bold tracking-tight text-[#16295A]">
@@ -142,15 +169,17 @@ export default function WasteGenerators() {
           </p>
         </div>
 
-        {/* ================= KPI Cards ================= */}
+        {/* ============================================================ */}
+        {/* KPI CARDS                                                      */}
+        {/* ============================================================ */}
 
         <section className="mt-6">
           <WasteGenKPIs summary={summary} />
         </section>
 
-        {/* ================================================================ */}
-        {/* COLLECTION POINT + GVP TREND                                   */}
-        {/* ================================================================ */}
+        {/* ============================================================ */}
+        {/* COLLECTION MAP + GVP TREND                                    */}
+        {/* ============================================================ */}
 
         <section
           className="
@@ -162,13 +191,17 @@ export default function WasteGenerators() {
             items-stretch
           "
         >
-          {/* ================= Collection Point ================= */}
+          {/* ========================================================== */}
+          {/* COLLECTION POINT                                           */}
+          {/* ========================================================== */}
 
           <div className="min-w-0 h-full">
             <WasteGenMap />
           </div>
 
-          {/* ================= GVP Generation Trend ================= */}
+          {/* ========================================================== */}
+          {/* GVP TREND                                                   */}
+          {/* ========================================================== */}
 
           <div className="min-w-0 h-full">
             <GVPGen
@@ -176,12 +209,13 @@ export default function WasteGenerators() {
               selectedCity={selectedCity}
               selectedZone={selectedZone}
               selectedDivision={selectedDivision}
-              selectedWard={selectedWard}
             />
           </div>
         </section>
 
-        {/* ================= Directory ================= */}
+        {/* ============================================================ */}
+        {/* DIRECTORY                                                      */}
+        {/* ============================================================ */}
 
         <section className="mt-5 mb-8">
           <WasteGenDir />
