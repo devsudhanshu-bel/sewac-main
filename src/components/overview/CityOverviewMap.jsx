@@ -38,10 +38,9 @@ import "leaflet/dist/leaflet.css";
 const API_BASE_URL =
   "https://sewac-main.onrender.com/api";
 
-/*
-  Different vehicles get different colors.
-  The same vehicle keeps the same color.
-*/
+/* =========================================================
+   ROUTE COLORS
+========================================================= */
 
 const ROUTE_COLORS = [
   "#7C3AED",
@@ -164,9 +163,9 @@ const createTruckIcon = (
    DATE FORMATTER
 ========================================================= */
 
-const formatDateForAPI = (
+function formatDateForAPI(
   date
-) => {
+) {
   if (!date) {
     const fallback =
       new Date();
@@ -252,15 +251,15 @@ const formatDateForAPI = (
   return formatDateForAPI(
     null
   );
-};
+}
 
 /* =========================================================
-   LOCAL STORAGE
+   LOCAL STORAGE HELPER
 ========================================================= */
 
-const getStoredValue = (
+function getStoredValue(
   ...keys
-) => {
+) {
   if (
     typeof window ===
     "undefined"
@@ -286,7 +285,7 @@ const getStoredValue = (
   }
 
   return null;
-};
+}
 
 /* =========================================================
    MAP CONTROLLER
@@ -300,7 +299,7 @@ function MapController({
     useMap();
 
   /* =======================================================
-     INVALIDATE MAP SIZE
+     MAP SIZE
   ======================================================= */
 
   useEffect(() => {
@@ -311,7 +310,7 @@ function MapController({
     const timer =
       setTimeout(() => {
         map.invalidateSize();
-      }, 200);
+      }, 250);
 
     const handleResize =
       () => {
@@ -336,7 +335,7 @@ function MapController({
   }, [map]);
 
   /* =======================================================
-     FIT ROUTE BOUNDS
+     FIT ROUTE
   ======================================================= */
 
   useEffect(() => {
@@ -360,7 +359,9 @@ function MapController({
     routes.forEach(
       (vehicle) => {
         if (
-          !vehicle?.points
+          !Array.isArray(
+            vehicle?.points
+          )
         ) {
           return;
         }
@@ -369,12 +370,12 @@ function MapController({
           (point) => {
             const latitude =
               Number(
-                point.latitude
+                point?.latitude
               );
 
             const longitude =
               Number(
-                point.longitude
+                point?.longitude
               );
 
             if (
@@ -416,8 +417,8 @@ function MapController({
           bounds,
           {
             padding: [
-              55,
-              55,
+              70,
+              70,
             ],
 
             maxZoom: 15,
@@ -444,7 +445,7 @@ function MapController({
 }
 
 /* =========================================================
-   ROUTE POINT POPUP
+   ROUTE POPUP
 ========================================================= */
 
 function RoutePointPopup({
@@ -455,7 +456,7 @@ function RoutePointPopup({
     <div
       style={{
         minWidth:
-          "210px",
+          "190px",
 
         fontFamily:
           "Inter, Arial, sans-serif",
@@ -473,7 +474,7 @@ function RoutePointPopup({
             "#0F172A",
 
           marginBottom:
-            "10px",
+            "8px",
         }}
       >
         {vehicleNumber}
@@ -529,7 +530,8 @@ function RoutePointPopup({
         </strong>
       </div>
 
-      {point?.iottimestamp && (
+      {(point?.iottimestamp ||
+        point?.iotTimestamp) && (
         <div
           style={{
             fontSize:
@@ -546,7 +548,8 @@ function RoutePointPopup({
                 "#334155",
             }}
           >
-            {point.iottimestamp}
+            {point?.iottimestamp ||
+              point?.iotTimestamp}
           </strong>
         </div>
       )}
@@ -578,11 +581,6 @@ export default function CityOverviewMap({
      STATE
   ======================================================= */
 
-  /*
-    Route Map is the initial selection,
-    matching the required architecture.
-  */
-
   const [
     selectedView,
     setSelectedView,
@@ -612,7 +610,7 @@ export default function CityOverviewMap({
     useRef(null);
 
   /* =======================================================
-     HEADER VALUES
+     HEADER DATA
   ======================================================= */
 
   const selectedWard =
@@ -700,9 +698,7 @@ export default function CityOverviewMap({
     ]);
 
   /* =======================================================
-     MAP VIEW OPTIONS
-
-     ARCHITECTURE ONLY.
+     FIVE MAP VIEWS
   ======================================================= */
 
   const mapViews = [
@@ -784,10 +780,6 @@ export default function CityOverviewMap({
 
   const fetchRoutes =
     async () => {
-      /*
-        Route requires a ward.
-      */
-
       if (
         !normalizedWard
       ) {
@@ -819,22 +811,22 @@ export default function CityOverviewMap({
         );
 
         console.log(
-          "🚛 SEWAC ROUTE MAP"
-        );
-
-        console.log(
-          "Date:",
-          apiDate
-        );
-
-        console.log(
-          "Ward:",
-          normalizedWard
+          "🚛 SEWAC ROUTE MAP REQUEST"
         );
 
         console.log(
           "URL:",
           url
+        );
+
+        console.log(
+          "WARD:",
+          normalizedWard
+        );
+
+        console.log(
+          "DATE:",
+          apiDate
         );
 
         console.log(
@@ -855,42 +847,50 @@ export default function CityOverviewMap({
             }
           );
 
+        const json =
+          await response.json();
+
         if (
           !response.ok
         ) {
           throw new Error(
-            `Route API returned HTTP ${response.status}`
+            json?.message ||
+              `Route API returned HTTP ${response.status}`
           );
         }
 
-        const result =
-          await response.json();
-
         console.log(
-          "SEWAC ROUTE MAP RESPONSE:",
-          result
+          "🚛 ROUTE API RESPONSE:",
+          json
         );
 
         /*
-          Backend:
+        ==================================================
+        SUPPORT BOTH:
 
-          {
-            success: true,
-            data: {
-              success: true,
-              date: "...",
-              wardNo: 216,
-              totalVehicles: 2,
-              vehicles: [...]
-            }
+        {
+          vehicles: []
+        }
+
+        AND:
+
+        {
+          data: {
+            vehicles: []
           }
-
-          Also support direct response.
+        }
+        ==================================================
         */
 
         const payload =
-          result?.data ??
-          result;
+          json?.data &&
+          typeof json.data ===
+            "object" &&
+          !Array.isArray(
+            json.data
+          )
+            ? json.data
+            : json;
 
         const vehicleData =
           Array.isArray(
@@ -915,13 +915,11 @@ export default function CityOverviewMap({
                     vehicle?.points
                   )
                     ? vehicle.points
+                    : Array.isArray(
+                        vehicle?.route
+                      )
+                    ? vehicle.route
                     : [];
-
-                /*
-                  Leaflet:
-
-                  [latitude, longitude]
-                */
 
                 const points =
                   rawPoints
@@ -945,12 +943,7 @@ export default function CityOverviewMap({
                           ) ||
                           !Number.isFinite(
                             longitude
-                          )
-                        ) {
-                          return null;
-                        }
-
-                        if (
+                          ) ||
                           latitude ===
                             0 ||
                           longitude ===
@@ -978,7 +971,9 @@ export default function CityOverviewMap({
                     );
 
                 /*
-                  Sort chronologically.
+                --------------------------------------------
+                SORT TELEMETRY CHRONOLOGICALLY
+                --------------------------------------------
                 */
 
                 points.sort(
@@ -1006,6 +1001,17 @@ export default function CityOverviewMap({
                           0
                       ).getTime();
 
+                    if (
+                      Number.isNaN(
+                        timeA
+                      ) ||
+                      Number.isNaN(
+                        timeB
+                      )
+                    ) {
+                      return 0;
+                    }
+
                     return (
                       timeA -
                       timeB
@@ -1027,11 +1033,6 @@ export default function CityOverviewMap({
 
                   vehicleNumber,
 
-                  vehicleTableName:
-                    vehicle?.vehicleTableName ||
-                    vehicle?.vehicleTable ||
-                    "",
-
                   points,
 
                   color:
@@ -1052,18 +1053,13 @@ export default function CityOverviewMap({
             );
 
         console.log(
-          "NORMALIZED ROUTES:",
+          "🚛 NORMALIZED VEHICLES:",
           normalizedVehicles
         );
 
         setRoutes(
           normalizedVehicles
         );
-
-        /*
-          Empty route is not treated
-          as a technical error.
-        */
 
         if (
           normalizedVehicles.length ===
@@ -1078,7 +1074,7 @@ export default function CityOverviewMap({
         fetchError
       ) {
         console.error(
-          "❌ SEWAC ROUTE MAP ERROR:",
+          "❌ ROUTE MAP ERROR:",
           fetchError
         );
 
@@ -1086,7 +1082,7 @@ export default function CityOverviewMap({
 
         setError(
           fetchError?.message ||
-            "Unable to load route data."
+            "Failed to load route data."
         );
       } finally {
         setLoading(
@@ -1096,7 +1092,7 @@ export default function CityOverviewMap({
     };
 
   /* =======================================================
-     FETCH WHEN ROUTE VIEW IS ACTIVE
+     FETCH WHEN ROUTE MAP IS ACTIVE
   ======================================================= */
 
   useEffect(() => {
@@ -1115,7 +1111,7 @@ export default function CityOverviewMap({
   ]);
 
   /* =======================================================
-     HEADER STORAGE CHANGES
+     STORAGE LISTENER
   ======================================================= */
 
   useEffect(() => {
@@ -1147,7 +1143,7 @@ export default function CityOverviewMap({
   ]);
 
   /* =======================================================
-     CLOSE DROPDOWN
+     CLOSE MENU OUTSIDE CLICK
   ======================================================= */
 
   useEffect(() => {
@@ -1179,7 +1175,7 @@ export default function CityOverviewMap({
   }, []);
 
   /* =======================================================
-     TOTAL ROUTE POINTS
+     TOTAL GPS POINTS
   ======================================================= */
 
   const totalGpsPoints =
@@ -1232,7 +1228,7 @@ export default function CityOverviewMap({
       </div>
 
       {/* =================================================
-          MAP
+          MAP WRAPPER
       ================================================= */}
 
       <div
@@ -1251,6 +1247,17 @@ export default function CityOverviewMap({
       >
         {/* =================================================
             LEAFLET MAP
+
+            IMPORTANT:
+            zoomControl is TRUE here.
+
+            NO <ZoomControl />
+            COMPONENT IS USED.
+
+            This completely fixes:
+
+            ReferenceError:
+            ZoomControl is not defined
         ================================================= */}
 
         <MapContainer
@@ -1260,10 +1267,10 @@ export default function CityOverviewMap({
           zoom={
             DEFAULT_ZOOM
           }
-          zoomControl={
-            false
-          }
           scrollWheelZoom={
+            true
+          }
+          zoomControl={
             true
           }
           style={{
@@ -1272,25 +1279,17 @@ export default function CityOverviewMap({
 
             height:
               "100%",
+
+            zIndex: 1,
           }}
         >
           {/* =================================================
-              GREY BASE MAP
-
-              Carto Light gives the grey/light appearance.
+              GREY MAP
           ================================================= */}
 
           <TileLayer
             attribution='&copy; OpenStreetMap contributors &copy; CARTO'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
-
-          {/* =================================================
-              ZOOM
-          ================================================= */}
-
-          <ZoomControl
-            position="topleft"
           />
 
           {/* =================================================
@@ -1317,7 +1316,7 @@ export default function CityOverviewMap({
                 vehicle,
                 vehicleIndex
               ) => {
-                const coordinates =
+                const positions =
                   vehicle.points.map(
                     (
                       point
@@ -1326,7 +1325,7 @@ export default function CityOverviewMap({
                   );
 
                 if (
-                  coordinates.length ===
+                  positions.length ===
                   0
                 ) {
                   return null;
@@ -1350,15 +1349,15 @@ export default function CityOverviewMap({
                   <div
                     key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
                   >
-                    {/* =================================
+                    {/* =======================================
                         ROUTE GLOW
-                    ================================= */}
+                    ======================================= */}
 
-                    {coordinates.length >
+                    {positions.length >
                       1 && (
                       <Polyline
                         positions={
-                          coordinates
+                          positions
                         }
                         pathOptions={{
                           color,
@@ -1367,7 +1366,7 @@ export default function CityOverviewMap({
                             8,
 
                           opacity:
-                            0.10,
+                            0.12,
 
                           lineCap:
                             "round",
@@ -1378,15 +1377,15 @@ export default function CityOverviewMap({
                       />
                     )}
 
-                    {/* =================================
+                    {/* =======================================
                         MAIN ROUTE
-                    ================================= */}
+                    ======================================= */}
 
-                    {coordinates.length >
+                    {positions.length >
                       1 && (
                       <Polyline
                         positions={
-                          coordinates
+                          positions
                         }
                         pathOptions={{
                           color,
@@ -1406,97 +1405,62 @@ export default function CityOverviewMap({
                       />
                     )}
 
-                    {/* =================================
+                    {/* =======================================
                         GPS POINTS
-                    ================================= */}
+                    ======================================= */}
 
                     {vehicle.points.map(
                       (
                         point,
                         pointIndex
-                      ) => {
-                        const latitude =
-                          Number(
-                            point?.latitude
-                          );
+                      ) => (
+                        <CircleMarker
+                          key={`${vehicle.vehicleNumber}-${pointIndex}`}
+                          center={
+                            point.position
+                          }
+                          radius={
+                            3.5
+                          }
+                          pathOptions={{
+                            color:
+                              "#FFFFFF",
 
-                        const longitude =
-                          Number(
-                            point?.longitude
-                          );
+                            weight:
+                              1.2,
 
-                        if (
-                          !Number.isFinite(
-                            latitude
-                          ) ||
-                          !Number.isFinite(
-                            longitude
-                          )
-                        ) {
-                          return null;
-                        }
+                            fillColor:
+                              color,
 
-                        return (
-                          <CircleMarker
-                            key={`${vehicle.vehicleNumber}-${pointIndex}`}
-                            center={[
-                              latitude,
-                              longitude,
-                            ]}
-                            radius={
-                              4
+                            fillOpacity:
+                              1,
+                          }}
+                        >
+                          <Popup
+                            closeButton={
+                              true
                             }
-                            pathOptions={{
-                              color:
-                                "#FFFFFF",
-
-                              weight:
-                                1.5,
-
-                              fillColor:
-                                color,
-
-                              fillOpacity:
-                                1,
-                            }}
-                            eventHandlers={{
-                              mouseover:
-                                (
-                                  event
-                                ) => {
-                                  event.target.openPopup();
-                                },
-                            }}
                           >
-                            <Popup
-                              closeButton={
-                                true
+                            <RoutePointPopup
+                              point={
+                                point
                               }
-                              maxWidth={
-                                300
+                              vehicleNumber={
+                                vehicle.vehicleNumber
                               }
-                            >
-                              <RoutePointPopup
-                                point={
-                                  point
-                                }
-                                vehicleNumber={
-                                  vehicle.vehicleNumber
-                                }
-                              />
-                            </Popup>
-                          </CircleMarker>
-                        );
-                      }
+                            />
+                          </Popup>
+                        </CircleMarker>
+                      )
                     )}
 
-                    {/* =================================
-                        ROUTE START
-                    ================================= */}
+                    {/* =======================================
+                        START
+                    ======================================= */}
 
                     <CircleMarker
                       center={
-                        coordinates[0]
+                        positions[0]
                       }
                       radius={
                         7
@@ -1517,18 +1481,16 @@ export default function CityOverviewMap({
                       <Popup>
                         <div
                           style={{
-                            fontFamily:
-                              "Inter, Arial, sans-serif",
-
                             fontSize:
                               "12px",
+
+                            fontWeight:
+                              600,
                           }}
                         >
-                          <strong>
-                            {
-                              vehicle.vehicleNumber
-                            }
-                          </strong>
+                          {
+                            vehicle.vehicleNumber
+                          }
 
                           <br />
 
@@ -1536,6 +1498,9 @@ export default function CityOverviewMap({
                             style={{
                               color:
                                 "#64748B",
+
+                              fontWeight:
+                                400,
                             }}
                           >
                             Route Start
@@ -1544,9 +1509,9 @@ export default function CityOverviewMap({
                       </Popup>
                     </CircleMarker>
 
-                    {/* =================================
+                    {/* =======================================
                         CURRENT VEHICLE
-                    ================================= */}
+                    ======================================= */}
 
                     {latestPoint && (
                       <Marker
@@ -1654,14 +1619,6 @@ export default function CityOverviewMap({
                 );
               }
             )}
-
-          {/* =================================================
-              OTHER MAP MODES
-
-              Architecture only.
-              No fake data is rendered.
-          ================================================= */}
-
         </MapContainer>
 
         {/* =================================================
@@ -1716,7 +1673,7 @@ export default function CityOverviewMap({
               "
             >
               <ActiveIcon
-                size={23}
+                size={22}
                 strokeWidth={
                   2
                 }
@@ -1728,7 +1685,7 @@ export default function CityOverviewMap({
 
               <span
                 className="
-                  text-[17px]
+                  text-[16px]
                   font-semibold
                   text-slate-700
                 "
@@ -1740,7 +1697,7 @@ export default function CityOverviewMap({
             </div>
 
             <ChevronDown
-              size={19}
+              size={18}
               className={`
                 text-slate-600
                 transition-transform
@@ -1800,12 +1757,6 @@ export default function CityOverviewMap({
                           false
                         );
 
-                        /*
-                          Route errors should
-                          disappear when switching
-                          views.
-                        */
-
                         if (
                           view.id !==
                           "route"
@@ -1838,7 +1789,7 @@ export default function CityOverviewMap({
                         "
                       >
                         <Icon
-                          size={20}
+                          size={19}
                           strokeWidth={
                             2
                           }
@@ -1850,7 +1801,7 @@ export default function CityOverviewMap({
 
                         <span
                           className="
-                            text-[14px]
+                            text-[13px]
                             font-medium
                             text-slate-700
                           "
@@ -1868,7 +1819,7 @@ export default function CityOverviewMap({
                               view.color,
 
                             fontSize:
-                              "17px",
+                              "16px",
 
                             fontWeight:
                               700,
@@ -1886,18 +1837,18 @@ export default function CityOverviewMap({
         </div>
 
         {/* =================================================
-            DIVISION
+            DIVISION CARD
         ================================================= */}
 
         <div
           className="
             absolute
-            right-[315px]
+            right-[300px]
             top-5
             z-[1000]
-            min-w-[270px]
+            min-w-[245px]
             px-5
-            py-3.5
+            py-3
             bg-white
             rounded-[16px]
             border
@@ -1933,7 +1884,7 @@ export default function CityOverviewMap({
         </div>
 
         {/* =================================================
-            WARD
+            WARD CARD
         ================================================= */}
 
         <div
@@ -1942,9 +1893,9 @@ export default function CityOverviewMap({
             right-5
             top-5
             z-[1000]
-            min-w-[270px]
+            min-w-[245px]
             px-5
-            py-3.5
+            py-3
             bg-white
             rounded-[16px]
             border
@@ -2036,61 +1987,7 @@ export default function CityOverviewMap({
           )}
 
         {/* =================================================
-            ROUTE ERROR / EMPTY MESSAGE
-        ================================================= */}
-
-        {selectedView ===
-          "route" &&
-          !loading &&
-          error && (
-            <div
-              className="
-                absolute
-                left-1/2
-                bottom-5
-                -translate-x-1/2
-                z-[1000]
-                max-w-[calc(100%-40px)]
-              "
-            >
-              <div
-                className="
-                  bg-white
-                  border
-                  border-slate-200
-                  shadow-[0_8px_24px_rgba(15,23,42,0.10)]
-                  rounded-[14px]
-                  px-5
-                  py-3
-                  flex
-                  items-center
-                  gap-3
-                  whitespace-nowrap
-                "
-              >
-                <Truck
-                  size={17}
-                  className="
-                    text-violet-600
-                    shrink-0
-                  "
-                />
-
-                <span
-                  className="
-                    text-[12px]
-                    font-semibold
-                    text-slate-600
-                  "
-                >
-                  {error}
-                </span>
-              </div>
-            </div>
-          )}
-
-        {/* =================================================
-            ROUTE LOADING
+            LOADING
         ================================================= */}
 
         {selectedView ===
@@ -2102,7 +1999,7 @@ export default function CityOverviewMap({
                 left-1/2
                 bottom-5
                 -translate-x-1/2
-                z-[1000]
+                z-[900]
               "
             >
               <div
@@ -2141,7 +2038,60 @@ export default function CityOverviewMap({
           )}
 
         {/* =================================================
-            ROUTE COUNT
+            ERROR
+        ================================================= */}
+
+        {selectedView ===
+          "route" &&
+          !loading &&
+          error && (
+            <div
+              className="
+                absolute
+                left-1/2
+                bottom-5
+                -translate-x-1/2
+                z-[900]
+                max-w-[calc(100%-40px)]
+              "
+            >
+              <div
+                className="
+                  bg-white
+                  border
+                  border-slate-200
+                  shadow-[0_8px_24px_rgba(15,23,42,0.10)]
+                  rounded-[14px]
+                  px-5
+                  py-3
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+                <Truck
+                  size={17}
+                  className="
+                    text-violet-600
+                    shrink-0
+                  "
+                />
+
+                <span
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-slate-600
+                  "
+                >
+                  {error}
+                </span>
+              </div>
+            </div>
+          )}
+
+        {/* =================================================
+            ROUTE INFO
         ================================================= */}
 
         {selectedView ===
@@ -2155,7 +2105,7 @@ export default function CityOverviewMap({
                 left-1/2
                 bottom-5
                 -translate-x-1/2
-                z-[900]
+                z-[800]
                 pointer-events-none
               "
             >
