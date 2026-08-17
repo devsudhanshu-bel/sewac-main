@@ -445,7 +445,7 @@ function MapController({
 }
 
 /* =========================================================
-   ROUTE POPUP
+   ROUTE POINT POPUP
 ========================================================= */
 
 function RoutePointPopup({
@@ -558,6 +558,119 @@ function RoutePointPopup({
 }
 
 /* =========================================================
+   VERTICAL CITY FILTER
+========================================================= */
+
+function CityFilter({
+  label,
+  value,
+  placeholder,
+  options,
+  onChange,
+}) {
+  return (
+    <div
+      className="
+        w-full
+      "
+    >
+      {/* LABEL */}
+
+      <div
+        className="
+          mb-1.5
+          text-[10px]
+          font-semibold
+          tracking-[0.06em]
+          uppercase
+          text-slate-400
+        "
+      >
+        {label}
+      </div>
+
+      {/* SELECT */}
+
+      <div
+        className="
+          relative
+          w-full
+        "
+      >
+        <select
+          value={
+            value ?? ""
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value
+            )
+          }
+          className="
+            appearance-none
+            w-full
+            h-[42px]
+            rounded-[10px]
+            border
+            border-slate-200
+            bg-white
+            px-3.5
+            pr-9
+            text-[12px]
+            font-semibold
+            text-slate-700
+            outline-none
+            cursor-pointer
+            transition
+            hover:border-slate-300
+            focus:border-violet-300
+            focus:ring-2
+            focus:ring-violet-100
+          "
+        >
+          <option
+            value=""
+          >
+            {placeholder}
+          </option>
+
+          {options.map(
+            (
+              option
+            ) => (
+              <option
+                key={
+                  option.value
+                }
+                value={
+                  option.value
+                }
+              >
+                {
+                  option.label
+                }
+              </option>
+            )
+          )}
+        </select>
+
+        <ChevronDown
+          size={15}
+          className="
+            absolute
+            right-3
+            top-1/2
+            -translate-y-1/2
+            pointer-events-none
+            text-slate-500
+          "
+        />
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
@@ -576,6 +689,12 @@ export default function CityOverviewMap({
 
   selectedDate:
     selectedDateProp = null,
+
+  selectedZone:
+    selectedZoneProp = null,
+
+  zoneName:
+    zoneNameProp = null,
 }) {
   /* =======================================================
      STATE
@@ -584,7 +703,9 @@ export default function CityOverviewMap({
   const [
     selectedView,
     setSelectedView,
-  ] = useState("route");
+  ] = useState(
+    "route"
+  );
 
   const [
     showViewMenu,
@@ -605,6 +726,59 @@ export default function CityOverviewMap({
     error,
     setError,
   ] = useState("");
+
+  /* =======================================================
+     CITY OVERVIEW FILTER STATE
+  ======================================================= */
+
+  const [
+    selectedZone,
+    setSelectedZone,
+  ] = useState(
+    selectedZoneProp ??
+      zoneNameProp ??
+      getStoredValue(
+        "selectedZone",
+        "zoneName",
+        "zone",
+        "selected_zone",
+        "headerZone"
+      ) ??
+      ""
+  );
+
+  const [
+    selectedOverviewDivision,
+    setSelectedOverviewDivision,
+  ] = useState(
+    selectedDivisionProp ??
+      divisionNameProp ??
+      getStoredValue(
+        "selectedDivision",
+        "divisionName",
+        "division",
+        "selected_division",
+        "headerDivision"
+      ) ??
+      ""
+  );
+
+  const [
+    selectedOverviewWard,
+    setSelectedOverviewWard,
+  ] = useState(
+    selectedWardProp ??
+      wardNoProp ??
+      getStoredValue(
+        "selectedWard",
+        "selectedWardNo",
+        "wardNo",
+        "ward",
+        "selected_ward",
+        "headerWardNo"
+      ) ??
+      ""
+  );
 
   const menuRef =
     useRef(null);
@@ -642,20 +816,20 @@ export default function CityOverviewMap({
 
   const normalizedWard =
     useMemo(() => {
+      const ward =
+        selectedWard;
+
       if (
-        selectedWard ===
-          null ||
-        selectedWard ===
-          undefined ||
-        selectedWard ===
-          ""
+        ward === null ||
+        ward === undefined ||
+        ward === ""
       ) {
         return null;
       }
 
       const match =
         String(
-          selectedWard
+          ward
         ).match(
           /\d+/
         );
@@ -698,7 +872,7 @@ export default function CityOverviewMap({
     ]);
 
   /* =======================================================
-     FIVE MAP VIEWS
+     MAP VIEWS
   ======================================================= */
 
   const mapViews = [
@@ -773,6 +947,125 @@ export default function CityOverviewMap({
 
   const ActiveIcon =
     activeView.icon;
+
+  /* =======================================================
+     CITY OVERVIEW FILTER OPTIONS
+
+     These are intentionally kept as the architecture
+     for now.
+
+     Later these can be populated directly from APIs.
+  ======================================================= */
+
+  const zoneOptions = [
+    {
+      value:
+        "Bengaluru South City Corporation",
+
+      label:
+        "Bengaluru South City Corporation",
+    },
+
+    {
+      value:
+        "Bengaluru East City Corporation",
+
+      label:
+        "Bengaluru East City Corporation",
+    },
+
+    {
+      value:
+        "Bengaluru West City Corporation",
+
+      label:
+        "Bengaluru West City Corporation",
+    },
+
+    {
+      value:
+        "Bengaluru North City Corporation",
+
+      label:
+        "Bengaluru North City Corporation",
+    },
+  ];
+
+  const divisionOptions = [
+    {
+      value:
+        "Bommanahalli Division",
+
+      label:
+        "Bommanahalli Division",
+    },
+
+    {
+      value:
+        "Mahadevapura Division",
+
+      label:
+        "Mahadevapura Division",
+    },
+
+    {
+      value:
+        "Rajarajeshwari Nagar Division",
+
+      label:
+        "Rajarajeshwari Nagar Division",
+    },
+
+    {
+      value:
+        "West Division",
+
+      label:
+        "West Division",
+    },
+
+    {
+      value:
+        "East Division",
+
+      label:
+        "East Division",
+    },
+  ];
+
+  const wardOptions = [
+    {
+      value:
+        "3",
+
+      label:
+        "Ward 3",
+    },
+
+    {
+      value:
+        "4",
+
+      label:
+        "Ward 4",
+    },
+
+    {
+      value:
+        "5",
+
+      label:
+        "Ward 5",
+    },
+
+    {
+      value:
+        "216",
+
+      label:
+        "Ward 216",
+    },
+  ];
 
   /* =======================================================
      FETCH ROUTES
@@ -864,24 +1157,6 @@ export default function CityOverviewMap({
           json
         );
 
-        /*
-        ==================================================
-        SUPPORT BOTH:
-
-        {
-          vehicles: []
-        }
-
-        AND:
-
-        {
-          data: {
-            vehicles: []
-          }
-        }
-        ==================================================
-        */
-
         const payload =
           json?.data &&
           typeof json.data ===
@@ -898,10 +1173,6 @@ export default function CityOverviewMap({
           )
             ? payload.vehicles
             : [];
-
-        /* =================================================
-           NORMALIZE VEHICLES
-        ================================================= */
 
         const normalizedVehicles =
           vehicleData
@@ -969,12 +1240,6 @@ export default function CityOverviewMap({
                     .filter(
                       Boolean
                     );
-
-                /*
-                --------------------------------------------
-                SORT TELEMETRY CHRONOLOGICALLY
-                --------------------------------------------
-                */
 
                 points.sort(
                   (
@@ -1092,7 +1357,7 @@ export default function CityOverviewMap({
     };
 
   /* =======================================================
-     FETCH WHEN ROUTE MAP IS ACTIVE
+     FETCH ROUTE WHEN ACTIVE
   ======================================================= */
 
   useEffect(() => {
@@ -1143,7 +1408,7 @@ export default function CityOverviewMap({
   ]);
 
   /* =======================================================
-     CLOSE MENU OUTSIDE CLICK
+     CLOSE MAP MENU
   ======================================================= */
 
   useEffect(() => {
@@ -1228,7 +1493,7 @@ export default function CityOverviewMap({
       </div>
 
       {/* =================================================
-          MAP WRAPPER
+          MAP
       ================================================= */}
 
       <div
@@ -1245,21 +1510,6 @@ export default function CityOverviewMap({
             "650px",
         }}
       >
-        {/* =================================================
-            LEAFLET MAP
-
-            IMPORTANT:
-            zoomControl is TRUE here.
-
-            NO <ZoomControl />
-            COMPONENT IS USED.
-
-            This completely fixes:
-
-            ReferenceError:
-            ZoomControl is not defined
-        ================================================= */}
-
         <MapContainer
           center={
             DEFAULT_CENTER
@@ -1306,7 +1556,7 @@ export default function CityOverviewMap({
           />
 
           {/* =================================================
-              ROUTE MAP
+              ROUTES
           ================================================= */}
 
           {selectedView ===
@@ -1349,10 +1599,6 @@ export default function CityOverviewMap({
                   <div
                     key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
                   >
-                    {/* =======================================
-                        ROUTE GLOW
-                    ======================================= */}
-
                     {positions.length >
                       1 && (
                       <Polyline
@@ -1377,10 +1623,6 @@ export default function CityOverviewMap({
                       />
                     )}
 
-                    {/* =======================================
-                        MAIN ROUTE
-                    ======================================= */}
-
                     {positions.length >
                       1 && (
                       <Polyline
@@ -1404,10 +1646,6 @@ export default function CityOverviewMap({
                         }}
                       />
                     )}
-
-                    {/* =======================================
-                        GPS POINTS
-                    ======================================= */}
 
                     {vehicle.points.map(
                       (
@@ -1436,11 +1674,7 @@ export default function CityOverviewMap({
                               1,
                           }}
                         >
-                          <Popup
-                            closeButton={
-                              true
-                            }
-                          >
+                          <Popup>
                             <RoutePointPopup
                               point={
                                 point
@@ -1453,10 +1687,6 @@ export default function CityOverviewMap({
                         </CircleMarker>
                       )
                     )}
-
-                    {/* =======================================
-                        START
-                    ======================================= */}
 
                     <CircleMarker
                       center={
@@ -1508,10 +1738,6 @@ export default function CityOverviewMap({
                         </div>
                       </Popup>
                     </CircleMarker>
-
-                    {/* =======================================
-                        CURRENT VEHICLE
-                    ======================================= */}
 
                     {latestPoint && (
                       <Marker
@@ -1600,16 +1826,14 @@ export default function CityOverviewMap({
                               }}
                             >
                               Last Location:
-
                               <br />
-
-                              {latestPoint.latitude.toFixed(
-                                6
-                              )}
+                              {
+                                latestPoint.latitude
+                              }
                               ,{" "}
-                              {latestPoint.longitude.toFixed(
-                                6
-                              )}
+                              {
+                                latestPoint.longitude
+                              }
                             </div>
                           </div>
                         </Popup>
@@ -1634,10 +1858,6 @@ export default function CityOverviewMap({
             z-[1000]
           "
         >
-          {/* =================================================
-              SELECTED VIEW
-          ================================================= */}
-
           <button
             type="button"
             onClick={() =>
@@ -1710,10 +1930,6 @@ export default function CityOverviewMap({
               `}
             />
           </button>
-
-          {/* =================================================
-              DROPDOWN
-          ================================================= */}
 
           {showViewMenu && (
             <div
@@ -1837,99 +2053,204 @@ export default function CityOverviewMap({
         </div>
 
         {/* =================================================
-            DIVISION CARD
+            CITY OVERVIEW FILTERS
+
+            ONLY SHOWN FOR CITY OVERVIEW
         ================================================= */}
 
-        <div
-          className="
-            absolute
-            right-[300px]
-            top-5
-            z-[1000]
-            min-w-[245px]
-            px-5
-            py-3
-            bg-white
-            rounded-[16px]
-            border
-            border-slate-200
-            shadow-[0_6px_20px_rgba(15,23,42,0.08)]
-          "
-        >
+        {selectedView ===
+          "overview" && (
           <div
             className="
-              text-[10px]
-              font-semibold
-              tracking-[0.06em]
-              uppercase
-              text-slate-400
+              absolute
+              left-5
+              top-[105px]
+              z-[1000]
+              w-[245px]
+              rounded-[16px]
+              bg-white
+              border
+              border-slate-200
+              shadow-[0_8px_24px_rgba(15,23,42,0.10)]
+              p-4
             "
           >
-            DIVISION
-          </div>
+            {/* FILTER HEADER */}
 
-          <div
-            className="
-              mt-1
-              text-[15px]
-              font-semibold
-              text-slate-700
-            "
-          >
-            {
-              selectedDivision ||
-              "All Divisions"
-            }
+            <div
+              className="
+                mb-3
+                text-[11px]
+                font-semibold
+                text-slate-700
+              "
+            >
+              MAP FILTERS
+            </div>
+
+            {/* ZONE */}
+
+            <CityFilter
+              label="ZONE"
+              value={
+                selectedZone
+              }
+              placeholder="All Zones"
+              options={
+                zoneOptions
+              }
+              onChange={
+                setSelectedZone
+              }
+            />
+
+            {/* DIVISION */}
+
+            <div
+              className="
+                mt-3
+              "
+            >
+              <CityFilter
+                label="DIVISION"
+                value={
+                  selectedOverviewDivision
+                }
+                placeholder="All Divisions"
+                options={
+                  divisionOptions
+                }
+                onChange={
+                  setSelectedOverviewDivision
+                }
+              />
+            </div>
+
+            {/* WARD */}
+
+            <div
+              className="
+                mt-3
+              "
+            >
+              <CityFilter
+                label="WARD"
+                value={
+                  selectedOverviewWard
+                }
+                placeholder="All Wards"
+                options={
+                  wardOptions
+                }
+                onChange={
+                  setSelectedOverviewWard
+                }
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* =================================================
-            WARD CARD
+            ROUTE DIVISION + WARD
+
+            KEPT FOR ROUTE MAP ONLY
         ================================================= */}
 
-        <div
-          className="
-            absolute
-            right-5
-            top-5
-            z-[1000]
-            min-w-[245px]
-            px-5
-            py-3
-            bg-white
-            rounded-[16px]
-            border
-            border-slate-200
-            shadow-[0_6px_20px_rgba(15,23,42,0.08)]
-          "
-        >
-          <div
-            className="
-              text-[10px]
-              font-semibold
-              tracking-[0.06em]
-              uppercase
-              text-slate-400
-            "
-          >
-            WARD
-          </div>
+        {selectedView ===
+          "route" && (
+          <>
+            {/* DIVISION */}
 
-          <div
-            className="
-              mt-1
-              text-[15px]
-              font-semibold
-              text-slate-700
-            "
-          >
-            {selectedWard
-              ? String(
-                  selectedWard
-                )
-              : "All Wards"}
-          </div>
-        </div>
+            <div
+              className="
+                absolute
+                right-[300px]
+                top-5
+                z-[1000]
+                min-w-[245px]
+                px-5
+                py-3
+                bg-white
+                rounded-[16px]
+                border
+                border-slate-200
+                shadow-[0_6px_20px_rgba(15,23,42,0.08)]
+              "
+            >
+              <div
+                className="
+                  text-[10px]
+                  font-semibold
+                  tracking-[0.06em]
+                  uppercase
+                  text-slate-400
+                "
+              >
+                DIVISION
+              </div>
+
+              <div
+                className="
+                  mt-1
+                  text-[15px]
+                  font-semibold
+                  text-slate-700
+                "
+              >
+                {
+                  selectedDivision ||
+                  "All Divisions"
+                }
+              </div>
+            </div>
+
+            {/* WARD */}
+
+            <div
+              className="
+                absolute
+                right-5
+                top-5
+                z-[1000]
+                min-w-[245px]
+                px-5
+                py-3
+                bg-white
+                rounded-[16px]
+                border
+                border-slate-200
+                shadow-[0_6px_20px_rgba(15,23,42,0.08)]
+              "
+            >
+              <div
+                className="
+                  text-[10px]
+                  font-semibold
+                  tracking-[0.06em]
+                  uppercase
+                  text-slate-400
+                "
+              >
+                WARD
+              </div>
+
+              <div
+                className="
+                  mt-1
+                  text-[15px]
+                  font-semibold
+                  text-slate-700
+                "
+              >
+                {selectedWard
+                  ? String(
+                      selectedWard
+                    )
+                  : "All Wards"}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* =================================================
             REFRESH
@@ -2031,7 +2352,8 @@ export default function CityOverviewMap({
                     text-slate-600
                   "
                 >
-                  Loading vehicle routes...
+                  Loading vehicle
+                  routes...
                 </span>
               </div>
             </div>
