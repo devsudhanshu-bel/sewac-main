@@ -6,8 +6,6 @@ const net = require("net");
 const securityRoutes = require("./routes/securityRoutes");
 const authRoutes = require("./routes/authRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
-const behaviorRoutes = require("./routes/behaviorRoutes");
-const riskRoutes = require("./routes/riskRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
 
@@ -81,8 +79,6 @@ app.get("/smtp-port-test", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/security", securityRoutes);
 app.use("/api/devices", deviceRoutes);
-app.use("/api/behavior", behaviorRoutes);
-app.use("/api/risk", riskRoutes);
 app.use("/api/email", emailRoutes);
 app.use("/api/super-admin", superAdminRoutes);
 

@@ -141,18 +141,6 @@ const login = async (req, res) => {
     );
     const permissions = rolePermissionService.getPermissionsByRole(admin.role);
 
-    // Check whether behavior profile exists
-    const behaviorProfile = await pool.query(
-      `
-  SELECT id
-  FROM behavior_profiles
-  WHERE admin_id = $1
-  `,
-      [admin.id],
-    );
-
-    const enrollmentRequired = behaviorProfile.rows.length === 0;
-
     await logEvent({
       adminId: admin.id,
       eventType: "IDENTITY_AUTH_SUCCESS",
@@ -163,9 +151,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Identity authentication successful",
-
-      enrollmentRequired,
-
+      
       adminId: admin.id,
 
       token,

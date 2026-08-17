@@ -23,11 +23,6 @@ const Login = () => {
 
   const [message, setMessage] = useState("");
 
-  const [typingStart, setTypingStart] = useState(null);
-
-  const [typingEnd, setTypingEnd] = useState(null);
-
-  const [backspaces, setBackspaces] = useState(0);
   const cardRef = useRef(null);
 
   const logoRef = useRef(null);
@@ -202,43 +197,7 @@ const Login = () => {
     });
   }, []);
 
-  const loginMetrics = useRef(null);
-
   const handleLogin = async (e) => {
-    e.preventDefault();
-    const typingDuration =
-      typingStart && typingEnd ? typingEnd - typingStart : 0;
-
-    const typingSpeed =
-      password.length > 0
-        ? Number((password.length / (typingDuration / 1000)).toFixed(2))
-        : 0;
-
-    const dwellTime = Number(
-      (typingDuration / Math.max(password.length, 1)).toFixed(2),
-    );
-
-    const flightTime = Number(
-      (typingDuration / Math.max(password.length - 1, 1)).toFixed(2),
-    );
-
-    const errorRate = Number(
-      ((backspaces / Math.max(password.length, 1)) * 100).toFixed(2),
-    );
-    loginMetrics.current = {
-      typing_speed: typingSpeed,
-      dwell_time: dwellTime,
-      flight_time: flightTime,
-      backspace_usage: backspaces,
-      error_rate: errorRate,
-    };
-
-    console.log({
-      typingSpeed,
-      typingDuration,
-      backspaces,
-    });
-
     setLoading(true);
 
     setError("");
@@ -256,16 +215,6 @@ const Login = () => {
           email,
 
           password,
-
-          typing_speed: typingSpeed,
-
-          dwell_time: dwellTime,
-
-          flight_time: flightTime,
-
-          backspace_usage: backspaces,
-
-          error_rate: errorRate,
         }),
       });
 
@@ -289,20 +238,6 @@ const Login = () => {
           );
 
           window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
-
-          return;
-        }
-        if (data.enrollmentRequired) {
-          sessionStorage.setItem("token", tempToken);
-
-          sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
-
-          sessionStorage.setItem(
-            "permissions",
-            JSON.stringify(data.permissions),
-          );
-
-          navigate("/behavior-enrollment");
 
           return;
         }
@@ -387,56 +322,6 @@ const Login = () => {
           return;
         }
 
-        const behaviorResponse = await fetch(
-          `${API_BASE_URL}/api/behavior/verify`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${tempToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(loginMetrics.current),
-          },
-        );
-
-        const behavior = await behaviorResponse.json();
-
-        if (!behavior.success) {
-          sessionStorage.removeItem("token");
-          sessionStorage.removeItem("admin");
-          sessionStorage.removeItem("permissions");
-
-          setError("Authentication Failed");
-
-          return;
-        }
-
-        const riskResponse = await fetch(`${API_BASE_URL}/api/risk/evaluate`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${tempToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        const risk = await riskResponse.json();
-
-        console.log("RISK:", risk);
-
-        if (!risk.success) {
-          sessionStorage.removeItem("token");
-          sessionStorage.removeItem("admin");
-          sessionStorage.removeItem("permissions");
-
-          setError("Authentication Failed");
-
-          return;
-        }
-        if (risk.decision !== "ALLOW") {
-          setError("Authentication Failed");
-
-          return;
-        }
 
         sessionStorage.setItem("token", tempToken);
 
@@ -566,20 +451,7 @@ const Login = () => {
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e) => {
-                if (!typingStart) {
-                  setTypingStart(Date.now());
-                }
-
-                setTypingEnd(Date.now());
-
-                setPassword(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Backspace") {
-                  setBackspaces((prev) => prev + 1);
-                }
-              }}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
               className="flex-1 h-full bg-transparent outline-none px-4 text-white text-[15px] placeholder:text-white/50"
