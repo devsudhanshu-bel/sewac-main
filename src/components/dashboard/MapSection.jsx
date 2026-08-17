@@ -1,23 +1,22 @@
 import {
-  MapContainer,
-  TileLayer,
-  ZoomControl,
-  GeoJSON,
-  Polyline,
-  CircleMarker,
-  Marker,
-  Popup,
-  useMap,
-} from "react-leaflet";
-
-import "leaflet/dist/leaflet.css";
-
-import {
+  useState,
+  useRef,
   useEffect,
   useMemo,
-  useRef,
-  useState,
+  Fragment,
 } from "react";
+
+import {
+  MapContainer,
+  TileLayer,
+  Polyline,
+  Marker,
+  Popup,
+  CircleMarker,
+  GeoJSON,
+  ZoomControl,
+  useMap,
+} from "react-leaflet";
 
 import L from "leaflet";
 
@@ -30,15 +29,16 @@ import {
   ChevronDown,
   Truck,
   RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
+  Check,
   Loader2,
 } from "lucide-react";
+
+import "leaflet/dist/leaflet.css";
 
 import { ibbaluruBoundary } from "../../data/ibbaluruBoundary";
 
 /* =========================================================
-   CONFIG
+   API
 ========================================================= */
 
 const API_BASE_URL =
@@ -47,18 +47,20 @@ const API_BASE_URL =
 
 /* =========================================================
    ROUTE COLORS
+
+   Same vehicle number = same color.
 ========================================================= */
 
 const ROUTE_COLORS = [
   "#7C3AED",
-  "#2563EB",
-  "#10B981",
-  "#F97316",
-  "#EC4899",
   "#06B6D4",
-  "#EF4444",
-  "#84CC16",
+  "#10B981",
   "#F59E0B",
+  "#EF4444",
+  "#EC4899",
+  "#3B82F6",
+  "#14B8A6",
+  "#F97316",
   "#8B5CF6",
 ];
 
@@ -67,20 +69,20 @@ const ROUTE_COLORS = [
 ========================================================= */
 
 const DEFAULT_CENTER = [
-  12.9258,
-  77.659,
+  12.9716,
+  77.5946,
 ];
 
-const DEFAULT_ZOOM = 13;
+const DEFAULT_ZOOM = 11;
 
 /* =========================================================
-   HELPERS
+   VEHICLE COLOR
 ========================================================= */
 
-function getVehicleColor(
+const getVehicleColor = (
   vehicleNumber,
   index = 0
-) {
+) => {
   if (!vehicleNumber) {
     return (
       ROUTE_COLORS[
@@ -108,87 +110,20 @@ function getVehicleColor(
         ROUTE_COLORS.length
     ]
   );
-}
+};
 
-function normalizeWard(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return "";
-  }
+/* =========================================================
+   SAFE LOCAL STORAGE
+========================================================= */
 
-  const match =
-    String(value).match(/\d+/);
-
-  return match
-    ? match[0]
-    : "";
-}
-
-function formatDateForAPI(date) {
-  if (!date) {
-    const fallback =
-      new Date();
-
-    fallback.setDate(
-      fallback.getDate() - 1
-    );
-
-    return fallback
-      .toISOString()
-      .slice(0, 10);
-  }
-
-  if (
-    typeof date === "string"
-  ) {
-    if (
-      /^\d{4}-\d{2}-\d{2}$/.test(
-        date
-      )
-    ) {
-      return date;
-    }
-
-    const parsed =
-      new Date(date);
-
-    if (
-      !Number.isNaN(
-        parsed.getTime()
-      )
-    ) {
-      return parsed
-        .toISOString()
-        .slice(0, 10);
-    }
-
-    return date;
-  }
-
-  if (
-    date instanceof Date
-  ) {
-    return date
-      .toISOString()
-      .slice(0, 10);
-  }
-
-  return new Date()
-    .toISOString()
-    .slice(0, 10);
-}
-
-function getStoredValue(
+const getStoredValue = (
   ...keys
-) {
+) => {
   if (
     typeof window ===
     "undefined"
   ) {
-    return "";
+    return null;
   }
 
   for (const key of keys) {
@@ -206,16 +141,140 @@ function getStoredValue(
     }
   }
 
-  return "";
-}
+  return null;
+};
+
+/* =========================================================
+   NORMALIZE WARD
+========================================================= */
+
+const normalizeWard = (
+  value
+) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const match =
+    String(value).match(
+      /\d+/
+    );
+
+  return match
+    ? Number(match[0])
+    : null;
+};
+
+/* =========================================================
+   FORMAT DATE
+========================================================= */
+
+const formatDateForAPI = (
+  date
+) => {
+  if (!date) {
+    const fallback =
+      new Date();
+
+    /*
+      Route data normally represents
+      the completed previous day.
+    */
+
+    fallback.setDate(
+      fallback.getDate() - 1
+    );
+
+    const year =
+      fallback.getFullYear();
+
+    const month =
+      String(
+        fallback.getMonth() + 1
+      ).padStart(2, "0");
+
+    const day =
+      String(
+        fallback.getDate()
+      ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  if (
+    typeof date ===
+    "string"
+  ) {
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        date
+      )
+    ) {
+      return date;
+    }
+
+    const parsed =
+      new Date(date);
+
+    if (
+      !Number.isNaN(
+        parsed.getTime()
+      )
+    ) {
+      const year =
+        parsed.getFullYear();
+
+      const month =
+        String(
+          parsed.getMonth() + 1
+        ).padStart(2, "0");
+
+      const day =
+        String(
+          parsed.getDate()
+        ).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }
+
+    return date;
+  }
+
+  if (
+    date instanceof Date
+  ) {
+    const year =
+      date.getFullYear();
+
+    const month =
+      String(
+        date.getMonth() + 1
+      ).padStart(2, "0");
+
+    const day =
+      String(
+        date.getDate()
+      ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  return formatDateForAPI(
+    null
+  );
+};
 
 /* =========================================================
    TRUCK ICON
 ========================================================= */
 
-function createTruckIcon(
+const createTruckIcon = (
   color
-) {
+) => {
   return L.divIcon({
     className:
       "sewac-truck-marker",
@@ -226,12 +285,12 @@ function createTruckIcon(
           width:42px;
           height:42px;
           border-radius:50%;
-          background:#ffffff;
+          background:white;
           border:3px solid ${color};
           display:flex;
           align-items:center;
           justify-content:center;
-          box-shadow:0 7px 20px rgba(15,23,42,.20);
+          box-shadow:0 5px 18px rgba(15,23,42,0.20);
         "
       >
         <div
@@ -266,7 +325,7 @@ function createTruckIcon(
       -23,
     ],
   });
-}
+};
 
 /* =========================================================
    MAP CONTROLLER
@@ -275,36 +334,49 @@ function createTruckIcon(
 function MapController({
   routes,
   selectedView,
-  boundary,
 }) {
   const map =
     useMap();
 
+  /* -------------------------------------------------------
+     MAP RESIZE
+  ------------------------------------------------------- */
+
   useEffect(() => {
-    const timer =
+    if (!map) {
+      return;
+    }
+
+    const timeout =
       setTimeout(() => {
         map.invalidateSize();
-      }, 150);
+      }, 250);
 
-    const resize =
+    const handleResize =
       () => {
         map.invalidateSize();
       };
 
     window.addEventListener(
       "resize",
-      resize
+      handleResize
     );
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(
+        timeout
+      );
 
       window.removeEventListener(
         "resize",
-        resize
+        handleResize
       );
     };
   }, [map]);
+
+  /* -------------------------------------------------------
+     FIT ROUTE
+  ------------------------------------------------------- */
 
   useEffect(() => {
     if (
@@ -316,8 +388,7 @@ function MapController({
 
     if (
       !routes ||
-      routes.length ===
-        0
+      routes.length === 0
     ) {
       return;
     }
@@ -337,29 +408,29 @@ function MapController({
 
         vehicle.points.forEach(
           (point) => {
-            const lat =
+            const latitude =
               Number(
                 point.latitude
               );
 
-            const lng =
+            const longitude =
               Number(
                 point.longitude
               );
 
             if (
               Number.isFinite(
-                lat
+                latitude
               ) &&
               Number.isFinite(
-                lng
+                longitude
               ) &&
-              lat !== 0 &&
-              lng !== 0
+              latitude !== 0 &&
+              longitude !== 0
             ) {
               coordinates.push([
-                lat,
-                lng,
+                latitude,
+                longitude,
               ]);
             }
           }
@@ -374,24 +445,35 @@ function MapController({
       return;
     }
 
-    const bounds =
-      L.latLngBounds(
-        coordinates
-      );
+    try {
+      const bounds =
+        L.latLngBounds(
+          coordinates
+        );
 
-    if (
-      bounds.isValid()
+      if (
+        bounds.isValid()
+      ) {
+        map.fitBounds(
+          bounds,
+          {
+            padding: [
+              80,
+              80,
+            ],
+
+            maxZoom: 15,
+
+            animate: true,
+          }
+        );
+      }
+    } catch (
+      error
     ) {
-      map.fitBounds(
-        bounds,
-        {
-          padding: [
-            80,
-            80,
-          ],
-          maxZoom: 15,
-          animate: true,
-        }
+      console.error(
+        "Failed to fit route bounds:",
+        error
       );
     }
   }, [
@@ -399,6 +481,10 @@ function MapController({
     selectedView,
     map,
   ]);
+
+  /* -------------------------------------------------------
+     CITY OVERVIEW
+  ------------------------------------------------------- */
 
   useEffect(() => {
     if (
@@ -408,35 +494,47 @@ function MapController({
       return;
     }
 
-    if (!boundary) {
+    if (
+      !ibbaluruBoundary
+    ) {
       return;
     }
 
-    const layer =
-      L.geoJSON(
-        boundary
-      );
+    try {
+      const layer =
+        L.geoJSON(
+          ibbaluruBoundary
+        );
 
-    const bounds =
-      layer.getBounds();
+      const bounds =
+        layer.getBounds();
 
-    if (
-      bounds.isValid()
+      if (
+        bounds.isValid()
+      ) {
+        map.fitBounds(
+          bounds,
+          {
+            padding: [
+              50,
+              50,
+            ],
+
+            maxZoom: 14,
+
+            animate: true,
+          }
+        );
+      }
+    } catch (
+      error
     ) {
-      map.fitBounds(
-        bounds,
-        {
-          padding: [
-            50,
-            50,
-          ],
-          maxZoom: 14,
-          animate: true,
-        }
+      console.error(
+        "Failed to fit ward boundary:",
+        error
       );
     }
   }, [
-    boundary,
     selectedView,
     map,
   ]);
@@ -457,11 +555,15 @@ function PopupRow({
       style={{
         display:
           "flex",
+
         justifyContent:
           "space-between",
+
         gap: "16px",
+
         marginBottom:
           "7px",
+
         fontSize:
           "12px",
       }}
@@ -479,6 +581,7 @@ function PopupRow({
         style={{
           color:
             "#0F172A",
+
           textAlign:
             "right",
         }}
@@ -491,10 +594,10 @@ function PopupRow({
 }
 
 /* =========================================================
-   EMPTY LAYER
+   PLACEHOLDER VIEW
 ========================================================= */
 
-function EmptyLayer({
+function PlaceholderView({
   icon: Icon,
   title,
   description,
@@ -504,23 +607,23 @@ function EmptyLayer({
       className="
         absolute
         inset-0
-        z-[600]
+        z-[700]
+        pointer-events-none
         flex
         items-center
         justify-center
-        pointer-events-none
       "
     >
       <div
         className="
           bg-white/95
-          backdrop-blur
-          rounded-[24px]
+          backdrop-blur-sm
           border
           border-slate-200
-          shadow-[0_20px_60px_rgba(15,23,42,0.12)]
-          px-10
-          py-9
+          rounded-[20px]
+          px-8
+          py-7
+          shadow-[0_15px_45px_rgba(15,23,42,0.12)]
           text-center
           max-w-[380px]
         "
@@ -528,9 +631,9 @@ function EmptyLayer({
         <div
           className="
             mx-auto
-            mb-5
-            w-14
-            h-14
+            mb-4
+            w-12
+            h-12
             rounded-2xl
             bg-violet-50
             flex
@@ -539,14 +642,14 @@ function EmptyLayer({
           "
         >
           <Icon
-            size={26}
+            size={23}
             className="text-violet-600"
           />
         </div>
 
         <h3
           className="
-            text-[18px]
+            text-[16px]
             font-semibold
             text-slate-800
           "
@@ -557,7 +660,7 @@ function EmptyLayer({
         <p
           className="
             mt-2
-            text-[13px]
+            text-[12px]
             leading-relaxed
             text-slate-500
           "
@@ -570,275 +673,7 @@ function EmptyLayer({
 }
 
 /* =========================================================
-   DATA MARKER
-========================================================= */
-
-function DataMarker({
-  item,
-  type,
-}) {
-  const latitude =
-    Number(
-      item?.latitude ??
-        item?.lat
-    );
-
-  const longitude =
-    Number(
-      item?.longitude ??
-        item?.lng ??
-        item?.lon
-    );
-
-  if (
-    !Number.isFinite(
-      latitude
-    ) ||
-    !Number.isFinite(
-      longitude
-    )
-  ) {
-    return null;
-  }
-
-  let color =
-    "#7C3AED";
-
-  let symbol =
-    "📍";
-
-  if (
-    type === "gvp"
-  ) {
-    symbol = "🗑️";
-
-    color =
-      String(
-        item?.severity
-      ).toUpperCase() ===
-        "HIGH" ||
-      String(
-        item?.severity
-      ).toUpperCase() ===
-        "CRITICAL"
-        ? "#EF4444"
-        : String(
-            item?.severity
-          ).toUpperCase() ===
-          "MEDIUM"
-        ? "#F59E0B"
-        : "#10B981";
-  }
-
-  if (
-    type === "plant"
-  ) {
-    symbol = "🏭";
-
-    color =
-      String(
-        item?.status
-      ).toUpperCase() ===
-      "ACTIVE"
-        ? "#10B981"
-        : "#94A3B8";
-  }
-
-  if (
-    type ===
-    "grievance"
-  ) {
-    symbol = "⚠️";
-
-    color =
-      String(
-        item?.priority
-      ).toUpperCase() ===
-        "CRITICAL"
-        ? "#DC2626"
-        : String(
-            item?.priority
-          ).toUpperCase() ===
-          "HIGH"
-        ? "#F97316"
-        : "#F59E0B";
-  }
-
-  return (
-    <Marker
-      position={[
-        latitude,
-        longitude,
-      ]}
-      icon={L.divIcon({
-        className:
-          "sewac-map-data-marker",
-
-        html: `
-          <div
-            style="
-              width:40px;
-              height:40px;
-              border-radius:50%;
-              background:white;
-              border:3px solid ${color};
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              box-shadow:0 7px 20px rgba(15,23,42,.18);
-              font-size:17px;
-            "
-          >
-            ${symbol}
-          </div>
-        `,
-
-        iconSize: [
-          40,
-          40,
-        ],
-
-        iconAnchor: [
-          20,
-          20,
-        ],
-      })}
-    >
-      <Popup>
-        <div
-          style={{
-            minWidth:
-              "230px",
-            fontFamily:
-              "Inter, sans-serif",
-          }}
-        >
-          <div
-            style={{
-              fontSize:
-                "15px",
-              fontWeight:
-                700,
-              marginBottom:
-                "12px",
-              color:
-                "#0F172A",
-            }}
-          >
-            {type ===
-              "gvp" &&
-              "Garbage Vulnerable Point"}
-
-            {type ===
-              "plant" &&
-              "Waste Processing Plant"}
-
-            {type ===
-              "grievance" &&
-              "Customer Grievance"}
-          </div>
-
-          <PopupRow
-            label="Name"
-            value={
-              item?.name ||
-              item?.title
-            }
-          />
-
-          <PopupRow
-            label="Ward"
-            value={
-              item?.wardNo
-            }
-          />
-
-          {type ===
-            "gvp" && (
-            <>
-              <PopupRow
-                label="Severity"
-                value={
-                  item?.severity
-                }
-              />
-
-              <PopupRow
-                label="Reports"
-                value={
-                  item?.reports ??
-                  item?.frequency
-                }
-              />
-
-              <PopupRow
-                label="Status"
-                value={
-                  item?.status
-                }
-              />
-            </>
-          )}
-
-          {type ===
-            "plant" && (
-            <>
-              <PopupRow
-                label="Status"
-                value={
-                  item?.status
-                }
-              />
-
-              <PopupRow
-                label="Capacity"
-                value={
-                  item?.capacity
-                }
-              />
-
-              <PopupRow
-                label="Current Load"
-                value={
-                  item?.currentLoad
-                }
-              />
-            </>
-          )}
-
-          {type ===
-            "grievance" && (
-            <>
-              <PopupRow
-                label="Category"
-                value={
-                  item?.category
-                }
-              />
-
-              <PopupRow
-                label="Priority"
-                value={
-                  item?.priority
-                }
-              />
-
-              <PopupRow
-                label="Status"
-                value={
-                  item?.status
-                }
-              />
-            </>
-          )}
-        </div>
-      </Popup>
-    </Marker>
-  );
-}
-
-/* =========================================================
-   MAIN
+   MAIN COMPONENT
 ========================================================= */
 
 export default function MapSection({
@@ -861,11 +696,16 @@ export default function MapSection({
      MAP VIEW
   ======================================================= */
 
+  /*
+    IMPORTANT:
+    Screenshot shows Route Map selected initially.
+  */
+
   const [
     selectedView,
     setSelectedView,
   ] = useState(
-    "overview"
+    "route"
   );
 
   const [
@@ -877,7 +717,7 @@ export default function MapSection({
     useRef(null);
 
   /* =======================================================
-     ROUTES
+     ROUTE DATA
   ======================================================= */
 
   const [
@@ -895,60 +735,21 @@ export default function MapSection({
     setError,
   ] = useState("");
 
-  const [
-    lastUpdated,
-    setLastUpdated,
-  ] = useState(null);
-
   /* =======================================================
-     FUTURE MAP DATA
+     HEADER DATA
   ======================================================= */
 
-  const [
-    gvpData,
-    setGvpData,
-  ] = useState([]);
-
-  const [
-    plantData,
-    setPlantData,
-  ] = useState([]);
-
-  const [
-    grievanceData,
-    setGrievanceData,
-  ] = useState([]);
-
-  /*
-    These setters are intentionally kept here.
-
-    When the actual APIs are connected,
-    only the fetch functions need to change.
-  */
-
-  /* =======================================================
-     WARD
-  ======================================================= */
-
-  const storedWard =
+  const selectedWard =
+    selectedWardProp ??
+    wardNoProp ??
     getStoredValue(
-      "wardNo",
-      "wardId",
       "selectedWard",
       "selectedWardNo",
+      "wardNo",
+      "ward",
+      "selected_ward",
       "headerWardNo"
     );
-
-  const normalizedWard =
-    normalizeWard(
-      wardNoProp ??
-        selectedWardProp ??
-        storedWard
-    );
-
-  /* =======================================================
-     DIVISION
-  ======================================================= */
 
   const selectedDivision =
     selectedDivisionProp ??
@@ -956,69 +757,115 @@ export default function MapSection({
     getStoredValue(
       "selectedDivision",
       "divisionName",
+      "division",
+      "selected_division",
       "headerDivision"
     );
+
+  /* =======================================================
+     NORMALIZED WARD
+  ======================================================= */
+
+  const normalizedWard =
+    useMemo(() => {
+      return normalizeWard(
+        selectedWard
+      );
+    }, [
+      selectedWard,
+    ]);
 
   /* =======================================================
      DATE
   ======================================================= */
 
   const apiDate =
-    formatDateForAPI(
-      selectedDateProp ??
+    useMemo(() => {
+      if (
+        selectedDateProp
+      ) {
+        return formatDateForAPI(
+          selectedDateProp
+        );
+      }
+
+      const storedDate =
         getStoredValue(
           "selectedDate",
           "dashboardDate",
           "routeDate"
-        )
-    );
+        );
+
+      return formatDateForAPI(
+        storedDate
+      );
+    }, [
+      selectedDateProp,
+    ]);
 
   /* =======================================================
-     MAP OPTIONS
+     MAP VIEW OPTIONS
+
+     EXACTLY FIVE OPTIONS
   ======================================================= */
 
   const mapViews = [
     {
       id: "overview",
+
       label:
         "City Overview Map",
+
       icon: MapIcon,
+
       color:
         "#2563EB",
     },
 
     {
       id: "route",
+
       label:
         "Route Map",
+
       icon: Route,
+
       color:
         "#7C3AED",
     },
 
     {
       id: "gvp",
+
       label:
         "Garbage Vulnerable Points (GVP)",
+
       icon: MapPin,
+
       color:
         "#16A34A",
     },
 
     {
       id: "plants",
+
       label:
         "Plants Active",
+
       icon: Factory,
+
       color:
         "#059669",
     },
 
     {
-      id: "grievances",
+      id: "complaints",
+
       label:
         "Customer Grievances",
+
       icon: Megaphone,
+
       color:
         "#EC4899",
     },
@@ -1030,7 +877,7 @@ export default function MapSection({
         view.id ===
         selectedView
     ) ||
-    mapViews[0];
+    mapViews[1];
 
   const ActiveIcon =
     activeView.icon;
@@ -1041,17 +888,24 @@ export default function MapSection({
 
   const fetchRoutes =
     async () => {
+      /*
+        Route requires ward.
+      */
+
       if (
         !normalizedWard
       ) {
         setRoutes([]);
+
         setError(
           "Please select a ward from the header."
         );
+
         return;
       }
 
       setLoading(true);
+
       setError("");
 
       try {
@@ -1097,6 +951,7 @@ export default function MapSection({
             {
               method:
                 "GET",
+
               headers: {
                 Accept:
                   "application/json",
@@ -1104,8 +959,17 @@ export default function MapSection({
             }
           );
 
-        const json =
-          await response.json();
+        let json =
+          null;
+
+        try {
+          json =
+            await response.json();
+        } catch {
+          throw new Error(
+            "The route server returned an invalid response."
+          );
+        }
 
         if (
           !response.ok
@@ -1115,6 +979,24 @@ export default function MapSection({
               `Route API returned HTTP ${response.status}`
           );
         }
+
+        /*
+          Backend may return:
+
+          {
+            success: true,
+            vehicles: []
+          }
+
+          OR:
+
+          {
+            success: true,
+            data: {
+              vehicles: []
+            }
+          }
+        */
 
         const payload =
           json?.data &&
@@ -1126,15 +1008,19 @@ export default function MapSection({
             ? json.data
             : json;
 
-        const vehicleData =
+        const rawVehicles =
           Array.isArray(
             payload?.vehicles
           )
             ? payload.vehicles
             : [];
 
+        /*
+          Normalize every vehicle.
+        */
+
         const normalizedVehicles =
-          vehicleData
+          rawVehicles
             .map(
               (
                 vehicle,
@@ -1150,6 +1036,11 @@ export default function MapSection({
                       )
                     ? vehicle.route
                     : [];
+
+                /*
+                  Convert GPS values to
+                  numeric Leaflet positions.
+                */
 
                 const points =
                   rawPoints
@@ -1199,6 +1090,11 @@ export default function MapSection({
                     .filter(
                       Boolean
                     );
+
+                /*
+                  Sort telemetry
+                  chronologically.
+                */
 
                 points.sort(
                   (
@@ -1257,11 +1153,6 @@ export default function MapSection({
 
                   vehicleNumber,
 
-                  vehicleTableName:
-                    vehicle?.vehicleTableName ||
-                    vehicle?.vehicleTable ||
-                    "",
-
                   points,
 
                   color:
@@ -1282,7 +1173,7 @@ export default function MapSection({
             );
 
         console.log(
-          "NORMALIZED ROUTES:",
+          "🚛 NORMALIZED VEHICLES:",
           normalizedVehicles
         );
 
@@ -1290,9 +1181,11 @@ export default function MapSection({
           normalizedVehicles
         );
 
-        setLastUpdated(
-          new Date()
-        );
+        /*
+          Do not show an error
+          when there is simply no
+          route data.
+        */
 
         if (
           normalizedVehicles.length ===
@@ -1307,7 +1200,7 @@ export default function MapSection({
         fetchError
       ) {
         console.error(
-          "SEWAC ROUTE MAP ERROR:",
+          "❌ Route Map Error:",
           fetchError
         );
 
@@ -1315,7 +1208,7 @@ export default function MapSection({
 
         setError(
           fetchError?.message ||
-            "Unable to load route data."
+            "Failed to load route data."
         );
       } finally {
         setLoading(
@@ -1325,7 +1218,11 @@ export default function MapSection({
     };
 
   /* =======================================================
-     ROUTE FETCH
+     FETCH ROUTES WHEN:
+
+     - Route Map selected
+     - Ward changes
+     - Date changes
   ======================================================= */
 
   useEffect(() => {
@@ -1344,7 +1241,9 @@ export default function MapSection({
   ]);
 
   /* =======================================================
-     STORAGE LISTENER
+     STORAGE EVENT
+
+     Header may update localStorage.
   ======================================================= */
 
   useEffect(() => {
@@ -1376,11 +1275,11 @@ export default function MapSection({
   ]);
 
   /* =======================================================
-     OUTSIDE CLICK
+     CLOSE DROPDOWN
   ======================================================= */
 
   useEffect(() => {
-    const handleClick =
+    const handleOutside =
       (event) => {
         if (
           menuRef.current &&
@@ -1396,57 +1295,32 @@ export default function MapSection({
 
     document.addEventListener(
       "mousedown",
-      handleClick
+      handleOutside
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleClick
+        handleOutside
       );
     };
   }, []);
 
   /* =======================================================
-     STATS
+     ROUTE STATS
   ======================================================= */
 
   const totalGpsPoints =
-    useMemo(
-      () =>
-        routes.reduce(
-          (
-            total,
-            vehicle
-          ) =>
-            total +
-            vehicle.points
-              .length,
-          0
-        ),
-      [routes]
+    routes.reduce(
+      (
+        total,
+        vehicle
+      ) =>
+        total +
+        vehicle.points
+          .length,
+      0
     );
-
-  const activeVehicles =
-    routes.length;
-
-  const activePlants =
-    plantData.filter(
-      (plant) =>
-        String(
-          plant?.status
-        ).toUpperCase() ===
-        "ACTIVE"
-    ).length;
-
-  const openGrievances =
-    grievanceData.filter(
-      (item) =>
-        String(
-          item?.status
-        ).toUpperCase() !==
-        "RESOLVED"
-    ).length;
 
   /* =======================================================
      RENDER
@@ -1459,72 +1333,35 @@ export default function MapSection({
         rounded-[28px]
         bg-white
         border
-        border-slate-200
-        shadow-[0_2px_10px_rgba(15,23,42,0.05)]
-        p-6
+        border-[#E4EAF1]
+        shadow-[0_2px_12px_rgba(15,23,42,0.05)]
+        p-7
       "
     >
       {/* =================================================
-          PAGE TITLE
+          TITLE
       ================================================= */}
 
       <div
         className="
-          mb-6
+          mb-7
           px-1
-          flex
-          items-end
-          justify-between
         "
       >
-        <div>
-          <h2
-            className="
-              text-[23px]
-              font-semibold
-              tracking-[-0.02em]
-              text-slate-950
-            "
-          >
-            MAPS
-          </h2>
-
-          <p
-            className="
-              mt-1
-              text-[13px]
-              text-slate-500
-            "
-          >
-            City operations, routes,
-            vulnerable points, plants
-            and customer grievances
-          </p>
-        </div>
-
-        <div
+        <h2
           className="
-            text-[12px]
-            font-medium
-            text-slate-500
+            text-[28px]
+            font-semibold
+            tracking-[-0.025em]
+            text-[#07111F]
           "
         >
-          {lastUpdated
-            ? `Updated ${lastUpdated.toLocaleTimeString(
-                [],
-                {
-                  hour:
-                    "2-digit",
-                  minute:
-                    "2-digit",
-                }
-              )}`
-            : "Live map"}
-        </div>
+          CITY OVERVIEW MAP
+        </h2>
       </div>
 
       {/* =================================================
-          MAP WRAPPER
+          MAP FRAME
       ================================================= */}
 
       <div
@@ -1533,9 +1370,10 @@ export default function MapSection({
           w-full
           h-[700px]
           overflow-hidden
-          rounded-[24px]
+          rounded-[25px]
           border
-          border-slate-200
+          border-[#E0E6ED]
+          bg-[#EEF2F4]
         "
       >
         {/* =================================================
@@ -1549,9 +1387,11 @@ export default function MapSection({
           zoom={
             DEFAULT_ZOOM
           }
-          zoomControl={false}
           scrollWheelZoom={
             true
+          }
+          zoomControl={
+            false
           }
           style={{
             width:
@@ -1561,22 +1401,36 @@ export default function MapSection({
             zIndex: 1,
           }}
         >
-          <ZoomControl
-            position="bottomright"
-          />
+          {/* =================================================
+              MAP TILES
+
+              Standard OSM appearance,
+              matching the screenshot.
+          ================================================= */}
 
           <TileLayer
             attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {/* =================================================
+              ZOOM
+          ================================================= */}
+
+          <ZoomControl
+            position="topleft"
+          />
+
+          {/* =================================================
+              CONTROLLER
+          ================================================= */}
+
           <MapController
-            routes={routes}
+            routes={
+              routes
+            }
             selectedView={
               selectedView
-            }
-            boundary={
-              ibbaluruBoundary
             }
           />
 
@@ -1594,10 +1448,15 @@ export default function MapSection({
                 style={{
                   color:
                     "#10B981",
+
                   weight: 4,
-                  opacity: 0.95,
+
+                  opacity:
+                    0.95,
+
                   fillColor:
                     "#10B981",
+
                   fillOpacity:
                     0.12,
                 }}
@@ -1607,377 +1466,194 @@ export default function MapSection({
                 ) => {
                   layer.bindPopup(
                     `
-                    <div
-                      style="
-                        min-width:180px;
-                        font-family:Inter,Arial,sans-serif;
-                      "
-                    >
-                      <strong>
-                        ${
-                          feature
-                            ?.properties
-                            ?.name ||
-                          "Ward"
-                        }
-                      </strong>
-
-                      <br/>
-
-                      <span
+                      <div
                         style="
-                          color:#64748B;
-                          font-size:12px;
+                          min-width:180px;
+                          font-family:Inter,Arial,sans-serif;
                         "
                       >
-                        Ward ID:
-                        ${
-                          feature
-                            ?.properties
-                            ?.wardId ??
-                          "—"
-                        }
-                      </span>
-                    </div>
+                        <strong>
+                          ${
+                            feature
+                              ?.properties
+                              ?.name ||
+                            "Ward"
+                          }
+                        </strong>
+
+                        <br />
+
+                        <span
+                          style="
+                            color:#64748B;
+                            font-size:12px;
+                          "
+                        >
+                          Ward ID:
+                          ${
+                            feature
+                              ?.properties
+                              ?.wardId ??
+                            "—"
+                          }
+                        </span>
+                      </div>
                     `
                   );
                 }}
               />
-
-              {/* Current vehicles */}
-
-              {routes.map(
-                (
-                  vehicle,
-                  index
-                ) => {
-                  const latest =
-                    vehicle
-                      .points[
-                      vehicle
-                        .points
-                        .length -
-                        1
-                    ];
-
-                  if (
-                    !latest
-                  ) {
-                    return null;
-                  }
-
-                  return (
-                    <Marker
-                      key={`overview-${vehicle.vehicleNumber}-${index}`}
-                      position={
-                        latest.position
-                      }
-                      icon={createTruckIcon(
-                        vehicle.color
-                      )}
-                    >
-                      <Popup>
-                        <div
-                          style={{
-                            minWidth:
-                              "200px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontWeight:
-                                700,
-                              fontSize:
-                                "15px",
-                              marginBottom:
-                                "8px",
-                            }}
-                          >
-                            {
-                              vehicle.vehicleNumber
-                            }
-                          </div>
-
-                          <PopupRow
-                            label="Ward"
-                            value={
-                              normalizedWard
-                            }
-                          />
-
-                          <PopupRow
-                            label="GPS Points"
-                            value={
-                              vehicle
-                                .points
-                                .length
-                            }
-                          />
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                }
-              )}
-
-              {/* Future GVP markers */}
-
-              {gvpData.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <DataMarker
-                    key={`overview-gvp-${item?.id || index}`}
-                    item={
-                      item
-                    }
-                    type="gvp"
-                  />
-                )
-              )}
-
-              {/* Future plants */}
-
-              {plantData.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <DataMarker
-                    key={`overview-plant-${item?.id || index}`}
-                    item={
-                      item
-                    }
-                    type="plant"
-                  />
-                )
-              )}
-
-              {/* Future grievances */}
-
-              {grievanceData.map(
-                (
-                  item,
-                  index
-                ) => (
-                  <DataMarker
-                    key={`overview-grievance-${item?.id || index}`}
-                    item={
-                      item
-                    }
-                    type="grievance"
-                  />
-                )
-              )}
             </>
           )}
 
           {/* =================================================
-              ROUTES
+              ROUTE MAP
           ================================================= */}
 
           {selectedView ===
-            "route" && (
-            <>
-              {routes.map(
-                (
-                  vehicle,
-                  vehicleIndex
-                ) => {
-                  const positions =
-                    vehicle.points.map(
+            "route" &&
+            routes.map(
+              (
+                vehicle,
+                vehicleIndex
+              ) => {
+                const positions =
+                  vehicle.points.map(
+                    (
+                      point
+                    ) =>
+                      point.position
+                  );
+
+                if (
+                  positions.length ===
+                  0
+                ) {
+                  return null;
+                }
+
+                const latestPoint =
+                  vehicle.points[
+                    vehicle.points
+                      .length -
+                      1
+                  ];
+
+                return (
+                  <Fragment
+                    key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
+                  >
+                    {/* =======================================
+                        ROUTE GLOW
+                    ======================================= */}
+
+                    {positions.length >
+                      1 && (
+                      <Polyline
+                        positions={
+                          positions
+                        }
+                        pathOptions={{
+                          color:
+                            vehicle.color,
+
+                          weight:
+                            10,
+
+                          opacity:
+                            0.13,
+
+                          lineCap:
+                            "round",
+
+                          lineJoin:
+                            "round",
+                        }}
+                      />
+                    )}
+
+                    {/* =======================================
+                        MAIN ROUTE
+                    ======================================= */}
+
+                    {positions.length >
+                      1 && (
+                      <Polyline
+                        positions={
+                          positions
+                        }
+                        pathOptions={{
+                          color:
+                            vehicle.color,
+
+                          weight:
+                            5,
+
+                          opacity:
+                            0.9,
+
+                          lineCap:
+                            "round",
+
+                          lineJoin:
+                            "round",
+                        }}
+                      />
+                    )}
+
+                    {/* =======================================
+                        GPS POINTS
+                    ======================================= */}
+
+                    {vehicle.points.map(
                       (
-                        point
-                      ) =>
-                        point.position
-                    );
-
-                  if (
-                    positions.length ===
-                    0
-                  ) {
-                    return null;
-                  }
-
-                  const latest =
-                    vehicle
-                      .points[
-                      vehicle
-                        .points
-                        .length -
-                        1
-                    ];
-
-                  return (
-                    <div
-                      key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
-                    >
-                      {positions.length >
-                        1 && (
-                        <Polyline
-                          positions={
-                            positions
+                        point,
+                        pointIndex
+                      ) => (
+                        <CircleMarker
+                          key={`${vehicle.vehicleNumber}-point-${pointIndex}`}
+                          center={
+                            point.position
+                          }
+                          radius={
+                            4
                           }
                           pathOptions={{
                             color:
-                              vehicle.color,
+                              "#FFFFFF",
+
                             weight:
-                              9,
-                            opacity:
-                              0.14,
-                            lineCap:
-                              "round",
-                            lineJoin:
-                              "round",
-                          }}
-                        />
-                      )}
+                              2,
 
-                      {positions.length >
-                        1 && (
-                        <Polyline
-                          positions={
-                            positions
-                          }
-                          pathOptions={{
-                            color:
+                            fillColor:
                               vehicle.color,
-                            weight:
-                              4,
-                            opacity:
-                              0.95,
-                            lineCap:
-                              "round",
-                            lineJoin:
-                              "round",
+
+                            fillOpacity:
+                              1,
                           }}
-                        />
-                      )}
-
-                      {vehicle.points.map(
-                        (
-                          point,
-                          pointIndex
-                        ) => (
-                          <CircleMarker
-                            key={`${vehicle.vehicleNumber}-${pointIndex}`}
-                            center={
-                              point.position
-                            }
-                            radius={
-                              4
-                            }
-                            pathOptions={{
-                              color:
-                                "#FFFFFF",
-                              weight:
-                                2,
-                              fillColor:
-                                vehicle.color,
-                              fillOpacity:
-                                0.95,
-                            }}
-                          >
-                            <Popup>
-                              <div
-                                style={{
-                                  minWidth:
-                                    "240px",
-                                  fontFamily:
-                                    "Inter, sans-serif",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontWeight:
-                                      700,
-                                    fontSize:
-                                      "15px",
-                                    marginBottom:
-                                      "12px",
-                                  }}
-                                >
-                                  {
-                                    vehicle.vehicleNumber
-                                  }
-                                </div>
-
-                                <PopupRow
-                                  label="Latitude"
-                                  value={point.latitude.toFixed(
-                                    6
-                                  )}
-                                />
-
-                                <PopupRow
-                                  label="Longitude"
-                                  value={point.longitude.toFixed(
-                                    6
-                                  )}
-                                />
-
-                                <PopupRow
-                                  label="Timestamp"
-                                  value={
-                                    point?.iotTimestamp ||
-                                    point?.iottimestamp ||
-                                    point?.receivedtimestamp ||
-                                    point?.timestamp
-                                  }
-                                />
-
-                                <PopupRow
-                                  label="Ward"
-                                  value={
-                                    point?.wardNo ??
-                                    normalizedWard
-                                  }
-                                />
-
-                                <PopupRow
-                                  label="Wet Weight"
-                                  value={
-                                    point?.wetWeight
-                                  }
-                                />
-
-                                <PopupRow
-                                  label="Dry Weight"
-                                  value={
-                                    point?.dryWeight
-                                  }
-                                />
-                              </div>
-                            </Popup>
-                          </CircleMarker>
-                        )
-                      )}
-
-                      {latest && (
-                        <Marker
-                          position={
-                            latest.position
-                          }
-                          icon={createTruckIcon(
-                            vehicle.color
-                          )}
                         >
                           <Popup>
                             <div
                               style={{
                                 minWidth:
-                                  "220px",
+                                  "240px",
+
+                                fontFamily:
+                                  "Inter, Arial, sans-serif",
                               }}
                             >
                               <div
                                 style={{
-                                  fontWeight:
-                                    700,
                                   fontSize:
                                     "15px",
+
+                                  fontWeight:
+                                    700,
+
+                                  color:
+                                    "#0F172A",
+
                                   marginBottom:
-                                    "10px",
+                                    "12px",
                                 }}
                               >
                                 {
@@ -1986,122 +1662,206 @@ export default function MapSection({
                               </div>
 
                               <PopupRow
-                                label="Ward"
-                                value={
-                                  normalizedWard
-                                }
-                              />
-
-                              <PopupRow
-                                label="GPS Points"
-                                value={
-                                  vehicle
-                                    .points
-                                    .length
-                                }
-                              />
-
-                              <PopupRow
                                 label="Latitude"
-                                value={latest.latitude.toFixed(
+                                value={point.latitude.toFixed(
                                   6
                                 )}
                               />
 
                               <PopupRow
                                 label="Longitude"
-                                value={latest.longitude.toFixed(
+                                value={point.longitude.toFixed(
                                   6
                                 )}
                               />
+
+                              <PopupRow
+                                label="Ward"
+                                value={
+                                  point?.wardNo ??
+                                  normalizedWard ??
+                                  "—"
+                                }
+                              />
+
+                              <PopupRow
+                                label="Timestamp"
+                                value={
+                                  point?.iotTimestamp ||
+                                  point?.iottimestamp ||
+                                  point?.receivedtimestamp ||
+                                  point?.timestamp ||
+                                  point?.createdAt
+                                }
+                              />
+
+                              <PopupRow
+                                label="Wet Weight"
+                                value={
+                                  point?.wetWeight
+                                }
+                              />
+
+                              <PopupRow
+                                label="Dry Weight"
+                                value={
+                                  point?.dryWeight
+                                }
+                              />
                             </div>
                           </Popup>
-                        </Marker>
-                      )}
-                    </div>
-                  );
-                }
-              )}
-            </>
-          )}
+                        </CircleMarker>
+                      )
+                    )}
+
+                    {/* =======================================
+                        CURRENT VEHICLE
+                    ======================================= */}
+
+                    {latestPoint && (
+                      <Marker
+                        position={
+                          latestPoint.position
+                        }
+                        icon={createTruckIcon(
+                          vehicle.color
+                        )}
+                      >
+                        <Popup>
+                          <div
+                            style={{
+                              minWidth:
+                                "220px",
+
+                              fontFamily:
+                                "Inter, Arial, sans-serif",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize:
+                                  "15px",
+
+                                fontWeight:
+                                  700,
+
+                                color:
+                                  "#0F172A",
+
+                                marginBottom:
+                                  "12px",
+                              }}
+                            >
+                              {
+                                vehicle.vehicleNumber
+                              }
+                            </div>
+
+                            <PopupRow
+                              label="Ward"
+                              value={
+                                normalizedWard ??
+                                "—"
+                              }
+                            />
+
+                            <PopupRow
+                              label="GPS Points"
+                              value={
+                                vehicle
+                                  .points
+                                  .length
+                              }
+                            />
+
+                            <PopupRow
+                              label="Latitude"
+                              value={latestPoint.latitude.toFixed(
+                                6
+                              )}
+                            />
+
+                            <PopupRow
+                              label="Longitude"
+                              value={latestPoint.longitude.toFixed(
+                                6
+                              )}
+                            />
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )}
+                  </Fragment>
+                );
+              }
+            )}
 
           {/* =================================================
               GVP
+
+              UI is ready.
+              Real API can be connected here.
           ================================================= */}
 
           {selectedView ===
-            "gvp" &&
-            gvpData.map(
-              (
-                item,
-                index
-              ) => (
-                <DataMarker
-                  key={`gvp-${item?.id || index}`}
-                  item={
-                    item
-                  }
-                  type="gvp"
-                />
-              )
-            )}
+            "gvp" && (
+            <PlaceholderView
+              icon={
+                MapPin
+              }
+              title="Garbage Vulnerable Points"
+              description="GVP locations will be displayed here once the GVP data endpoint is connected."
+            />
+          )}
 
           {/* =================================================
               PLANTS
           ================================================= */}
 
           {selectedView ===
-            "plants" &&
-            plantData.map(
-              (
-                item,
-                index
-              ) => (
-                <DataMarker
-                  key={`plant-${item?.id || index}`}
-                  item={
-                    item
-                  }
-                  type="plant"
-                />
-              )
-            )}
+            "plants" && (
+            <PlaceholderView
+              icon={
+                Factory
+              }
+              title="Plants Active"
+              description="Active waste-processing plants will be displayed here once the plant data endpoint is connected."
+            />
+          )}
 
           {/* =================================================
-              GRIEVANCES
+              CUSTOMER GRIEVANCES
           ================================================= */}
 
           {selectedView ===
-            "grievances" &&
-            grievanceData.map(
-              (
-                item,
-                index
-              ) => (
-                <DataMarker
-                  key={`grievance-${item?.id || index}`}
-                  item={
-                    item
-                  }
-                  type="grievance"
-                />
-              )
-            )}
+            "complaints" && (
+            <PlaceholderView
+              icon={
+                Megaphone
+              }
+              title="Customer Grievances"
+              description="Customer grievance locations will be displayed here once the grievance data endpoint is connected."
+            />
+          )}
         </MapContainer>
 
         {/* =================================================
-            MAP VIEW DROPDOWN
+            TOP LEFT MAP SELECTOR
         ================================================= */}
 
         <div
           ref={menuRef}
           className="
             absolute
-            left-5
-            top-5
+            left-6
+            top-6
             z-[1000]
           "
         >
+          {/* ===============================================
+              SELECTED VIEW BUTTON
+          =============================================== */}
+
           <button
             type="button"
             onClick={() =>
@@ -2113,32 +1873,35 @@ export default function MapSection({
               )
             }
             className="
-              w-[410px]
-              h-[70px]
-              max-w-[calc(100vw-40px)]
-              px-6
+              w-[570px]
+              max-w-[calc(100vw-48px)]
+              h-[88px]
+              rounded-[20px]
               bg-white
-              rounded-[18px]
               border
-              border-slate-200
-              shadow-[0_8px_28px_rgba(15,23,42,0.13)]
+              border-[#E0E6ED]
+              shadow-[0_8px_25px_rgba(15,23,42,0.12)]
+              px-8
               flex
               items-center
               justify-between
-              hover:shadow-[0_12px_32px_rgba(15,23,42,0.17)]
-              transition
+              transition-all
+              duration-200
+              hover:shadow-[0_12px_32px_rgba(15,23,42,0.16)]
             "
           >
             <div
               className="
                 flex
                 items-center
-                gap-4
+                gap-6
               "
             >
               <ActiveIcon
-                size={25}
-                strokeWidth={2}
+                size={30}
+                strokeWidth={
+                  2
+                }
                 style={{
                   color:
                     activeView.color,
@@ -2147,9 +1910,10 @@ export default function MapSection({
 
               <span
                 className="
-                  text-[17px]
+                  text-[24px]
                   font-semibold
-                  text-slate-700
+                  tracking-[-0.02em]
+                  text-[#33445D]
                 "
               >
                 {
@@ -2159,10 +1923,14 @@ export default function MapSection({
             </div>
 
             <ChevronDown
-              size={21}
+              size={27}
+              strokeWidth={
+                2
+              }
               className={`
-                text-slate-500
+                text-[#33445D]
                 transition-transform
+                duration-200
                 ${
                   showViewMenu
                     ? "rotate-180"
@@ -2172,20 +1940,24 @@ export default function MapSection({
             />
           </button>
 
+          {/* ===============================================
+              DROPDOWN
+          =============================================== */}
+
           {showViewMenu && (
             <div
               className="
                 absolute
                 left-0
-                top-[78px]
-                w-[410px]
-                max-w-[calc(100vw-40px)]
-                bg-white
-                rounded-[18px]
-                border
-                border-slate-200
+                top-[100px]
+                w-[570px]
+                max-w-[calc(100vw-48px)]
                 overflow-hidden
-                shadow-[0_18px_45px_rgba(15,23,42,0.16)]
+                rounded-[20px]
+                bg-white
+                border
+                border-[#E0E6ED]
+                shadow-[0_20px_45px_rgba(15,23,42,0.16)]
               "
             >
               {mapViews.map(
@@ -2214,18 +1986,30 @@ export default function MapSection({
                           false
                         );
 
-                        setError(
-                          ""
-                        );
+                        /*
+                          Clear route errors
+                          when switching
+                          to another map.
+                        */
+
+                        if (
+                          view.id !==
+                          "route"
+                        ) {
+                          setError(
+                            ""
+                          );
+                        }
                       }}
                       className={`
                         w-full
-                        px-7
-                        py-5
+                        min-h-[76px]
+                        px-8
                         flex
                         items-center
                         justify-between
                         transition-colors
+                        duration-150
                         ${
                           isActive
                             ? "bg-violet-50"
@@ -2241,7 +2025,7 @@ export default function MapSection({
                         "
                       >
                         <Icon
-                          size={24}
+                          size={25}
                           strokeWidth={
                             2
                           }
@@ -2254,8 +2038,8 @@ export default function MapSection({
                         <span
                           className="
                             text-[16px]
-                            font-medium
-                            text-slate-700
+                            font-semibold
+                            text-[#33445D]
                           "
                         >
                           {
@@ -2265,9 +2049,12 @@ export default function MapSection({
                       </div>
 
                       {isActive && (
-                        <CheckCircle2
+                        <Check
                           size={
                             21
+                          }
+                          strokeWidth={
+                            2.5
                           }
                           style={{
                             color:
@@ -2284,291 +2071,160 @@ export default function MapSection({
         </div>
 
         {/* =================================================
-            DIVISION + WARD
+            DIVISION
         ================================================= */}
 
         <div
           className="
             absolute
-            right-5
-            top-5
+            right-[405px]
+            top-6
             z-[1000]
-            flex
-            gap-4
+            w-[365px]
+            h-[88px]
+            rounded-[20px]
+            bg-white
+            border
+            border-[#E0E6ED]
+            shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+            px-7
+            py-5
           "
         >
           <div
             className="
-              min-w-[260px]
-              px-6
-              py-4
-              bg-white
-              rounded-[18px]
-              border
-              border-slate-200
-              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+              text-[14px]
+              font-semibold
+              uppercase
+              tracking-[0.02em]
+              text-[#8FA1BA]
             "
           >
-            <div
-              className="
-                text-[11px]
-                font-semibold
-                tracking-wide
-                uppercase
-                text-slate-400
-              "
-            >
-              DIVISION
-            </div>
-
-            <div
-              className="
-                mt-1
-                text-[16px]
-                font-semibold
-                text-slate-700
-              "
-            >
-              {selectedDivision ||
-                "All Divisions"}
-            </div>
+            DIVISION
           </div>
 
           <div
             className="
-              min-w-[210px]
-              px-6
-              py-4
-              bg-white
-              rounded-[18px]
-              border
-              border-slate-200
-              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+              mt-1
+              text-[22px]
+              font-semibold
+              text-[#33445D]
             "
           >
-            <div
-              className="
-                text-[11px]
-                font-semibold
-                tracking-wide
-                uppercase
-                text-slate-400
-              "
-            >
-              WARD
-            </div>
-
-            <div
-              className="
-                mt-1
-                text-[16px]
-                font-semibold
-                text-slate-700
-              "
-            >
-              {normalizedWard
-                ? `Ward ${normalizedWard}`
-                : "All Wards"}
-            </div>
+            {selectedDivision ||
+              "All Divisions"}
           </div>
         </div>
 
         {/* =================================================
-            OVERVIEW STATS
+            WARD
+        ================================================= */}
+
+        <div
+          className="
+            absolute
+            right-6
+            top-6
+            z-[1000]
+            w-[365px]
+            h-[88px]
+            rounded-[20px]
+            bg-white
+            border
+            border-[#E0E6ED]
+            shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+            px-7
+            py-5
+          "
+        >
+          <div
+            className="
+              text-[14px]
+              font-semibold
+              uppercase
+              tracking-[0.02em]
+              text-[#8FA1BA]
+            "
+          >
+            WARD
+          </div>
+
+          <div
+            className="
+              mt-1
+              text-[22px]
+              font-semibold
+              text-[#33445D]
+            "
+          >
+            {normalizedWard
+              ? `Ward ${normalizedWard}`
+              : "All Wards"}
+          </div>
+        </div>
+
+        {/* =================================================
+            ROUTE REFRESH
         ================================================= */}
 
         {selectedView ===
-          "overview" && (
-          <div
+          "route" && (
+          <button
+            type="button"
+            onClick={
+              fetchRoutes
+            }
+            disabled={
+              loading ||
+              !normalizedWard
+            }
+            title={
+              normalizedWard
+                ? "Refresh route"
+                : "Select a ward first"
+            }
             className="
               absolute
-              left-5
-              bottom-5
+              right-6
+              bottom-6
               z-[1000]
+              w-[46px]
+              h-[46px]
+              rounded-full
+              bg-white
+              border
+              border-[#E0E6ED]
+              shadow-[0_7px_20px_rgba(15,23,42,0.12)]
               flex
-              gap-3
+              items-center
+              justify-center
+              transition-all
+              hover:bg-slate-50
+              disabled:opacity-50
+              disabled:cursor-not-allowed
             "
           >
-            <div
-              className="
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_7px_22px_rgba(15,23,42,0.10)]
-              "
-            >
-              <div
+            {loading ? (
+              <Loader2
+                size={19}
                 className="
-                  flex
-                  items-center
-                  gap-2
-                  text-[10px]
-                  uppercase
-                  tracking-wide
-                  font-semibold
-                  text-slate-400
+                  animate-spin
+                  text-violet-600
                 "
-              >
-                <Truck
-                  size={15}
-                />
-
-                Active Vehicles
-              </div>
-
-              <div
+              />
+            ) : (
+              <RefreshCw
+                size={19}
                 className="
-                  mt-1
-                  text-[20px]
-                  font-bold
-                  text-slate-800
+                  text-slate-600
                 "
-              >
-                {
-                  activeVehicles
-                }
-              </div>
-            </div>
-
-            <div
-              className="
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_7px_22px_rgba(15,23,42,0.10)]
-              "
-            >
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  text-[10px]
-                  uppercase
-                  tracking-wide
-                  font-semibold
-                  text-slate-400
-                "
-              >
-                <AlertTriangle
-                  size={15}
-                />
-
-                Vulnerable Points
-              </div>
-
-              <div
-                className="
-                  mt-1
-                  text-[20px]
-                  font-bold
-                  text-slate-800
-                "
-              >
-                {
-                  gvpData.length
-                }
-              </div>
-            </div>
-
-            <div
-              className="
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_7px_22px_rgba(15,23,42,0.10)]
-              "
-            >
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  text-[10px]
-                  uppercase
-                  tracking-wide
-                  font-semibold
-                  text-slate-400
-                "
-              >
-                <Factory
-                  size={15}
-                />
-
-                Active Plants
-              </div>
-
-              <div
-                className="
-                  mt-1
-                  text-[20px]
-                  font-bold
-                  text-slate-800
-                "
-              >
-                {
-                  activePlants
-                }
-              </div>
-            </div>
-
-            <div
-              className="
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_7px_22px_rgba(15,23,42,0.10)]
-              "
-            >
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  text-[10px]
-                  uppercase
-                  tracking-wide
-                  font-semibold
-                  text-slate-400
-                "
-              >
-                <Megaphone
-                  size={15}
-                />
-
-                Open Grievances
-              </div>
-
-              <div
-                className="
-                  mt-1
-                  text-[20px]
-                  font-bold
-                  text-slate-800
-                "
-              >
-                {
-                  openGrievances
-                }
-              </div>
-            </div>
-          </div>
+              />
+            )}
+          </button>
         )}
 
         {/* =================================================
-            ROUTE INFO
+            ROUTE INFORMATION
         ================================================= */}
 
         {selectedView ===
@@ -2576,115 +2232,135 @@ export default function MapSection({
           routes.length >
             0 &&
           !loading && (
+          <div
+            className="
+              absolute
+              left-1/2
+              bottom-6
+              -translate-x-1/2
+              z-[1000]
+              bg-white
+              rounded-[16px]
+              border
+              border-[#E0E6ED]
+              shadow-[0_7px_22px_rgba(15,23,42,0.10)]
+              px-5
+              py-3
+            "
+          >
             <div
               className="
-                absolute
-                left-5
-                bottom-5
-                z-[1000]
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_7px_22px_rgba(15,23,42,0.10)]
+                flex
+                items-center
+                gap-5
               "
             >
               <div
                 className="
                   flex
                   items-center
-                  gap-6
+                  gap-2
+                  text-[12px]
+                  font-semibold
+                  text-slate-600
                 "
               >
-                <div
+                <Truck
+                  size={17}
                   className="
-                    flex
-                    items-center
-                    gap-2
+                    text-violet-600
                   "
-                >
-                  <Truck
-                    size={17}
-                    className="text-violet-600"
-                  />
+                />
 
-                  <span
-                    className="
-                      text-[13px]
-                      font-semibold
-                      text-slate-700
-                    "
-                  >
-                    {
-                      routes.length
-                    }{" "}
-                    {routes.length ===
-                    1
-                      ? "Vehicle"
-                      : "Vehicles"}
-                  </span>
-                </div>
+                {
+                  routes.length
+                }{" "}
+                {routes.length ===
+                1
+                  ? "Vehicle"
+                  : "Vehicles"}
+              </div>
 
-                <div
-                  className="
-                    text-[12px]
-                    text-slate-500
-                    font-medium
-                  "
-                >
-                  {totalGpsPoints.toLocaleString()}{" "}
-                  GPS points
-                </div>
+              <div
+                className="
+                  h-4
+                  w-px
+                  bg-slate-200
+                "
+              />
+
+              <div
+                className="
+                  text-[12px]
+                  font-medium
+                  text-slate-500
+                "
+              >
+                {totalGpsPoints.toLocaleString()}{" "}
+                GPS points
               </div>
             </div>
-          )}
+          </div>
+        )}
 
         {/* =================================================
-            ROUTE REFRESH
+            ERROR / WARD MESSAGE
+
+            This is intentionally the small pill
+            shown in your screenshot.
         ================================================= */}
 
         {selectedView ===
           "route" &&
-          normalizedWard && (
-          <button
-            type="button"
-            onClick={
-              fetchRoutes
-            }
-            disabled={
-              loading
-            }
-            title="Refresh route"
+          error && (
+          <div
             className="
               absolute
-              right-5
-              bottom-5
+              left-1/2
+              bottom-6
+              -translate-x-1/2
               z-[1000]
-              w-[46px]
-              h-[46px]
-              rounded-full
-              bg-white
-              border
-              border-slate-200
-              shadow-[0_7px_22px_rgba(15,23,42,0.12)]
-              flex
-              items-center
-              justify-center
-              hover:bg-slate-50
-              transition
+              max-w-[calc(100%-48px)]
             "
           >
-            <RefreshCw
-              size={19}
-              className={
-                loading
-                  ? "animate-spin text-violet-600"
-                  : "text-slate-600"
-              }
-            />
-          </button>
+            <div
+              className="
+                min-h-[58px]
+                px-7
+                py-4
+                bg-white
+                rounded-[16px]
+                border
+                border-[#E0E6ED]
+                shadow-[0_8px_25px_rgba(15,23,42,0.12)]
+                flex
+                items-center
+                gap-4
+              "
+            >
+              <Truck
+                size={22}
+                strokeWidth={
+                  2
+                }
+                className="
+                  shrink-0
+                  text-violet-600
+                "
+              />
+
+              <span
+                className="
+                  text-[16px]
+                  font-semibold
+                  text-[#53657D]
+                  whitespace-nowrap
+                "
+              >
+                {error}
+              </span>
+            </div>
+          </div>
         )}
 
         {/* =================================================
@@ -2697,32 +2373,28 @@ export default function MapSection({
           <div
             className="
               absolute
-              inset-0
-              z-[800]
-              flex
-              items-center
-              justify-center
-              bg-white/35
-              backdrop-blur-[2px]
-              pointer-events-none
+              left-1/2
+              bottom-6
+              -translate-x-1/2
+              z-[1000]
             "
           >
             <div
               className="
+                bg-white
+                rounded-[16px]
+                border
+                border-[#E0E6ED]
+                shadow-[0_8px_25px_rgba(15,23,42,0.12)]
                 px-6
                 py-4
-                bg-white
-                rounded-[18px]
-                border
-                border-slate-200
-                shadow-[0_15px_40px_rgba(15,23,42,0.14)]
                 flex
                 items-center
                 gap-3
               "
             >
               <Loader2
-                size={20}
+                size={19}
                 className="
                   animate-spin
                   text-violet-600
@@ -2733,115 +2405,13 @@ export default function MapSection({
                 className="
                   text-[13px]
                   font-semibold
-                  text-slate-700
-                "
-              >
-                Loading vehicle
-                routes...
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
-        {selectedView ===
-          "route" &&
-          !loading &&
-          error && (
-          <div
-            className="
-              absolute
-              left-1/2
-              bottom-6
-              -translate-x-1/2
-              z-[1000]
-            "
-          >
-            <div
-              className="
-                px-5
-                py-3
-                bg-white
-                rounded-[16px]
-                border
-                border-slate-200
-                shadow-[0_10px_30px_rgba(15,23,42,0.12)]
-                flex
-                items-center
-                gap-3
-                whitespace-nowrap
-              "
-            >
-              <Truck
-                size={18}
-                className="text-violet-600"
-              />
-
-              <span
-                className="
-                  text-[12px]
-                  font-semibold
                   text-slate-600
                 "
               >
-                {error}
+                Loading route...
               </span>
             </div>
           </div>
-        )}
-
-        {/* =================================================
-            EMPTY GVP
-        ================================================= */}
-
-        {selectedView ===
-          "gvp" &&
-          gvpData.length ===
-            0 && (
-          <EmptyLayer
-            icon={
-              MapPin
-            }
-            title="Garbage Vulnerable Points"
-            description="GVP locations will appear here once the GVP data source is connected."
-          />
-        )}
-
-        {/* =================================================
-            EMPTY PLANTS
-        ================================================= */}
-
-        {selectedView ===
-          "plants" &&
-          plantData.length ===
-            0 && (
-          <EmptyLayer
-            icon={
-              Factory
-            }
-            title="Plants Active"
-            description="Active waste-processing plants will appear here once the plant data source is connected."
-          />
-        )}
-
-        {/* =================================================
-            EMPTY GRIEVANCES
-        ================================================= */}
-
-        {selectedView ===
-          "grievances" &&
-          grievanceData.length ===
-            0 && (
-          <EmptyLayer
-            icon={
-              Megaphone
-            }
-            title="Customer Grievances"
-            description="Customer grievance locations will appear here once the grievance data source is connected."
-          />
         )}
       </div>
     </section>
