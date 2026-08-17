@@ -1,935 +1,1234 @@
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+  MapContainer,
+  TileLayer,
+  Polyline,
+  Marker,
+  Popup,
+  useMap,
+} from "react-leaflet";
+
+import L from "leaflet";
 
 import {
-  ChevronDown,
-  Check,
-  Map,
+  Map as MapIcon,
   Route,
-  MapPinned,
+  MapPin,
   Factory,
   Megaphone,
+  ChevronDown,
+  Truck,
+  Navigation,
+  RefreshCw,
 } from "lucide-react";
 
-import { gsap } from "gsap";
+import "leaflet/dist/leaflet.css";
 
-import { useFilters } from "../../contexts/FilterContext";
+/* =========================================================
+   CONFIG
+========================================================= */
 
-import MapSection from "../dashboard/MapSection";
+const API_BASE_URL = "https://sewac-main.onrender.com/api";
 
 /*
-============================================================
-CITY OVERVIEW MAP
-============================================================
-
-IMPORTANT:
-
-The Header is the SINGLE SOURCE OF TRUTH for:
-
-    City
-    Zone
-    Division
-    Ward
-
-We DO NOT create another Division/Ward state here.
-
-The flow is:
-
-Header
-   ↓
-FilterContext
-   ↓
-CityOverviewMap
-   ↓
-MapSection
-   ↓
-/api/route-map?date=...&wardNo=...
-
-============================================================
+  Different vehicles get different colors.
+  The same vehicle keeps the same color.
 */
-
-const mapViews = [
-  {
-    id: "overview",
-    label: "City Overview Map",
-    icon: Map,
-    color: "text-blue-600",
-  },
-
-  {
-    id: "route",
-    label: "Route Map",
-    icon: Route,
-    color: "text-violet-600",
-  },
-
-  {
-    id: "gvp",
-    label: "Garbage Vulnerable Points (GVP)",
-    icon: MapPinned,
-    color: "text-green-600",
-  },
-
-  {
-    id: "plants",
-    label: "Plants Active",
-    icon: Factory,
-    color: "text-emerald-600",
-  },
-
-  {
-    id: "grievances",
-    label: "Customer Grievances",
-    icon: Megaphone,
-    color: "text-pink-500",
-  },
+const ROUTE_COLORS = [
+  "#7C3AED",
+  "#06B6D4",
+  "#10B981",
+  "#F59E0B",
+  "#EF4444",
+  "#EC4899",
+  "#3B82F6",
+  "#14B8A6",
 ];
 
-/*
-============================================================
-HELPER
-============================================================
-*/
+/* =========================================================
+   VEHICLE COLOR
+========================================================= */
 
-function getWardNumber(selectedWard) {
-  if (!selectedWard) {
-    return "";
+const getVehicleColor = (vehicleNumber, index = 0) => {
+  if (!vehicleNumber) {
+    return ROUTE_COLORS[index % ROUTE_COLORS.length];
   }
 
-  /*
-  Header / FilterContext ward structure:
+  let hash = 0;
 
-  {
-    wardId,
-    wardNo,
-    wardName,
-    divisionId,
-    divisionName,
-    ...
+  for (let i = 0; i < vehicleNumber.length; i++) {
+    hash = vehicleNumber.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  We ONLY need wardNo for the route API.
-  */
+  return ROUTE_COLORS[Math.abs(hash) % ROUTE_COLORS.length];
+};
 
-  if (
-    selectedWard.wardNo !== undefined &&
-    selectedWard.wardNo !== null &&
-    selectedWard.wardNo !== ""
-  ) {
-    return String(selectedWard.wardNo);
-  }
+/* =========================================================
+   VEHICLE ICON
+========================================================= */
 
-  /*
-  Defensive fallbacks in case an older object
-  is still being returned somewhere.
-  */
+const createTruckIcon = (color) => {
+  return L.divIcon({
+    className: "sewac-truck-marker",
+    html: `
+      <div
+        style="
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: white;
+          border: 3px solid ${color};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+        "
+      >
+        <div
+          style="
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: ${color}18;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+          "
+        >
+          🚛
+        </div>
+      </div>
+    `,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -20],
+  });
+};
 
-  if (
-    selectedWard.ward_no !== undefined &&
-    selectedWard.ward_no !== null &&
-    selectedWard.ward_no !== ""
-  ) {
-    return String(selectedWard.ward_no);
-  }
+/* =========================================================
+   MAP CONTROLLER
+========================================================= */
 
-  if (
-    selectedWard.wardId !== undefined &&
-    selectedWard.wardId !== null &&
-    selectedWard.wardId !== ""
-  ) {
-    return String(selectedWard.wardId);
-  }
-
-  if (
-    typeof selectedWard === "number" ||
-    typeof selectedWard === "string"
-  ) {
-    const value = String(selectedWard);
-
-    if (value !== "All Wards") {
-      return value;
-    }
-  }
-
-  return "";
-}
-
-/*
-============================================================
-MAIN COMPONENT
-============================================================
-*/
-
-export default function CityOverviewMap({
-  selectedDate,
-}) {
-  /*
-  ==========================================================
-  HEADER FILTER CONTEXT
-  ==========================================================
-
-  THESE ARE THE SAME VALUES USED BY HEADER.JSX.
-
-  DO NOT create separate local states for them.
-
-  ==========================================================
-  */
-
-  const {
-    selectedCity,
-    selectedZone,
-    selectedDivision,
-    selectedWard,
-  } = useFilters();
-
-  /*
-  ==========================================================
-  MAP VIEW STATE
-  ==========================================================
-  */
-
-  const [selectedView, setSelectedView] =
-    useState(mapViews[0]);
-
-  const [open, setOpen] =
-    useState(false);
-
-  /*
-  ==========================================================
-  REFS
-  ==========================================================
-  */
-
-  const sectionRef =
-    useRef(null);
-
-  const headerRef =
-    useRef(null);
-
-  const mapRef =
-    useRef(null);
-
-  const controlsRef =
-    useRef(null);
-
-  const dropdownRef =
-    useRef(null);
-
-  /*
-  ==========================================================
-  RESOLVE WARD
-  ==========================================================
-
-  Example:
-
-  Header:
-
-      Ward 216
-
-  becomes:
-
-      "216"
-
-  and MapSection receives:
-
-      wardNo="216"
-
-  ==========================================================
-  */
-
-  const wardNo =
-    getWardNumber(selectedWard);
-
-  /*
-  ==========================================================
-  RESOLVE DATE
-  ==========================================================
-
-  If the parent already supplies selectedDate,
-  we use it.
-
-  Otherwise use today's date.
-
-  ==========================================================
-  */
-
-  const resolvedDate =
-    selectedDate ||
-    new Date()
-      .toISOString()
-      .slice(0, 10);
-
-  /*
-  ==========================================================
-  DEBUG
-
-  Keep these logs temporarily while testing.
-
-  They will show exactly what the Header is giving us.
-  ==========================================================
-  */
+function MapController({ routes, selectedView }) {
+  const map = useMap();
 
   useEffect(() => {
-    console.log(
-      "==============================================",
-    );
+    if (!map) return;
 
-    console.log(
-      "CITY OVERVIEW MAP — HEADER FILTER STATE",
-    );
+    /*
+      Force Leaflet to recalculate its dimensions.
+      This is important because the map is inside a dashboard card.
+    */
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
 
-    console.log(
-      "City:",
-      selectedCity,
-    );
+    const handleResize = () => {
+      map.invalidateSize();
+    };
 
-    console.log(
-      "Zone:",
-      selectedZone,
-    );
-
-    console.log(
-      "Division:",
-      selectedDivision,
-    );
-
-    console.log(
-      "Ward:",
-      selectedWard,
-    );
-
-    console.log(
-      "Resolved Ward Number:",
-      wardNo,
-    );
-
-    console.log(
-      "Selected Date:",
-      resolvedDate,
-    );
-
-    console.log(
-      "Map View:",
-      selectedView.id,
-    );
-
-    console.log(
-      "==============================================",
-    );
-  }, [
-    selectedCity,
-    selectedZone,
-    selectedDivision,
-    selectedWard,
-    wardNo,
-    resolvedDate,
-    selectedView.id,
-  ]);
-
-  /*
-  ==========================================================
-  PAGE LOAD ANIMATION
-  ==========================================================
-  */
-
-  useEffect(() => {
-    const tl = gsap.timeline({
-      defaults: {
-        ease: "power3.out",
-      },
-    });
-
-    if (sectionRef.current) {
-      tl.from(sectionRef.current, {
-        opacity: 0,
-        y: 28,
-        duration: 0.45,
-      });
-    }
-
-    if (headerRef.current) {
-      tl.from(
-        headerRef.current,
-        {
-          opacity: 0,
-          y: 18,
-          duration: 0.45,
-        },
-        "-=0.25",
-      );
-    }
-
-    if (mapRef.current) {
-      tl.from(
-        mapRef.current,
-        {
-          opacity: 0,
-          scale: 0.985,
-          duration: 0.8,
-        },
-        "-=0.2",
-      );
-    }
-
-    if (controlsRef.current) {
-      tl.from(
-        controlsRef.current,
-        {
-          opacity: 0,
-          x: -18,
-          duration: 0.55,
-        },
-        "-=0.55",
-      );
-    }
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      tl.kill();
+      window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [map]);
 
   /*
-  ==========================================================
-  DROPDOWN ANIMATION
-  ==========================================================
+    When route data arrives, automatically fit the map
+    around all available route coordinates.
   */
-
   useEffect(() => {
-    if (!dropdownRef.current) {
-      return;
+    if (selectedView !== "route") return;
+
+    const allPoints = [];
+
+    routes.forEach((vehicle) => {
+      if (!vehicle.points) return;
+
+      vehicle.points.forEach((point) => {
+        const lat = Number(point.latitude);
+        const lng = Number(point.longitude);
+
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng) &&
+          lat !== 0 &&
+          lng !== 0
+        ) {
+          allPoints.push([lat, lng]);
+        }
+      });
+    });
+
+    if (allPoints.length === 0) return;
+
+    try {
+      const bounds = L.latLngBounds(allPoints);
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [70, 70],
+          maxZoom: 15,
+          animate: true,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fit route bounds:", error);
+    }
+  }, [routes, selectedView, map]);
+
+  return null;
+}
+
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
+export default function CityOverviewMap({
+  selectedWard: selectedWardProp = null,
+  selectedDivision: selectedDivisionProp = null,
+  wardNo: wardNoProp = null,
+  divisionName: divisionNameProp = null,
+  selectedDate: selectedDateProp = null,
+}) {
+  /* =======================================================
+     STATE
+  ======================================================= */
+
+  const [selectedView, setSelectedView] = useState("route");
+
+  const [showViewMenu, setShowViewMenu] = useState(false);
+
+  const [routes, setRoutes] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState("");
+
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const [mapCenter, setMapCenter] = useState([12.9716, 77.5946]);
+
+  const [mapZoom, setMapZoom] = useState(11);
+
+  const menuRef = useRef(null);
+
+  /* =======================================================
+     HEADER DATA
+     
+     The component first uses props coming from Header/page.
+     
+     If props aren't provided, it also checks common localStorage
+     values so the map can still work independently.
+  ======================================================= */
+
+  const getStoredValue = (...keys) => {
+    if (typeof window === "undefined") return null;
+
+    for (const key of keys) {
+      const value = localStorage.getItem(key);
+
+      if (value !== null && value !== undefined && value !== "") {
+        return value;
+      }
     }
 
-    if (open) {
-      gsap.fromTo(
-        dropdownRef.current,
-        {
-          opacity: 0,
-          y: -10,
-          scale: 0.98,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.28,
-          ease: "power2.out",
-        },
-      );
-    }
-  }, [open]);
+    return null;
+  };
 
-  /*
-  ==========================================================
-  MAP VIEW SELECTION
-  ==========================================================
-  */
+  const selectedWard =
+    selectedWardProp ??
+    wardNoProp ??
+    getStoredValue(
+      "selectedWard",
+      "selectedWardNo",
+      "wardNo",
+      "ward",
+      "selected_ward"
+    );
 
-  const handleSelect = (item) => {
+  const selectedDivision =
+    selectedDivisionProp ??
+    divisionNameProp ??
+    getStoredValue(
+      "selectedDivision",
+      "divisionName",
+      "division",
+      "selected_division"
+    );
+
+  /* =======================================================
+     NORMALIZE WARD NUMBER
+  ======================================================= */
+
+  const normalizedWard = useMemo(() => {
     if (
-      item.id ===
-      selectedView.id
+      selectedWard === null ||
+      selectedWard === undefined ||
+      selectedWard === ""
     ) {
-      setOpen(false);
-
-      return;
+      return null;
     }
 
     /*
-    Animate map out first.
+      Handles:
+      216
+      "216"
+      "Ibblur (216)"
+      "Ward 216"
+    */
+    const match = String(selectedWard).match(/\d+/);
+
+    return match ? Number(match[0]) : null;
+  }, [selectedWard]);
+
+  /* =======================================================
+     DATE
+  ======================================================= */
+
+  const getApiDate = () => {
+    /*
+      If Header sends selectedDate, use it.
     */
 
-    if (mapRef.current) {
-      gsap.to(
-        mapRef.current,
-        {
-          opacity: 0,
-          scale: 0.992,
-          duration: 0.18,
-          ease: "power2.out",
-
-          onComplete: () => {
-            setSelectedView(item);
-
-            requestAnimationFrame(() => {
-              if (mapRef.current) {
-                gsap.to(
-                  mapRef.current,
-                  {
-                    opacity: 1,
-                    scale: 1,
-                    duration: 0.35,
-                    ease: "power3.out",
-                  },
-                );
-              }
-            });
-          },
-        },
-      );
-    } else {
-      setSelectedView(item);
+    if (selectedDateProp) {
+      return selectedDateProp;
     }
 
-    setOpen(false);
+    /*
+      Otherwise try localStorage.
+    */
+
+    const storedDate = getStoredValue(
+      "selectedDate",
+      "dashboardDate",
+      "routeDate"
+    );
+
+    if (storedDate) {
+      return storedDate;
+    }
+
+    /*
+      IMPORTANT:
+      Your API example is for 2026-08-16.
+      We use yesterday as the fallback because route data
+      is generally the completed previous day's route.
+    */
+
+    const date = new Date();
+
+    date.setDate(date.getDate() - 1);
+
+    const year = date.getFullYear();
+
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   };
 
-  /*
-  ==========================================================
-  CURRENT FILTER LABELS
-  ==========================================================
-  */
+  /* =======================================================
+     FETCH ROUTE DATA
+  ======================================================= */
 
-  const cityLabel =
-    selectedCity?.cityName ||
-    selectedCity?.city_name ||
-    selectedCity?.name ||
-    "All Cities";
+  const fetchRoutes = async () => {
+    /*
+      Route map requires a ward.
+    */
 
-  const zoneLabel =
-    selectedZone?.zoneName ||
-    selectedZone?.zone_name ||
-    selectedZone?.name ||
-    "All Zones";
+    if (!normalizedWard) {
+      setRoutes([]);
+      setError("");
+      return;
+    }
 
-  const divisionLabel =
-    selectedDivision?.divisionName ||
-    selectedDivision?.division_name ||
-    selectedDivision?.name ||
-    "All Divisions";
+    setLoading(true);
+    setError("");
 
-  const wardLabel =
-    selectedWard?.wardName ||
-    selectedWard?.ward_name ||
-    selectedWard?.name ||
-    (wardNo
-      ? `Ward ${wardNo}`
-      : "All Wards");
+    try {
+      const date = getApiDate();
 
-  /*
-  ==========================================================
-  RENDER
-  ==========================================================
-  */
+      const url =
+        `${API_BASE_URL}/route-map` +
+        `?date=${encodeURIComponent(date)}` +
+        `&wardNo=${encodeURIComponent(normalizedWard)}`;
+
+      console.log("====================================");
+      console.log("SEWAC ROUTE MAP REQUEST");
+      console.log("URL:", url);
+      console.log("WARD:", normalizedWard);
+      console.log("DATE:", date);
+      console.log("====================================");
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(
+          `Route API returned HTTP ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+
+      console.log("SEWAC ROUTE MAP RESPONSE:", result);
+
+      /*
+        Your backend response is:
+
+        {
+          success: true,
+          data: {
+            success: true,
+            date: "...",
+            wardNo: 216,
+            totalVehicles: 2,
+            vehicles: [...]
+          }
+        }
+      */
+
+      const payload = result?.data ?? result;
+
+      const vehicleData = Array.isArray(payload?.vehicles)
+        ? payload.vehicles
+        : [];
+
+      /*
+        Normalize every vehicle.
+      */
+
+      const normalizedVehicles = vehicleData
+        .map((vehicle, vehicleIndex) => {
+          const rawPoints = Array.isArray(vehicle?.points)
+            ? vehicle.points
+            : [];
+
+          /*
+            IMPORTANT:
+            Leaflet expects:
+
+            [latitude, longitude]
+
+            Backend gives:
+
+            latitude
+            longitude
+          */
+
+          const points = rawPoints
+            .map((point) => {
+              const latitude = Number(point?.latitude);
+
+              const longitude = Number(point?.longitude);
+
+              if (
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)
+              ) {
+                return null;
+              }
+
+              if (latitude === 0 || longitude === 0) {
+                return null;
+              }
+
+              return {
+                ...point,
+                latitude,
+                longitude,
+                position: [latitude, longitude],
+              };
+            })
+            .filter(Boolean);
+
+          /*
+            Sort points chronologically.
+
+            This ensures the polyline follows the actual
+            vehicle movement rather than database order.
+          */
+
+          points.sort((a, b) => {
+            const timeA = new Date(
+              a.iottimestamp ||
+                a.receivedtimestamp ||
+                0
+            ).getTime();
+
+            const timeB = new Date(
+              b.iottimestamp ||
+                b.receivedtimestamp ||
+                0
+            ).getTime();
+
+            return timeA - timeB;
+          });
+
+          const vehicleNumber =
+            vehicle?.vehicleNumber ||
+            vehicle?.vehicleNo ||
+            vehicle?.registrationNumber ||
+            `Vehicle ${vehicleIndex + 1}`;
+
+          return {
+            ...vehicle,
+            vehicleNumber,
+            vehicleTableName:
+              vehicle?.vehicleTableName ||
+              vehicle?.vehicleTable ||
+              "",
+            points,
+            color: getVehicleColor(
+              vehicleNumber,
+              vehicleIndex
+            ),
+          };
+        })
+        /*
+          Don't render vehicles that have no valid GPS.
+        */
+        .filter((vehicle) => vehicle.points.length > 0);
+
+      console.log(
+        "NORMALIZED ROUTES:",
+        normalizedVehicles
+      );
+
+      setRoutes(normalizedVehicles);
+
+      setLastUpdated(new Date());
+
+      /*
+        Calculate center from all GPS points.
+      */
+
+      const allPoints = normalizedVehicles.flatMap(
+        (vehicle) => vehicle.points
+      );
+
+      if (allPoints.length > 0) {
+        const totalLat = allPoints.reduce(
+          (sum, point) => sum + point.latitude,
+          0
+        );
+
+        const totalLng = allPoints.reduce(
+          (sum, point) => sum + point.longitude,
+          0
+        );
+
+        setMapCenter([
+          totalLat / allPoints.length,
+          totalLng / allPoints.length,
+        ]);
+
+        /*
+          Reasonable initial zoom.
+          MapController will fit exact route bounds.
+        */
+
+        setMapZoom(12);
+      }
+    } catch (err) {
+      console.error(
+        "SEWAC ROUTE MAP ERROR:",
+        err
+      );
+
+      setRoutes([]);
+
+      setError(
+        err?.message ||
+          "Unable to load route data."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =======================================================
+     FETCH WHEN WARD CHANGES
+  ======================================================= */
+
+  useEffect(() => {
+    if (selectedView !== "route") {
+      return;
+    }
+
+    fetchRoutes();
+  }, [
+    normalizedWard,
+    selectedDateProp,
+    selectedView,
+  ]);
+
+  /* =======================================================
+     AUTO REFRESH HEADER DATA
+     
+     If Header changes localStorage, listen for storage events.
+  ======================================================= */
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (selectedView === "route") {
+        fetchRoutes();
+      }
+    };
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+    };
+  }, [selectedView, normalizedWard]);
+
+  /* =======================================================
+     CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+  ======================================================= */
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setShowViewMenu(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     MAP VIEW OPTIONS
+  ======================================================= */
+
+  const mapViews = [
+    {
+      id: "overview",
+      label: "City Overview Map",
+      icon: MapIcon,
+      color: "#2563EB",
+    },
+    {
+      id: "route",
+      label: "Route Map",
+      icon: Route,
+      color: "#7C3AED",
+    },
+    {
+      id: "gvp",
+      label: "Garbage Vulnerable Points (GVP)",
+      icon: MapPin,
+      color: "#16A34A",
+    },
+    {
+      id: "plants",
+      label: "Plants Active",
+      icon: Factory,
+      color: "#059669",
+    },
+    {
+      id: "complaints",
+      label: "Customer Grievances",
+      icon: Megaphone,
+      color: "#EC4899",
+    },
+  ];
+
+  const activeView =
+    mapViews.find(
+      (view) => view.id === selectedView
+    ) || mapViews[1];
+
+  const ActiveIcon = activeView.icon;
+
+  /* =======================================================
+     ROUTE POINTS
+  ======================================================= */
+
+  const totalGpsPoints = routes.reduce(
+    (total, vehicle) =>
+      total + vehicle.points.length,
+    0
+  );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
-    <section
-      ref={sectionRef}
-      className="mt-6"
-    >
+    <section className="w-full rounded-[28px] bg-white border border-slate-200 shadow-[0_2px_10px_rgba(15,23,42,0.05)] p-6">
+
+      {/* =================================================
+          TITLE
+      ================================================= */}
+
+      <div className="mb-6 px-1">
+        <h2 className="text-[23px] font-semibold tracking-[-0.02em] text-slate-950">
+          CITY OVERVIEW MAP
+        </h2>
+      </div>
+
+      {/* =================================================
+          MAP
+      ================================================= */}
+
       <div
-        className="
-          bg-white
-          rounded-[26px]
-          border
-          border-[#EEF1F6]
-          shadow-sm
-          overflow-hidden
-        "
+        className="relative w-full overflow-hidden rounded-[24px] border border-slate-200"
+        style={{
+          height: "700px",
+        }}
       >
 
-        {/* ==================================================
-            HEADER
-        ================================================== */}
+        {/* =================================================
+            LEAFLET MAP
+        ================================================= */}
 
-        <div
-          ref={headerRef}
-          className="
-            px-8
-            pt-6
-            pb-5
-          "
-        >
-          <h2
-            className="
-              text-[18px]
-              font-semibold
-              tracking-wide
-              text-[#171717]
-            "
-          >
-            CITY OVERVIEW MAP
-          </h2>
-        </div>
-
-        {/* ==================================================
-            MAP
-        ================================================== */}
-
-        <div
-          className="
-            relative
-            mx-2
-            mb-2
-            rounded-[22px]
-            overflow-hidden
-          "
+        <MapContainer
+          center={mapCenter}
+          zoom={mapZoom}
+          scrollWheelZoom={true}
+          zoomControl={true}
+          style={{
+            width: "100%",
+            height: "100%",
+            zIndex: 1,
+          }}
         >
 
-          <div
-            ref={mapRef}
-            className="
-              relative
-              h-[560px]
-              z-0
-            "
-          >
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-            {/* ==================================================
-                MAP SECTION
+          {/* ===============================================
+              MAP CONTROLLER
+          =============================================== */}
 
-                IMPORTANT:
+          <MapController
+            routes={routes}
+            selectedView={selectedView}
+          />
 
-                wardNo comes directly from Header.
+          {/* ===============================================
+              ROUTES
+          =============================================== */}
 
-                selectedDivision is also passed for future
-                division-level filtering, but the current
-                backend route API filters by wardNo.
+          {selectedView === "route" &&
+            routes.map((vehicle, vehicleIndex) => {
 
-                The MapSection currently accepts wardNo.
-            ================================================== */}
+              /*
+                Convert normalized points into:
 
-            <MapSection
-              key={`${selectedView.id}-${wardNo}-${resolvedDate}`}
-              mapView={selectedView.id}
-              selectedDate={resolvedDate}
-              wardNo={wardNo}
-            />
+                [
+                  [lat, lng],
+                  [lat, lng],
+                  ...
+                ]
+              */
 
-          </div>
+              const positions = vehicle.points.map(
+                (point) => point.position
+              );
 
-          {/* ==================================================
-              MAP VIEW CONTROL
-          ================================================== */}
+              /*
+                Safety check.
+                A line needs at least two points.
+              */
 
-          <div
-            ref={controlsRef}
-            className="
-              absolute
-              top-6
-              left-6
-              z-[1000]
-              w-[375px]
-            "
-          >
-
-            <p
-              className="
-                text-[13px]
-                font-medium
-                text-gray-700
-                mb-3
-              "
-            >
-              Select Map View
-            </p>
-
-            {/* ==================================================
-                SELECTED VIEW BUTTON
-            ================================================== */}
-
-            <button
-              type="button"
-              onClick={() =>
-                setOpen(
-                  (prev) => !prev,
-                )
+              if (positions.length < 2) {
+                return null;
               }
-              className="
-                w-full
-                h-[60px]
-                bg-white/95
-                backdrop-blur-xl
-                rounded-2xl
-                border
-                border-[#E7EAF1]
-                px-5
-                flex
-                items-center
-                justify-between
-                shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-                hover:border-violet-300
-                hover:shadow-[0_18px_40px_rgba(15,23,42,0.15)]
-                transition-all
-                duration-300
-              "
-            >
 
-              <div
-                className="
-                  flex
-                  items-center
-                  gap-4
-                "
-              >
+              const latestPoint =
+                vehicle.points[
+                  vehicle.points.length - 1
+                ];
 
-                {(() => {
-                  const Icon =
-                    selectedView.icon;
+              return (
+                <div key={`${vehicle.vehicleNumber}-${vehicleIndex}`}>
 
-                  return (
-                    <Icon
-                      size={21}
-                      className={
-                        selectedView.color
+                  {/* =====================================
+                      OUTER GLOW
+                  ===================================== */}
+
+                  <Polyline
+                    positions={positions}
+                    pathOptions={{
+                      color: vehicle.color,
+                      weight: 8,
+                      opacity: 0.16,
+                      lineCap: "round",
+                      lineJoin: "round",
+                    }}
+                  />
+
+                  {/* =====================================
+                      MAIN ROUTE
+                  ===================================== */}
+
+                  <Polyline
+                    positions={positions}
+                    pathOptions={{
+                      color: vehicle.color,
+                      weight: 4,
+                      opacity: 0.95,
+                      lineCap: "round",
+                      lineJoin: "round",
+                    }}
+                  />
+
+                  {/* =====================================
+                      CURRENT VEHICLE MARKER
+                  ===================================== */}
+
+                  {latestPoint && (
+                    <Marker
+                      position={
+                        latestPoint.position
                       }
-                    />
-                  );
-                })()}
+                      icon={createTruckIcon(
+                        vehicle.color
+                      )}
+                    >
+                      <Popup>
+                        <div
+                          style={{
+                            minWidth: "190px",
+                            fontFamily:
+                              "Inter, sans-serif",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "15px",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            {vehicle.vehicleNumber}
+                          </div>
 
-                <span
-                  className="
-                    text-[16px]
-                    font-semibold
-                    text-[#334155]
-                  "
-                >
-                  {selectedView.label}
-                </span>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "#64748B",
+                              marginBottom: "5px",
+                            }}
+                          >
+                            Ward {normalizedWard}
+                          </div>
 
-              </div>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "#64748B",
+                              marginBottom: "5px",
+                            }}
+                          >
+                            GPS Points:{" "}
+                            {vehicle.points.length}
+                          </div>
 
-              <ChevronDown
-                size={20}
-                className={`
-                  text-gray-700
-                  transition-all
-                  duration-300
-                  ${
-                    open
-                      ? "rotate-180"
-                      : ""
-                  }
-                `}
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "#64748B",
+                            }}
+                          >
+                            Last Location:
+                            <br />
+                            {latestPoint.latitude.toFixed(
+                              6
+                            )}
+                            ,{" "}
+                            {latestPoint.longitude.toFixed(
+                              6
+                            )}
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
+                </div>
+              );
+            })}
+
+        </MapContainer>
+
+        {/* =================================================
+            MAP VIEW SELECTOR
+        ================================================= */}
+
+        <div
+          ref={menuRef}
+          className="absolute left-5 top-5"
+          style={{
+            zIndex: 1000,
+          }}
+        >
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowViewMenu(
+                (previous) => !previous
+              )
+            }
+            className="
+              w-[470px]
+              max-w-[calc(100vw-80px)]
+              h-[74px]
+              px-7
+              bg-white
+              rounded-[18px]
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              flex
+              items-center
+              justify-between
+              transition-all
+              hover:shadow-[0_10px_30px_rgba(15,23,42,0.14)]
+            "
+          >
+
+            <div className="flex items-center gap-5">
+
+              <ActiveIcon
+                size={26}
+                strokeWidth={2}
+                style={{
+                  color:
+                    activeView.color,
+                }}
               />
 
-            </button>
+              <span className="text-[20px] font-semibold text-slate-700">
+                {activeView.label}
+              </span>
 
-            {/* ==================================================
-                MAP VIEW OPTIONS
-            ================================================== */}
+            </div>
 
-            {open && (
-              <div
-                ref={dropdownRef}
-                className="
-                  mt-2
-                  bg-white/95
-                  backdrop-blur-2xl
-                  rounded-2xl
-                  border
-                  border-[#EEF1F6]
-                  shadow-[0_20px_45px_rgba(15,23,42,0.18)]
-                  overflow-hidden
-                  origin-top
-                "
-              >
+            <ChevronDown
+              size={22}
+              className={`
+                text-slate-700
+                transition-transform
+                ${
+                  showViewMenu
+                    ? "rotate-180"
+                    : ""
+                }
+              `}
+            />
 
-                {mapViews.map(
-                  (item) => {
+          </button>
 
-                    const Icon =
-                      item.icon;
+          {/* =================================================
+              DROPDOWN
+          ================================================= */}
 
-                    const isSelected =
-                      selectedView.id ===
-                      item.id;
-
-                    return (
-                      <button
-                        type="button"
-                        key={item.id}
-                        onClick={() =>
-                          handleSelect(
-                            item,
-                          )
-                        }
-                        className={`
-                          w-full
-                          min-h-[68px]
-                          px-5
-                          flex
-                          items-center
-                          justify-between
-                          transition-all
-                          duration-200
-
-                          ${
-                            isSelected
-                              ? "bg-violet-50"
-                              : "hover:bg-gray-50"
-                          }
-                        `}
-                      >
-
-                        <div
-                          className="
-                            flex
-                            items-center
-                            gap-4
-                          "
-                        >
-
-                          <Icon
-                            size={21}
-                            className={
-                              item.color
-                            }
-                          />
-
-                          <span
-                            className="
-                              text-[15px]
-                              font-medium
-                              text-gray-700
-                              text-left
-                            "
-                          >
-                            {item.label}
-                          </span>
-
-                        </div>
-
-                        {isSelected && (
-                          <Check
-                            size={20}
-                            className="
-                              text-violet-600
-                            "
-                          />
-                        )}
-
-                      </button>
-                    );
-                  },
-                )}
-
-              </div>
-            )}
-
-          </div>
-
-          {/* ==================================================
-              HEADER FILTER STATUS
-
-              IMPORTANT:
-
-              These are NOT independent filters.
-
-              They simply DISPLAY the values selected
-              in the Header.
-
-              Clicking/changing them here is intentionally
-              impossible.
-
-          ================================================== */}
-
-          {selectedView.id ===
-            "route" && (
+          {showViewMenu && (
             <div
               className="
                 absolute
-                top-6
-                right-6
-                z-[1000]
-                flex
-                items-center
-                gap-3
+                top-[82px]
+                left-0
+                w-[470px]
+                max-w-[calc(100vw-80px)]
+                rounded-[18px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_15px_40px_rgba(15,23,42,0.15)]
+                overflow-hidden
               "
             >
 
-              {/* ==================================================
-                  DIVISION STATUS
-              ================================================== */}
+              {mapViews.map((view) => {
+                const Icon = view.icon;
 
-              <div
-                className="
-                  h-[56px]
-                  min-w-[240px]
-                  px-5
-                  bg-white/95
-                  backdrop-blur-xl
-                  rounded-2xl
-                  border
-                  border-[#E7EAF1]
-                  shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-                  flex
-                  flex-col
-                  justify-center
-                "
-              >
+                const isActive =
+                  selectedView === view.id;
 
-                <span
-                  className="
-                    text-[10px]
-                    font-medium
-                    uppercase
-                    tracking-wide
-                    text-slate-400
-                  "
-                >
-                  Division
-                </span>
+                return (
+                  <button
+                    key={view.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedView(
+                        view.id
+                      );
 
-                <span
-                  className="
-                    text-[14px]
-                    font-semibold
-                    text-[#334155]
-                    truncate
-                  "
-                >
-                  {divisionLabel}
-                </span>
+                      setShowViewMenu(false);
+                    }}
+                    className={`
+                      w-full
+                      px-7
+                      py-5
+                      flex
+                      items-center
+                      justify-between
+                      transition-colors
+                      ${
+                        isActive
+                          ? "bg-violet-50"
+                          : "bg-white hover:bg-slate-50"
+                      }
+                    `}
+                  >
 
-              </div>
+                    <div className="flex items-center gap-5">
 
-              {/* ==================================================
-                  WARD STATUS
-              ================================================== */}
+                      <Icon
+                        size={24}
+                        strokeWidth={2}
+                        style={{
+                          color:
+                            view.color,
+                        }}
+                      />
 
-              <div
-                className="
-                  h-[56px]
-                  min-w-[240px]
-                  px-5
-                  bg-white/95
-                  backdrop-blur-xl
-                  rounded-2xl
-                  border
-                  border-[#E7EAF1]
-                  shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-                  flex
-                  flex-col
-                  justify-center
-                "
-              >
+                      <span className="text-[16px] font-medium text-slate-700">
+                        {view.label}
+                      </span>
 
-                <span
-                  className="
-                    text-[10px]
-                    font-medium
-                    uppercase
-                    tracking-wide
-                    text-slate-400
-                  "
-                >
-                  Ward
-                </span>
+                    </div>
 
-                <span
-                  className="
-                    text-[14px]
-                    font-semibold
-                    text-[#334155]
-                    truncate
-                  "
-                >
-                  {wardNo
-                    ? `${wardLabel} (${wardNo})`
-                    : wardLabel}
+                    {isActive && (
+                      <span
+                        style={{
+                          color:
+                            view.color,
+                          fontSize: "22px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        ✓
+                      </span>
+                    )}
+
+                  </button>
+                );
+              })}
+
+            </div>
+          )}
+
+        </div>
+
+        {/* =================================================
+            HEADER FILTERS
+        ================================================= */}
+
+        <div
+          className="
+            absolute
+            right-5
+            top-5
+            flex
+            gap-4
+          "
+          style={{
+            zIndex: 1000,
+          }}
+        >
+
+          {/* ===============================================
+              DIVISION
+          =============================================== */}
+
+          <div
+            className="
+              min-w-[300px]
+              px-6
+              py-4
+              bg-white
+              rounded-[18px]
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+            "
+          >
+
+            <div className="text-[12px] font-semibold tracking-wide uppercase text-slate-400">
+              DIVISION
+            </div>
+
+            <div className="mt-1 text-[17px] font-semibold text-slate-700">
+              {selectedDivision ||
+                "All Divisions"}
+            </div>
+
+          </div>
+
+          {/* ===============================================
+              WARD
+          =============================================== */}
+
+          <div
+            className="
+              min-w-[300px]
+              px-6
+              py-4
+              bg-white
+              rounded-[18px]
+              border
+              border-slate-200
+              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+            "
+          >
+
+            <div className="text-[12px] font-semibold tracking-wide uppercase text-slate-400">
+              WARD
+            </div>
+
+            <div className="mt-1 text-[17px] font-semibold text-slate-700">
+              {selectedWard
+                ? String(selectedWard)
+                : "All Wards"}
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* =================================================
+            REFRESH BUTTON
+        ================================================= */}
+
+        {selectedView === "route" &&
+          normalizedWard && (
+            <button
+              type="button"
+              onClick={fetchRoutes}
+              disabled={loading}
+              title="Refresh route"
+              className="
+                absolute
+                right-5
+                bottom-5
+                z-[1000]
+                w-[44px]
+                h-[44px]
+                rounded-full
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_6px_20px_rgba(15,23,42,0.12)]
+                flex
+                items-center
+                justify-center
+                hover:bg-slate-50
+                transition
+              "
+            >
+
+              <RefreshCw
+                size={18}
+                className={
+                  loading
+                    ? "animate-spin text-violet-600"
+                    : "text-slate-600"
+                }
+              />
+
+            </button>
+          )}
+
+        {/* =================================================
+            LOADING
+        ================================================= */}
+
+        {loading && (
+          <div
+            className="
+              absolute
+              left-1/2
+              top-1/2
+              -translate-x-1/2
+              -translate-y-1/2
+              z-[1000]
+              px-6
+              py-4
+              rounded-[16px]
+              bg-white
+              border
+              border-slate-200
+              shadow-[0_10px_30px_rgba(15,23,42,0.14)]
+              flex
+              items-center
+              gap-3
+            "
+          >
+
+            <RefreshCw
+              size={18}
+              className="animate-spin text-violet-600"
+            />
+
+            <span className="text-[14px] font-semibold text-slate-700">
+              Loading route...
+            </span>
+
+          </div>
+        )}
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
+        {!loading &&
+          error &&
+          selectedView === "route" && (
+            <div
+              className="
+                absolute
+                left-1/2
+                bottom-8
+                -translate-x-1/2
+                z-[1000]
+                px-6
+                py-4
+                rounded-[16px]
+                bg-white
+                border
+                border-red-200
+                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              "
+            >
+
+              <div className="flex items-center gap-3">
+
+                <Truck
+                  size={20}
+                  className="text-red-500"
+                />
+
+                <span className="text-[14px] font-semibold text-red-600">
+                  {error}
                 </span>
 
               </div>
@@ -937,89 +1236,144 @@ export default function CityOverviewMap({
             </div>
           )}
 
-          {/* ==================================================
-              NO WARD SELECTED OVERLAY
+        {/* =================================================
+            NO WARD
+        ================================================= */}
 
-              Only shown for Route Map.
+        {!normalizedWard &&
+          selectedView === "route" && (
+            <div
+              className="
+                absolute
+                left-1/2
+                bottom-8
+                -translate-x-1/2
+                z-[1000]
+                px-6
+                py-4
+                rounded-[16px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              "
+            >
 
-          ================================================== */}
+              <div className="flex items-center gap-3">
 
-          {selectedView.id ===
-            "route" &&
-            !wardNo && (
-              <div
-                className="
-                  absolute
-                  left-1/2
-                  bottom-10
-                  -translate-x-1/2
-                  z-[900]
-                  bg-white/95
-                  backdrop-blur-xl
-                  rounded-2xl
-                  border
-                  border-violet-100
-                  shadow-[0_15px_40px_rgba(15,23,42,0.12)]
-                  px-6
-                  py-4
-                  flex
-                  items-center
-                  gap-3
-                "
-              >
+                <Truck
+                  size={20}
+                  className="text-violet-600"
+                />
 
-                <div
-                  className="
-                    w-9
-                    h-9
-                    rounded-xl
-                    bg-violet-50
-                    flex
-                    items-center
-                    justify-center
-                  "
-                >
+                <span className="text-[14px] font-semibold text-slate-600">
+                  Please select a ward from the header.
+                </span>
 
-                  <Route
+              </div>
+
+            </div>
+          )}
+
+        {/* =================================================
+            NO ROUTE
+        ================================================= */}
+
+        {!loading &&
+          !error &&
+          normalizedWard &&
+          selectedView === "route" &&
+          routes.length === 0 && (
+            <div
+              className="
+                absolute
+                left-1/2
+                bottom-8
+                -translate-x-1/2
+                z-[1000]
+                px-6
+                py-4
+                rounded-[16px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              "
+            >
+
+              <div className="flex items-center gap-3">
+
+                <Navigation
+                  size={20}
+                  className="text-violet-600"
+                />
+
+                <span className="text-[14px] font-semibold text-slate-600">
+                  No route data available for Ward{" "}
+                  {normalizedWard}.
+                </span>
+
+              </div>
+
+            </div>
+          )}
+
+        {/* =================================================
+            ROUTE INFO
+        ================================================= */}
+
+        {selectedView === "route" &&
+          routes.length > 0 && (
+            <div
+              className="
+                absolute
+                left-5
+                bottom-5
+                z-[1000]
+                px-5
+                py-4
+                rounded-[16px]
+                bg-white
+                border
+                border-slate-200
+                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              "
+            >
+
+              <div className="flex items-center gap-5">
+
+                {/* VEHICLES */}
+
+                <div className="flex items-center gap-2">
+
+                  <Truck
                     size={18}
-                    className="
-                      text-violet-600
-                    "
+                    className="text-slate-500"
                   />
+
+                  <span className="text-[13px] font-semibold text-slate-700">
+                    {routes.length}{" "}
+                    {routes.length === 1
+                      ? "Vehicle"
+                      : "Vehicles"}
+                  </span>
 
                 </div>
 
-                <div>
+                {/* GPS */}
 
-                  <p
-                    className="
-                      text-[13px]
-                      font-semibold
-                      text-slate-700
-                    "
-                  >
-                    Please select a ward
-                  </p>
-
-                  <p
-                    className="
-                      text-[11px]
-                      text-slate-400
-                      mt-0.5
-                    "
-                  >
-                    Choose a ward from the Header
-                    to view vehicle routes.
-                  </p>
-
+                <div className="text-[13px] font-medium text-slate-500">
+                  {totalGpsPoints.toLocaleString()} GPS
+                  points
                 </div>
 
               </div>
-            )}
 
-        </div>
+            </div>
+          )}
 
       </div>
+
     </section>
   );
 }
