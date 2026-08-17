@@ -1,5 +1,9 @@
-const express = require("express");
-const cors = require("cors");
+const express =
+  require("express");
+
+const cors =
+  require("cors");
+
 
 // =====================================================
 // EXISTING ROUTES
@@ -8,41 +12,54 @@ const cors = require("cors");
 const overviewRoutes =
   require("./routes/overviewRoutes");
 
+
 const citizenRoutes =
   require("./routes/citizenRoutes");
+
 
 const telemetryRoutes =
   require("./routes/telemetryRoutes");
 
+
 const iotRoutes =
   require("./routes/iotRoutes");
+
 
 const filterRoutes =
   require("./routes/filterRoutes");
 
+
 const wasteGeneratorRoutes =
   require("./routes/wasteGeneratorRoutes");
+
 
 const authRoutes =
   require("./routes/authRoutes");
 
+
 const logsRoutes =
   require("./routes/logsRoutes");
+
 
 const usersRoutes =
   require("./routes/usersRoutes");
 
+
 const vehicleRoutes =
   require("./routes/vehicleRoutes");
+
 
 const plantRoutes =
   require("./routes/plantRoutes");
 
+
 const permissionRoutes =
   require("./routes/permissionRoutes");
 
+
 const redisRoutes =
   require("./routes/redisRoutes");
+
 
 const complaintRoutes =
   require("./routes/complaintRoutes");
@@ -118,24 +135,59 @@ const masterCitizenCityRoutes =
     "./routes/masterCitizenCity.routes"
   );
 
+
 const masterCitizenZoneRoutes =
   require(
     "./routes/masterCitizenZone.routes"
   );
+
 
 const masterCitizenDivisionRoutes =
   require(
     "./routes/masterCitizenDivision.routes"
   );
 
+
 const masterCitizenWardRoutes =
   require(
     "./routes/masterCitizenWard.routes"
   );
 
+
 const masterCitizenSyncRoutes =
   require(
     "./routes/masterCitizenSync.routes"
+  );
+
+
+// =====================================================
+// MASTER CITIZEN MAP ROUTES
+// =====================================================
+//
+// City Overview Map API.
+//
+// This endpoint will eventually provide:
+//
+// City
+//   ↓
+// City GeoBoundary
+//   ↓
+// Zones
+//
+// Endpoint:
+//
+// GET
+// /api/master-citizen/map/city/:cityId
+//
+// Example:
+//
+// /api/master-citizen/map/city/1
+//
+// =====================================================
+
+const masterCitizenMapRoutes =
+  require(
+    "./routes/masterCitizenMap.routes"
   );
 
 
@@ -201,7 +253,7 @@ app.use(
 
 
         // -------------------------------------------------
-        // Allowed frontends
+        // Allow registered frontend origins
         // -------------------------------------------------
 
         if (
@@ -252,11 +304,17 @@ app.use(
 
 app.get(
   "/",
-  (req, res) => {
+  (
+    req,
+    res
+  ) => {
 
-    res.status(200).json({
+    res.status(
+      200
+    ).json({
 
-      success: true,
+      success:
+        true,
 
       message:
         "SEWAC backend is running.",
@@ -400,6 +458,7 @@ app.use(
 // Archives today's daily telemetry.
 //
 //
+//
 // POST
 // /api/historical-database/archive
 //
@@ -408,6 +467,7 @@ app.use(
 // {
 //   "date": "2026-08-14"
 // }
+//
 //
 //
 // GET
@@ -467,6 +527,48 @@ app.use(
 
 
 // =====================================================
+// CITY OVERVIEW MAP
+// =====================================================
+//
+// GET:
+//
+// /api/master-citizen/map/city/:cityId
+//
+// Example:
+//
+// /api/master-citizen/map/city/1
+//
+// Response:
+//
+// {
+//   "success": true,
+//   "city": {
+//     "id": 1,
+//     "cityName": "Bangalore",
+//     "geoBoundary": {},
+//     "cityTableName": "bangalore_city"
+//   },
+//   "zones": [
+//     {
+//       "id": 1,
+//       "zoneName": "Zone Name",
+//       "geoBoundary": {},
+//       "totalDivisions": 5,
+//       "totalWards": 20,
+//       "zoneTableName": "zone_table"
+//     }
+//   ]
+// }
+//
+// =====================================================
+
+app.use(
+  "/api/master-citizen",
+  masterCitizenMapRoutes
+);
+
+
+// =====================================================
 // MASTER CITIZEN SYNC
 // =====================================================
 
@@ -520,37 +622,48 @@ startMasterCitizenWeeklySync();
 // =====================================================
 
 console.log("");
-console.log(
-  "============================================================"
-);
-console.log(
-  "🚛 SEWAC HISTORICAL ARCHIVE SCHEDULER"
-);
-console.log(
-  "============================================================"
-);
-console.log(
-  "Status: STARTING"
-);
-console.log(
-  "Schedule: Every day at 02:00 PM IST"
-);
-console.log(
-  "Archive target: TODAY"
-);
+
 console.log(
   "============================================================"
 );
 
+console.log(
+  "🚛 SEWAC HISTORICAL ARCHIVE SCHEDULER"
+);
+
+console.log(
+  "============================================================"
+);
+
+console.log(
+  "Status: STARTING"
+);
+
+console.log(
+  "Schedule: Every day at 02:00 PM IST"
+);
+
+console.log(
+  "Archive target: TODAY"
+);
+
+console.log(
+  "============================================================"
+);
+
+
 citizenHistoricalScheduler.start();
+
 
 console.log(
   "✅ Historical archive scheduler started successfully."
 );
 
+
 console.log(
   "============================================================"
 );
+
 console.log("");
 
 
@@ -559,11 +672,17 @@ console.log("");
 // =====================================================
 
 app.use(
-  (req, res) => {
+  (
+    req,
+    res
+  ) => {
 
-    res.status(404).json({
+    res.status(
+      404
+    ).json({
 
-      success: false,
+      success:
+        false,
 
       message:
         "API endpoint not found.",
@@ -604,9 +723,12 @@ app.use(
       "Not allowed by CORS"
     ) {
 
-      return res.status(403).json({
+      return res.status(
+        403
+      ).json({
 
-        success: false,
+        success:
+          false,
 
         message:
           "Origin not allowed by CORS.",
@@ -624,7 +746,8 @@ app.use(
       error.status || 500
     ).json({
 
-      success: false,
+      success:
+        false,
 
       message:
         error.message ||
