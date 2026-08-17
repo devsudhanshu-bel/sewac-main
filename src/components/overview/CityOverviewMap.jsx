@@ -35,24 +35,28 @@ const mapViews = [
     icon: Map,
     color: "text-blue-600",
   },
+
   {
     id: "route",
     label: "Route Map",
     icon: Route,
     color: "text-violet-600",
   },
+
   {
     id: "gvp",
     label: "Garbage Vulnerable Points (GVP)",
     icon: MapPinned,
     color: "text-green-600",
   },
+
   {
     id: "plants",
     label: "Plants Active",
     icon: Factory,
     color: "text-emerald-600",
   },
+
   {
     id: "grievances",
     label: "Customer Grievances",
@@ -61,51 +65,89 @@ const mapViews = [
   },
 ];
 
-export default function CityOverviewMap() {
+/*
+====================================================
+PROPS
+====================================================
+
+selectedDate
+-------------
+Date selected from the global Header.
+
+Example:
+2026-08-16
+
+wardNo
+------
+Ward number selected from the global Header.
+
+Example:
+216
+
+IMPORTANT:
+DO NOT hardcode 216 here.
+
+The Header remains the source of truth.
+====================================================
+*/
+
+export default function CityOverviewMap({
+  selectedDate,
+  wardNo,
+}) {
   /*
-  ====================================================
+  ==================================================
   SELECTED MAP VIEW
-
-  Default:
-
-  City Overview Map
-  ====================================================
+  ==================================================
   */
 
-  const [selectedView, setSelectedView] = useState(mapViews[0]);
+  const [selectedView, setSelectedView] =
+    useState(mapViews[0]);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
   /*
-  ====================================================
+  ==================================================
   REFS
-  ====================================================
+  ==================================================
   */
 
-  const sectionRef = useRef(null);
-  const headerRef = useRef(null);
-  const mapRef = useRef(null);
-  const controlsRef = useRef(null);
-  const dropdownRef = useRef(null);
+  const sectionRef =
+    useRef(null);
+
+  const headerRef =
+    useRef(null);
+
+  const mapRef =
+    useRef(null);
+
+  const controlsRef =
+    useRef(null);
+
+  const dropdownRef =
+    useRef(null);
 
   /*
-  ====================================================
-  APPLE STYLE PAGE LOAD
-  ====================================================
+  ==================================================
+  PAGE LOAD ANIMATION
+  ==================================================
   */
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      defaults: {
-        ease: "power3.out",
-      },
-    });
+    const tl =
+      gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
 
     tl.from(sectionRef.current, {
       opacity: 0,
       y: 28,
       duration: 0.45,
     })
+
       .from(
         headerRef.current,
         {
@@ -115,6 +157,7 @@ export default function CityOverviewMap() {
         },
         "-=0.25",
       )
+
       .from(
         mapRef.current,
         {
@@ -124,6 +167,7 @@ export default function CityOverviewMap() {
         },
         "-=0.2",
       )
+
       .from(
         controlsRef.current,
         {
@@ -133,25 +177,33 @@ export default function CityOverviewMap() {
         },
         "-=0.55",
       );
+
+    return () => {
+      tl.kill();
+    };
   }, []);
 
   /*
-  ====================================================
-  DROPDOWN OPEN ANIMATION
-  ====================================================
+  ==================================================
+  DROPDOWN ANIMATION
+  ==================================================
   */
 
   useEffect(() => {
-    if (!dropdownRef.current) return;
+    if (!dropdownRef.current) {
+      return;
+    }
 
     if (open) {
       gsap.fromTo(
         dropdownRef.current,
+
         {
           opacity: 0,
           y: -10,
           scale: 0.98,
         },
+
         {
           opacity: 1,
           y: 0,
@@ -164,24 +216,26 @@ export default function CityOverviewMap() {
   }, [open]);
 
   /*
-  ====================================================
+  ==================================================
   MAP VIEW SELECTION
-  ====================================================
+  ==================================================
   */
 
   const handleSelect = (item) => {
     /*
-    If the selected option is already active,
-    simply close the dropdown.
+    Same option selected.
     */
 
-    if (item.id === selectedView.id) {
+    if (
+      item.id ===
+      selectedView.id
+    ) {
       setOpen(false);
       return;
     }
 
     /*
-    Fade out the current map.
+    Fade current map out.
     */
 
     gsap.to(mapRef.current, {
@@ -192,13 +246,13 @@ export default function CityOverviewMap() {
 
       onComplete: () => {
         /*
-        Update selected map.
+        Change map view.
         */
 
         setSelectedView(item);
 
         /*
-        Fade the new map back in.
+        Fade new map in.
         */
 
         requestAnimationFrame(() => {
@@ -212,46 +266,80 @@ export default function CityOverviewMap() {
       },
     });
 
-    /*
-    Close dropdown.
-    */
-
     setOpen(false);
   };
 
   /*
-  ====================================================
+  ==================================================
   RENDER
-  ====================================================
+  ==================================================
   */
 
   return (
-    <section ref={sectionRef} className="mt-6">
-      <div className="bg-white rounded-[26px] border border-[#EEF1F6] shadow-sm overflow-hidden">
-
+    <section
+      ref={sectionRef}
+      className="mt-6"
+    >
+      <div
+        className="
+          bg-white
+          rounded-[26px]
+          border
+          border-[#EEF1F6]
+          shadow-sm
+          overflow-hidden
+        "
+      >
         {/* ==================================================
             HEADER
         ================================================== */}
 
         <div
           ref={headerRef}
-          className="px-8 pt-6 pb-5"
+          className="
+            px-8
+            pt-6
+            pb-5
+          "
         >
-          <h2 className="text-[18px] font-semibold tracking-wide text-[#171717]">
+          <h2
+            className="
+              text-[18px]
+              font-semibold
+              tracking-wide
+              text-[#171717]
+            "
+          >
             CITY OVERVIEW MAP
           </h2>
         </div>
 
         {/* ==================================================
-            MAP
+            MAP CONTAINER
         ================================================== */}
 
-        <div className="relative mx-2 mb-2 rounded-[22px] overflow-hidden">
+        <div
+          className="
+            relative
+            mx-2
+            mb-2
+            rounded-[22px]
+            overflow-hidden
+          "
+        >
           <div
             ref={mapRef}
-            className="relative h-[460px] z-0"
+            className="
+              relative
+              h-[460px]
+              z-0
+            "
           >
-            <MapSection mapView={selectedView.id} />
+            <MapSection
+              mapView={selectedView.id}
+              selectedDate={selectedDate}
+              wardNo={wardNo}
+            />
           </div>
 
           {/* ==================================================
@@ -260,19 +348,36 @@ export default function CityOverviewMap() {
 
           <div
             ref={controlsRef}
-            className="absolute top-6 left-6 z-[1000] w-[300px]"
+            className="
+              absolute
+              top-6
+              left-6
+              z-[1000]
+              w-[300px]
+            "
           >
-            <p className="text-[13px] font-medium text-gray-700 mb-3">
+            <p
+              className="
+                text-[13px]
+                font-medium
+                text-gray-700
+                mb-3
+              "
+            >
               Select Map View
             </p>
 
             {/* ==================================================
-                SELECTED VIEW BUTTON
+                SELECTED VIEW
             ================================================== */}
 
             <button
               type="button"
-              onClick={() => setOpen((prev) => !prev)}
+              onClick={() =>
+                setOpen(
+                  (prev) => !prev,
+                )
+              }
               className="
                 w-full
                 h-[48px]
@@ -292,15 +397,27 @@ export default function CityOverviewMap() {
                 duration-300
               "
             >
-              <span className="text-[14px] font-semibold text-gray-800">
+              <span
+                className="
+                  text-[14px]
+                  font-semibold
+                  text-gray-800
+                "
+              >
                 {selectedView.label}
               </span>
 
               <ChevronDown
                 size={18}
-                className={`transition-all duration-300 ${
-                  open ? "rotate-180" : ""
-                }`}
+                className={`
+                  transition-all
+                  duration-300
+                  ${
+                    open
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
               />
             </button>
 
@@ -323,71 +440,87 @@ export default function CityOverviewMap() {
                   origin-top
                 "
               >
-                {mapViews.map((item) => {
-                  const Icon = item.icon;
+                {mapViews.map(
+                  (item) => {
+                    const Icon =
+                      item.icon;
 
-                  const isSelected =
-                    selectedView.id === item.id;
+                    const isSelected =
+                      selectedView.id ===
+                      item.id;
 
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleSelect(item)}
-                      className={`
-                        w-full
-                        h-[54px]
-                        px-4
-                        flex
-                        items-center
-                        justify-between
-                        transition-all
-                        duration-200
-                        ${
-                          isSelected
-                            ? "bg-violet-50"
-                            : "hover:bg-gray-50"
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          handleSelect(
+                            item,
+                          )
                         }
-                      `}
-                    >
-                      {/* ==================================================
-                          ICON + LABEL
-                      ================================================== */}
+                        className={`
+                          w-full
+                          h-[54px]
+                          px-4
+                          flex
+                          items-center
+                          justify-between
+                          transition-all
+                          duration-200
 
-                      <div className="flex items-center gap-3">
-                        <Icon
-                          size={18}
-                          className={item.color}
-                        />
+                          ${
+                            isSelected
+                              ? "bg-violet-50"
+                              : "hover:bg-gray-50"
+                          }
+                        `}
+                      >
+                        {/* ICON + LABEL */}
 
-                        <span
-                          className={`
-                            text-[13px]
-                            font-medium
-                            ${
-                              isSelected
-                                ? "text-gray-800"
-                                : "text-gray-700"
-                            }
-                          `}
+                        <div
+                          className="
+                            flex
+                            items-center
+                            gap-3
+                          "
                         >
-                          {item.label}
-                        </span>
-                      </div>
+                          <Icon
+                            size={18}
+                            className={
+                              item.color
+                            }
+                          />
 
-                      {/* ==================================================
-                          SELECTED CHECK
-                      ================================================== */}
+                          <span
+                            className={`
+                              text-[13px]
+                              font-medium
 
-                      {isSelected && (
-                        <Check
-                          size={18}
-                          className="text-violet-600"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
+                              ${
+                                isSelected
+                                  ? "text-gray-800"
+                                  : "text-gray-700"
+                              }
+                            `}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+
+                        {/* CHECK */}
+
+                        {isSelected && (
+                          <Check
+                            size={18}
+                            className="
+                              text-violet-600
+                            "
+                          />
+                        )}
+                      </button>
+                    );
+                  },
+                )}
               </div>
             )}
           </div>
