@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   Check,
+  Map,
   Route,
   MapPinned,
   Factory,
@@ -18,18 +19,22 @@ import MapSection from "../dashboard/MapSection";
 CITY OVERVIEW MAP VIEWS
 ====================================================
 
-City Overview Map
-    |
-    ├── Route Map
-    ├── Garbage Vulnerable Points (GVP)
-    ├── Plants Active
-    └── Customer Grievances
+1. City Overview Map
+2. Route Map
+3. Garbage Vulnerable Points (GVP)
+4. Plants Active
+5. Customer Grievances
 
-Participation Heatmap has been removed.
 ====================================================
 */
 
 const mapViews = [
+  {
+    id: "overview",
+    label: "City Overview Map",
+    icon: Map,
+    color: "text-blue-600",
+  },
   {
     id: "route",
     label: "Route Map",
@@ -60,6 +65,10 @@ export default function CityOverviewMap() {
   /*
   ====================================================
   SELECTED MAP VIEW
+
+  Default:
+
+  City Overview Map
   ====================================================
   */
 
@@ -81,7 +90,7 @@ export default function CityOverviewMap() {
 
   /*
   ====================================================
-  APPLE STYLE PAGE LOAD ANIMATION
+  APPLE STYLE PAGE LOAD
   ====================================================
   */
 
@@ -128,7 +137,7 @@ export default function CityOverviewMap() {
 
   /*
   ====================================================
-  DROPDOWN ANIMATION
+  DROPDOWN OPEN ANIMATION
   ====================================================
   */
 
@@ -162,8 +171,8 @@ export default function CityOverviewMap() {
 
   const handleSelect = (item) => {
     /*
-    If the user selects the currently
-    active map view, simply close dropdown.
+    If the selected option is already active,
+    simply close the dropdown.
     */
 
     if (item.id === selectedView.id) {
@@ -172,7 +181,7 @@ export default function CityOverviewMap() {
     }
 
     /*
-    Fade out current map before changing view.
+    Fade out the current map.
     */
 
     gsap.to(mapRef.current, {
@@ -183,13 +192,13 @@ export default function CityOverviewMap() {
 
       onComplete: () => {
         /*
-        Change selected map view.
+        Update selected map.
         */
 
         setSelectedView(item);
 
         /*
-        Fade the new map view back in.
+        Fade the new map back in.
         */
 
         requestAnimationFrame(() => {
@@ -202,6 +211,10 @@ export default function CityOverviewMap() {
         });
       },
     });
+
+    /*
+    Close dropdown.
+    */
 
     setOpen(false);
   };
@@ -220,7 +233,10 @@ export default function CityOverviewMap() {
             HEADER
         ================================================== */}
 
-        <div ref={headerRef} className="px-8 pt-6 pb-5">
+        <div
+          ref={headerRef}
+          className="px-8 pt-6 pb-5"
+        >
           <h2 className="text-[18px] font-semibold tracking-wide text-[#171717]">
             CITY OVERVIEW MAP
           </h2>
@@ -231,7 +247,6 @@ export default function CityOverviewMap() {
         ================================================== */}
 
         <div className="relative mx-2 mb-2 rounded-[22px] overflow-hidden">
-
           <div
             ref={mapRef}
             className="relative h-[460px] z-0"
@@ -245,17 +260,18 @@ export default function CityOverviewMap() {
 
           <div
             ref={controlsRef}
-            className="absolute top-6 left-6 z-[1000] w-[285px]"
+            className="absolute top-6 left-6 z-[1000] w-[300px]"
           >
             <p className="text-[13px] font-medium text-gray-700 mb-3">
               Select Map View
             </p>
 
             {/* ==================================================
-                SELECTED MAP VIEW BUTTON
+                SELECTED VIEW BUTTON
             ================================================== */}
 
             <button
+              type="button"
               onClick={() => setOpen((prev) => !prev)}
               className="
                 w-full
@@ -276,7 +292,7 @@ export default function CityOverviewMap() {
                 duration-300
               "
             >
-              <span className="text-[14px] font-semibold">
+              <span className="text-[14px] font-semibold text-gray-800">
                 {selectedView.label}
               </span>
 
@@ -310,9 +326,13 @@ export default function CityOverviewMap() {
                 {mapViews.map((item) => {
                   const Icon = item.icon;
 
+                  const isSelected =
+                    selectedView.id === item.id;
+
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => handleSelect(item)}
                       className={`
                         w-full
@@ -324,7 +344,7 @@ export default function CityOverviewMap() {
                         transition-all
                         duration-200
                         ${
-                          selectedView.id === item.id
+                          isSelected
                             ? "bg-violet-50"
                             : "hover:bg-gray-50"
                         }
@@ -340,16 +360,26 @@ export default function CityOverviewMap() {
                           className={item.color}
                         />
 
-                        <span className="text-[13px] font-medium text-gray-700">
+                        <span
+                          className={`
+                            text-[13px]
+                            font-medium
+                            ${
+                              isSelected
+                                ? "text-gray-800"
+                                : "text-gray-700"
+                            }
+                          `}
+                        >
                           {item.label}
                         </span>
                       </div>
 
                       {/* ==================================================
-                          ACTIVE CHECK
+                          SELECTED CHECK
                       ================================================== */}
 
-                      {selectedView.id === item.id && (
+                      {isSelected && (
                         <Check
                           size={18}
                           className="text-violet-600"
