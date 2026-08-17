@@ -11,6 +11,7 @@ import "@fontsource-variable/finlandica";
 
 const Login = () => {
   const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -24,186 +25,143 @@ const Login = () => {
   const [message, setMessage] = useState("");
 
   const cardRef = useRef(null);
-
   const logoRef = useRef(null);
-
   const titleRef = useRef(null);
-
   const subtitleRef = useRef(null);
-
   const formRef = useRef(null);
-
   const buttonRef = useRef(null);
-
   const bgGlow1 = useRef(null);
-
   const bgGlow2 = useRef(null);
-
   const bgGlow3 = useRef(null);
 
   useEffect(() => {
     gsap.fromTo(
       cardRef.current,
-
       {
         opacity: 0,
         scale: 0.85,
         y: 50,
       },
-
       {
         opacity: 1,
         scale: 1,
         y: 0,
-
         duration: 1,
-
         ease: "power4.out",
       },
     );
 
     gsap.fromTo(
       logoRef.current,
-
       {
         opacity: 0,
         scale: 0,
         rotate: -180,
       },
-
       {
         opacity: 1,
         scale: 1,
         rotate: 0,
-
         duration: 1.2,
-
         delay: 0.2,
-
         ease: "back.out(1.7)",
       },
     );
 
     gsap.fromTo(
       titleRef.current,
-
       {
         opacity: 0,
         y: 30,
       },
-
       {
         opacity: 1,
         y: 0,
-
         duration: 0.8,
-
         delay: 0.4,
-
         ease: "power3.out",
       },
     );
 
     gsap.fromTo(
       subtitleRef.current,
-
       {
         opacity: 0,
         y: 20,
       },
-
       {
         opacity: 1,
         y: 0,
-
         duration: 0.8,
-
         delay: 0.55,
-
         ease: "power3.out",
       },
     );
 
     gsap.fromTo(
       formRef.current.children,
-
       {
         opacity: 0,
         y: 25,
       },
-
       {
         opacity: 1,
         y: 0,
-
         stagger: 0.12,
-
         duration: 0.8,
-
         delay: 0.7,
-
         ease: "power3.out",
       },
     );
 
     gsap.to(buttonRef.current, {
       boxShadow: "0px 0px 35px rgba(255,255,255,0.30)",
-
       repeat: -1,
-
       yoyo: true,
-
       duration: 2,
-
       ease: "power1.inOut",
     });
 
     gsap.to(bgGlow1.current, {
       x: 50,
       y: 30,
-
       duration: 8,
-
       repeat: -1,
-
       yoyo: true,
-
       ease: "sine.inOut",
     });
 
     gsap.to(bgGlow2.current, {
       x: -40,
       y: -20,
-
       duration: 10,
-
       repeat: -1,
-
       yoyo: true,
-
       ease: "sine.inOut",
     });
 
     gsap.to(bgGlow3.current, {
       scale: 1.15,
-
       duration: 6,
-
       repeat: -1,
-
       yoyo: true,
-
       ease: "sine.inOut",
     });
   }, []);
 
   const handleLogin = async (e) => {
-    setLoading(true);
+    e.preventDefault();
 
+    setLoading(true);
     setError("");
     setMessage("");
 
     try {
+      // -------------------------------------------------
+      // STEP 1: Identity Authentication
+      // Email + Password → JWT
+      // -------------------------------------------------
+
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
 
@@ -213,128 +171,166 @@ const Login = () => {
 
         body: JSON.stringify({
           email,
-
           password,
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        const tempToken = data.token;
-        const tempAdmin = data.admin;
-        // -------------------------------------------------
-        // Worker Login
-        // Workers bypass CMADS and directly access SEWAC
-        // -------------------------------------------------
+      if (!response.ok) {
+        setError(data.message || "Invalid credentials");
+        return;
+      }
 
-        if (tempAdmin.role === "WORKER") {
-          sessionStorage.setItem("token", tempToken);
-          sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
+      const tempToken = data.token;
+      const tempAdmin = data.admin;
 
-          sessionStorage.setItem(
-            "permissions",
-            JSON.stringify(data.permissions),
-          );
+      if (!tempToken || !tempAdmin) {
+        setError("Authentication Failed");
+        return;
+      }
 
-          window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
+      // -------------------------------------------------
+      // Worker Login
+      // Workers bypass CMADS device verification
+      // and directly access SEWAC
+      // -------------------------------------------------
 
-          return;
-        }
+      if (tempAdmin.role === "WORKER") {
+        sessionStorage.setItem("token", tempToken);
 
-        const fingerprint = getDeviceFingerprint();
+        sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-        const deviceResponse = await fetch(
-          `${API_BASE_URL}/api/devices/verify`,
+        sessionStorage.setItem(
+          "permissions",
+          JSON.stringify(data.permissions || []),
+        );
+
+        window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // STEP 2: Device Verification
+      // Behavioral authentication has been removed.
+      // -------------------------------------------------
+
+      const fingerprint = getDeviceFingerprint();
+
+      const deviceResponse = await fetch(`${API_BASE_URL}/api/devices/verify`, {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${tempToken}`,
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          fingerprint,
+        }),
+      });
+
+      const device = await deviceResponse.json();
+      console.log("DEVICE RESPONSE:", device);
+      console.log("TOKEN:", tempToken);
+
+      // -------------------------------------------------
+      // Device verification failed
+      // -------------------------------------------------
+
+      if (!device.success) {
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("admin");
+        sessionStorage.removeItem("permissions");
+
+        setError(device.message || "Authentication Failed");
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // STEP 3: Unknown Device
+      // Request device registration/approval
+      // -------------------------------------------------
+
+      if (!device.known) {
+        const browser = navigator.userAgent.includes("Edg")
+          ? "Microsoft Edge"
+          : navigator.userAgent.includes("Chrome")
+            ? "Google Chrome"
+            : navigator.userAgent.includes("Firefox")
+              ? "Mozilla Firefox"
+              : navigator.userAgent.includes("Safari")
+                ? "Safari"
+                : "Unknown Browser";
+
+        const os = navigator.userAgent.includes("Windows")
+          ? "Windows"
+          : navigator.userAgent.includes("Mac")
+            ? "macOS"
+            : navigator.userAgent.includes("Linux")
+              ? "Linux"
+              : "Unknown OS";
+
+        const deviceName = `${browser} (${os})`;
+
+        const registrationResponse = await fetch(
+          `${API_BASE_URL}/api/devices/request-registration`,
           {
             method: "POST",
+
             headers: {
               Authorization: `Bearer ${tempToken}`,
               "Content-Type": "application/json",
             },
+
             body: JSON.stringify({
+              device_name: deviceName,
               fingerprint,
             }),
           },
         );
 
-        const device = await deviceResponse.json();
+        const registration = await registrationResponse.json();
 
-        if (!device.success) {
-          sessionStorage.removeItem("token");
-          sessionStorage.removeItem("admin");
-          sessionStorage.removeItem("permissions");
+        setError("");
 
-          setError("Authentication Failed");
+        setMessage(
+          registration.message ||
+            "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
+        );
 
-          return;
-        }
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("admin");
+        sessionStorage.removeItem("permissions");
 
-        if (!device.known) {
-          const browser = navigator.userAgent.includes("Edg")
-            ? "Microsoft Edge"
-            : navigator.userAgent.includes("Chrome")
-              ? "Google Chrome"
-              : navigator.userAgent.includes("Firefox")
-                ? "Mozilla Firefox"
-                : navigator.userAgent.includes("Safari")
-                  ? "Safari"
-                  : "Unknown Browser";
-
-          const os = navigator.userAgent.includes("Windows")
-            ? "Windows"
-            : navigator.userAgent.includes("Mac")
-              ? "macOS"
-              : navigator.userAgent.includes("Linux")
-                ? "Linux"
-                : "Unknown OS";
-
-          const deviceName = `${browser} (${os})`;
-
-          const registrationResponse = await fetch(
-            `${API_BASE_URL}/api/devices/request-registration`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${tempToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                device_name: deviceName,
-                fingerprint,
-              }),
-            },
-          );
-
-          const registration = await registrationResponse.json();
-
-          setError("");
-
-          setMessage(
-            registration.message ||
-              "A device approval email has been sent to your registered email address. Please approve the device and log in again.",
-          );
-
-          sessionStorage.removeItem("token");
-          sessionStorage.removeItem("admin");
-          sessionStorage.removeItem("permissions");
-
-          return;
-        }
-
-
-        sessionStorage.setItem("token", tempToken);
-
-        sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
-
-        sessionStorage.setItem("permissions", JSON.stringify(data.permissions));
-
-        window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
-      } else {
-        setError(data.message || "Invalid credentials");
+        return;
       }
+
+      // -------------------------------------------------
+      // STEP 4: Successful Authentication
+      //
+      // Device is known.
+      // No behavioral authentication.
+      // No risk evaluation.
+      //
+      // Store authentication data and redirect
+      // directly to SEWAC.
+      // -------------------------------------------------
+
+      sessionStorage.setItem("token", tempToken);
+
+      sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
+
+      sessionStorage.setItem(
+        "permissions",
+        JSON.stringify(data.permissions || []),
+      );
+
+      window.location.href = `https://sewac-main-frontend.onrender.com/auth/callback?token=${encodeURIComponent(tempToken)}`;
     } catch (err) {
-      console.error(err);
+      console.error("Login Error:", err);
 
       setError("Authentication Failed");
     } finally {
@@ -347,11 +343,13 @@ const Login = () => {
       {/* ========================================= */}
       {/* BACKGROUND */}
       {/* ========================================= */}
+
       <div className="absolute inset-0 bg-gradient-to-br from-[#4338ca] via-[#9333ea] to-[#ff2ea6]" />
 
       {/* ========================================= */}
       {/* GLOW EFFECTS */}
       {/* ========================================= */}
+
       <div
         ref={bgGlow1}
         className="absolute top-[-200px] left-[-150px] w-[500px] h-[500px] rounded-full bg-blue-400/20 blur-[120px]"
@@ -370,6 +368,7 @@ const Login = () => {
       {/* ========================================= */}
       {/* LOGIN CARD */}
       {/* ========================================= */}
+
       <form
         ref={cardRef}
         onSubmit={handleLogin}
@@ -378,6 +377,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* LOGO */}
         {/* ========================================= */}
+
         <div className="flex justify-center">
           <div
             ref={logoRef}
@@ -390,6 +390,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* TITLE */}
         {/* ========================================= */}
+
         <div className="text-center mt-7">
           <h1
             ref={titleRef}
@@ -413,13 +414,19 @@ const Login = () => {
         </div>
 
         {/* ========================================= */}
-        {/* ERROR */}
+        {/* SUCCESS MESSAGE */}
         {/* ========================================= */}
+
         {message && (
           <div className="mt-5 rounded-xl border border-green-300 bg-green-100 px-4 py-3 text-center text-green-700">
             {message}
           </div>
         )}
+
+        {/* ========================================= */}
+        {/* ERROR MESSAGE */}
+        {/* ========================================= */}
+
         {error && (
           <div className="mt-5 bg-red-500/20 border border-red-400/30 text-white text-sm rounded-xl px-4 py-3 text-center">
             {error}
@@ -429,8 +436,10 @@ const Login = () => {
         {/* ========================================= */}
         {/* FORM */}
         {/* ========================================= */}
+
         <div ref={formRef} className="mt-7 space-y-5">
           {/* EMAIL */}
+
           <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
             <User size={20} className="text-white/70" />
 
@@ -445,6 +454,7 @@ const Login = () => {
           </div>
 
           {/* PASSWORD */}
+
           <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
             <Lock size={20} className="text-white/70" />
 
@@ -465,6 +475,9 @@ const Login = () => {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
+          {/* FORGOT PASSWORD */}
+
           <div className="flex justify-end mt-3">
             <button
               type="button"
@@ -476,6 +489,7 @@ const Login = () => {
           </div>
 
           {/* LOGIN BUTTON */}
+
           <button
             ref={buttonRef}
             type="submit"
@@ -499,6 +513,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* FOOTER */}
         {/* ========================================= */}
+
         <div className="text-center mt-8">
           <p
             style={{
