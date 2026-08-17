@@ -16,11 +16,6 @@ export default function WasteGenerators() {
   |--------------------------------------------------------------------------
   | SELECTED DATE
   |--------------------------------------------------------------------------
-  |
-  | Header already accepts selectedDate + setSelectedDate as props.
-  | We keep the date state here so this page controls its own
-  | analytical date.
-  |
   */
 
   const [selectedDate, setSelectedDate] = useState(
@@ -40,31 +35,14 @@ export default function WasteGenerators() {
   |--------------------------------------------------------------------------
   | LOAD WASTE GENERATOR KPI SUMMARY
   |--------------------------------------------------------------------------
-  |
-  | KPI DATA DEPENDS ON:
-  |
-  | City
-  | Zone
-  | Division
-  | Ward
-  | Date
-  |
   */
 
   const loadSummary = async () => {
     try {
-      /*
-       * Wait until city is available.
-       */
-
       if (!selectedCity?.city_id) {
         setSummary(null);
         return;
       }
-
-      /*
-       * Build query parameters.
-       */
 
       const params = new URLSearchParams();
 
@@ -106,15 +84,6 @@ export default function WasteGenerators() {
 
       /*
        * FINAL REQUEST
-       *
-       * Example:
-       *
-       * /api/waste-generators/summary
-       * ?date=2026-08-16
-       * &cityId=1
-       * &zoneId=4
-       * &divisionId=5
-       * &wardId=216
        */
 
       const res = await api.get(
@@ -131,11 +100,8 @@ export default function WasteGenerators() {
 
   /*
   |--------------------------------------------------------------------------
-  | RELOAD KPI WHEN ANY HEADER FILTER CHANGES
+  | RELOAD KPI WHEN FILTER / DATE CHANGES
   |--------------------------------------------------------------------------
-  |
-  | Date is intentionally included here.
-  |
   */
 
   useEffect(() => {
@@ -182,16 +148,31 @@ export default function WasteGenerators() {
           <WasteGenKPIs summary={summary} />
         </section>
 
-        {/* ================= Maps ================= */}
+        {/* ================================================================ */}
+        {/* COLLECTION POINT + GVP TREND                                   */}
+        {/* ================================================================ */}
 
-        <section className="mt-5">
-          <WasteGenMap />
-        </section>
+        <section
+          className="
+            grid
+            grid-cols-1
+            lg:grid-cols-2
+            gap-5
+            mt-5
+            items-stretch
+          "
+        >
+          {/* ================= Collection Point ================= */}
 
-        {/* ================= GVP Trend ================= */}
+          <div className="min-w-0">
+            <WasteGenMap />
+          </div>
 
-        <section className="mt-5">
-          <GVPGen />
+          {/* ================= GVP Generation Trend ================= */}
+
+          <div className="min-w-0">
+            <GVPGen />
+          </div>
         </section>
 
         {/* ================= Directory ================= */}
