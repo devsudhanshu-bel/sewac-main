@@ -4,6 +4,9 @@ const express =
 const cors =
   require("cors");
 
+const compression =
+  require("compression");
+
 
 // =====================================================
 // EXISTING ROUTES
@@ -112,13 +115,9 @@ const masterCitizenSyncRoutes =
 //
 // IMPORTANT
 //
-// The actual file is:
+// Actual location:
 //
 // src/master_citizen/masterCitizenMap.routes.js
-//
-// NOT:
-//
-// src/routes/masterCitizenMap.routes.js
 //
 // =====================================================
 
@@ -146,6 +145,74 @@ const {
 
 const app =
   express();
+
+
+// =====================================================
+// RESPONSE COMPRESSION
+// =====================================================
+//
+// IMPORTANT FOR CITY MAP
+//
+// The City Map endpoint can return several MB of JSON
+// because it contains:
+//
+// City boundary
+//      ↓
+// Zone boundaries
+//      ↓
+// Division boundaries
+//      ↓
+// Ward boundaries
+//
+// Compression allows Express to send the response using:
+//
+// Brotli
+// or
+// GZIP
+//
+// WITHOUT changing the JSON structure.
+//
+// The browser automatically decompresses it.
+//
+// =====================================================
+
+app.use(
+  compression({
+
+    /**
+     * Compression level.
+     *
+     * 6 gives a good balance between:
+     *
+     * CPU usage
+     * +
+     * compression ratio
+     *
+     */
+
+    level:
+      6,
+
+
+    /**
+     * Only compress responses larger than 1 KB.
+     *
+     * Small API responses do not need compression.
+     */
+
+    threshold:
+      1024,
+
+
+    /**
+     * Let the compression middleware choose
+     * Brotli/GZIP depending on what the client supports.
+     *
+     * This is especially useful for the map endpoint.
+     */
+
+  })
+);
 
 
 // =====================================================
@@ -508,9 +575,7 @@ app.use(
 // CITY OVERVIEW MAP
 // =====================================================
 //
-// THIS IS THE NEW MAP ENDPOINT.
-//
-// ONE ENDPOINT ONLY.
+// ONE COMPLETE MAP ENDPOINT
 //
 // GET:
 //
@@ -520,19 +585,33 @@ app.use(
 //
 // /api/master-citizen/map/city/1
 //
-// Response:
 //
-// {
-//   success: true,
-//   city: {
-//     id,
-//     cityName,
-//     geoBoundary,
-//     cityTableName
-//   },
-//   zoneNames: [],
-//   zones: []
-// }
+//
+// DATA HIERARCHY:
+//
+// City
+//   ↓
+// City Boundary
+//   ↓
+// Zones
+//   ↓
+// Zone Boundaries
+//   ↓
+// Divisions
+//   ↓
+// Division Boundaries
+//   ↓
+// Wards
+//   ↓
+// Ward Boundaries
+//
+//
+//
+// IMPORTANT:
+//
+// No citizen records.
+// No citizen counts.
+// No citizen joins.
 //
 // =====================================================
 

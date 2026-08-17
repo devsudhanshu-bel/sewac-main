@@ -1,27 +1,30 @@
 const masterCitizenPrisma =
   require("../config/masterCitizenPrisma");
 
+
 /**
  * ============================================================
  * HELPERS
  * ============================================================
  */
 
+
 /**
- * Validate a dynamic PostgreSQL table name.
- *
- * Dynamic table names cannot be passed as normal SQL
- * parameters, therefore we strictly validate them before
- * interpolating them into SQL.
+ * ------------------------------------------------------------
+ * Validate dynamic PostgreSQL table names
+ * ------------------------------------------------------------
  */
 function validateTableName(tableName) {
+
   if (
     typeof tableName !== "string" ||
     !/^[a-z][a-z0-9_]*$/.test(tableName)
   ) {
+
     throw new Error(
       `Invalid table name: ${tableName}`
     );
+
   }
 
   return tableName;
@@ -29,40 +32,51 @@ function validateTableName(tableName) {
 
 
 /**
- * ============================================================
- * NORMALIZE GEOBOUNDARY
- * ============================================================
+ * ------------------------------------------------------------
+ * Normalize PostgreSQL JSON / JSONB
+ * ------------------------------------------------------------
  */
-
 function normalizeGeoBoundary(value) {
+
   if (
     value === null ||
     value === undefined
   ) {
+
     return null;
+
   }
 
-  if (
-    typeof value === "string"
-  ) {
+
+  if (typeof value === "string") {
+
     try {
+
       return JSON.parse(value);
+
     } catch (error) {
+
       return null;
+
     }
+
   }
+
 
   return value;
 }
 
 
 /**
- * ============================================================
- * CHECK TABLE EXISTS
- * ============================================================
+ * ------------------------------------------------------------
+ * Check whether a table exists
+ * ------------------------------------------------------------
  */
-
 async function tableExists(tableName) {
+
+  const safeTableName =
+    validateTableName(tableName);
+
 
   const result =
     await masterCitizenPrisma.$queryRawUnsafe(
@@ -74,43 +88,41 @@ async function tableExists(tableName) {
           AND table_name = $1
         ) AS exists
       `,
-      tableName
+      safeTableName
     );
 
+
   return (
-    result?.[0]?.exists === true
+    result?.[0]?.exists === true ||
+    result?.[0]?.exists === "true"
   );
 }
 
 
 /**
  * ============================================================
- * GET CITY MAP DATA
+ * GET COMPLETE CITY MAP DATA
  * ============================================================
  *
- * GET:
+ * HIERARCHY:
  *
- * /api/master-citizen/map/city/:cityId
+ * CITY
+ *   ↓
+ * ZONES
+ *   ↓
+ * DIVISIONS
+ *   ↓
+ * WARDS
  *
  *
- * RETURNS:
+ * IMPORTANT:
  *
- * {
- *   city: {
- *     id,
- *     cityName,
- *     geoBoundary,
- *     cityTableName
- *   },
+ * We DO NOT return citizen data.
  *
- *   zones: [
- *     {
- *       zoneName,
- *       geoBoundary,
- *       zoneTableName
- *     }
- *   ]
- * }
+ * The division-level table may contain multiple rows for
+ * citizens belonging to the same ward.
+ *
+ * Therefore wards are fetched as UNIQUE ward boundaries.
  *
  * ============================================================
  */
@@ -118,9 +130,9 @@ async function tableExists(tableName) {
 async function getCityMapData(cityId) {
 
   /**
-   * ----------------------------------------------------------
+   * ==========================================================
    * 1. VALIDATE CITY ID
-   * ----------------------------------------------------------
+   * ==========================================================
    */
 
   if (
@@ -128,9 +140,11 @@ async function getCityMapData(cityId) {
     cityId === null ||
     cityId === ""
   ) {
+
     throw new Error(
       "City ID is required."
     );
+
   }
 
 
@@ -144,16 +158,18 @@ async function getCityMapData(cityId) {
     ) ||
     numericCityId <= 0
   ) {
+
     throw new Error(
       "Invalid city ID."
     );
+
   }
 
 
   /**
-   * ----------------------------------------------------------
+   * ==========================================================
    * 2. FETCH CITY
-   * ----------------------------------------------------------
+   * ==========================================================
    */
 
   const cityRows =
@@ -172,19 +188,15 @@ async function getCityMapData(cityId) {
     );
 
 
-  /**
-   * ----------------------------------------------------------
-   * 3. CITY NOT FOUND
-   * ----------------------------------------------------------
-   */
-
   if (
     !cityRows ||
     cityRows.length === 0
   ) {
+
     throw new Error(
       `City with id ${numericCityId} not found.`
     );
+
   }
 
 
@@ -193,19 +205,10 @@ async function getCityMapData(cityId) {
 
 
   /**
-   * ----------------------------------------------------------
-   * 4. VALIDATE CITY TABLE NAME
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 3. CITY TABLE
+   * ==========================================================
    */
-
-  if (
-    !city.city_table_name
-  ) {
-    throw new Error(
-      `City "${city.city_name}" does not have a city table name.`
-    );
-  }
-
 
   const cityTableName =
     validateTableName(
@@ -213,44 +216,34 @@ async function getCityMapData(cityId) {
     );
 
 
-  /**
-   * ----------------------------------------------------------
-   * 5. CHECK CITY TABLE
-   * ----------------------------------------------------------
-   */
-
   const cityTableExists =
     await tableExists(
       cityTableName
     );
 
 
-  if (
-    !cityTableExists
-  ) {
+  if (!cityTableExists) {
+
     throw new Error(
       `City table "${cityTableName}" does not exist.`
     );
+
   }
 
 
   /**
-   * ----------------------------------------------------------
-   * 6. GET ALL ZONES
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 4. FETCH ZONES
+   * ==========================================================
    */
 
   const zoneRows =
     await masterCitizenPrisma.$queryRawUnsafe(
       `
         SELECT
-          zone_id,
           zone_name,
           geo_boundary,
-          zone_table_name,
-          total_divisions,
-          total_wards,
-          created_at
+          zone_table_name
         FROM "${cityTableName}"
         WHERE zone_name IS NOT NULL
         ORDER BY zone_id ASC
@@ -259,64 +252,421 @@ async function getCityMapData(cityId) {
 
 
   /**
-   * ----------------------------------------------------------
-   * 7. FORMAT ZONES
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 5. BUILD ZONES
+   * ==========================================================
    */
 
-  const zones =
-    zoneRows
-      .map(
-        (zone) => ({
-          zoneId:
-            zone.zone_id !== null &&
-            zone.zone_id !== undefined
-              ? Number(zone.zone_id)
-              : null,
+  const zones = [];
 
-          zoneName:
-            zone.zone_name,
 
-          geoBoundary:
-            normalizeGeoBoundary(
-              zone.geo_boundary
-            ),
+  for (
+    const zoneRow of zoneRows
+  ) {
 
-          zoneTableName:
-            zone.zone_table_name ||
-            null,
+    const zoneName =
+      zoneRow.zone_name;
 
-          totalDivisions:
-            zone.total_divisions !== null &&
-            zone.total_divisions !== undefined
-              ? Number(zone.total_divisions)
-              : 0,
 
-          totalWards:
-            zone.total_wards !== null &&
-            zone.total_wards !== undefined
-              ? Number(zone.total_wards)
-              : 0,
+    if (
+      zoneName === null ||
+      zoneName === undefined ||
+      String(zoneName).trim() === ""
+    ) {
 
-          createdAt:
-            zone.created_at ||
-            null,
-        })
-      )
-      .filter(
-        (zone) =>
-          zone.zoneName !== null &&
-          zone.zoneName !== undefined &&
-          String(
-            zone.zoneName
-          ).trim() !== ""
+      continue;
+
+    }
+
+
+    const zoneTableName =
+      zoneRow.zone_table_name
+        ? validateTableName(
+            zoneRow.zone_table_name
+          )
+        : null;
+
+
+    const zone = {
+
+      zoneName,
+
+      geoBoundary:
+        normalizeGeoBoundary(
+          zoneRow.geo_boundary
+        ),
+
+      zoneTableName,
+
+      divisions: [],
+
+    };
+
+
+    /**
+     * ========================================================
+     * 6. ZONE TABLE
+     * ========================================================
+     */
+
+    if (!zoneTableName) {
+
+      zones.push(zone);
+
+      continue;
+
+    }
+
+
+    const zoneExists =
+      await tableExists(
+        zoneTableName
       );
 
 
+    if (!zoneExists) {
+
+      console.warn(
+        `⚠️ Zone table "${zoneTableName}" does not exist.`
+      );
+
+      zones.push(zone);
+
+      continue;
+
+    }
+
+
+    /**
+     * ========================================================
+     * 7. FETCH DIVISIONS
+     * ========================================================
+     */
+
+    const divisionRows =
+      await masterCitizenPrisma.$queryRawUnsafe(
+        `
+          SELECT
+            division_name,
+            geo_boundary,
+            division_table_name
+          FROM "${zoneTableName}"
+          WHERE division_name IS NOT NULL
+          ORDER BY division_id ASC
+        `
+      );
+
+
+    /**
+     * ========================================================
+     * 8. BUILD DIVISIONS
+     * ========================================================
+     */
+
+    for (
+      const divisionRow of divisionRows
+    ) {
+
+      const divisionName =
+        divisionRow.division_name;
+
+
+      if (
+        divisionName === null ||
+        divisionName === undefined ||
+        String(divisionName).trim() === ""
+      ) {
+
+        continue;
+
+      }
+
+
+      const divisionTableName =
+        divisionRow.division_table_name
+          ? validateTableName(
+              divisionRow.division_table_name
+            )
+          : null;
+
+
+      const division = {
+
+        divisionName,
+
+        geoBoundary:
+          normalizeGeoBoundary(
+            divisionRow.geo_boundary
+          ),
+
+        divisionTableName,
+
+        wards: [],
+
+      };
+
+
+      /**
+       * ======================================================
+       * 9. DIVISION TABLE
+       * ======================================================
+       */
+
+      if (!divisionTableName) {
+
+        zone.divisions.push(
+          division
+        );
+
+        continue;
+
+      }
+
+
+      const divisionExists =
+        await tableExists(
+          divisionTableName
+        );
+
+
+      if (!divisionExists) {
+
+        console.warn(
+          `⚠️ Division table "${divisionTableName}" does not exist.`
+        );
+
+        zone.divisions.push(
+          division
+        );
+
+        continue;
+
+      }
+
+
+      /**
+       * ======================================================
+       * 10. FETCH UNIQUE WARD BOUNDARIES
+       * ======================================================
+       *
+       * THIS IS THE IMPORTANT FIX.
+       *
+       * The underlying division table may contain multiple
+       * citizen rows belonging to the same ward.
+       *
+       * Example:
+       *
+       * Citizen 1 -> Ward 1
+       * Citizen 2 -> Ward 1
+       * Citizen 3 -> Ward 1
+       * Citizen 4 -> Ward 2
+       *
+       * A normal SELECT would return:
+       *
+       * 4 rows
+       *
+       * But the geographical hierarchy contains:
+       *
+       * 2 wards
+       *
+       * Therefore we use DISTINCT ON (ward_name).
+       *
+       * We only return:
+       *
+       * ward_name
+       * geo_boundary
+       *
+       * No citizen columns are returned.
+       *
+       * ======================================================
+       */
+
+      const wardRows =
+        await masterCitizenPrisma.$queryRawUnsafe(
+          `
+            SELECT DISTINCT ON (ward_name)
+              ward_name,
+              geo_boundary
+            FROM "${divisionTableName}"
+            WHERE
+              ward_name IS NOT NULL
+              AND geo_boundary IS NOT NULL
+            ORDER BY
+              ward_name ASC
+          `
+        );
+
+
+      /**
+       * ======================================================
+       * 11. BUILD UNIQUE WARDS
+       * ======================================================
+       */
+
+      division.wards =
+        wardRows
+          .filter(
+            (ward) => {
+
+              return (
+                ward.ward_name !== null &&
+                ward.ward_name !== undefined &&
+                String(
+                  ward.ward_name
+                ).trim() !== ""
+              );
+
+            }
+          )
+          .map(
+            (ward) => ({
+
+              wardName:
+                ward.ward_name,
+
+              geoBoundary:
+                normalizeGeoBoundary(
+                  ward.geo_boundary
+                ),
+
+            })
+          );
+
+
+      /**
+       * ======================================================
+       * 12. ADD DIVISION
+       * ======================================================
+       */
+
+      zone.divisions.push(
+        division
+      );
+
+    }
+
+
+    /**
+     * ========================================================
+     * 13. ADD ZONE
+     * ========================================================
+     */
+
+    zones.push(zone);
+
+  }
+
+
   /**
-   * ----------------------------------------------------------
-   * 8. FINAL RESPONSE
-   * ----------------------------------------------------------
+   * ==========================================================
+   * 14. CALCULATE GEOGRAPHICAL SUMMARY
+   * ==========================================================
+   */
+
+  const totalZones =
+    zones.length;
+
+
+  const totalDivisions =
+    zones.reduce(
+      (
+        total,
+        zone
+      ) => {
+
+        return (
+          total +
+          zone.divisions.length
+        );
+
+      },
+      0
+    );
+
+
+  const totalWards =
+    zones.reduce(
+      (
+        zoneTotal,
+        zone
+      ) => {
+
+        return (
+          zoneTotal +
+          zone.divisions.reduce(
+            (
+              divisionTotal,
+              division
+            ) => {
+
+              return (
+                divisionTotal +
+                division.wards.length
+              );
+
+            },
+            0
+          )
+        );
+
+      },
+      0
+    );
+
+
+  /**
+   * ==========================================================
+   * 15. LOG FINAL COUNTS
+   * ==========================================================
+   */
+
+  console.log("");
+  console.log(
+    "============================================================"
+  );
+
+  console.log(
+    "🗺️ CITY MAP HIERARCHY"
+  );
+
+  console.log(
+    "============================================================"
+  );
+
+  console.log(
+    "City:",
+    city.city_name
+  );
+
+  console.log(
+    "Zones:",
+    totalZones
+  );
+
+  console.log(
+    "Divisions:",
+    totalDivisions
+  );
+
+  console.log(
+    "Unique Wards:",
+    totalWards
+  );
+
+  console.log(
+    "Citizen data:",
+    "NOT LOADED"
+  );
+
+  console.log(
+    "============================================================"
+  );
+
+
+  /**
+   * ==========================================================
+   * 16. FINAL RESPONSE
+   * ==========================================================
    */
 
   return {
@@ -341,9 +691,22 @@ async function getCityMapData(cityId) {
 
     },
 
+
     zones,
 
+
+    summary: {
+
+      totalZones,
+
+      totalDivisions,
+
+      totalWards,
+
+    },
+
   };
+
 }
 
 
@@ -352,30 +715,17 @@ async function getCityMapData(cityId) {
  * GET ZONE DIVISIONS
  * ============================================================
  *
- * THIS IS THE NEW ENDPOINT.
+ * BACKWARD COMPATIBILITY ENDPOINT
  *
- * The frontend sends:
+ * Returns:
  *
- * zoneTableName
+ * ZONE
+ *   ↓
+ * DIVISIONS
+ *   ↓
+ * UNIQUE WARDS
  *
- * Example:
- *
- * bengaluru_east_city_corporation_zone
- *
- *
- * The backend opens that table dynamically and returns:
- *
- * {
- *   zoneTableName,
- *   divisions: [
- *     {
- *       divisionId,
- *       divisionName,
- *       geoBoundary,
- *       divisionTableName
- *     }
- *   ]
- * }
+ * No citizen data.
  *
  * ============================================================
  */
@@ -386,20 +736,11 @@ async function getZoneDivisions(
 
   /**
    * ----------------------------------------------------------
-   * 1. VALIDATE TABLE NAME
+   * 1. VALIDATE
    * ----------------------------------------------------------
    */
 
-  if (
-    !zoneTableName
-  ) {
-    throw new Error(
-      "Zone table name is required."
-    );
-  }
-
-
-  const validatedZoneTableName =
+  const safeZoneTableName =
     validateTableName(
       zoneTableName
     );
@@ -407,20 +748,22 @@ async function getZoneDivisions(
 
   /**
    * ----------------------------------------------------------
-   * 2. CHECK TABLE EXISTS
+   * 2. CHECK TABLE
    * ----------------------------------------------------------
    */
 
   const exists =
     await tableExists(
-      validatedZoneTableName
+      safeZoneTableName
     );
 
 
   if (!exists) {
+
     throw new Error(
-      `Zone table "${validatedZoneTableName}" does not exist.`
+      `Zone table "${safeZoneTableName}" does not exist.`
     );
+
   }
 
 
@@ -428,87 +771,165 @@ async function getZoneDivisions(
    * ----------------------------------------------------------
    * 3. FETCH DIVISIONS
    * ----------------------------------------------------------
-   *
-   * Expected zone table structure:
-   *
-   * division_id
-   * division_name
-   * geo_boundary
-   * division_table_name
-   *
-   * ----------------------------------------------------------
    */
 
   const divisionRows =
     await masterCitizenPrisma.$queryRawUnsafe(
       `
         SELECT
-          division_id,
           division_name,
           geo_boundary,
           division_table_name
-        FROM "${validatedZoneTableName}"
+        FROM "${safeZoneTableName}"
         WHERE division_name IS NOT NULL
         ORDER BY division_id ASC
       `
     );
 
 
+  const divisions = [];
+
+
   /**
    * ----------------------------------------------------------
-   * 4. FORMAT DIVISIONS
+   * 4. BUILD DIVISIONS
    * ----------------------------------------------------------
    */
 
-  const divisions =
-    divisionRows
-      .map(
-        (division) => ({
-          divisionId:
-            division.division_id !== null &&
-            division.division_id !== undefined
-              ? Number(
-                  division.division_id
-                )
-              : null,
+  for (
+    const divisionRow of divisionRows
+  ) {
 
-          divisionName:
-            division.division_name,
+    const divisionName =
+      divisionRow.division_name;
 
-          geoBoundary:
-            normalizeGeoBoundary(
-              division.geo_boundary
-            ),
 
-          divisionTableName:
-            division.division_table_name ||
-            null,
-        })
+    if (
+      divisionName === null ||
+      divisionName === undefined ||
+      String(
+        divisionName
+      ).trim() === ""
+    ) {
+
+      continue;
+
+    }
+
+
+    const divisionTableName =
+      divisionRow.division_table_name
+        ? validateTableName(
+            divisionRow.division_table_name
+          )
+        : null;
+
+
+    const division = {
+
+      divisionName,
+
+      geoBoundary:
+        normalizeGeoBoundary(
+          divisionRow.geo_boundary
+        ),
+
+      divisionTableName,
+
+      wards: [],
+
+    };
+
+
+    /**
+     * --------------------------------------------------------
+     * 5. FETCH UNIQUE WARDS
+     * --------------------------------------------------------
+     */
+
+    if (
+      divisionTableName &&
+      await tableExists(
+        divisionTableName
       )
-      .filter(
-        (division) =>
-          division.divisionName !== null &&
-          division.divisionName !== undefined &&
-          String(
-            division.divisionName
-          ).trim() !== ""
-      );
+    ) {
+
+      const wardRows =
+        await masterCitizenPrisma.$queryRawUnsafe(
+          `
+            SELECT DISTINCT ON (ward_name)
+              ward_name,
+              geo_boundary
+            FROM "${divisionTableName}"
+            WHERE
+              ward_name IS NOT NULL
+              AND geo_boundary IS NOT NULL
+            ORDER BY
+              ward_name ASC
+          `
+        );
+
+
+      /**
+       * ------------------------------------------------------
+       * 6. BUILD WARDS
+       * ------------------------------------------------------
+       */
+
+      division.wards =
+        wardRows
+          .filter(
+            (ward) => {
+
+              return (
+                ward.ward_name !== null &&
+                ward.ward_name !== undefined &&
+                String(
+                  ward.ward_name
+                ).trim() !== ""
+              );
+
+            }
+          )
+          .map(
+            (ward) => ({
+
+              wardName:
+                ward.ward_name,
+
+              geoBoundary:
+                normalizeGeoBoundary(
+                  ward.geo_boundary
+                ),
+
+            })
+          );
+
+    }
+
+
+    divisions.push(
+      division
+    );
+
+  }
 
 
   /**
    * ----------------------------------------------------------
-   * 5. RETURN
+   * 7. RETURN
    * ----------------------------------------------------------
    */
 
   return {
 
     zoneTableName:
-      validatedZoneTableName,
+      safeZoneTableName,
 
     divisions,
 
   };
+
 }
 
 

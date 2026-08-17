@@ -1,31 +1,70 @@
 const express =
   require("express");
 
+
 const router =
   express.Router();
 
 
 const {
   getCityMapDataController,
-  getZoneDivisionsController,
 } =
   require("./masterCitizenMap.controller");
 
 
 /**
  * ============================================================
- * CITY MAP
+ * COMPLETE CITY MAP ENDPOINT
  * ============================================================
  *
  * GET
  *
  * /api/master-citizen/map/city/:cityId
  *
- * Returns:
  *
- * City
- * +
- * All zones
+ * HIERARCHY:
+ *
+ * CITY
+ *   ↓
+ *   boundary
+ *   ↓
+ * ZONES
+ *   ↓
+ *   boundary
+ *   ↓
+ * DIVISIONS
+ *   ↓
+ *   boundary
+ *   ↓
+ * WARDS
+ *   ↓
+ *   boundary
+ *
+ *
+ * Example:
+ *
+ * GET
+ * /api/master-citizen/map/city/1
+ *
+ *
+ * Response contains ONLY:
+ *
+ * - City information
+ * - City geo boundary
+ * - Zone information
+ * - Zone geo boundaries
+ * - Division information
+ * - Division geo boundaries
+ * - Ward information
+ * - Ward geo boundaries
+ *
+ *
+ * NO:
+ *
+ * - Citizens
+ * - Citizen records
+ * - Citizen counts
+ * - Citizen table data
  *
  * ============================================================
  */
@@ -38,31 +77,7 @@ router.get(
 
 /**
  * ============================================================
- * ZONE DIVISIONS
- * ============================================================
- *
- * GET
- *
- * /api/master-citizen/map/zone/:zoneTableName/divisions
- *
- * Example:
- *
- * /api/master-citizen/map/zone/
- * bengaluru_east_city_corporation_zone/
- * divisions
- *
- * ============================================================
- */
-
-router.get(
-  "/map/zone/:zoneTableName/divisions",
-  getZoneDivisionsController
-);
-
-
-/**
- * ============================================================
- * EXPORT
+ * EXPORT ROUTER
  * ============================================================
  */
 
