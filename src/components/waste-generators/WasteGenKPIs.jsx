@@ -3,25 +3,28 @@ import { Trash2, Scale, UserRound } from "lucide-react";
 import { gsap } from "gsap";
 
 export default function WasteGenKPIs({ summary }) {
-  if (!summary) {
-    return null;
-  }
   const sectionRef = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       requestAnimationFrame(() => {
-        gsap.from(sectionRef.current, {
-          opacity: 0,
-          y: 10,
-          duration: 0.35,
-          ease: "power2.out",
-        });
+        if (sectionRef.current) {
+          gsap.from(sectionRef.current, {
+            opacity: 0,
+            y: 10,
+            duration: 0.35,
+            ease: "power2.out",
+          });
+        }
       });
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
+
+  if (!summary) {
+    return null;
+  }
 
   return (
     <section
@@ -192,7 +195,7 @@ export default function WasteGenKPIs({ summary }) {
                 text-[#18214D]
               "
             >
-              {Number(summary?.totalWasteGenerated ?? 0).toFixed(1)}
+              {(Number(summary?.totalWasteGenerated ?? 0) / 1000).toFixed(2)}
             </h2>
 
             <span
@@ -203,11 +206,12 @@ export default function WasteGenKPIs({ summary }) {
                 mb-2
               "
             >
-              KG
+              TONS
             </span>
           </div>
         </div>
       </div>
+
       {/* ========================= Average Waste ========================= */}
 
       <div
@@ -258,7 +262,7 @@ export default function WasteGenKPIs({ summary }) {
                 text-[#18214D]
               "
             >
-              {Number(summary?.averageWaste ?? 0).toFixed(2)}
+              {(Number(summary?.averageWaste ?? 0) / 1000).toFixed(2)}
             </h2>
 
             <span
@@ -269,7 +273,7 @@ export default function WasteGenKPIs({ summary }) {
                 mb-2
               "
             >
-              KG
+              TONS
             </span>
           </div>
 
