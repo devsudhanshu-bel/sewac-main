@@ -1,10 +1,17 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
+
 import {
   MapContainer,
   TileLayer,
   Polyline,
   Marker,
   Popup,
+  CircleMarker,
   useMap,
 } from "react-leaflet";
 
@@ -18,8 +25,8 @@ import {
   Megaphone,
   ChevronDown,
   Truck,
-  Navigation,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 
 import "leaflet/dist/leaflet.css";
@@ -28,12 +35,14 @@ import "leaflet/dist/leaflet.css";
    CONFIG
 ========================================================= */
 
-const API_BASE_URL = "https://sewac-main.onrender.com/api";
+const API_BASE_URL =
+  "https://sewac-main.onrender.com/api";
 
 /*
   Different vehicles get different colors.
   The same vehicle keeps the same color.
 */
+
 const ROUTE_COLORS = [
   "#7C3AED",
   "#06B6D4",
@@ -46,140 +55,503 @@ const ROUTE_COLORS = [
 ];
 
 /* =========================================================
+   DEFAULT MAP
+========================================================= */
+
+const DEFAULT_CENTER = [
+  12.9716,
+  77.5946,
+];
+
+const DEFAULT_ZOOM = 11;
+
+/* =========================================================
    VEHICLE COLOR
 ========================================================= */
 
-const getVehicleColor = (vehicleNumber, index = 0) => {
+const getVehicleColor = (
+  vehicleNumber,
+  index = 0
+) => {
   if (!vehicleNumber) {
-    return ROUTE_COLORS[index % ROUTE_COLORS.length];
+    return (
+      ROUTE_COLORS[
+        index % ROUTE_COLORS.length
+      ]
+    );
   }
 
   let hash = 0;
 
-  for (let i = 0; i < vehicleNumber.length; i++) {
-    hash = vehicleNumber.charCodeAt(i) + ((hash << 5) - hash);
+  for (
+    let i = 0;
+    i < vehicleNumber.length;
+    i++
+  ) {
+    hash =
+      vehicleNumber.charCodeAt(i) +
+      ((hash << 5) - hash);
   }
 
-  return ROUTE_COLORS[Math.abs(hash) % ROUTE_COLORS.length];
+  return (
+    ROUTE_COLORS[
+      Math.abs(hash) %
+        ROUTE_COLORS.length
+    ]
+  );
 };
 
 /* =========================================================
-   VEHICLE ICON
+   TRUCK ICON
 ========================================================= */
 
-const createTruckIcon = (color) => {
+const createTruckIcon = (
+  color
+) => {
   return L.divIcon({
-    className: "sewac-truck-marker",
+    className:
+      "sewac-truck-marker",
+
     html: `
       <div
         style="
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid ${color};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+          width:34px;
+          height:34px;
+          border-radius:50%;
+          background:#ffffff;
+          border:2px solid ${color};
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          box-shadow:0 4px 12px rgba(15,23,42,0.16);
         "
       >
         <div
           style="
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: ${color}18;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+            width:25px;
+            height:25px;
+            border-radius:50%;
+            background:${color}18;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:14px;
           "
         >
           🚛
         </div>
       </div>
     `,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -20],
+
+    iconSize: [
+      34,
+      34,
+    ],
+
+    iconAnchor: [
+      17,
+      17,
+    ],
+
+    popupAnchor: [
+      0,
+      -18,
+    ],
   });
+};
+
+/* =========================================================
+   DATE FORMATTER
+========================================================= */
+
+const formatDateForAPI = (
+  date
+) => {
+  if (!date) {
+    const fallback =
+      new Date();
+
+    fallback.setDate(
+      fallback.getDate() - 1
+    );
+
+    const year =
+      fallback.getFullYear();
+
+    const month =
+      String(
+        fallback.getMonth() + 1
+      ).padStart(2, "0");
+
+    const day =
+      String(
+        fallback.getDate()
+      ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  if (
+    typeof date ===
+    "string"
+  ) {
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        date
+      )
+    ) {
+      return date;
+    }
+
+    const parsed =
+      new Date(date);
+
+    if (
+      !Number.isNaN(
+        parsed.getTime()
+      )
+    ) {
+      const year =
+        parsed.getFullYear();
+
+      const month =
+        String(
+          parsed.getMonth() + 1
+        ).padStart(2, "0");
+
+      const day =
+        String(
+          parsed.getDate()
+        ).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }
+
+    return date;
+  }
+
+  if (
+    date instanceof Date
+  ) {
+    const year =
+      date.getFullYear();
+
+    const month =
+      String(
+        date.getMonth() + 1
+      ).padStart(2, "0");
+
+    const day =
+      String(
+        date.getDate()
+      ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  return formatDateForAPI(
+    null
+  );
+};
+
+/* =========================================================
+   LOCAL STORAGE
+========================================================= */
+
+const getStoredValue = (
+  ...keys
+) => {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  for (
+    const key of keys
+  ) {
+    const value =
+      localStorage.getItem(
+        key
+      );
+
+    if (
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return null;
 };
 
 /* =========================================================
    MAP CONTROLLER
 ========================================================= */
 
-function MapController({ routes, selectedView }) {
-  const map = useMap();
+function MapController({
+  routes,
+  selectedView,
+}) {
+  const map =
+    useMap();
+
+  /* =======================================================
+     INVALIDATE MAP SIZE
+  ======================================================= */
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
-    /*
-      Force Leaflet to recalculate its dimensions.
-      This is important because the map is inside a dashboard card.
-    */
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+    const timer =
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
 
-    const handleResize = () => {
-      map.invalidateSize();
-    };
+    const handleResize =
+      () => {
+        map.invalidateSize();
+      };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      clearTimeout(
+        timer
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
     };
   }, [map]);
 
-  /*
-    When route data arrives, automatically fit the map
-    around all available route coordinates.
-  */
+  /* =======================================================
+     FIT ROUTE BOUNDS
+  ======================================================= */
+
   useEffect(() => {
-    if (selectedView !== "route") return;
+    if (
+      selectedView !==
+      "route"
+    ) {
+      return;
+    }
 
-    const allPoints = [];
+    if (
+      !routes ||
+      routes.length === 0
+    ) {
+      return;
+    }
 
-    routes.forEach((vehicle) => {
-      if (!vehicle.points) return;
+    const allPoints =
+      [];
 
-      vehicle.points.forEach((point) => {
-        const lat = Number(point.latitude);
-        const lng = Number(point.longitude);
-
+    routes.forEach(
+      (vehicle) => {
         if (
-          Number.isFinite(lat) &&
-          Number.isFinite(lng) &&
-          lat !== 0 &&
-          lng !== 0
+          !vehicle?.points
         ) {
-          allPoints.push([lat, lng]);
+          return;
         }
-      });
-    });
 
-    if (allPoints.length === 0) return;
+        vehicle.points.forEach(
+          (point) => {
+            const latitude =
+              Number(
+                point.latitude
+              );
+
+            const longitude =
+              Number(
+                point.longitude
+              );
+
+            if (
+              Number.isFinite(
+                latitude
+              ) &&
+              Number.isFinite(
+                longitude
+              ) &&
+              latitude !== 0 &&
+              longitude !== 0
+            ) {
+              allPoints.push([
+                latitude,
+                longitude,
+              ]);
+            }
+          }
+        );
+      }
+    );
+
+    if (
+      allPoints.length === 0
+    ) {
+      return;
+    }
 
     try {
-      const bounds = L.latLngBounds(allPoints);
+      const bounds =
+        L.latLngBounds(
+          allPoints
+        );
 
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, {
-          padding: [70, 70],
-          maxZoom: 15,
-          animate: true,
-        });
+      if (
+        bounds.isValid()
+      ) {
+        map.fitBounds(
+          bounds,
+          {
+            padding: [
+              55,
+              55,
+            ],
+
+            maxZoom: 15,
+
+            animate: true,
+          }
+        );
       }
-    } catch (error) {
-      console.error("Failed to fit route bounds:", error);
+    } catch (
+      error
+    ) {
+      console.error(
+        "Failed to fit route bounds:",
+        error
+      );
     }
-  }, [routes, selectedView, map]);
+  }, [
+    routes,
+    selectedView,
+    map,
+  ]);
 
   return null;
+}
+
+/* =========================================================
+   ROUTE POINT POPUP
+========================================================= */
+
+function RoutePointPopup({
+  point,
+  vehicleNumber,
+}) {
+  return (
+    <div
+      style={{
+        minWidth:
+          "210px",
+
+        fontFamily:
+          "Inter, Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          fontSize:
+            "14px",
+
+          fontWeight:
+            700,
+
+          color:
+            "#0F172A",
+
+          marginBottom:
+            "10px",
+        }}
+      >
+        {vehicleNumber}
+      </div>
+
+      <div
+        style={{
+          fontSize:
+            "11px",
+
+          color:
+            "#64748B",
+
+          marginBottom:
+            "5px",
+        }}
+      >
+        Latitude:{" "}
+        <strong
+          style={{
+            color:
+              "#334155",
+          }}
+        >
+          {Number(
+            point?.latitude
+          ).toFixed(6)}
+        </strong>
+      </div>
+
+      <div
+        style={{
+          fontSize:
+            "11px",
+
+          color:
+            "#64748B",
+
+          marginBottom:
+            "5px",
+        }}
+      >
+        Longitude:{" "}
+        <strong
+          style={{
+            color:
+              "#334155",
+          }}
+        >
+          {Number(
+            point?.longitude
+          ).toFixed(6)}
+        </strong>
+      </div>
+
+      {point?.iottimestamp && (
+        <div
+          style={{
+            fontSize:
+              "11px",
+
+            color:
+              "#64748B",
+          }}
+        >
+          Time:{" "}
+          <strong
+            style={{
+              color:
+                "#334155",
+            }}
+          >
+            {point.iottimestamp}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* =========================================================
@@ -187,56 +559,61 @@ function MapController({ routes, selectedView }) {
 ========================================================= */
 
 export default function CityOverviewMap({
-  selectedWard: selectedWardProp = null,
-  selectedDivision: selectedDivisionProp = null,
-  wardNo: wardNoProp = null,
-  divisionName: divisionNameProp = null,
-  selectedDate: selectedDateProp = null,
+  selectedWard:
+    selectedWardProp = null,
+
+  selectedDivision:
+    selectedDivisionProp = null,
+
+  wardNo:
+    wardNoProp = null,
+
+  divisionName:
+    divisionNameProp = null,
+
+  selectedDate:
+    selectedDateProp = null,
 }) {
   /* =======================================================
      STATE
   ======================================================= */
 
-  const [selectedView, setSelectedView] = useState("route");
+  /*
+    Route Map is the initial selection,
+    matching the required architecture.
+  */
 
-  const [showViewMenu, setShowViewMenu] = useState(false);
+  const [
+    selectedView,
+    setSelectedView,
+  ] = useState("route");
 
-  const [routes, setRoutes] = useState([]);
+  const [
+    showViewMenu,
+    setShowViewMenu,
+  ] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [
+    routes,
+    setRoutes,
+  ] = useState([]);
 
-  const [error, setError] = useState("");
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  const [mapCenter, setMapCenter] = useState([12.9716, 77.5946]);
-
-  const [mapZoom, setMapZoom] = useState(11);
-
-  const menuRef = useRef(null);
+  const menuRef =
+    useRef(null);
 
   /* =======================================================
-     HEADER DATA
-     
-     The component first uses props coming from Header/page.
-     
-     If props aren't provided, it also checks common localStorage
-     values so the map can still work independently.
+     HEADER VALUES
   ======================================================= */
-
-  const getStoredValue = (...keys) => {
-    if (typeof window === "undefined") return null;
-
-    for (const key of keys) {
-      const value = localStorage.getItem(key);
-
-      if (value !== null && value !== undefined && value !== "") {
-        return value;
-      }
-    }
-
-    return null;
-  };
 
   const selectedWard =
     selectedWardProp ??
@@ -246,7 +623,8 @@ export default function CityOverviewMap({
       "selectedWardNo",
       "wardNo",
       "ward",
-      "selected_ward"
+      "selected_ward",
+      "headerWardNo"
     );
 
   const selectedDivision =
@@ -256,328 +634,500 @@ export default function CityOverviewMap({
       "selectedDivision",
       "divisionName",
       "division",
-      "selected_division"
+      "selected_division",
+      "headerDivision"
     );
 
   /* =======================================================
-     NORMALIZE WARD NUMBER
+     NORMALIZE WARD
   ======================================================= */
 
-  const normalizedWard = useMemo(() => {
-    if (
-      selectedWard === null ||
-      selectedWard === undefined ||
-      selectedWard === ""
-    ) {
-      return null;
-    }
+  const normalizedWard =
+    useMemo(() => {
+      if (
+        selectedWard ===
+          null ||
+        selectedWard ===
+          undefined ||
+        selectedWard ===
+          ""
+      ) {
+        return null;
+      }
 
-    /*
-      Handles:
-      216
-      "216"
-      "Ibblur (216)"
-      "Ward 216"
-    */
-    const match = String(selectedWard).match(/\d+/);
+      const match =
+        String(
+          selectedWard
+        ).match(
+          /\d+/
+        );
 
-    return match ? Number(match[0]) : null;
-  }, [selectedWard]);
+      return match
+        ? Number(
+            match[0]
+          )
+        : null;
+    }, [
+      selectedWard,
+    ]);
 
   /* =======================================================
      DATE
   ======================================================= */
 
-  const getApiDate = () => {
-    /*
-      If Header sends selectedDate, use it.
-    */
+  const apiDate =
+    useMemo(() => {
+      if (
+        selectedDateProp
+      ) {
+        return formatDateForAPI(
+          selectedDateProp
+        );
+      }
 
-    if (selectedDateProp) {
-      return selectedDateProp;
-    }
+      const storedDate =
+        getStoredValue(
+          "selectedDate",
+          "dashboardDate",
+          "routeDate"
+        );
 
-    /*
-      Otherwise try localStorage.
-    */
-
-    const storedDate = getStoredValue(
-      "selectedDate",
-      "dashboardDate",
-      "routeDate"
-    );
-
-    if (storedDate) {
-      return storedDate;
-    }
-
-    /*
-      IMPORTANT:
-      Your API example is for 2026-08-16.
-      We use yesterday as the fallback because route data
-      is generally the completed previous day's route.
-    */
-
-    const date = new Date();
-
-    date.setDate(date.getDate() - 1);
-
-    const year = date.getFullYear();
-
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
+      return formatDateForAPI(
+        storedDate
+      );
+    }, [
+      selectedDateProp,
+    ]);
 
   /* =======================================================
-     FETCH ROUTE DATA
+     MAP VIEW OPTIONS
+
+     ARCHITECTURE ONLY.
   ======================================================= */
 
-  const fetchRoutes = async () => {
-    /*
-      Route map requires a ward.
-    */
+  const mapViews = [
+    {
+      id: "overview",
 
-    if (!normalizedWard) {
-      setRoutes([]);
-      setError("");
-      return;
-    }
+      label:
+        "City Overview Map",
 
-    setLoading(true);
-    setError("");
+      icon: MapIcon,
 
-    try {
-      const date = getApiDate();
+      color:
+        "#64748B",
+    },
 
-      const url =
-        `${API_BASE_URL}/route-map` +
-        `?date=${encodeURIComponent(date)}` +
-        `&wardNo=${encodeURIComponent(normalizedWard)}`;
+    {
+      id: "route",
 
-      console.log("====================================");
-      console.log("SEWAC ROUTE MAP REQUEST");
-      console.log("URL:", url);
-      console.log("WARD:", normalizedWard);
-      console.log("DATE:", date);
-      console.log("====================================");
+      label:
+        "Route Map",
 
-      const response = await fetch(url);
+      icon: Route,
 
-      if (!response.ok) {
-        throw new Error(
-          `Route API returned HTTP ${response.status}`
-        );
-      }
+      color:
+        "#7C3AED",
+    },
 
-      const result = await response.json();
+    {
+      id: "gvp",
 
-      console.log("SEWAC ROUTE MAP RESPONSE:", result);
+      label:
+        "Garbage Vulnerable Points",
 
-      /*
-        Your backend response is:
+      icon: MapPin,
 
-        {
-          success: true,
-          data: {
-            success: true,
-            date: "...",
-            wardNo: 216,
-            totalVehicles: 2,
-            vehicles: [...]
-          }
-        }
-      */
+      color:
+        "#16A34A",
+    },
 
-      const payload = result?.data ?? result;
+    {
+      id: "plants",
 
-      const vehicleData = Array.isArray(payload?.vehicles)
-        ? payload.vehicles
-        : [];
+      label:
+        "Plants Active",
 
-      /*
-        Normalize every vehicle.
-      */
+      icon: Factory,
 
-      const normalizedVehicles = vehicleData
-        .map((vehicle, vehicleIndex) => {
-          const rawPoints = Array.isArray(vehicle?.points)
-            ? vehicle.points
-            : [];
+      color:
+        "#059669",
+    },
 
-          /*
-            IMPORTANT:
-            Leaflet expects:
+    {
+      id: "complaints",
 
-            [latitude, longitude]
+      label:
+        "Customer Grievances",
 
-            Backend gives:
+      icon: Megaphone,
 
-            latitude
-            longitude
-          */
+      color:
+        "#EC4899",
+    },
+  ];
 
-          const points = rawPoints
-            .map((point) => {
-              const latitude = Number(point?.latitude);
+  const activeView =
+    mapViews.find(
+      (view) =>
+        view.id ===
+        selectedView
+    ) ||
+    mapViews[1];
 
-              const longitude = Number(point?.longitude);
-
-              if (
-                !Number.isFinite(latitude) ||
-                !Number.isFinite(longitude)
-              ) {
-                return null;
-              }
-
-              if (latitude === 0 || longitude === 0) {
-                return null;
-              }
-
-              return {
-                ...point,
-                latitude,
-                longitude,
-                position: [latitude, longitude],
-              };
-            })
-            .filter(Boolean);
-
-          /*
-            Sort points chronologically.
-
-            This ensures the polyline follows the actual
-            vehicle movement rather than database order.
-          */
-
-          points.sort((a, b) => {
-            const timeA = new Date(
-              a.iottimestamp ||
-                a.receivedtimestamp ||
-                0
-            ).getTime();
-
-            const timeB = new Date(
-              b.iottimestamp ||
-                b.receivedtimestamp ||
-                0
-            ).getTime();
-
-            return timeA - timeB;
-          });
-
-          const vehicleNumber =
-            vehicle?.vehicleNumber ||
-            vehicle?.vehicleNo ||
-            vehicle?.registrationNumber ||
-            `Vehicle ${vehicleIndex + 1}`;
-
-          return {
-            ...vehicle,
-            vehicleNumber,
-            vehicleTableName:
-              vehicle?.vehicleTableName ||
-              vehicle?.vehicleTable ||
-              "",
-            points,
-            color: getVehicleColor(
-              vehicleNumber,
-              vehicleIndex
-            ),
-          };
-        })
-        /*
-          Don't render vehicles that have no valid GPS.
-        */
-        .filter((vehicle) => vehicle.points.length > 0);
-
-      console.log(
-        "NORMALIZED ROUTES:",
-        normalizedVehicles
-      );
-
-      setRoutes(normalizedVehicles);
-
-      setLastUpdated(new Date());
-
-      /*
-        Calculate center from all GPS points.
-      */
-
-      const allPoints = normalizedVehicles.flatMap(
-        (vehicle) => vehicle.points
-      );
-
-      if (allPoints.length > 0) {
-        const totalLat = allPoints.reduce(
-          (sum, point) => sum + point.latitude,
-          0
-        );
-
-        const totalLng = allPoints.reduce(
-          (sum, point) => sum + point.longitude,
-          0
-        );
-
-        setMapCenter([
-          totalLat / allPoints.length,
-          totalLng / allPoints.length,
-        ]);
-
-        /*
-          Reasonable initial zoom.
-          MapController will fit exact route bounds.
-        */
-
-        setMapZoom(12);
-      }
-    } catch (err) {
-      console.error(
-        "SEWAC ROUTE MAP ERROR:",
-        err
-      );
-
-      setRoutes([]);
-
-      setError(
-        err?.message ||
-          "Unable to load route data."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const ActiveIcon =
+    activeView.icon;
 
   /* =======================================================
-     FETCH WHEN WARD CHANGES
+     FETCH ROUTES
+  ======================================================= */
+
+  const fetchRoutes =
+    async () => {
+      /*
+        Route requires a ward.
+      */
+
+      if (
+        !normalizedWard
+      ) {
+        setRoutes([]);
+
+        setError(
+          "Please select a ward from the header."
+        );
+
+        return;
+      }
+
+      setLoading(true);
+
+      setError("");
+
+      try {
+        const url =
+          `${API_BASE_URL}/route-map` +
+          `?date=${encodeURIComponent(
+            apiDate
+          )}` +
+          `&wardNo=${encodeURIComponent(
+            normalizedWard
+          )}`;
+
+        console.log(
+          "===================================="
+        );
+
+        console.log(
+          "🚛 SEWAC ROUTE MAP"
+        );
+
+        console.log(
+          "Date:",
+          apiDate
+        );
+
+        console.log(
+          "Ward:",
+          normalizedWard
+        );
+
+        console.log(
+          "URL:",
+          url
+        );
+
+        console.log(
+          "===================================="
+        );
+
+        const response =
+          await fetch(
+            url,
+            {
+              method:
+                "GET",
+
+              headers: {
+                Accept:
+                  "application/json",
+              },
+            }
+          );
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            `Route API returned HTTP ${response.status}`
+          );
+        }
+
+        const result =
+          await response.json();
+
+        console.log(
+          "SEWAC ROUTE MAP RESPONSE:",
+          result
+        );
+
+        /*
+          Backend:
+
+          {
+            success: true,
+            data: {
+              success: true,
+              date: "...",
+              wardNo: 216,
+              totalVehicles: 2,
+              vehicles: [...]
+            }
+          }
+
+          Also support direct response.
+        */
+
+        const payload =
+          result?.data ??
+          result;
+
+        const vehicleData =
+          Array.isArray(
+            payload?.vehicles
+          )
+            ? payload.vehicles
+            : [];
+
+        /* =================================================
+           NORMALIZE VEHICLES
+        ================================================= */
+
+        const normalizedVehicles =
+          vehicleData
+            .map(
+              (
+                vehicle,
+                vehicleIndex
+              ) => {
+                const rawPoints =
+                  Array.isArray(
+                    vehicle?.points
+                  )
+                    ? vehicle.points
+                    : [];
+
+                /*
+                  Leaflet:
+
+                  [latitude, longitude]
+                */
+
+                const points =
+                  rawPoints
+                    .map(
+                      (
+                        point
+                      ) => {
+                        const latitude =
+                          Number(
+                            point?.latitude
+                          );
+
+                        const longitude =
+                          Number(
+                            point?.longitude
+                          );
+
+                        if (
+                          !Number.isFinite(
+                            latitude
+                          ) ||
+                          !Number.isFinite(
+                            longitude
+                          )
+                        ) {
+                          return null;
+                        }
+
+                        if (
+                          latitude ===
+                            0 ||
+                          longitude ===
+                            0
+                        ) {
+                          return null;
+                        }
+
+                        return {
+                          ...point,
+
+                          latitude,
+
+                          longitude,
+
+                          position: [
+                            latitude,
+                            longitude,
+                          ],
+                        };
+                      }
+                    )
+                    .filter(
+                      Boolean
+                    );
+
+                /*
+                  Sort chronologically.
+                */
+
+                points.sort(
+                  (
+                    a,
+                    b
+                  ) => {
+                    const timeA =
+                      new Date(
+                        a?.iottimestamp ||
+                          a?.iotTimestamp ||
+                          a?.receivedtimestamp ||
+                          a?.timestamp ||
+                          a?.createdAt ||
+                          0
+                      ).getTime();
+
+                    const timeB =
+                      new Date(
+                        b?.iottimestamp ||
+                          b?.iotTimestamp ||
+                          b?.receivedtimestamp ||
+                          b?.timestamp ||
+                          b?.createdAt ||
+                          0
+                      ).getTime();
+
+                    return (
+                      timeA -
+                      timeB
+                    );
+                  }
+                );
+
+                const vehicleNumber =
+                  vehicle?.vehicleNumber ||
+                  vehicle?.vehicleNo ||
+                  vehicle?.registrationNumber ||
+                  `Vehicle ${
+                    vehicleIndex +
+                    1
+                  }`;
+
+                return {
+                  ...vehicle,
+
+                  vehicleNumber,
+
+                  vehicleTableName:
+                    vehicle?.vehicleTableName ||
+                    vehicle?.vehicleTable ||
+                    "",
+
+                  points,
+
+                  color:
+                    getVehicleColor(
+                      vehicleNumber,
+                      vehicleIndex
+                    ),
+                };
+              }
+            )
+            .filter(
+              (
+                vehicle
+              ) =>
+                vehicle.points
+                  .length >
+                0
+            );
+
+        console.log(
+          "NORMALIZED ROUTES:",
+          normalizedVehicles
+        );
+
+        setRoutes(
+          normalizedVehicles
+        );
+
+        /*
+          Empty route is not treated
+          as a technical error.
+        */
+
+        if (
+          normalizedVehicles.length ===
+          0
+        ) {
+          setError(
+            payload?.message ||
+              `No vehicles found for Ward ${normalizedWard} on ${apiDate}.`
+          );
+        }
+      } catch (
+        fetchError
+      ) {
+        console.error(
+          "❌ SEWAC ROUTE MAP ERROR:",
+          fetchError
+        );
+
+        setRoutes([]);
+
+        setError(
+          fetchError?.message ||
+            "Unable to load route data."
+        );
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+  /* =======================================================
+     FETCH WHEN ROUTE VIEW IS ACTIVE
   ======================================================= */
 
   useEffect(() => {
-    if (selectedView !== "route") {
+    if (
+      selectedView !==
+      "route"
+    ) {
       return;
     }
 
     fetchRoutes();
   }, [
     normalizedWard,
-    selectedDateProp,
+    apiDate,
     selectedView,
   ]);
 
   /* =======================================================
-     AUTO REFRESH HEADER DATA
-     
-     If Header changes localStorage, listen for storage events.
+     HEADER STORAGE CHANGES
   ======================================================= */
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      if (selectedView === "route") {
-        fetchRoutes();
-      }
-    };
+    const handleStorageChange =
+      () => {
+        if (
+          selectedView ===
+          "route"
+        ) {
+          fetchRoutes();
+        }
+      };
 
     window.addEventListener(
       "storage",
@@ -590,21 +1140,30 @@ export default function CityOverviewMap({
         handleStorageChange
       );
     };
-  }, [selectedView, normalizedWard]);
+  }, [
+    selectedView,
+    normalizedWard,
+    apiDate,
+  ]);
 
   /* =======================================================
-     CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+     CLOSE DROPDOWN
   ======================================================= */
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target)
-      ) {
-        setShowViewMenu(false);
-      }
-    };
+    const handleClickOutside =
+      (event) => {
+        if (
+          menuRef.current &&
+          !menuRef.current.contains(
+            event.target
+          )
+        ) {
+          setShowViewMenu(
+            false
+          );
+        }
+      };
 
     document.addEventListener(
       "mousedown",
@@ -620,72 +1179,54 @@ export default function CityOverviewMap({
   }, []);
 
   /* =======================================================
-     MAP VIEW OPTIONS
+     TOTAL ROUTE POINTS
   ======================================================= */
 
-  const mapViews = [
-    {
-      id: "overview",
-      label: "City Overview Map",
-      icon: MapIcon,
-      color: "#2563EB",
-    },
-    {
-      id: "route",
-      label: "Route Map",
-      icon: Route,
-      color: "#7C3AED",
-    },
-    {
-      id: "gvp",
-      label: "Garbage Vulnerable Points (GVP)",
-      icon: MapPin,
-      color: "#16A34A",
-    },
-    {
-      id: "plants",
-      label: "Plants Active",
-      icon: Factory,
-      color: "#059669",
-    },
-    {
-      id: "complaints",
-      label: "Customer Grievances",
-      icon: Megaphone,
-      color: "#EC4899",
-    },
-  ];
-
-  const activeView =
-    mapViews.find(
-      (view) => view.id === selectedView
-    ) || mapViews[1];
-
-  const ActiveIcon = activeView.icon;
-
-  /* =======================================================
-     ROUTE POINTS
-  ======================================================= */
-
-  const totalGpsPoints = routes.reduce(
-    (total, vehicle) =>
-      total + vehicle.points.length,
-    0
-  );
+  const totalGpsPoints =
+    routes.reduce(
+      (
+        total,
+        vehicle
+      ) =>
+        total +
+        vehicle.points.length,
+      0
+    );
 
   /* =======================================================
      RENDER
   ======================================================= */
 
   return (
-    <section className="w-full rounded-[28px] bg-white border border-slate-200 shadow-[0_2px_10px_rgba(15,23,42,0.05)] p-6">
-
+    <section
+      className="
+        w-full
+        rounded-[22px]
+        bg-white
+        border
+        border-slate-200
+        shadow-[0_2px_8px_rgba(15,23,42,0.04)]
+        p-5
+      "
+    >
       {/* =================================================
           TITLE
       ================================================= */}
 
-      <div className="mb-6 px-1">
-        <h2 className="text-[23px] font-semibold tracking-[-0.02em] text-slate-950">
+      <div
+        className="
+          mb-5
+          px-1
+        "
+      >
+        <h2
+          className="
+            text-[21px]
+            font-semibold
+            tracking-[-0.02em]
+            text-slate-950
+          "
+        >
           CITY OVERVIEW MAP
         </h2>
       </div>
@@ -695,185 +1236,431 @@ export default function CityOverviewMap({
       ================================================= */}
 
       <div
-        className="relative w-full overflow-hidden rounded-[24px] border border-slate-200"
+        className="
+          relative
+          w-full
+          overflow-hidden
+          rounded-[20px]
+          border
+          border-slate-200
+        "
         style={{
-          height: "700px",
+          height:
+            "650px",
         }}
       >
-
         {/* =================================================
             LEAFLET MAP
         ================================================= */}
 
         <MapContainer
-          center={mapCenter}
-          zoom={mapZoom}
-          scrollWheelZoom={true}
-          zoomControl={true}
+          center={
+            DEFAULT_CENTER
+          }
+          zoom={
+            DEFAULT_ZOOM
+          }
+          zoomControl={
+            false
+          }
+          scrollWheelZoom={
+            true
+          }
           style={{
-            width: "100%",
-            height: "100%",
-            zIndex: 1,
+            width:
+              "100%",
+
+            height:
+              "100%",
           }}
         >
+          {/* =================================================
+              GREY BASE MAP
+
+              Carto Light gives the grey/light appearance.
+          ================================================= */}
 
           <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
 
-          {/* ===============================================
+          {/* =================================================
+              ZOOM
+          ================================================= */}
+
+          <ZoomControl
+            position="topleft"
+          />
+
+          {/* =================================================
               MAP CONTROLLER
-          =============================================== */}
+          ================================================= */}
 
           <MapController
-            routes={routes}
-            selectedView={selectedView}
+            routes={
+              routes
+            }
+            selectedView={
+              selectedView
+            }
           />
 
-          {/* ===============================================
-              ROUTES
-          =============================================== */}
+          {/* =================================================
+              ROUTE MAP
+          ================================================= */}
 
-          {selectedView === "route" &&
-            routes.map((vehicle, vehicleIndex) => {
+          {selectedView ===
+            "route" &&
+            routes.map(
+              (
+                vehicle,
+                vehicleIndex
+              ) => {
+                const coordinates =
+                  vehicle.points.map(
+                    (
+                      point
+                    ) =>
+                      point.position
+                  );
 
-              /*
-                Convert normalized points into:
+                if (
+                  coordinates.length ===
+                  0
+                ) {
+                  return null;
+                }
 
-                [
-                  [lat, lng],
-                  [lat, lng],
-                  ...
-                ]
-              */
+                const color =
+                  vehicle.color ||
+                  getVehicleColor(
+                    vehicle.vehicleNumber,
+                    vehicleIndex
+                  );
 
-              const positions = vehicle.points.map(
-                (point) => point.position
-              );
+                const latestPoint =
+                  vehicle.points[
+                    vehicle.points
+                      .length -
+                      1
+                  ];
 
-              /*
-                Safety check.
-                A line needs at least two points.
-              */
+                return (
+                  <div
+                    key={`${vehicle.vehicleNumber}-${vehicleIndex}`}
+                  >
+                    {/* =================================
+                        ROUTE GLOW
+                    ================================= */}
 
-              if (positions.length < 2) {
-                return null;
-              }
+                    {coordinates.length >
+                      1 && (
+                      <Polyline
+                        positions={
+                          coordinates
+                        }
+                        pathOptions={{
+                          color,
 
-              const latestPoint =
-                vehicle.points[
-                  vehicle.points.length - 1
-                ];
+                          weight:
+                            8,
 
-              return (
-                <div key={`${vehicle.vehicleNumber}-${vehicleIndex}`}>
+                          opacity:
+                            0.10,
 
-                  {/* =====================================
-                      OUTER GLOW
-                  ===================================== */}
+                          lineCap:
+                            "round",
 
-                  <Polyline
-                    positions={positions}
-                    pathOptions={{
-                      color: vehicle.color,
-                      weight: 8,
-                      opacity: 0.16,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
+                          lineJoin:
+                            "round",
+                        }}
+                      />
+                    )}
 
-                  {/* =====================================
-                      MAIN ROUTE
-                  ===================================== */}
+                    {/* =================================
+                        MAIN ROUTE
+                    ================================= */}
 
-                  <Polyline
-                    positions={positions}
-                    pathOptions={{
-                      color: vehicle.color,
-                      weight: 4,
-                      opacity: 0.95,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
+                    {coordinates.length >
+                      1 && (
+                      <Polyline
+                        positions={
+                          coordinates
+                        }
+                        pathOptions={{
+                          color,
 
-                  {/* =====================================
-                      CURRENT VEHICLE MARKER
-                  ===================================== */}
+                          weight:
+                            4,
 
-                  {latestPoint && (
-                    <Marker
-                      position={
-                        latestPoint.position
+                          opacity:
+                            0.95,
+
+                          lineCap:
+                            "round",
+
+                          lineJoin:
+                            "round",
+                        }}
+                      />
+                    )}
+
+                    {/* =================================
+                        GPS POINTS
+                    ================================= */}
+
+                    {vehicle.points.map(
+                      (
+                        point,
+                        pointIndex
+                      ) => {
+                        const latitude =
+                          Number(
+                            point?.latitude
+                          );
+
+                        const longitude =
+                          Number(
+                            point?.longitude
+                          );
+
+                        if (
+                          !Number.isFinite(
+                            latitude
+                          ) ||
+                          !Number.isFinite(
+                            longitude
+                          )
+                        ) {
+                          return null;
+                        }
+
+                        return (
+                          <CircleMarker
+                            key={`${vehicle.vehicleNumber}-${pointIndex}`}
+                            center={[
+                              latitude,
+                              longitude,
+                            ]}
+                            radius={
+                              4
+                            }
+                            pathOptions={{
+                              color:
+                                "#FFFFFF",
+
+                              weight:
+                                1.5,
+
+                              fillColor:
+                                color,
+
+                              fillOpacity:
+                                1,
+                            }}
+                            eventHandlers={{
+                              mouseover:
+                                (
+                                  event
+                                ) => {
+                                  event.target.openPopup();
+                                },
+                            }}
+                          >
+                            <Popup
+                              closeButton={
+                                true
+                              }
+                              maxWidth={
+                                300
+                              }
+                            >
+                              <RoutePointPopup
+                                point={
+                                  point
+                                }
+                                vehicleNumber={
+                                  vehicle.vehicleNumber
+                                }
+                              />
+                            </Popup>
+                          </CircleMarker>
+                        );
                       }
-                      icon={createTruckIcon(
-                        vehicle.color
-                      )}
+                    )}
+
+                    {/* =================================
+                        ROUTE START
+                    ================================= */}
+
+                    <CircleMarker
+                      center={
+                        coordinates[0]
+                      }
+                      radius={
+                        7
+                      }
+                      pathOptions={{
+                        color,
+
+                        weight:
+                          2,
+
+                        fillColor:
+                          "#FFFFFF",
+
+                        fillOpacity:
+                          1,
+                      }}
                     >
                       <Popup>
                         <div
                           style={{
-                            minWidth: "190px",
                             fontFamily:
-                              "Inter, sans-serif",
+                              "Inter, Arial, sans-serif",
+
+                            fontSize:
+                              "12px",
                           }}
                         >
-                          <div
-                            style={{
-                              fontWeight: 700,
-                              fontSize: "15px",
-                              marginBottom: "8px",
-                            }}
-                          >
-                            {vehicle.vehicleNumber}
-                          </div>
+                          <strong>
+                            {
+                              vehicle.vehicleNumber
+                            }
+                          </strong>
 
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#64748B",
-                              marginBottom: "5px",
-                            }}
-                          >
-                            Ward {normalizedWard}
-                          </div>
+                          <br />
 
-                          <div
+                          <span
                             style={{
-                              fontSize: "13px",
-                              color: "#64748B",
-                              marginBottom: "5px",
+                              color:
+                                "#64748B",
                             }}
                           >
-                            GPS Points:{" "}
-                            {vehicle.points.length}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#64748B",
-                            }}
-                          >
-                            Last Location:
-                            <br />
-                            {latestPoint.latitude.toFixed(
-                              6
-                            )}
-                            ,{" "}
-                            {latestPoint.longitude.toFixed(
-                              6
-                            )}
-                          </div>
+                            Route Start
+                          </span>
                         </div>
                       </Popup>
-                    </Marker>
-                  )}
-                </div>
-              );
-            })}
+                    </CircleMarker>
+
+                    {/* =================================
+                        CURRENT VEHICLE
+                    ================================= */}
+
+                    {latestPoint && (
+                      <Marker
+                        position={
+                          latestPoint.position
+                        }
+                        icon={createTruckIcon(
+                          color
+                        )}
+                      >
+                        <Popup>
+                          <div
+                            style={{
+                              minWidth:
+                                "180px",
+
+                              fontFamily:
+                                "Inter, Arial, sans-serif",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize:
+                                  "14px",
+
+                                fontWeight:
+                                  700,
+
+                                color:
+                                  "#0F172A",
+
+                                marginBottom:
+                                  "8px",
+                              }}
+                            >
+                              {
+                                vehicle.vehicleNumber
+                              }
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize:
+                                  "11px",
+
+                                color:
+                                  "#64748B",
+
+                                marginBottom:
+                                  "5px",
+                              }}
+                            >
+                              Ward{" "}
+                              {
+                                normalizedWard
+                              }
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize:
+                                  "11px",
+
+                                color:
+                                  "#64748B",
+
+                                marginBottom:
+                                  "5px",
+                              }}
+                            >
+                              GPS Points:{" "}
+                              {
+                                vehicle
+                                  .points
+                                  .length
+                              }
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize:
+                                  "11px",
+
+                                color:
+                                  "#64748B",
+                              }}
+                            >
+                              Last Location:
+
+                              <br />
+
+                              {latestPoint.latitude.toFixed(
+                                6
+                              )}
+                              ,{" "}
+                              {latestPoint.longitude.toFixed(
+                                6
+                              )}
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )}
+                  </div>
+                );
+              }
+            )}
+
+          {/* =================================================
+              OTHER MAP MODES
+
+              Architecture only.
+              No fake data is rendered.
+          ================================================= */}
 
         </MapContainer>
 
@@ -883,59 +1670,81 @@ export default function CityOverviewMap({
 
         <div
           ref={menuRef}
-          className="absolute left-5 top-5"
-          style={{
-            zIndex: 1000,
-          }}
+          className="
+            absolute
+            left-5
+            top-5
+            z-[1000]
+          "
         >
+          {/* =================================================
+              SELECTED VIEW
+          ================================================= */}
 
           <button
             type="button"
             onClick={() =>
               setShowViewMenu(
-                (previous) => !previous
+                (
+                  previous
+                ) =>
+                  !previous
               )
             }
             className="
-              w-[470px]
-              max-w-[calc(100vw-80px)]
-              h-[74px]
-              px-7
+              w-[420px]
+              max-w-[calc(100vw-40px)]
+              h-[66px]
+              px-5
               bg-white
-              rounded-[18px]
+              rounded-[16px]
               border
               border-slate-200
-              shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+              shadow-[0_6px_20px_rgba(15,23,42,0.09)]
               flex
               items-center
               justify-between
               transition-all
-              hover:shadow-[0_10px_30px_rgba(15,23,42,0.14)]
+              hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)]
             "
           >
-
-            <div className="flex items-center gap-5">
-
+            <div
+              className="
+                flex
+                items-center
+                gap-4
+              "
+            >
               <ActiveIcon
-                size={26}
-                strokeWidth={2}
+                size={23}
+                strokeWidth={
+                  2
+                }
                 style={{
                   color:
                     activeView.color,
                 }}
               />
 
-              <span className="text-[20px] font-semibold text-slate-700">
-                {activeView.label}
+              <span
+                className="
+                  text-[17px]
+                  font-semibold
+                  text-slate-700
+                "
+              >
+                {
+                  activeView.label
+                }
               </span>
-
             </div>
 
             <ChevronDown
-              size={22}
+              size={19}
               className={`
-                text-slate-700
+                text-slate-600
                 transition-transform
+                duration-200
                 ${
                   showViewMenu
                     ? "rotate-180"
@@ -943,7 +1752,6 @@ export default function CityOverviewMap({
                 }
               `}
             />
-
           </button>
 
           {/* =================================================
@@ -954,93 +1762,178 @@ export default function CityOverviewMap({
             <div
               className="
                 absolute
-                top-[82px]
+                top-[74px]
                 left-0
-                w-[470px]
-                max-w-[calc(100vw-80px)]
-                rounded-[18px]
+                w-[420px]
+                max-w-[calc(100vw-40px)]
+                rounded-[16px]
                 bg-white
                 border
                 border-slate-200
-                shadow-[0_15px_40px_rgba(15,23,42,0.15)]
+                shadow-[0_14px_32px_rgba(15,23,42,0.12)]
                 overflow-hidden
               "
             >
+              {mapViews.map(
+                (
+                  view
+                ) => {
+                  const Icon =
+                    view.icon;
 
-              {mapViews.map((view) => {
-                const Icon = view.icon;
+                  const isActive =
+                    selectedView ===
+                    view.id;
 
-                const isActive =
-                  selectedView === view.id;
-
-                return (
-                  <button
-                    key={view.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedView(
+                  return (
+                    <button
+                      key={
                         view.id
-                      );
-
-                      setShowViewMenu(false);
-                    }}
-                    className={`
-                      w-full
-                      px-7
-                      py-5
-                      flex
-                      items-center
-                      justify-between
-                      transition-colors
-                      ${
-                        isActive
-                          ? "bg-violet-50"
-                          : "bg-white hover:bg-slate-50"
                       }
-                    `}
-                  >
+                      type="button"
+                      onClick={() => {
+                        setSelectedView(
+                          view.id
+                        );
 
-                    <div className="flex items-center gap-5">
+                        setShowViewMenu(
+                          false
+                        );
 
-                      <Icon
-                        size={24}
-                        strokeWidth={2}
-                        style={{
-                          color:
-                            view.color,
-                        }}
-                      />
+                        /*
+                          Route errors should
+                          disappear when switching
+                          views.
+                        */
 
-                      <span className="text-[16px] font-medium text-slate-700">
-                        {view.label}
-                      </span>
-
-                    </div>
-
-                    {isActive && (
-                      <span
-                        style={{
-                          color:
-                            view.color,
-                          fontSize: "22px",
-                          fontWeight: 700,
-                        }}
+                        if (
+                          view.id !==
+                          "route"
+                        ) {
+                          setError(
+                            ""
+                          );
+                        }
+                      }}
+                      className={`
+                        w-full
+                        px-5
+                        py-3.5
+                        flex
+                        items-center
+                        justify-between
+                        transition-colors
+                        ${
+                          isActive
+                            ? "bg-violet-50"
+                            : "bg-white hover:bg-slate-50"
+                        }
+                      `}
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-4
+                        "
                       >
-                        ✓
-                      </span>
-                    )}
+                        <Icon
+                          size={20}
+                          strokeWidth={
+                            2
+                          }
+                          style={{
+                            color:
+                              view.color,
+                          }}
+                        />
 
-                  </button>
-                );
-              })}
+                        <span
+                          className="
+                            text-[14px]
+                            font-medium
+                            text-slate-700
+                          "
+                        >
+                          {
+                            view.label
+                          }
+                        </span>
+                      </div>
 
+                      {isActive && (
+                        <span
+                          style={{
+                            color:
+                              view.color,
+
+                            fontSize:
+                              "17px",
+
+                            fontWeight:
+                              700,
+                          }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
+              )}
             </div>
           )}
-
         </div>
 
         {/* =================================================
-            HEADER FILTERS
+            DIVISION
+        ================================================= */}
+
+        <div
+          className="
+            absolute
+            right-[315px]
+            top-5
+            z-[1000]
+            min-w-[270px]
+            px-5
+            py-3.5
+            bg-white
+            rounded-[16px]
+            border
+            border-slate-200
+            shadow-[0_6px_20px_rgba(15,23,42,0.08)]
+          "
+        >
+          <div
+            className="
+              text-[10px]
+              font-semibold
+              tracking-[0.06em]
+              uppercase
+              text-slate-400
+            "
+          >
+            DIVISION
+          </div>
+
+          <div
+            className="
+              mt-1
+              text-[15px]
+              font-semibold
+              text-slate-700
+            "
+          >
+            {
+              selectedDivision ||
+              "All Divisions"
+            }
+          </div>
+        </div>
+
+        {/* =================================================
+            WARD
         ================================================= */}
 
         <div
@@ -1048,332 +1941,274 @@ export default function CityOverviewMap({
             absolute
             right-5
             top-5
-            flex
-            gap-4
+            z-[1000]
+            min-w-[270px]
+            px-5
+            py-3.5
+            bg-white
+            rounded-[16px]
+            border
+            border-slate-200
+            shadow-[0_6px_20px_rgba(15,23,42,0.08)]
           "
-          style={{
-            zIndex: 1000,
-          }}
         >
-
-          {/* ===============================================
-              DIVISION
-          =============================================== */}
+          <div
+            className="
+              text-[10px]
+              font-semibold
+              tracking-[0.06em]
+              uppercase
+              text-slate-400
+            "
+          >
+            WARD
+          </div>
 
           <div
             className="
-              min-w-[300px]
-              px-6
-              py-4
-              bg-white
-              rounded-[18px]
-              border
-              border-slate-200
-              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+              mt-1
+              text-[15px]
+              font-semibold
+              text-slate-700
             "
           >
-
-            <div className="text-[12px] font-semibold tracking-wide uppercase text-slate-400">
-              DIVISION
-            </div>
-
-            <div className="mt-1 text-[17px] font-semibold text-slate-700">
-              {selectedDivision ||
-                "All Divisions"}
-            </div>
-
+            {selectedWard
+              ? String(
+                  selectedWard
+                )
+              : "All Wards"}
           </div>
-
-          {/* ===============================================
-              WARD
-          =============================================== */}
-
-          <div
-            className="
-              min-w-[300px]
-              px-6
-              py-4
-              bg-white
-              rounded-[18px]
-              border
-              border-slate-200
-              shadow-[0_8px_25px_rgba(15,23,42,0.08)]
-            "
-          >
-
-            <div className="text-[12px] font-semibold tracking-wide uppercase text-slate-400">
-              WARD
-            </div>
-
-            <div className="mt-1 text-[17px] font-semibold text-slate-700">
-              {selectedWard
-                ? String(selectedWard)
-                : "All Wards"}
-            </div>
-
-          </div>
-
         </div>
 
         {/* =================================================
-            REFRESH BUTTON
+            REFRESH
         ================================================= */}
 
-        {selectedView === "route" &&
+        {selectedView ===
+          "route" &&
           normalizedWard && (
             <button
               type="button"
-              onClick={fetchRoutes}
-              disabled={loading}
+              onClick={
+                fetchRoutes
+              }
+              disabled={
+                loading
+              }
               title="Refresh route"
               className="
                 absolute
                 right-5
                 bottom-5
                 z-[1000]
-                w-[44px]
-                h-[44px]
+                w-[38px]
+                h-[38px]
                 rounded-full
                 bg-white
                 border
                 border-slate-200
-                shadow-[0_6px_20px_rgba(15,23,42,0.12)]
+                shadow-[0_5px_16px_rgba(15,23,42,0.10)]
                 flex
                 items-center
                 justify-center
                 hover:bg-slate-50
                 transition
+                disabled:opacity-50
               "
             >
-
-              <RefreshCw
-                size={18}
-                className={
-                  loading
-                    ? "animate-spin text-violet-600"
-                    : "text-slate-600"
-                }
-              />
-
+              {loading ? (
+                <Loader2
+                  size={16}
+                  className="
+                    text-violet-600
+                    animate-spin
+                  "
+                />
+              ) : (
+                <RefreshCw
+                  size={16}
+                  className="
+                    text-slate-600
+                  "
+                />
+              )}
             </button>
           )}
 
         {/* =================================================
-            LOADING
+            ROUTE ERROR / EMPTY MESSAGE
         ================================================= */}
 
-        {loading && (
-          <div
-            className="
-              absolute
-              left-1/2
-              top-1/2
-              -translate-x-1/2
-              -translate-y-1/2
-              z-[1000]
-              px-6
-              py-4
-              rounded-[16px]
-              bg-white
-              border
-              border-slate-200
-              shadow-[0_10px_30px_rgba(15,23,42,0.14)]
-              flex
-              items-center
-              gap-3
-            "
-          >
-
-            <RefreshCw
-              size={18}
-              className="animate-spin text-violet-600"
-            />
-
-            <span className="text-[14px] font-semibold text-slate-700">
-              Loading route...
-            </span>
-
-          </div>
-        )}
-
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
-        {!loading &&
-          error &&
-          selectedView === "route" && (
+        {selectedView ===
+          "route" &&
+          !loading &&
+          error && (
             <div
               className="
                 absolute
                 left-1/2
-                bottom-8
+                bottom-5
                 -translate-x-1/2
                 z-[1000]
-                px-6
-                py-4
-                rounded-[16px]
-                bg-white
-                border
-                border-red-200
-                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
+                max-w-[calc(100%-40px)]
               "
             >
-
-              <div className="flex items-center gap-3">
-
+              <div
+                className="
+                  bg-white
+                  border
+                  border-slate-200
+                  shadow-[0_8px_24px_rgba(15,23,42,0.10)]
+                  rounded-[14px]
+                  px-5
+                  py-3
+                  flex
+                  items-center
+                  gap-3
+                  whitespace-nowrap
+                "
+              >
                 <Truck
-                  size={20}
-                  className="text-red-500"
+                  size={17}
+                  className="
+                    text-violet-600
+                    shrink-0
+                  "
                 />
 
-                <span className="text-[14px] font-semibold text-red-600">
+                <span
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-slate-600
+                  "
+                >
                   {error}
                 </span>
-
               </div>
-
             </div>
           )}
 
         {/* =================================================
-            NO WARD
+            ROUTE LOADING
         ================================================= */}
 
-        {!normalizedWard &&
-          selectedView === "route" && (
+        {selectedView ===
+          "route" &&
+          loading && (
             <div
               className="
                 absolute
                 left-1/2
-                bottom-8
-                -translate-x-1/2
-                z-[1000]
-                px-6
-                py-4
-                rounded-[16px]
-                bg-white
-                border
-                border-slate-200
-                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
-              "
-            >
-
-              <div className="flex items-center gap-3">
-
-                <Truck
-                  size={20}
-                  className="text-violet-600"
-                />
-
-                <span className="text-[14px] font-semibold text-slate-600">
-                  Please select a ward from the header.
-                </span>
-
-              </div>
-
-            </div>
-          )}
-
-        {/* =================================================
-            NO ROUTE
-        ================================================= */}
-
-        {!loading &&
-          !error &&
-          normalizedWard &&
-          selectedView === "route" &&
-          routes.length === 0 && (
-            <div
-              className="
-                absolute
-                left-1/2
-                bottom-8
-                -translate-x-1/2
-                z-[1000]
-                px-6
-                py-4
-                rounded-[16px]
-                bg-white
-                border
-                border-slate-200
-                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
-              "
-            >
-
-              <div className="flex items-center gap-3">
-
-                <Navigation
-                  size={20}
-                  className="text-violet-600"
-                />
-
-                <span className="text-[14px] font-semibold text-slate-600">
-                  No route data available for Ward{" "}
-                  {normalizedWard}.
-                </span>
-
-              </div>
-
-            </div>
-          )}
-
-        {/* =================================================
-            ROUTE INFO
-        ================================================= */}
-
-        {selectedView === "route" &&
-          routes.length > 0 && (
-            <div
-              className="
-                absolute
-                left-5
                 bottom-5
+                -translate-x-1/2
                 z-[1000]
-                px-5
-                py-4
-                rounded-[16px]
-                bg-white
-                border
-                border-slate-200
-                shadow-[0_8px_25px_rgba(15,23,42,0.10)]
               "
             >
+              <div
+                className="
+                  bg-white
+                  border
+                  border-slate-200
+                  shadow-[0_8px_24px_rgba(15,23,42,0.10)]
+                  rounded-[14px]
+                  px-5
+                  py-3
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+                <Loader2
+                  size={16}
+                  className="
+                    text-violet-600
+                    animate-spin
+                  "
+                />
 
-              <div className="flex items-center gap-5">
+                <span
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-slate-600
+                  "
+                >
+                  Loading vehicle routes...
+                </span>
+              </div>
+            </div>
+          )}
 
-                {/* VEHICLES */}
+        {/* =================================================
+            ROUTE COUNT
+        ================================================= */}
 
-                <div className="flex items-center gap-2">
-
-                  <Truck
-                    size={18}
-                    className="text-slate-500"
-                  />
-
-                  <span className="text-[13px] font-semibold text-slate-700">
-                    {routes.length}{" "}
-                    {routes.length === 1
+        {selectedView ===
+          "route" &&
+          !loading &&
+          routes.length >
+            0 && (
+            <div
+              className="
+                absolute
+                left-1/2
+                bottom-5
+                -translate-x-1/2
+                z-[900]
+                pointer-events-none
+              "
+            >
+              <div
+                className="
+                  bg-white
+                  border
+                  border-slate-200
+                  shadow-[0_6px_18px_rgba(15,23,42,0.08)]
+                  rounded-[13px]
+                  px-4
+                  py-2.5
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-4
+                    text-[11px]
+                    font-medium
+                    text-slate-500
+                  "
+                >
+                  <span>
+                    {
+                      routes.length
+                    }{" "}
+                    {routes.length ===
+                    1
                       ? "Vehicle"
                       : "Vehicles"}
                   </span>
 
+                  <span
+                    className="
+                      h-3
+                      w-px
+                      bg-slate-200
+                    "
+                  />
+
+                  <span>
+                    {
+                      totalGpsPoints.toLocaleString()
+                    }{" "}
+                    GPS points
+                  </span>
                 </div>
-
-                {/* GPS */}
-
-                <div className="text-[13px] font-medium text-slate-500">
-                  {totalGpsPoints.toLocaleString()} GPS
-                  points
-                </div>
-
               </div>
-
             </div>
           )}
-
       </div>
-
     </section>
   );
 }
