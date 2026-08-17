@@ -1,8 +1,6 @@
 import React, {
-  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -16,63 +14,38 @@ import {
 import L from "leaflet";
 
 import {
-  ChevronDown,
   Map as MapIcon,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import "leaflet/dist/leaflet.css";
 
 /* ============================================================
-   CONFIG
+   CONFIGURATION
 ============================================================ */
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://YOUR-RENDER-BACKEND.onrender.com";
+  "http://localhost:5002";
+
+const DEFAULT_CITY_ID = 1;
 
 /*
-  Your backend endpoint:
-
-  GET
-  /api/master-citizen/map/city/1
-
-  Example:
-
-  {
-    "success": true,
-    "city": {
-      "id": 1,
-      "cityName": "Bangalore",
-      "geoBoundary": {...},
-      "cityTableName": "bangalore_city"
-    },
-    "zones": [
-      {
-        "zoneName": "Bengaluru East City Corporation",
-        "geoBoundary": {...},
-        "zoneTableName": "..."
-      }
-    ]
-  }
-*/
-
-const CITY_ID = 1;
-
-/* ============================================================
-   ZONE COLORS
-============================================================ */
-
+ * Subtle zone colours.
+ *
+ * These are intentionally light because the base map is grey.
+ * The selected zone gets a stronger border/fill.
+ */
 const ZONE_COLORS = [
-  "#DCEBFF",
-  "#E8DDFB",
-  "#DDF4E7",
-  "#FFF0D5",
-  "#F8DDE5",
-  "#DDEFF4",
-  "#E9E4D4",
-  "#E1E8F5",
-  "#F1E1F5",
-  "#E1F2E8",
+  "#8DB7E8",
+  "#B5A7E8",
+  "#8FC9C1",
+  "#E4B66B",
+  "#D99AB4",
+  "#9BB7D4",
+  "#A7CFA9",
+  "#C8A7D9",
 ];
 
 /* ============================================================
@@ -80,126 +53,209 @@ const ZONE_COLORS = [
 ============================================================ */
 
 /**
- * Converts whatever GeoJSON structure the backend returns
- * into a structure Leaflet can render.
+ * Get zone name regardless of whether the backend returns:
+ *
+ * {
+ *   zoneName: "..."
+ * }
+ *
+ * or
+ *
+ * "Bengaluru East City Corporation"
+ */
+function getZoneName(zone) {
+  if (!zone) return "";
+
+  if (typeof zone === "string") {
+    return zone;
+  }
+
+  return (
+    zone.zoneName ||
+    zone.zone_name ||
+    zone.name ||
+    ""
+  );
+}
+
+/**
+ * Get zone boundary.
+ */
+function getZoneBoundary(zone) {
+  if (!zone || typeof zone === "string") {
+    return null;
+  }
+
+  return (
+    zone.geoBoundary ||
+    zone.geo_boundary ||
+    zone.geometry ||
+    zone.boundary ||
+    null
+  );
+}
+
+/**
+ * Get zone table name.
+ */
+function getZoneTableName(zone) {
+  if (!zone || typeof zone === "string") {
+    return null;
+  }
+
+  return (
+    zone.zoneTableName ||
+    zone.zone_table_name ||
+    null
+  );
+}
+
+/**
+ * Normalise GeoJSON.
+ *
+ * The backend may return:
+ *
+ * FeatureCollection
+ * Feature
+ * Polygon
+ * MultiPolygon
+ * or sometimes coordinates directly.
  */
 function normalizeGeoJSON(value) {
   if (!value) {
     return null;
   }
 
-  // Already an object
-  if (typeof value === "object") {
-    return value;
-  }
+  let parsed = value;
 
-  // JSON string
-  if (typeof value === "string") {
+  if (typeof parsed === "string") {
     try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.error(
-        "Failed to parse GeoJSON:",
-        error
-      );
-
+      parsed = JSON.parse(parsed);
+    } catch {
       return null;
     }
+  }
+
+  if (!parsed) {
+    return null;
+  }
+
+  /*
+   * Already a valid GeoJSON FeatureCollection.
+   */
+  if (
+    parsed.type === "FeatureCollection"
+  ) {
+    return parsed;
+  }
+
+  /*
+   * Already a Feature.
+   */
+  if (
+    parsed.type === "Feature"
+  ) {
+    return parsed;
+  }
+
+  /*
+   * Polygon / MultiPolygon.
+   */
+  if (
+    parsed.type === "Polygon" ||
+    parsed.type === "MultiPolygon"
+  ) {
+    return {
+      type: "Feature",
+      properties: {},
+      geometry: parsed,
+    };
+  }
+
+  /*
+   * Raw coordinates.
+   */
+  if (Array.isArray(parsed)) {
+    return {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: parsed,
+      },
+    };
   }
 
   return null;
 }
 
 /**
- * Makes sure the backend GeoJSON is a valid
- * Feature / FeatureCollection / Geometry.
+ * Safely create Leaflet bounds from GeoJSON.
  */
-function makeFeatureCollection(value) {
-  const geoJson = normalizeGeoJSON(value);
-
-  if (!geoJson) {
+function getGeoJSONBounds(geoJSON) {
+  if (!geoJSON) {
     return null;
   }
 
-  if (
-    geoJson.type ===
-    "FeatureCollection"
-  ) {
-    return geoJson;
-  }
+  try {
+    const layer =
+      L.geoJSON(geoJSON);
 
-  if (
-    geoJson.type ===
-    "Feature"
-  ) {
-    return {
-      type: "FeatureCollection",
-      features: [geoJson],
-    };
-  }
+    const bounds =
+      layer.getBounds();
 
-  if (geoJson.type) {
-    return {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: {},
-          geometry: geoJson,
-        },
-      ],
-    };
+    if (
+      bounds &&
+      bounds.isValid()
+    ) {
+      return bounds;
+    }
+  } catch (error) {
+    console.error(
+      "Failed to calculate GeoJSON bounds:",
+      error
+    );
   }
 
   return null;
 }
 
 /* ============================================================
-   MAP FIT CONTROLLER
+   MAP AUTO FIT
 ============================================================ */
 
-function CityBoundsController({
-  geoBoundary,
+function MapBoundsController({
+  geoJSON,
 }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!geoBoundary) {
+    if (!geoJSON) {
       return;
     }
 
-    try {
-      const layer =
-        L.geoJSON(
-          geoBoundary
-        );
+    const bounds =
+      getGeoJSONBounds(
+        geoJSON
+      );
 
-      const bounds =
-        layer.getBounds();
-
-      if (
-        bounds &&
-        bounds.isValid()
-      ) {
-        map.fitBounds(
-          bounds,
-          {
-            padding: [
-              50,
-              50,
-            ],
-            maxZoom: 11,
-          }
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Unable to fit city boundary:",
-        error
+    if (
+      bounds &&
+      bounds.isValid()
+    ) {
+      map.fitBounds(
+        bounds,
+        {
+          padding: [
+            45,
+            45,
+          ],
+          maxZoom: 12,
+        }
       );
     }
   }, [
-    geoBoundary,
+    geoJSON,
     map,
   ]);
 
@@ -207,78 +263,15 @@ function CityBoundsController({
 }
 
 /* ============================================================
-   ZONE STYLE
-============================================================ */
-
-function getZoneStyle(
-  color,
-  selected
-) {
-  return {
-    color: selected
-      ? "#26384A"
-      : "#64748B",
-
-    weight: selected
-      ? 3
-      : 1.5,
-
-    opacity: 1,
-
-    fillColor:
-      color,
-
-    fillOpacity:
-      selected
-        ? 0.55
-        : 0.38,
-
-    lineCap:
-      "round",
-
-    lineJoin:
-      "round",
-  };
-}
-
-/* ============================================================
-   CITY STYLE
-============================================================ */
-
-const CITY_STYLE = {
-  color: "#405268",
-
-  weight: 3,
-
-  opacity: 1,
-
-  fillColor:
-    "transparent",
-
-  fillOpacity: 0,
-
-  lineCap:
-    "round",
-
-  lineJoin:
-    "round",
-};
-
-/* ============================================================
-   COMPONENT
+   CITY MAP COMPONENT
 ============================================================ */
 
 export default function CityMapOverview({
-  cityId = CITY_ID,
+  cityId = DEFAULT_CITY_ID,
 }) {
   /* ----------------------------------------------------------
      STATE
   ---------------------------------------------------------- */
-
-  const [
-    cityData,
-    setCityData,
-  ] = useState(null);
 
   const [
     loading,
@@ -291,19 +284,14 @@ export default function CityMapOverview({
   ] = useState("");
 
   const [
+    cityData,
+    setCityData,
+  ] = useState(null);
+
+  const [
     selectedZone,
     setSelectedZone,
-  ] = useState("");
-
-  const [
-    selectedDivision,
-    setSelectedDivision,
-  ] = useState("");
-
-  const [
-    selectedWard,
-    setSelectedWard,
-  ] = useState("");
+  ] = useState("ALL");
 
   const [
     zoneDropdownOpen,
@@ -320,212 +308,121 @@ export default function CityMapOverview({
     setWardDropdownOpen,
   ] = useState(false);
 
-  const zoneDropdownRef =
-    useRef(null);
-
-  const divisionDropdownRef =
-    useRef(null);
-
-  const wardDropdownRef =
-    useRef(null);
-
-  /* ==========================================================
+  /* ----------------------------------------------------------
      FETCH CITY MAP DATA
-  ========================================================== */
+  ---------------------------------------------------------- */
 
-  const fetchCityMapData =
-    useCallback(
-      async () => {
-        try {
-          setLoading(true);
-          setError("");
+  useEffect(() => {
+    let cancelled = false;
 
-          const token =
-            localStorage.getItem(
-              "token"
-            );
+    async function loadCityMap() {
+      try {
+        setLoading(true);
+        setError("");
 
-          const endpoint =
-            `${API_BASE_URL}/api/master-citizen/map/city/${cityId}`;
-
-          console.log(
-            "================================"
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/master-citizen/map/city/${cityId}`,
+            {
+              method: "GET",
+              headers: {
+                Accept:
+                  "application/json",
+              },
+            }
           );
 
-          console.log(
-            "CITY MAP REQUEST"
+        if (!response.ok) {
+          throw new Error(
+            `City map request failed with status ${response.status}`
           );
+        }
 
-          console.log(
-            "Endpoint:",
-            endpoint
+        const result =
+          await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        /*
+         * Expected:
+         *
+         * {
+         *   success: true,
+         *   city: {...},
+         *   zones: [...]
+         * }
+         */
+        if (
+          !result ||
+          result.success === false
+        ) {
+          throw new Error(
+            result?.message ||
+              "Unable to load city map data."
           );
+        }
 
-          console.log(
-            "City ID:",
-            cityId
-          );
+        setCityData(
+          result
+        );
+      } catch (err) {
+        console.error(
+          "CITY MAP FETCH ERROR:",
+          err
+        );
 
-          console.log(
-            "================================"
-          );
-
-          const response =
-            await fetch(
-              endpoint,
-              {
-                method: "GET",
-
-                headers: {
-                  "Content-Type":
-                    "application/json",
-
-                  ...(token
-                    ? {
-                        Authorization:
-                          `Bearer ${token}`,
-                      }
-                    : {}),
-                },
-              }
-            );
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              `Map request failed: ${response.status}`
-            );
-          }
-
-          const result =
-            await response.json();
-
-          console.log(
-            "CITY MAP RESPONSE:",
-            result
-          );
-
-          if (
-            !result ||
-            result.success !==
-              true
-          ) {
-            throw new Error(
-              result?.message ||
-                "Invalid city map response."
-            );
-          }
-
-          setCityData(
-            result
-          );
-        } catch (requestError) {
-          console.error(
-            "CITY MAP ERROR:",
-            requestError
-          );
-
+        if (!cancelled) {
           setError(
-            requestError?.message ||
+            err.message ||
               "Unable to load city map."
           );
-        } finally {
+        }
+      } finally {
+        if (!cancelled) {
           setLoading(false);
         }
-      },
-      [cityId]
-    );
-
-  /* ==========================================================
-     INITIAL LOAD
-  ========================================================== */
-
-  useEffect(() => {
-    fetchCityMapData();
-  }, [
-    fetchCityMapData,
-  ]);
-
-  /* ==========================================================
-     CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
-  ========================================================== */
-
-  useEffect(() => {
-    function handleOutsideClick(
-      event
-    ) {
-      if (
-        zoneDropdownRef.current &&
-        !zoneDropdownRef.current.contains(
-          event.target
-        )
-      ) {
-        setZoneDropdownOpen(
-          false
-        );
-      }
-
-      if (
-        divisionDropdownRef.current &&
-        !divisionDropdownRef.current.contains(
-          event.target
-        )
-      ) {
-        setDivisionDropdownOpen(
-          false
-        );
-      }
-
-      if (
-        wardDropdownRef.current &&
-        !wardDropdownRef.current.contains(
-          event.target
-        )
-      ) {
-        setWardDropdownOpen(
-          false
-        );
       }
     }
 
-    document.addEventListener(
-      "mousedown",
-      handleOutsideClick
-    );
+    loadCityMap();
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleOutsideClick
-      );
+      cancelled = true;
     };
-  }, []);
+  }, [
+    cityId,
+  ]);
 
-  /* ==========================================================
+  /* ----------------------------------------------------------
      CITY
-  ========================================================== */
+  ---------------------------------------------------------- */
 
   const city =
     cityData?.city ||
     null;
 
-  /* ==========================================================
-     NORMALIZED CITY BOUNDARY
-  ========================================================== */
+  const cityName =
+    city?.cityName ||
+    city?.city_name ||
+    "Bangalore";
 
   const cityBoundary =
-    useMemo(() => {
-      return makeFeatureCollection(
-        city?.geoBoundary
-      );
-    }, [
-      city?.geoBoundary,
-    ]);
+    useMemo(
+      () =>
+        normalizeGeoJSON(
+          city?.geoBoundary ||
+            city?.geo_boundary
+        ),
+      [
+        city,
+      ]
+    );
 
-  /* ==========================================================
+  /* ----------------------------------------------------------
      ZONES
-  ========================================================== */
+  ---------------------------------------------------------- */
 
   const zones =
     useMemo(() => {
@@ -537,36 +434,39 @@ export default function CityMapOverview({
         return [];
       }
 
-      return cityData.zones;
-    }, [
-      cityData?.zones,
-    ]);
-
-  /* ==========================================================
-     NORMALIZED ZONE DATA
-  ========================================================== */
-
-  const normalizedZones =
-    useMemo(() => {
-      return zones
+      return cityData.zones
         .map(
           (
             zone,
             index
           ) => {
-            const zoneBoundary =
-              makeFeatureCollection(
-                zone?.geoBoundary
+            const name =
+              getZoneName(
+                zone
               );
 
             return {
-              ...zone,
+              raw:
+                zone,
 
-              zoneName:
-                zone?.zoneName ||
-                `Zone ${index + 1}`,
+              id:
+                zone?.id ??
+                zone?.zoneId ??
+                index + 1,
 
-              zoneBoundary,
+              name,
+
+              geoBoundary:
+                normalizeGeoJSON(
+                  getZoneBoundary(
+                    zone
+                  )
+                ),
+
+              tableName:
+                getZoneTableName(
+                  zone
+                ),
 
               color:
                 ZONE_COLORS[
@@ -578,722 +478,682 @@ export default function CityMapOverview({
         )
         .filter(
           (zone) =>
-            zone.zoneBoundary
+            zone.name
         );
     }, [
-      zones,
+      cityData,
     ]);
 
-  /* ==========================================================
-     FILTERED ZONES
-  ========================================================== */
+  /* ----------------------------------------------------------
+     SELECTED ZONE
+  ---------------------------------------------------------- */
 
-  const visibleZones =
-    useMemo(() => {
-      if (
-        !selectedZone
-      ) {
-        return normalizedZones;
-      }
+  const activeZone =
+    selectedZone === "ALL"
+      ? null
+      : zones.find(
+          (zone) =>
+            String(
+              zone.id
+            ) ===
+            String(
+              selectedZone
+            )
+        );
 
-      return normalizedZones.filter(
-        (zone) =>
-          zone.zoneName ===
-          selectedZone
-      );
-    }, [
-      normalizedZones,
-      selectedZone,
-    ]);
-
-  /* ==========================================================
+  /* ----------------------------------------------------------
      ZONE SELECTION
-  ========================================================== */
+  ---------------------------------------------------------- */
 
-  const handleZoneSelect =
-    useCallback(
-      (zoneName) => {
-        if (
-          zoneName ===
-          selectedZone
-        ) {
-          setSelectedZone(
-            ""
-          );
-
-          return;
-        }
-
-        setSelectedZone(
-          zoneName
-        );
-
-        setZoneDropdownOpen(
-          false
-        );
-      },
-      [selectedZone]
+  function handleZoneSelect(
+    zoneId
+  ) {
+    setSelectedZone(
+      zoneId
     );
 
-  /* ==========================================================
-     DIVISION SELECTION
-  ========================================================== */
-
-  const handleDivisionSelect =
-    useCallback(
-      (value) => {
-        setSelectedDivision(
-          value
-        );
-
-        setDivisionDropdownOpen(
-          false
-        );
-      },
-      []
+    setZoneDropdownOpen(
+      false
     );
+  }
 
-  /* ==========================================================
-     WARD SELECTION
-  ========================================================== */
-
-  const handleWardSelect =
-    useCallback(
-      (value) => {
-        setSelectedWard(
-          value
-        );
-
-        setWardDropdownOpen(
-          false
-        );
-      },
-      []
-    );
-
-  /* ==========================================================
+  /* ----------------------------------------------------------
      LOADING
-  ========================================================== */
+  ---------------------------------------------------------- */
 
   if (loading) {
     return (
-      <section className="w-full rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
-        <h2 className="mb-5 text-[24px] font-bold tracking-[-0.03em] text-slate-950">
-          CITY OVERVIEW MAP
-        </h2>
+      <div className="w-full">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[26px] font-semibold text-slate-950">
+            CITY OVERVIEW MAP
+          </h2>
 
-        <div className="relative h-[790px] w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-100">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-600 shadow-sm">
+          <div className="mt-5 flex h-[780px] items-center justify-center rounded-[20px] bg-slate-50">
+            <div className="text-[14px] font-medium text-slate-500">
               Loading city map...
             </div>
           </div>
         </div>
-      </section>
+      </div>
     );
   }
 
-  /* ==========================================================
+  /* ----------------------------------------------------------
      ERROR
-  ========================================================== */
+  ---------------------------------------------------------- */
 
   if (error) {
     return (
-      <section className="w-full rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
-        <h2 className="mb-5 text-[24px] font-bold tracking-[-0.03em] text-slate-950">
-          CITY OVERVIEW MAP
-        </h2>
+      <div className="w-full">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-[26px] font-semibold text-slate-950">
+            CITY OVERVIEW MAP
+          </h2>
 
-        <div className="flex h-[790px] items-center justify-center rounded-[20px] border border-red-100 bg-red-50">
-          <div className="max-w-md rounded-xl border border-red-200 bg-white px-6 py-5 text-center shadow-sm">
-            <p className="text-sm font-semibold text-red-600">
-              Unable to load city map
-            </p>
+          <div className="mt-5 flex h-[500px] items-center justify-center rounded-[20px] bg-slate-50">
+            <div className="text-center">
+              <p className="text-[15px] font-semibold text-red-500">
+                Failed to load city map
+              </p>
 
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              {error}
-            </p>
-
-            <button
-              type="button"
-              onClick={
-                fetchCityMapData
-              }
-              className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-            >
-              Retry
-            </button>
+              <p className="mt-2 text-[13px] text-slate-500">
+                {error}
+              </p>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   /* ==========================================================
-     MAIN UI
+     RENDER
   ========================================================== */
 
   return (
-    <section className="w-full rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
+    <div className="w-full">
       {/* ======================================================
-         TITLE
+          OUTER CARD
       ====================================================== */}
 
-      <h2 className="mb-5 text-[24px] font-bold tracking-[-0.03em] text-slate-950">
-        CITY OVERVIEW MAP
-      </h2>
+      <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
 
-      {/* ======================================================
-         MAP
-      ====================================================== */}
+        {/* ====================================================
+            TITLE
+        ==================================================== */}
 
-      <div className="relative h-[790px] w-full overflow-hidden rounded-[20px] border border-slate-200">
-        <MapContainer
-          center={[
-            12.9716,
-            77.5946,
-          ]}
-          zoom={10}
-          scrollWheelZoom={true}
-          zoomControl={true}
-          className="h-full w-full"
-          style={{
-            height:
-              "100%",
-            width:
-              "100%",
-          }}
-        >
-          {/* ==================================================
-             GREY CARTO BASE MAP
-          ================================================== */}
+        <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-slate-950">
+          CITY OVERVIEW MAP
+        </h2>
 
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
+        {/* ====================================================
+            MAP
+        ==================================================== */}
 
-          {/* ==================================================
-             FIT TO CITY
-          ================================================== */}
+        <div className="relative mt-6 h-[790px] overflow-hidden rounded-[20px] border border-slate-200">
 
-          {cityBoundary && (
-            <CityBoundsController
-              geoBoundary={
-                cityBoundary
-              }
+          <MapContainer
+            center={[
+              12.9716,
+              77.5946,
+            ]}
+            zoom={10}
+            minZoom={8}
+            maxZoom={17}
+            zoomControl={true}
+            scrollWheelZoom={true}
+            className="h-full w-full"
+          >
+
+            {/* ==================================================
+                GREY BASE MAP
+            ================================================== */}
+
+            <TileLayer
+              attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
-          )}
 
-          {/* ==================================================
-             CITY OUTLINE
-             
-             IMPORTANT:
-             NO FILL.
-          ================================================== */}
+            {/* ==================================================
+                CITY BOUNDARY
+                OUTLINE ONLY
+            ================================================== */}
 
-          {cityBoundary && (
-            <GeoJSON
-              key={`city-${city?.id || cityId}`}
-              data={
-                cityBoundary
-              }
-              style={() =>
-                CITY_STYLE
-              }
-              interactive={
-                false
-              }
-            />
-          )}
-
-          {/* ==================================================
-             ZONE BOUNDARIES + FILLS
-          ================================================== */}
-
-          {visibleZones.map(
-            (
-              zone,
-              index
-            ) => {
-              const isSelected =
-                selectedZone ===
-                zone.zoneName;
-
-              return (
+            {cityBoundary && (
+              <>
                 <GeoJSON
-                  key={`zone-${zone.zoneName}-${index}`}
+                  key={`city-boundary-${cityId}`}
                   data={
-                    zone.zoneBoundary
+                    cityBoundary
                   }
-                  style={() =>
-                    getZoneStyle(
-                      zone.color,
-                      isSelected
-                    )
+                  style={{
+                    color:
+                      "#34465A",
+
+                    weight:
+                      4,
+
+                    opacity:
+                      0.95,
+
+                    fill:
+                      false,
+
+                    fillOpacity:
+                      0,
+                  }}
+                />
+
+                <MapBoundsController
+                  geoJSON={
+                    cityBoundary
                   }
-                  onEachFeature={(
-                    feature,
-                    layer
-                  ) => {
-                    layer.bindTooltip(
-                      zone.zoneName,
-                      {
-                        sticky:
-                          true,
+                />
+              </>
+            )}
 
-                        direction:
-                          "top",
+            {/* ==================================================
+                ZONE BOUNDARIES
+            ================================================== */}
 
-                        opacity:
-                          0.95,
+            {zones.map(
+              (
+                zone
+              ) => {
+                if (
+                  !zone.geoBoundary
+                ) {
+                  return null;
+                }
 
-                        className:
-                          "sewac-zone-tooltip",
-                      }
+                const isActive =
+                  activeZone &&
+                  String(
+                    activeZone.id
+                  ) ===
+                    String(
+                      zone.id
                     );
 
-                    layer.on({
+                const isAll =
+                  selectedZone ===
+                  "ALL";
+
+                return (
+                  <GeoJSON
+                    key={`zone-${zone.id}-${zone.name}`}
+                    data={
+                      zone.geoBoundary
+                    }
+                    style={{
+                      color:
+                        isActive
+                          ? "#1E293B"
+                          : zone.color,
+
+                      weight:
+                        isActive
+                          ? 4
+                          : 2,
+
+                      opacity:
+                        isActive
+                          ? 1
+                          : 0.9,
+
+                      fillColor:
+                        zone.color,
+
+                      fillOpacity:
+                        isActive
+                          ? 0.38
+                          : isAll
+                          ? 0.18
+                          : 0.10,
+
+                      dashArray:
+                        isActive
+                          ? undefined
+                          : undefined,
+                    }}
+                    eventHandlers={{
+                      click: () =>
+                        handleZoneSelect(
+                          zone.id
+                        ),
+
                       mouseover:
-                        () => {
-                          if (
-                            !isSelected
-                          ) {
-                            layer.setStyle(
-                              {
-                                weight: 2.5,
-                                fillOpacity:
-                                  0.55,
-                              }
-                            );
-                          }
+                        (
+                          event
+                        ) => {
+                          const layer =
+                            event.target;
+
+                          layer.setStyle(
+                            {
+                              weight:
+                                3,
+
+                              fillOpacity:
+                                0.30,
+                            }
+                          );
                         },
 
                       mouseout:
-                        () => {
-                          if (
-                            !isSelected
-                          ) {
-                            layer.setStyle(
-                              getZoneStyle(
-                                zone.color,
-                                false
-                              )
-                            );
-                          }
-                        },
+                        (
+                          event
+                        ) => {
+                          const layer =
+                            event.target;
 
-                      click:
-                        () => {
-                          setSelectedZone(
-                            zone.zoneName
+                          const currentlyActive =
+                            activeZone &&
+                            String(
+                              activeZone.id
+                            ) ===
+                              String(
+                                zone.id
+                              );
+
+                          layer.setStyle(
+                            {
+                              weight:
+                                currentlyActive
+                                  ? 4
+                                  : 2,
+
+                              fillOpacity:
+                                currentlyActive
+                                  ? 0.38
+                                  : selectedZone ===
+                                    "ALL"
+                                  ? 0.18
+                                  : 0.10,
+                            }
                           );
                         },
-                    });
-                  }}
-                />
-              );
-            }
-          )}
-        </MapContainer>
-
-        {/* ====================================================
-           MAP HEADER CARD
-        ==================================================== */}
-
-        <div className="pointer-events-none absolute left-7 top-7 z-[1000]">
-          <div className="pointer-events-auto flex h-[76px] w-[500px] items-center justify-between rounded-[18px] border border-slate-200 bg-white px-6 shadow-[0_5px_18px_rgba(15,23,42,0.10)]">
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center text-slate-500">
-                <MapIcon
-                  size={31}
-                  strokeWidth={
-                    1.8
-                  }
-                />
-              </div>
-
-              <div>
-                <p className="text-[20px] font-semibold tracking-[-0.02em] text-slate-700">
-                  City Overview
-                  Map
-                </p>
-
-                {city?.cityName && (
-                  <p className="mt-0.5 text-[11px] font-medium text-slate-400">
-                    {city.cityName}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <ChevronDown
-              size={21}
-              strokeWidth={
-                2
-              }
-              className="text-slate-600"
-            />
-          </div>
-        </div>
-
-        {/* ====================================================
-           RIGHT FILTER PANEL
-        ==================================================== */}
-
-        <div className="absolute right-7 top-7 z-[1000] w-[285px]">
-          <div className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-[0_5px_18px_rgba(15,23,42,0.10)]">
-            {/* ================================================
-               TITLE
-            ================================================= */}
-
-            <div className="mb-4">
-              <p className="text-[14px] font-bold tracking-[-0.01em] text-slate-700">
-                MAP FILTERS
-              </p>
-            </div>
-
-            {/* ================================================
-               ZONE
-            ================================================= */}
-
-            <div
-              ref={
-                zoneDropdownRef
-              }
-              className="mb-4"
-            >
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.04em] text-slate-400">
-                ZONE
-              </label>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setZoneDropdownOpen(
-                    (previous) =>
-                      !previous
-                  )
-                }
-                className="flex h-[50px] w-full items-center justify-between rounded-[11px] border border-slate-200 bg-white px-4 text-left transition hover:border-slate-300"
-              >
-                <span className="truncate text-[13px] font-semibold text-slate-600">
-                  {selectedZone ||
-                    "All Zones"}
-                </span>
-
-                <ChevronDown
-                  size={17}
-                  className={`shrink-0 text-slate-500 transition-transform ${
-                    zoneDropdownOpen
-                      ? "rotate-180"
-                      : ""
-                  }`}
-                />
-              </button>
-
-              {zoneDropdownOpen && (
-                <div className="relative z-[1100] mt-1 max-h-[250px] overflow-y-auto rounded-[11px] border border-slate-200 bg-white p-1 shadow-[0_8px_25px_rgba(15,23,42,0.12)]">
-                  {/* ALL ZONES */}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedZone(
-                        ""
-                      );
-
-                      setZoneDropdownOpen(
-                        false
-                      );
                     }}
-                    className={`w-full rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold transition ${
-                      !selectedZone
-                        ? "bg-slate-100 text-slate-800"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    All Zones
-                  </button>
-
-                  {/* ACTUAL ZONES */}
-
-                  {zones.map(
-                    (
-                      zone,
-                      index
-                    ) => (
-                      <button
-                        key={`zone-option-${index}`}
-                        type="button"
-                        onClick={() =>
-                          handleZoneSelect(
-                            zone.zoneName
-                          )
-                        }
-                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-medium transition ${
-                          selectedZone ===
-                          zone.zoneName
-                            ? "bg-slate-100 font-semibold text-slate-800"
-                            : "text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-400"
-                          style={{
-                            backgroundColor:
-                              ZONE_COLORS[
-                                index %
-                                  ZONE_COLORS.length
-                              ],
-                          }}
-                        />
-
-                        <span className="truncate">
-                          {
-                            zone.zoneName
-                          }
-                        </span>
-                      </button>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ================================================
-               DIVISION
-            ================================================= */}
-
-            <div
-              ref={
-                divisionDropdownRef
+                  />
+                );
               }
-              className="mb-4"
-            >
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.04em] text-slate-400">
-                DIVISION
-              </label>
+            )}
 
-              <button
-                type="button"
-                onClick={() =>
-                  setDivisionDropdownOpen(
-                    (previous) =>
-                      !previous
-                  )
-                }
-                className="flex h-[50px] w-full items-center justify-between rounded-[11px] border border-slate-200 bg-white px-4 text-left transition hover:border-slate-300"
-              >
-                <span className="truncate text-[13px] font-semibold text-slate-600">
-                  {selectedDivision ||
-                    "All Divisions"}
-                </span>
+          </MapContainer>
+
+          {/* ====================================================
+              MAP HEADER
+          ==================================================== */}
+
+          <div className="absolute left-7 top-7 z-[1000] w-[620px] max-w-[calc(100%-56px)]">
+            <div className="rounded-[18px] border border-slate-200 bg-white px-7 py-5 shadow-[0_8px_30px_rgba(15,23,42,0.10)]">
+
+              <div className="flex items-center justify-between">
+
+                <div className="flex items-center gap-5">
+
+                  <MapIcon
+                    size={
+                      29
+                    }
+                    strokeWidth={
+                      2
+                    }
+                    className="text-slate-500"
+                  />
+
+                  <div>
+                    <div className="text-[23px] font-semibold text-slate-700">
+                      City Overview Map
+                    </div>
+
+                    <div className="mt-1 text-[13px] font-medium text-slate-400">
+                      {cityName}
+                    </div>
+                  </div>
+
+                </div>
 
                 <ChevronDown
-                  size={17}
-                  className={`shrink-0 text-slate-500 transition-transform ${
-                    divisionDropdownOpen
-                      ? "rotate-180"
-                      : ""
-                  }`}
+                  size={
+                    22
+                  }
+                  className="text-slate-600"
                 />
-              </button>
 
-              {divisionDropdownOpen && (
-                <div className="relative z-[1100] mt-1 rounded-[11px] border border-slate-200 bg-white p-1 shadow-[0_8px_25px_rgba(15,23,42,0.12)]">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleDivisionSelect(
-                        ""
-                      )
-                    }
-                    className="w-full rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    All Divisions
-                  </button>
-
-                  <div className="px-3 py-2 text-[11px] leading-4 text-slate-400">
-                    Division data will
-                    populate when the
-                    division endpoint is
-                    connected.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ================================================
-               WARD
-            ================================================= */}
-
-            <div
-              ref={
-                wardDropdownRef
-              }
-            >
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.04em] text-slate-400">
-                WARD
-              </label>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setWardDropdownOpen(
-                    (previous) =>
-                      !previous
-                  )
-                }
-                className="flex h-[50px] w-full items-center justify-between rounded-[11px] border border-slate-200 bg-white px-4 text-left transition hover:border-slate-300"
-              >
-                <span className="truncate text-[13px] font-semibold text-slate-600">
-                  {selectedWard ||
-                    "All Wards"}
-                </span>
-
-                <ChevronDown
-                  size={17}
-                  className={`shrink-0 text-slate-500 transition-transform ${
-                    wardDropdownOpen
-                      ? "rotate-180"
-                      : ""
-                  }`}
-                />
-              </button>
-
-              {wardDropdownOpen && (
-                <div className="relative z-[1100] mt-1 rounded-[11px] border border-slate-200 bg-white p-1 shadow-[0_8px_25px_rgba(15,23,42,0.12)]">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleWardSelect(
-                        ""
-                      )
-                    }
-                    className="w-full rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    All Wards
-                  </button>
-
-                  <div className="px-3 py-2 text-[11px] leading-4 text-slate-400">
-                    Ward data will
-                    populate when the
-                    ward endpoint is
-                    connected.
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ====================================================
-           SELECTED ZONE INDICATOR
-        ==================================================== */}
-
-        {selectedZone && (
-          <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_5px_18px_rgba(15,23,42,0.12)]">
-              <span
-                className="h-3 w-3 rounded-full border border-slate-400"
-                style={{
-                  backgroundColor:
-                    normalizedZones.find(
-                      (
-                        zone
-                      ) =>
-                        zone.zoneName ===
-                        selectedZone
-                    )?.color ||
-                    "#DCEBFF",
-                }}
-              />
-
-              <span className="text-[12px] font-semibold text-slate-600">
-                {selectedZone}
-              </span>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedZone(
-                    ""
-                  )
-                }
-                className="ml-1 text-[11px] font-bold text-slate-400 transition hover:text-slate-700"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ====================================================
-           NO ZONE BOUNDARIES
-        ==================================================== */}
-
-        {!loading &&
-          cityBoundary &&
-          normalizedZones.length ===
-            0 && (
-            <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2">
-              <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-[12px] font-semibold text-slate-500 shadow-[0_5px_18px_rgba(15,23,42,0.10)]">
-                No zone boundaries
-                available.
               </div>
             </div>
+          </div>
+
+          {/* ====================================================
+              RIGHT FILTER PANEL
+          ==================================================== */}
+
+          <div className="absolute right-7 top-7 z-[1000] w-[355px]">
+
+            <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.10)]">
+
+              {/* ================================================
+                  FILTER TITLE
+              ================================================= */}
+
+              <div className="mb-6 text-[18px] font-bold text-slate-700">
+                MAP FILTERS
+              </div>
+
+              {/* ================================================
+                  ZONE
+              ================================================= */}
+
+              <div className="relative">
+
+                <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+                  ZONE
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setZoneDropdownOpen(
+                      (prev) =>
+                        !prev
+                    )
+                  }
+                  className="flex h-[62px] w-full items-center justify-between rounded-[14px] border border-slate-300 bg-white px-5 text-left transition hover:border-slate-400"
+                >
+
+                  <span className="truncate text-[16px] font-medium text-slate-600">
+                    {activeZone
+                      ? activeZone.name
+                      : "All Zones"}
+                  </span>
+
+                  {zoneDropdownOpen ? (
+                    <ChevronUp
+                      size={
+                        19
+                      }
+                      className="shrink-0 text-slate-500"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={
+                        19
+                      }
+                      className="shrink-0 text-slate-500"
+                    />
+                  )}
+
+                </button>
+
+                {/* ==============================================
+                    ZONE DROPDOWN
+                =============================================== */}
+
+                {zoneDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-[91px] z-[1100] overflow-hidden rounded-[15px] border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.14)]">
+
+                    {/* ALL ZONES */}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleZoneSelect(
+                          "ALL"
+                        )
+                      }
+                      className={`flex w-full items-center gap-3 px-5 py-4 text-left text-[14px] font-semibold transition ${
+                        selectedZone ===
+                        "ALL"
+                          ? "bg-slate-100 text-slate-800"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full border border-slate-400"
+                        style={{
+                          background:
+                            "#E2E8F0",
+                        }}
+                      />
+
+                      <span>
+                        All Zones
+                      </span>
+                    </button>
+
+                    {/* ZONES */}
+
+                    <div className="max-h-[300px] overflow-y-auto">
+
+                      {zones.map(
+                        (
+                          zone
+                        ) => {
+                          const active =
+                            String(
+                              selectedZone
+                            ) ===
+                            String(
+                              zone.id
+                            );
+
+                          return (
+                            <button
+                              key={
+                                zone.id
+                              }
+                              type="button"
+                              onClick={() =>
+                                handleZoneSelect(
+                                  zone.id
+                                )
+                              }
+                              className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${
+                                active
+                                  ? "bg-slate-50"
+                                  : "hover:bg-slate-50"
+                              }`}
+                            >
+
+                              <span
+                                className="h-3 w-3 shrink-0 rounded-full border"
+                                style={{
+                                  backgroundColor:
+                                    zone.color,
+                                  borderColor:
+                                    active
+                                      ? "#334155"
+                                      : "#94A3B8",
+                                }}
+                              />
+
+                              <span
+                                className={`truncate text-[14px] ${
+                                  active
+                                    ? "font-semibold text-slate-800"
+                                    : "font-medium text-slate-600"
+                                }`}
+                                title={
+                                  zone.name
+                                }
+                              >
+                                {
+                                  zone.name
+                                }
+                              </span>
+
+                            </button>
+                          );
+                        }
+                      )}
+
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* ================================================
+                  DIVISION
+              ================================================= */}
+
+              <div className="mt-7">
+
+                <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+                  DIVISION
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDivisionDropdownOpen(
+                      (prev) =>
+                        !prev
+                    )
+                  }
+                  className="flex h-[62px] w-full items-center justify-between rounded-[14px] border border-slate-300 bg-white px-5 text-left"
+                >
+
+                  <span className="text-[16px] font-medium text-slate-600">
+                    All Divisions
+                  </span>
+
+                  {divisionDropdownOpen ? (
+                    <ChevronUp
+                      size={
+                        19
+                      }
+                      className="text-slate-500"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={
+                        19
+                      }
+                      className="text-slate-500"
+                    />
+                  )}
+
+                </button>
+
+                {divisionDropdownOpen && (
+                  <div className="mt-2 rounded-[14px] border border-slate-200 bg-white p-4 shadow-lg">
+                    <div className="text-[13px] text-slate-500">
+                      Select a zone first to load divisions.
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* ================================================
+                  WARD
+              ================================================= */}
+
+              <div className="mt-7">
+
+                <label className="mb-2 block text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+                  WARD
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWardDropdownOpen(
+                      (prev) =>
+                        !prev
+                    )
+                  }
+                  className="flex h-[62px] w-full items-center justify-between rounded-[14px] border border-slate-300 bg-white px-5 text-left"
+                >
+
+                  <span className="text-[16px] font-medium text-slate-600">
+                    All Wards
+                  </span>
+
+                  {wardDropdownOpen ? (
+                    <ChevronUp
+                      size={
+                        19
+                      }
+                      className="text-slate-500"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={
+                        19
+                      }
+                      className="text-slate-500"
+                    />
+                  )}
+
+                </button>
+
+                {wardDropdownOpen && (
+                  <div className="mt-2 rounded-[14px] border border-slate-200 bg-white p-4 shadow-lg">
+                    <div className="text-[13px] text-slate-500">
+                      Select a division first to load wards.
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+          </div>
+
+          {/* ====================================================
+              SELECTED ZONE INFO
+          ==================================================== */}
+
+          {activeZone && (
+            <div className="absolute bottom-7 left-7 z-[1000] max-w-[390px]">
+
+              <div className="rounded-[16px] border border-slate-200 bg-white px-5 py-4 shadow-[0_8px_30px_rgba(15,23,42,0.12)]">
+
+                <div className="flex items-start gap-3">
+
+                  <span
+                    className="mt-1 h-3 w-3 shrink-0 rounded-full border border-slate-500"
+                    style={{
+                      backgroundColor:
+                        activeZone.color,
+                    }}
+                  />
+
+                  <div>
+
+                    <div className="text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+                      SELECTED ZONE
+                    </div>
+
+                    <div className="mt-1 text-[15px] font-semibold text-slate-700">
+                      {
+                        activeZone.name
+                      }
+                    </div>
+
+                    {activeZone.tableName && (
+                      <div className="mt-1 text-[11px] text-slate-400">
+                        {
+                          activeZone.tableName
+                        }
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
           )}
+
+        </div>
       </div>
-
-      {/* ======================================================
-         SMALL MAP CSS
-      ====================================================== */}
-
-      <style>
-        {`
-          .sewac-zone-tooltip {
-            border: 1px solid #dbe3ec !important;
-            border-radius: 8px !important;
-            padding: 6px 9px !important;
-            font-size: 11px !important;
-            font-weight: 600 !important;
-            color: #334155 !important;
-            background: #ffffff !important;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
-          }
-
-          .sewac-zone-tooltip:before {
-            border-top-color: #ffffff !important;
-          }
-
-          .leaflet-container {
-            font-family: inherit;
-            background: #f5f7f8;
-          }
-
-          .leaflet-control-zoom {
-            border: 1px solid #dbe3ec !important;
-            border-radius: 8px !important;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08) !important;
-          }
-
-          .leaflet-control-zoom a {
-            color: #475569 !important;
-            background: #ffffff !important;
-            border-color: #e2e8f0 !important;
-          }
-
-          .leaflet-control-zoom a:hover {
-            background: #f8fafc !important;
-          }
-
-          .leaflet-control-attribution {
-            font-size: 10px !important;
-          }
-        `}
-      </style>
-    </section>
+    </div>
   );
 }
