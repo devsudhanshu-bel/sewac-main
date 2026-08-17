@@ -17,63 +17,27 @@ import {
 
 import L from "leaflet";
 
-import {
-  ChevronDown,
-  ChevronUp,
-  Map as MapIcon,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Map as MapIcon } from "lucide-react";
+
+import { useFilters } from "../../contexts/FilterContext";
 
 import "leaflet/dist/leaflet.css";
-
 
 /* ============================================================
    CONFIG
 ============================================================ */
 
-/*
- * Render backend.
- *
- * If VITE_API_BASE_URL exists, it will be used.
- *
- * Otherwise:
- *
- * https://sewac-main.onrender.com
- */
-
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://sewac-main.onrender.com";
-
+  import.meta.env.VITE_API_BASE_URL || "https://sewac-main.onrender.com";
 
 const DEFAULT_CITY_ID = 1;
-
-
-/*
- * Backend endpoint:
- *
- * GET
- * /api/master-citizen/map/city/:cityId
- *
- * Example:
- *
- * https://sewac-main.onrender.com
- * /api/master-citizen/map/city/1
- */
 
 const CITY_MAP_ENDPOINT = (cityId) =>
   `${API_BASE_URL}/api/master-citizen/map/city/${cityId}`;
 
-
 /* ============================================================
    ZONE COLORS
 ============================================================ */
-
-/*
- * Each zone gets one stable color based on its index.
- *
- * These are intentionally soft because the map itself is
- * light/grey.
- */
 
 const ZONE_COLORS = [
   "#60A5FA",
@@ -88,74 +52,40 @@ const ZONE_COLORS = [
   "#FB7185",
 ];
 
-
 /* ============================================================
    HELPERS
 ============================================================ */
 
-
 /*
- * ------------------------------------------------------------
- * PARSE JSON
- * ------------------------------------------------------------
+ * Parse JSON/JSONB values safely.
  */
-
 function parseGeoJSON(value) {
-  if (
-    value === null ||
-    value === undefined
-  ) {
+  if (value === null || value === undefined) {
     return null;
   }
 
-
-  if (
-    typeof value === "object"
-  ) {
+  if (typeof value === "object") {
     return value;
   }
 
-
-  if (
-    typeof value === "string"
-  ) {
+  if (typeof value === "string") {
     try {
       return JSON.parse(value);
     } catch (error) {
-      console.warn(
-        "Unable to parse GeoJSON:",
-        error
-      );
+      console.warn("Unable to parse GeoJSON:", error);
 
       return null;
     }
   }
 
-
   return null;
 }
 
-
 /*
- * ------------------------------------------------------------
- * DETECT COORDINATE PAIR
- * ------------------------------------------------------------
- *
- * A coordinate pair is:
+ * Check whether a value is:
  *
  * [number, number]
- *
- * Example:
- *
- * [77.5946, 12.9716]
- *
- * or:
- *
- * [12.9716, 77.5946]
- *
- * ------------------------------------------------------------
  */
-
 function isCoordinatePair(value) {
   return (
     Array.isArray(value) &&
@@ -165,203 +95,130 @@ function isCoordinatePair(value) {
   );
 }
 
-
 /*
- * ------------------------------------------------------------
- * SWAP LAT/LNG
- * ------------------------------------------------------------
+ * Swap:
  *
- * IMPORTANT:
+ * [latitude, longitude]
  *
- * Your zone tables currently return coordinates as:
+ * into:
  *
- * [LATITUDE, LONGITUDE]
- *
- * Example:
- *
- * [13.0389658, 77.6437683]
- *
- * Leaflet/GeoJSON expects:
- *
- * [LONGITUDE, LATITUDE]
- *
- * Therefore:
- *
- * [13.0389658, 77.6437683]
- *
- * becomes:
- *
- * [77.6437683, 13.0389658]
- *
- * ------------------------------------------------------------
+ * [longitude, latitude]
  */
-
-function swapCoordinatePair(
-  coordinate
-) {
-  if (
-    !isCoordinatePair(
-      coordinate
-    )
-  ) {
+function swapCoordinatePair(coordinate) {
+  if (!isCoordinatePair(coordinate)) {
     return coordinate;
   }
 
-
-  return [
-    coordinate[1],
-    coordinate[0],
-    ...coordinate.slice(2),
-  ];
+  return [coordinate[1], coordinate[0]];
 }
 
+/*
+ * Recursively swap coordinates.
+ */
+function swapCoordinatesDeep(value) {
+  if (isCoordinatePair(value)) {
+    return swapCoordinatePair(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(swapCoordinatesDeep);
+  }
+
+  return value;
+}
 
 /*
- * ------------------------------------------------------------
- * RECURSIVELY SWAP COORDINATES
- * ------------------------------------------------------------
+ * Normalize geometry.
+ */
+function normalizeGeometry(geometry, swapCoordinates = false) {
+  if (!geometry) {
+    return null;
+  }
+
+  /*
+   * GeometryCollection
+   */
+  if (geometry.type === "GeometryCollection") {
+    return {
+      ...geometry,
+
+      geometries: Array.isArray(geometry.geometries)
+        ? geometry.geometries.map((item) =>
+            normalizeGeometry(item, swapCoordinates),
+          )
+        : [],
+    };
+  }
+
+  /*
+   * Normal geometry.
+   */
+  if (Array.isArray(geometry.coordinates)) {
+    return {
+      ...geometry,
+
+      coordinates: swapCoordinates
+        ? swapCoordinatesDeep(geometry.coordinates)
+        : geometry.coordinates,
+    };
+  }
+
+  return geometry;
+}
+
+/*
+ * Normalize arbitrary GeoJSON.
  *
- * Handles:
+ * Supports:
  *
+ * FeatureCollection
+ * Feature
  * Polygon
  * MultiPolygon
  * LineString
  * MultiLineString
- *
- * and arbitrary nested coordinate arrays.
- *
- * ------------------------------------------------------------
- */
-
-function swapCoordinatesDeep(
-  coordinates
-) {
-  if (
-    !Array.isArray(
-      coordinates
-    )
-  ) {
-    return coordinates;
-  }
-
-
-  if (
-    isCoordinatePair(
-      coordinates
-    )
-  ) {
-    return swapCoordinatePair(
-      coordinates
-    );
-  }
-
-
-  return coordinates.map(
-    (item) =>
-      swapCoordinatesDeep(
-        item
-      )
-  );
-}
-
-
-/*
- * ------------------------------------------------------------
- * NORMALIZE GEOJSON
- * ------------------------------------------------------------
- *
- * Converts:
- *
- * Polygon
- * MultiPolygon
- * Feature
- * FeatureCollection
+ * Point
+ * MultiPoint
  * GeometryCollection
- *
- * into something Leaflet can directly consume.
- *
- * ------------------------------------------------------------
  */
-
-function normalizeGeoJSON(
-  value,
-  swapCoordinates = false
-) {
-  const parsed =
-    parseGeoJSON(
-      value
-    );
-
+function normalizeGeoJSON(value, swapCoordinates = false) {
+  const parsed = parseGeoJSON(value);
 
   if (!parsed) {
     return null;
   }
 
-
   /*
-   * ----------------------------------------------------------
-   * FEATURE COLLECTION
-   * ----------------------------------------------------------
+   * FeatureCollection
    */
-
-  if (
-    parsed.type ===
-    "FeatureCollection"
-  ) {
+  if (parsed.type === "FeatureCollection") {
     return {
       ...parsed,
 
-      features:
-        Array.isArray(
-          parsed.features
-        )
-          ? parsed.features.map(
-              (feature) =>
-                normalizeGeoJSON(
-                  feature,
-                  swapCoordinates
-                )
-            )
-          : [],
+      features: Array.isArray(parsed.features)
+        ? parsed.features.map((feature) => ({
+            ...feature,
+
+            geometry: normalizeGeometry(feature.geometry, swapCoordinates),
+          }))
+        : [],
     };
   }
 
-
   /*
-   * ----------------------------------------------------------
-   * FEATURE
-   * ----------------------------------------------------------
+   * Feature
    */
-
-  if (
-    parsed.type ===
-    "Feature"
-  ) {
-    if (
-      !parsed.geometry
-    ) {
-      return parsed;
-    }
-
-
+  if (parsed.type === "Feature") {
     return {
       ...parsed,
 
-      geometry:
-        normalizeGeometry(
-          parsed.geometry,
-          swapCoordinates
-        ),
+      geometry: normalizeGeometry(parsed.geometry, swapCoordinates),
     };
   }
 
-
   /*
-   * ----------------------------------------------------------
-   * RAW GEOMETRY
-   * ----------------------------------------------------------
+   * Raw geometry.
    */
-
   if (
     [
       "Point",
@@ -371,223 +228,82 @@ function normalizeGeoJSON(
       "Polygon",
       "MultiPolygon",
       "GeometryCollection",
-    ].includes(
-      parsed.type
-    )
+    ].includes(parsed.type)
   ) {
     return {
       type: "Feature",
 
-      properties:
-        parsed.properties ||
-        {},
+      properties: parsed.properties || {},
 
-      geometry:
-        normalizeGeometry(
-          parsed,
-          swapCoordinates
-        ),
+      geometry: normalizeGeometry(parsed, swapCoordinates),
     };
   }
-
 
   /*
-   * ----------------------------------------------------------
-   * OBJECT WITH GEOMETRY
-   * ----------------------------------------------------------
+   * Object containing geometry.
    */
-
-  if (
-    parsed.geometry &&
-    typeof parsed.geometry ===
-      "object"
-  ) {
+  if (parsed.geometry && typeof parsed.geometry === "object") {
     return {
       type: "Feature",
 
-      properties:
-        parsed.properties ||
-        {},
+      properties: parsed.properties || {},
 
-      geometry:
-        normalizeGeometry(
-          parsed.geometry,
-          swapCoordinates
-        ),
+      geometry: normalizeGeometry(parsed.geometry, swapCoordinates),
     };
   }
-
 
   return null;
 }
 
-
 /*
- * ------------------------------------------------------------
- * NORMALIZE GEOMETRY
- * ------------------------------------------------------------
+ * Calculate Leaflet bounds.
  */
-
-function normalizeGeometry(
-  geometry,
-  swapCoordinates
-) {
-  if (!geometry) {
-    return null;
-  }
-
-
-  /*
-   * GeometryCollection
-   */
-
-  if (
-    geometry.type ===
-    "GeometryCollection"
-  ) {
-    return {
-      ...geometry,
-
-      geometries:
-        Array.isArray(
-          geometry.geometries
-        )
-          ? geometry.geometries.map(
-              (item) =>
-                normalizeGeometry(
-                  item,
-                  swapCoordinates
-                )
-            )
-          : [],
-    };
-  }
-
-
-  /*
-   * Normal geometry with coordinates
-   */
-
-  if (
-    Array.isArray(
-      geometry.coordinates
-    )
-  ) {
-    return {
-      ...geometry,
-
-      coordinates:
-        swapCoordinates
-          ? swapCoordinatesDeep(
-              geometry.coordinates
-            )
-          : geometry.coordinates,
-    };
-  }
-
-
-  return geometry;
-}
-
-
-/*
- * ------------------------------------------------------------
- * GEOJSON BOUNDS
- * ------------------------------------------------------------
- */
-
-function getGeoJSONBounds(
-  geoJSON
-) {
+function getGeoJSONBounds(geoJSON) {
   try {
     if (!geoJSON) {
       return null;
     }
 
+    const layer = L.geoJSON(geoJSON);
 
-    const layer =
-      L.geoJSON(
-        geoJSON
-      );
+    const bounds = layer.getBounds();
 
-
-    const bounds =
-      layer.getBounds();
-
-
-    if (
-      bounds &&
-      bounds.isValid()
-    ) {
+    if (bounds && bounds.isValid()) {
       return bounds;
     }
 
-
     return null;
   } catch (error) {
-    console.warn(
-      "Unable to calculate GeoJSON bounds:",
-      error
-    );
+    console.warn("Unable to calculate GeoJSON bounds:", error);
 
     return null;
   }
 }
 
+/* ============================================================
+   ZONE HELPERS
+============================================================ */
 
-/*
- * ------------------------------------------------------------
- * ZONE NAME
- * ------------------------------------------------------------
- */
-
-function getZoneName(
-  zone
-) {
-  if (
-    typeof zone ===
-    "string"
-  ) {
+function getZoneName(zone) {
+  if (typeof zone === "string") {
     return zone;
   }
 
-
-  return (
-    zone?.zoneName ||
-    zone?.zone_name ||
-    zone?.name ||
-    "Unnamed Zone"
-  );
+  return zone?.zoneName || zone?.zone_name || zone?.name || "Unnamed Zone";
 }
 
-
-/*
- * ------------------------------------------------------------
- * ZONE BOUNDARY
- * ------------------------------------------------------------
- *
- * IMPORTANT:
- *
- * The backend zone coordinates are currently:
- *
- * [latitude, longitude]
- *
- * Therefore swapCoordinates = true.
- *
- * ------------------------------------------------------------
- */
-
-function getZoneBoundary(
-  zone
-) {
-  if (
-    !zone ||
-    typeof zone ===
-      "string"
-  ) {
+function getZoneId(zone) {
+  if (!zone) {
     return null;
   }
 
+  return zone?.id ?? zone?.zoneId ?? zone?.zone_id ?? null;
+}
+
+function getZoneBoundary(zone) {
+  if (!zone || typeof zone === "string") {
+    return null;
+  }
 
   const rawBoundary =
     zone.geoBoundary ??
@@ -596,56 +312,128 @@ function getZoneBoundary(
     zone.boundary ??
     null;
 
-
-  return normalizeGeoJSON(
-    rawBoundary,
-    true
-  );
+  /*
+   * Your zone data is currently stored as:
+   *
+   * [latitude, longitude]
+   *
+   * Leaflet GeoJSON requires:
+   *
+   * [longitude, latitude]
+   */
+  return normalizeGeoJSON(rawBoundary, true);
 }
 
-
-/*
- * ------------------------------------------------------------
- * ZONE TABLE
- * ------------------------------------------------------------
- */
-
-function getZoneTableName(
-  zone
-) {
-  if (
-    !zone ||
-    typeof zone ===
-      "string"
-  ) {
+function getZoneTableName(zone) {
+  if (!zone || typeof zone === "string") {
     return null;
   }
 
+  return zone.zoneTableName || zone.zone_table_name || null;
+}
+
+/* ============================================================
+   WARD HELPERS
+============================================================ */
+
+function getWardId(ward) {
+  if (!ward || typeof ward === "string") {
+    return null;
+  }
+
+  return ward?.wardId ?? ward?.ward_id ?? ward?.id ?? null;
+}
+
+function getWardNo(ward) {
+  if (ward === null || ward === undefined) {
+    return null;
+  }
+
+  if (typeof ward === "object") {
+    return (
+      ward?.wardNo ??
+      ward?.ward_no ??
+      ward?.wardNumber ??
+      ward?.ward_number ??
+      null
+    );
+  }
+
+  const match = String(ward).match(/\d+/);
+
+  return match ? Number(match[0]) : null;
+}
+
+function getWardName(ward) {
+  if (typeof ward === "string") {
+    return ward;
+  }
 
   return (
-    zone.zoneTableName ||
-    zone.zone_table_name ||
-    null
+    ward?.wardName ||
+    ward?.ward_name ||
+    ward?.name ||
+    `Ward ${getWardNo(ward) ?? ""}`
   );
 }
 
+/*
+ * IMPORTANT:
+ *
+ * Ward boundaries are normalized in exactly the same way
+ * as zone boundaries.
+ *
+ * Your Master Citizen hierarchy stores:
+ *
+ * ward_id
+ * ward_no
+ * ward_name
+ * geo_boundary
+ * ward_table_name
+ */
+function getWardBoundary(ward) {
+  if (!ward || typeof ward === "string") {
+    return null;
+  }
+
+  const rawBoundary =
+    ward.geoBoundary ??
+    ward.geo_boundary ??
+    ward.geometry ??
+    ward.boundary ??
+    ward.wardBoundary ??
+    ward.ward_boundary ??
+    null;
+
+  if (!rawBoundary) {
+    return null;
+  }
+
+  /*
+   * Ward boundaries use the same DB coordinate convention
+   * as the zone boundaries:
+   *
+   * [latitude, longitude]
+   */
+  return normalizeGeoJSON(rawBoundary, true);
+}
+
+function getWardTableName(ward) {
+  if (!ward || typeof ward === "string") {
+    return null;
+  }
+
+  return ward.wardTableName || ward.ward_table_name || null;
+}
 
 /* ============================================================
    MAP SIZE CONTROLLER
 ============================================================ */
 
 function MapSizeController() {
-  const map =
-    useMap();
-
+  const map = useMap();
 
   useEffect(() => {
-    /*
-     * The map is inside a dashboard card.
-     *
-     * Force Leaflet to recalculate dimensions.
-     */
-
     const timers = [
       setTimeout(() => {
         map.invalidateSize();
@@ -660,363 +448,308 @@ function MapSizeController() {
       }, 1000),
     ];
 
+    const handleResize = () => {
+      map.invalidateSize();
+    };
 
-    const handleResize =
-      () => {
-        map.invalidateSize();
-      };
-
-
-    window.addEventListener(
-      "resize",
-      handleResize
-    );
-
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      timers.forEach(
-        clearTimeout
-      );
+      timers.forEach(clearTimeout);
 
-      window.removeEventListener(
-        "resize",
-        handleResize
-      );
+      window.removeEventListener("resize", handleResize);
     };
   }, [map]);
 
-
   return null;
 }
-
 
 /* ============================================================
-   MAP BOUNDS CONTROLLER
+   INITIAL CITY BOUNDS
 ============================================================ */
 
-function MapBoundsController({
-  cityBoundary,
-  zones,
-}) {
-  const map =
-    useMap();
+function MapBoundsController({ cityBoundary, zones, selectedWard }) {
+  const map = useMap();
 
+  /*
+   * Track whether the map has already performed its initial
+   * city fit.
+   */
+  const initialFitDone = useRef(false);
 
+  /*
+   * Initial city fit.
+   *
+   * This happens only once for a loaded city.
+   */
   useEffect(() => {
-    /*
-     * --------------------------------------------------------
-     * FIRST PRIORITY:
-     * CITY BOUNDARY
-     * --------------------------------------------------------
-     */
+    if (initialFitDone.current) {
+      return;
+    }
 
-    const cityBounds =
-      getGeoJSONBounds(
-        cityBoundary
-      );
+    const cityBounds = getGeoJSONBounds(cityBoundary);
 
+    if (cityBounds && cityBounds.isValid()) {
+      map.fitBounds(cityBounds, {
+        padding: [45, 45],
 
-    if (
-      cityBounds &&
-      cityBounds.isValid()
-    ) {
-      map.fitBounds(
-        cityBounds,
-        {
-          padding: [
-            40,
-            40,
-          ],
+        maxZoom: 12,
 
-          maxZoom: 12,
+        animate: false,
+      });
 
-          animate: false,
-        }
-      );
-
+      initialFitDone.current = true;
 
       return;
     }
 
-
     /*
-     * --------------------------------------------------------
-     * FALLBACK:
-     * ALL ZONES
-     * --------------------------------------------------------
+     * Fallback to all zones.
      */
+    const zoneBounds = zones
+      .map((zone) => getGeoJSONBounds(getZoneBoundary(zone)))
+      .filter(Boolean);
 
-    const zoneBounds =
-      zones
-        .map(
-          (zone) =>
-            getGeoJSONBounds(
-              getZoneBoundary(
-                zone
-              )
-            )
-        )
-        .filter(
-          Boolean
-        );
-
-
-    if (
-      zoneBounds.length ===
-      0
-    ) {
+    if (zoneBounds.length === 0) {
       return;
     }
 
+    let combinedBounds = null;
 
-    let combinedBounds =
-      null;
-
-
-    zoneBounds.forEach(
-      (bounds) => {
-        if (
-          !combinedBounds
-        ) {
-          combinedBounds =
-            bounds;
-        } else {
-          combinedBounds.extend(
-            bounds
-          );
-        }
+    zoneBounds.forEach((bounds) => {
+      if (!combinedBounds) {
+        combinedBounds = bounds;
+      } else {
+        combinedBounds.extend(bounds);
       }
-    );
+    });
 
+    if (combinedBounds && combinedBounds.isValid()) {
+      map.fitBounds(combinedBounds, {
+        padding: [45, 45],
 
-    if (
-      combinedBounds &&
-      combinedBounds.isValid()
-    ) {
-      map.fitBounds(
-        combinedBounds,
-        {
-          padding: [
-            40,
-            40,
-          ],
+        maxZoom: 12,
 
-          maxZoom: 12,
+        animate: false,
+      });
 
-          animate: false,
-        }
-      );
+      initialFitDone.current = true;
     }
-  }, [
-    cityBoundary,
-    zones,
-    map,
-  ]);
+  }, [cityBoundary, zones, map]);
 
+  /*
+   * ==========================================================
+   * WARD ZOOM
+   * ==========================================================
+   *
+   * THIS IS THE IMPORTANT PART.
+   *
+   * Whenever the selected ward changes:
+   *
+   * 1. Read its geo boundary.
+   * 2. Calculate Leaflet bounds.
+   * 3. Smoothly fly to the ward.
+   *
+   * flyToBounds gives the smooth transition requested.
+   */
+  useEffect(() => {
+    if (!selectedWard) {
+      return;
+    }
+
+    const wardBoundary = getWardBoundary(selectedWard);
+
+    if (!wardBoundary) {
+      console.warn(
+        "Selected ward does not contain a valid geo boundary:",
+        selectedWard,
+      );
+
+      return;
+    }
+
+    const wardBounds = getGeoJSONBounds(wardBoundary);
+
+    if (!wardBounds || !wardBounds.isValid()) {
+      console.warn(
+        "Unable to calculate bounds for selected ward:",
+        selectedWard,
+      );
+
+      return;
+    }
+
+    /*
+     * Small padding keeps the ward away from the map edges.
+     */
+    const paddedBounds = wardBounds.pad(0.08);
+
+    /*
+     * Smooth zoom.
+     *
+     * fitBounds is used instead of manually guessing a zoom
+     * level because ward sizes can differ.
+     */
+    map.flyToBounds(paddedBounds, {
+      paddingTopLeft: [35, 35],
+
+      paddingBottomRight: [35, 35],
+
+      maxZoom: 16,
+
+      duration: 1.25,
+
+      easeLinearity: 0.18,
+
+      animate: true,
+    });
+  }, [selectedWard, map]);
 
   return null;
 }
-
 
 /* ============================================================
    ZONE LAYER
 ============================================================ */
 
-function ZoneLayer({
-  zone,
-  index,
-  selected,
-  onSelect,
-}) {
-  /*
-   * IMPORTANT:
-   *
-   * This function now converts:
-   *
-   * [LAT, LNG]
-   *
-   * into:
-   *
-   * [LNG, LAT]
-   *
-   * before passing it to Leaflet.
-   */
-
-  const boundary =
-    useMemo(
-      () =>
-        getZoneBoundary(
-          zone
-        ),
-      [zone]
-    );
-
+function ZoneLayer({ zone, index, selected, onSelect }) {
+  const boundary = useMemo(() => getZoneBoundary(zone), [zone]);
 
   if (!boundary) {
-    console.warn(
-      "ZONE HAS NO VALID GEOBOUNDARY:",
-      zone
-    );
+    console.warn("ZONE HAS NO VALID GEOBOUNDARY:", zone);
 
     return null;
   }
 
+  const color = ZONE_COLORS[index % ZONE_COLORS.length];
 
-  const color =
-    ZONE_COLORS[
-      index %
-        ZONE_COLORS.length
-    ];
-
-
-  const zoneName =
-    getZoneName(
-      zone
-    );
-
-
-  /*
-   * ----------------------------------------------------------
-   * DEFAULT STYLE
-   * ----------------------------------------------------------
-   */
+  const zoneName = getZoneName(zone);
 
   const defaultStyle = {
-    color: selected
-      ? "#26364A"
-      : "#53687D",
+    color: selected ? "#26364A" : "#53687D",
 
-    weight: selected
-      ? 3.5
-      : 2,
+    weight: selected ? 3.5 : 1.8,
 
     opacity: 1,
 
-    fillColor:
-      color,
+    fillColor: color,
 
-    fillOpacity: selected
-      ? 0.58
-      : 0.34,
+    fillOpacity: selected ? 0.58 : 0.34,
 
-    lineJoin:
-      "round",
+    lineJoin: "round",
 
-    lineCap:
-      "round",
+    lineCap: "round",
 
     interactive: true,
   };
 
-
-  /*
-   * ----------------------------------------------------------
-   * EVENTS
-   * ----------------------------------------------------------
-   */
-
   const eventHandlers = {
     click: () => {
-      onSelect(
-        zone
-      );
+      onSelect(zone);
     },
 
-
-    mouseover: (
-      event
-    ) => {
-      const layer =
-        event.target;
-
+    mouseover: (event) => {
+      const layer = event.target;
 
       layer.setStyle({
-        color:
-          "#26364A",
+        color: "#26364A",
 
         weight: 3.5,
 
         opacity: 1,
 
-        fillColor:
-          color,
+        fillColor: color,
 
-        fillOpacity:
-          0.62,
+        fillOpacity: 0.62,
       });
 
-
-      if (
-        layer.bringToFront
-      ) {
+      if (layer.bringToFront) {
         layer.bringToFront();
       }
     },
 
+    mouseout: (event) => {
+      const layer = event.target;
 
-    mouseout: (
-      event
-    ) => {
-      const layer =
-        event.target;
-
-
-      layer.setStyle(
-        defaultStyle
-      );
-
-
-      /*
-       * Keep city boundary above
-       * the zone.
-       */
-
-      if (
-        layer.bringToFront
-      ) {
-        layer.bringToFront();
-      }
+      layer.setStyle(defaultStyle);
     },
   };
 
-
   return (
     <GeoJSON
-      key={`zone-${zoneName}-${index}`}
-      data={
-        boundary
-      }
-      style={() =>
-        defaultStyle
-      }
-      eventHandlers={
-        eventHandlers
-      }
-      bubblingMouseEvents={
-        false
-    }
+      key={`zone-${getZoneId(zone) ?? zoneName}-${index}`}
+      data={boundary}
+      style={() => defaultStyle}
+      eventHandlers={eventHandlers}
+      bubblingMouseEvents={false}
     />
   );
 }
 
+/* ============================================================
+   WARD LAYER
+============================================================ */
+
+function SelectedWardLayer({ ward }) {
+  const boundary = useMemo(() => getWardBoundary(ward), [ward]);
+
+  if (!boundary) {
+    return null;
+  }
+
+  const wardName = getWardName(ward);
+
+  const wardNo = getWardNo(ward);
+
+  /*
+   * Selected ward is intentionally stronger than zones.
+   *
+   * The user should immediately see which ward was selected.
+   */
+  return (
+    <Pane
+      name="selectedWardPane"
+      style={{
+        zIndex: 650,
+      }}
+    >
+      <GeoJSON
+        key={`selected-ward-${getWardId(ward) ?? wardNo ?? wardName}`}
+        data={boundary}
+        style={() => ({
+          color: "#172B3F",
+
+          weight: 3.4,
+
+          opacity: 1,
+
+          fillColor: "#7DD3FC",
+
+          fillOpacity: 0.48,
+
+          lineJoin: "round",
+
+          lineCap: "round",
+
+          interactive: false,
+        })}
+      />
+    </Pane>
+  );
+}
 
 /* ============================================================
    CITY BOUNDARY
 ============================================================ */
 
-function CityBoundaryLayer({
-  boundary,
-}) {
+function CityBoundaryLayer({ boundary }) {
   if (!boundary) {
     return null;
   }
 
-
   return (
     <GeoJSON
-      data={
-        boundary
-      }
+      data={boundary}
       style={() => ({
         color: "#34475B",
 
@@ -1024,27 +757,21 @@ function CityBoundaryLayer({
 
         opacity: 1,
 
-        fillColor:
-          "transparent",
+        fillColor: "transparent",
 
         fillOpacity: 0,
 
-        lineJoin:
-          "round",
+        lineJoin: "round",
 
-        lineCap:
-          "round",
+        lineCap: "round",
       })}
-      interactive={
-        false
-      }
+      interactive={false}
     />
   );
 }
 
-
 /* ============================================================
-   FILTER DROPDOWN
+   DROPDOWN
 ============================================================ */
 
 function FilterDropdown({
@@ -1060,560 +787,396 @@ function FilterDropdown({
 }) {
   return (
     <div className="cm-filter-group">
-
-      <div className="cm-filter-label">
-        {label}
-      </div>
-
+      <div className="cm-filter-label">{label}</div>
 
       <button
         type="button"
-        className={`cm-select ${
-          disabled
-            ? "cm-select-disabled"
-            : ""
-        }`}
+        className={`cm-select ${disabled ? "cm-select-disabled" : ""}`}
         onClick={() => {
           if (disabled) {
             return;
           }
 
-
-          setOpen(
-            open
-              ? null
-              : label
-          );
+          setOpen(open ? null : label);
         }}
       >
-
-        <span
-          className={
-            value
-              ? "cm-select-value"
-              : "cm-select-placeholder"
-          }
-        >
-          {value ||
-            placeholder}
+        <span className={value ? "cm-select-value" : "cm-select-placeholder"}>
+          {value || placeholder}
         </span>
 
-
-        {open ? (
-          <ChevronUp
-            size={15}
-          />
-        ) : (
-          <ChevronDown
-            size={15}
-          />
-        )}
-
+        {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
       </button>
 
+      {open && !disabled && (
+        <div className="cm-dropdown">
+          {options.map((option, index) => {
+            const optionValue =
+              typeof option === "string" ? option : option.value;
 
-      {open &&
-        !disabled && (
-          <div className="cm-dropdown">
+            const optionLabel =
+              typeof option === "string" ? option : option.label;
 
-            {options.map(
-              (
-                option,
-                index
-              ) => {
-                const optionValue =
-                  typeof option ===
-                  "string"
-                    ? option
-                    : option.value;
+            const selectedOption = optionValue === value;
 
+            return (
+              <button
+                type="button"
+                key={`${optionValue}-${index}`}
+                className={`cm-dropdown-option ${
+                  selectedOption ? "cm-dropdown-option-active" : ""
+                }`}
+                onClick={() => {
+                  onChange(option);
 
-                const optionLabel =
-                  typeof option ===
-                  "string"
-                    ? option
-                    : option.label;
-
-
-                const selectedOption =
-                  optionValue ===
-                  value;
-
-
-                return (
-                  <button
-                    type="button"
-                    key={`${optionValue}-${index}`}
-                    className={`cm-dropdown-option ${
-                      selectedOption
-                        ? "cm-dropdown-option-active"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      onChange(
-                        option
-                      );
-
-                      setOpen(
-                        null
-                      );
-                    }}
-                  >
-
-                    {renderOption
-                      ? renderOption(
-                          option,
-                          index
-                        )
-                      : (
-                        <span>
-                          {
-                            optionLabel
-                          }
-                        </span>
-                      )}
-
-                  </button>
-                );
-              }
-            )}
-
-          </div>
-        )}
-
+                  setOpen(null);
+                }}
+              >
+                {renderOption ? (
+                  renderOption(option, index)
+                ) : (
+                  <span>{optionLabel}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
-
 
 /* ============================================================
    MAIN COMPONENT
 ============================================================ */
 
-export default function CityMapOverview({
-  cityId =
-    DEFAULT_CITY_ID,
-}) {
+export default function CityMapOverview({ cityId = DEFAULT_CITY_ID }) {
+  /*
+   * ==========================================================
+   * GLOBAL HEADER FILTERS
+   * ==========================================================
+   *
+   * These come from the existing FilterContext.
+   *
+   * We are NOT creating another independent filter state.
+   */
+  const {
+    selectedCity,
+    selectedZone: globalSelectedZone,
+    selectedDivision: globalSelectedDivision,
+    selectedWard: globalSelectedWard,
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(
-    true
-  );
-
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-
-  const [
-    city,
-    setCity,
-  ] = useState(
-    null
-  );
-
-
-  const [
     zones,
-    setZones,
-  ] = useState(
-    []
-  );
+  } = useFilters();
 
+  const [loading, setLoading] = useState(true);
 
-  const [
-    selectedZone,
-    setSelectedZone,
-  ] = useState(
-    null
-  );
+  const [error, setError] = useState("");
 
+  const [city, setCity] = useState(null);
 
-  const [
-    openDropdown,
-    setOpenDropdown,
-  ] = useState(
-    null
-  );
+  const [mapZones, setMapZones] = useState([]);
 
+  const [localSelectedZone, setLocalSelectedZone] = useState(null);
 
-  const mapRef =
-    useRef(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
+  const mapRef = useRef(null);
 
   /* ==========================================================
-     FETCH CITY MAP DATA
+     RESOLVE CITY ID
   ========================================================== */
 
-  const fetchCityMapData =
-    useCallback(
-      async () => {
-        try {
+  const resolvedCityId = useMemo(() => {
+    /*
+     * Prefer explicit prop.
+     */
+    if (cityId !== undefined && cityId !== null) {
+      return cityId;
+    }
 
-          setLoading(
-            true
-          );
-
-          setError(
-            ""
-          );
-
-
-          const endpoint =
-            CITY_MAP_ENDPOINT(
-              cityId
-            );
-
-
-          console.log(
-            "=========================================="
-          );
-
-          console.log(
-            "🗺️ CITY MAP REQUEST"
-          );
-
-          console.log(
-            "CITY ID:",
-            cityId
-          );
-
-          console.log(
-            "ENDPOINT:",
-            endpoint
-          );
-
-          console.log(
-            "=========================================="
-          );
-
-
-          const response =
-            await fetch(
-              endpoint,
-              {
-                method:
-                  "GET",
-
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-              }
-            );
-
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              `City map request failed with status ${response.status}`
-            );
-          }
-
-
-          const result =
-            await response.json();
-
-
-          console.log(
-            "CITY MAP RESPONSE:",
-            result
-          );
-
-
-          if (
-            result?.success ===
-            false
-          ) {
-            throw new Error(
-              result.message ||
-                "Unable to fetch city map data."
-            );
-          }
-
-
-          /*
-           * ---------------------------------------------------
-           * CITY
-           * ---------------------------------------------------
-           */
-
-          const cityData =
-            result?.city ||
-            null;
-
-
-          /*
-           * ---------------------------------------------------
-           * ZONES
-           * ---------------------------------------------------
-           */
-
-          const zoneData =
-            Array.isArray(
-              result?.zones
-            )
-              ? result.zones
-              : [];
-
-
-          console.log(
-            "CITY:",
-            cityData
-          );
-
-
-          console.log(
-            "TOTAL ZONES:",
-            zoneData.length
-          );
-
-
-          /*
-           * Print every zone and whether
-           * it contains a boundary.
-           */
-
-          zoneData.forEach(
-            (
-              zone,
-              index
-            ) => {
-              console.log(
-                `ZONE ${index + 1}:`,
-                getZoneName(
-                  zone
-                )
-              );
-
-              console.log(
-                "ZONE TABLE:",
-                getZoneTableName(
-                  zone
-                )
-              );
-
-              console.log(
-                "RAW BOUNDARY:",
-                zone?.geoBoundary
-              );
-
-              console.log(
-                "NORMALIZED BOUNDARY:",
-                getZoneBoundary(
-                  zone
-                )
-              );
-            }
-          );
-
-
-          setCity(
-            cityData
-          );
-
-
-          setZones(
-            zoneData
-          );
-
-
-          /*
-           * Start with all zones visible.
-           */
-
-          setSelectedZone(
-            null
-          );
-
-        } catch (
-          requestError
-        ) {
-
-          console.error(
-            "CITY MAP ERROR:",
-            requestError
-          );
-
-
-          setError(
-            requestError?.message ||
-              "Unable to load city map."
-          );
-
-        } finally {
-
-          setLoading(
-            false
-          );
-
-        }
-      },
-      [cityId]
+    /*
+     * Otherwise use global city.
+     */
+    return (
+      selectedCity?.city_id ??
+      selectedCity?.cityId ??
+      selectedCity?.id ??
+      DEFAULT_CITY_ID
     );
+  }, [cityId, selectedCity]);
 
+  /* ==========================================================
+     FETCH CITY MAP
+  ========================================================== */
+
+  const fetchCityMapData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      setError("");
+
+      const endpoint = CITY_MAP_ENDPOINT(resolvedCityId);
+
+      console.log("==========================================");
+
+      console.log("🗺️ CITY MAP REQUEST");
+
+      console.log("CITY ID:", resolvedCityId);
+
+      console.log("ENDPOINT:", endpoint);
+
+      console.log("==========================================");
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `City map request failed with status ${response.status}`,
+        );
+      }
+
+      const result = await response.json();
+
+      console.log("CITY MAP RESPONSE:", result);
+
+      if (result?.success === false) {
+        throw new Error(result.message || "Unable to fetch city map data.");
+      }
+
+      const cityData = result?.city || null;
+
+      const zoneData = Array.isArray(result?.zones) ? result.zones : [];
+
+      console.log("CITY:", cityData);
+
+      console.log("TOTAL ZONES:", zoneData.length);
+
+      zoneData.forEach((zone, index) => {
+        console.log(`ZONE ${index + 1}:`, getZoneName(zone));
+
+        console.log("ZONE TABLE:", getZoneTableName(zone));
+
+        console.log("RAW ZONE BOUNDARY:", zone?.geoBoundary);
+
+        console.log("NORMALIZED ZONE BOUNDARY:", getZoneBoundary(zone));
+      });
+
+      setCity(cityData);
+
+      setMapZones(zoneData);
+
+      /*
+       * Do not retain an old local zone when city changes.
+       */
+      setLocalSelectedZone(null);
+    } catch (requestError) {
+      console.error("CITY MAP ERROR:", requestError);
+
+      setError(requestError?.message || "Unable to load city map.");
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedCityId]);
 
   useEffect(() => {
     fetchCityMapData();
-  }, [
-    fetchCityMapData,
-  ]);
-
+  }, [fetchCityMapData]);
 
   /* ==========================================================
-     NORMALIZED CITY BOUNDARY
+     CITY BOUNDARY
   ========================================================== */
 
-  /*
-   * IMPORTANT:
-   *
-   * City GeoJSON is already:
-   *
-   * [longitude, latitude]
-   *
-   * Therefore:
-   *
-   * swapCoordinates = false
-   */
+  const cityBoundary = useMemo(() => {
+    /*
+     * City boundary is already proper GeoJSON:
+     *
+     * [longitude, latitude]
+     *
+     * Therefore DO NOT swap it.
+     */
 
-  const cityBoundary =
-    useMemo(
-      () => {
-        return normalizeGeoJSON(
-          city?.geoBoundary ??
-            city?.geo_boundary,
-          false
-        );
-      },
-      [city]
-    );
-
+    return normalizeGeoJSON(city?.geoBoundary ?? city?.geo_boundary, false);
+  }, [city]);
 
   /* ==========================================================
      SELECTED ZONE
   ========================================================== */
 
-  const selectedZoneName =
-    selectedZone
-      ? getZoneName(
-          selectedZone
-        )
-      : null;
+  /*
+   * Prefer the global Header zone.
+   *
+   * If it exists, use it.
+   *
+   * Otherwise use the local map selection.
+   */
+  const selectedZone = globalSelectedZone || localSelectedZone || null;
 
+  const selectedZoneName = selectedZone ? getZoneName(selectedZone) : null;
 
   /* ==========================================================
      ZONE OPTIONS
   ========================================================== */
 
-  const zoneOptions =
-    useMemo(
-      () => {
-        return [
-          {
-            value: "",
-            label:
-              "All Zones",
-          },
+  const zoneOptions = useMemo(() => {
+    /*
+     * Prefer zones already available from global
+     * FilterContext.
+     *
+     * Fall back to the map endpoint's zones.
+     */
+    const sourceZones =
+      Array.isArray(mapZones) && mapZones.length
+        ? mapZones
+        : Array.isArray(zones)
+          ? zones
+          : [];
 
-          ...zones.map(
-            (
-              zone
-            ) => ({
-              value:
-                getZoneName(
-                  zone
-                ),
-
-              label:
-                getZoneName(
-                  zone
-                ),
-
-              zone,
-            })
-          ),
-        ];
+    return [
+      {
+        value: "",
+        label: "All Zones",
       },
-      [zones]
-    );
 
+      ...sourceZones.map((zone) => ({
+        value: getZoneName(zone),
+
+        label: getZoneName(zone),
+
+        zone,
+      })),
+    ];
+  }, [mapZones, zones]);
 
   /* ==========================================================
      VISIBLE ZONES
   ========================================================== */
 
-  const visibleZones =
-    useMemo(
-      () => {
+  const visibleZones = useMemo(() => {
+    /*
+     * No zone selected:
+     *
+     * Show every zone.
+     */
+    if (!selectedZone) {
+      return mapZones;
+    }
 
-        /*
-         * ALL ZONES
-         */
+    const selectedId = getZoneId(selectedZone);
 
-        if (
-          !selectedZone
-        ) {
-          return zones;
-        }
+    const selectedName = getZoneName(selectedZone);
 
+    return mapZones.filter((zone) => {
+      const zoneId = getZoneId(zone);
 
-        /*
-         * SELECTED ZONE ONLY
-         */
+      const zoneName = getZoneName(zone);
 
-        return zones.filter(
-          (
-            zone
-          ) =>
-            getZoneName(
-              zone
-            ) ===
-            selectedZoneName
-        );
+      if (
+        selectedId !== null &&
+        selectedId !== undefined &&
+        zoneId !== null &&
+        zoneId !== undefined
+      ) {
+        return String(zoneId) === String(selectedId);
+      }
 
-      },
-      [
-        zones,
-        selectedZone,
-        selectedZoneName,
-      ]
-    );
-
+      return zoneName === selectedName;
+    });
+  }, [mapZones, selectedZone]);
 
   /* ==========================================================
      SELECT ZONE
   ========================================================== */
 
-  const handleZoneSelect =
-    useCallback(
-      (
-        zone
-      ) => {
-
-        setSelectedZone(
-          zone
-        );
-
-      },
-      []
-    );
-
+  const handleZoneSelect = useCallback((zone) => {
+    setLocalSelectedZone(zone);
+  }, []);
 
   /* ==========================================================
-     MAP CENTER
+     SELECTED WARD
   ========================================================== */
 
-  const initialCenter =
-    [
-      12.9716,
-      77.5946,
-    ];
+  /*
+   * The Header's selectedWard is the actual source.
+   *
+   * This can be:
+   *
+   * {
+   *   ward_id,
+   *   ward_no,
+   *   ward_name,
+   *   geo_boundary,
+   *   ward_table_name
+   * }
+   *
+   * OR another naming convention from the API.
+   */
+  const selectedWard = useMemo(() => {
+    if (!globalSelectedWard) {
+      return null;
+    }
 
+    /*
+     * "All Wards" should mean:
+     *
+     * no selected ward.
+     */
+    if (
+      typeof globalSelectedWard === "string" &&
+      globalSelectedWard.trim().toLowerCase() === "all wards"
+    ) {
+      return null;
+    }
+
+    return globalSelectedWard;
+  }, [globalSelectedWard]);
+
+  /* ==========================================================
+     SELECTED WARD DEBUG
+  ========================================================== */
+
+  useEffect(() => {
+    if (!selectedWard) {
+      console.log("🗺️ CITY MAP: ALL WARDS");
+
+      return;
+    }
+
+    console.log("==========================================");
+
+    console.log("🗺️ SELECTED WARD");
+
+    console.log("WARD ID:", getWardId(selectedWard));
+
+    console.log("WARD NO:", getWardNo(selectedWard));
+
+    console.log("WARD NAME:", getWardName(selectedWard));
+
+    console.log("WARD TABLE:", getWardTableName(selectedWard));
+
+    console.log(
+      "RAW WARD BOUNDARY:",
+      selectedWard?.geoBoundary ??
+        selectedWard?.geo_boundary ??
+        selectedWard?.geometry ??
+        selectedWard?.boundary,
+    );
+
+    console.log("NORMALIZED WARD BOUNDARY:", getWardBoundary(selectedWard));
+
+    console.log("==========================================");
+  }, [selectedWard]);
+
+  /* ==========================================================
+     INITIAL CENTER
+  ========================================================== */
+
+  const initialCenter = [12.9716, 77.5946];
 
   /* ==========================================================
      RENDER
@@ -1621,7 +1184,6 @@ export default function CityMapOverview({
 
   return (
     <section className="cm-wrapper">
-
       <style>{`
 
         /* ====================================================
@@ -1633,19 +1195,26 @@ export default function CityMapOverview({
           background: #ffffff;
           border: 1px solid #dce4ec;
           border-radius: 18px;
-          padding: 18px;
+          padding: 16px;
           box-sizing: border-box;
-          box-shadow: 0 4px 16px rgba(31,45,61,0.045);
+          box-shadow:
+            0 4px 18px
+            rgba(31, 45, 61, 0.05);
         }
 
 
         /* ====================================================
-           PAGE HEADING
+           TITLE
         ==================================================== */
 
         .cm-heading {
-          margin: 0 0 14px 2px;
-          font-size: 22px;
+          margin:
+            0
+            0
+            14px
+            2px;
+
+          font-size: 21px;
           line-height: 1.15;
           font-weight: 700;
           letter-spacing: -0.35px;
@@ -1661,9 +1230,9 @@ export default function CityMapOverview({
           position: relative;
           width: 100%;
           height: 700px;
-          min-height: 560px;
+          min-height: 580px;
           overflow: hidden;
-          border-radius: 16px;
+          border-radius: 17px;
           border: 1px solid #d7e0e9;
           background: #f3f5f6;
         }
@@ -1676,33 +1245,36 @@ export default function CityMapOverview({
 
 
         /* ====================================================
-           GREY CARTO MAP
+           GREY BASE MAP
         ==================================================== */
 
-        .cm-map .leaflet-tile-pane {
+        .cm-map
+        .leaflet-tile-pane {
           filter:
-            grayscale(0.35)
-            saturate(0.35)
-            brightness(1.06);
+            saturate(0.42)
+            brightness(1.05);
         }
 
 
         /* ====================================================
-           ZOOM
+           ZOOM CONTROL
         ==================================================== */
 
-        .cm-map .leaflet-control-zoom {
+        .cm-map
+        .leaflet-control-zoom {
           margin-top: 12px;
           margin-left: 12px;
           border: 1px solid #d8e1ea;
-          border-radius: 7px;
+          border-radius: 8px;
           overflow: hidden;
           box-shadow:
-            0 3px 10px rgba(36,53,72,0.08);
+            0 3px 12px
+            rgba(36, 53, 72, 0.08);
         }
 
 
-        .cm-map .leaflet-control-zoom a {
+        .cm-map
+        .leaflet-control-zoom a {
           width: 30px;
           height: 30px;
           line-height: 30px;
@@ -1712,99 +1284,121 @@ export default function CityMapOverview({
         }
 
 
-        .cm-map .leaflet-control-zoom a:hover {
-          background: #f5f8fb;
+        .cm-map
+        .leaflet-control-zoom a:hover {
+          background:
+            #f5f8fb;
         }
 
 
-        /* ====================================================
-           ATTRIBUTION
-        ==================================================== */
-
-        .cm-map .leaflet-control-attribution {
+        .cm-map
+        .leaflet-control-attribution {
           font-size: 9px;
           background:
-            rgba(255,255,255,0.84);
+            rgba(
+              255,
+              255,
+              255,
+              0.82
+            );
         }
 
 
         /* ====================================================
-           MAP HEADER
+           TOP MAP HEADER
         ==================================================== */
 
         .cm-map-header {
           position: absolute;
+
           z-index: 1000;
 
-          top: 20px;
-          left: 20px;
+          top: 18px;
+          left: 18px;
 
-          width: 420px;
-          min-height: 82px;
+          width: 500px;
+          min-height: 68px;
 
-          padding: 15px 18px;
+          padding:
+            12px
+            16px;
 
           box-sizing: border-box;
 
-          border-radius: 14px;
-
           background:
-            rgba(255,255,255,0.96);
+            rgba(
+              255,
+              255,
+              255,
+              0.96
+            );
 
           border:
-            1px solid #e0e7ef;
+            1px solid
+            #dce5ed;
+
+          border-radius:
+            15px;
 
           box-shadow:
-            0 6px 20px
-            rgba(32,48,65,0.09);
+            0
+            8px
+            25px
+            rgba(
+              31,
+              45,
+              61,
+              0.10
+            );
 
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          display:
+            flex;
 
-          pointer-events: none;
+          align-items:
+            center;
+
+          justify-content:
+            space-between;
         }
 
 
         .cm-header-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          min-width: 0;
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            12px;
         }
 
 
         .cm-header-icon {
-          width: 30px;
-          height: 30px;
-          flex: 0 0 30px;
-          color: #587089;
+          width: 25px;
+          height: 25px;
+          color: #58718a;
         }
 
 
         .cm-header-title {
-          font-size: 19px;
+          font-size: 17px;
           line-height: 1.15;
           font-weight: 700;
           color: #34475b;
-
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
 
 
         .cm-header-city {
-          margin-top: 4px;
-          font-size: 12px;
+          margin-top: 3px;
+          font-size: 10px;
           font-weight: 600;
-          color: #8aa0b8;
+          color: #8aa0b6;
         }
 
 
         .cm-header-chevron {
           color: #34475b;
-          flex: 0 0 auto;
         }
 
 
@@ -1814,44 +1408,62 @@ export default function CityMapOverview({
 
         .cm-filter-card {
           position: absolute;
+
           z-index: 1000;
 
-          top: 20px;
-          right: 20px;
+          top: 18px;
+          right: 18px;
 
-          width: 310px;
+          width: 320px;
 
-          padding: 17px;
+          padding:
+            16px;
 
           box-sizing: border-box;
 
-          border-radius: 14px;
-
           background:
-            rgba(255,255,255,0.97);
+            rgba(
+              255,
+              255,
+              255,
+              0.97
+            );
 
           border:
-            1px solid #dfe7ef;
+            1px solid
+            #dce5ed;
+
+          border-radius:
+            17px;
 
           box-shadow:
-            0 7px 22px
-            rgba(32,48,65,0.09);
+            0
+            8px
+            25px
+            rgba(
+              31,
+              45,
+              61,
+              0.10
+            );
         }
 
 
         .cm-filter-title {
-          margin-bottom: 15px;
+          margin-bottom: 12px;
 
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
 
-          color: #34475b;
+          color:
+            #34475b;
         }
 
 
         .cm-filter-group {
           position: relative;
-          margin-bottom: 14px;
+
+          margin-bottom: 12px;
         }
 
 
@@ -1863,99 +1475,98 @@ export default function CityMapOverview({
         .cm-filter-label {
           margin-bottom: 6px;
 
-          font-size: 11px;
+          font-size: 10px;
           line-height: 1;
 
           font-weight: 700;
 
-          color: #8ca2ba;
+          letter-spacing:
+            0.35px;
 
-          letter-spacing: 0.1px;
-
-          text-transform: uppercase;
+          color:
+            #8aa0b6;
         }
 
 
-        /* ====================================================
-           SELECT
-        ==================================================== */
-
         .cm-select {
           width: 100%;
-          min-height: 48px;
+          height: 43px;
 
           padding:
-            0 12px;
-
-          box-sizing: border-box;
-
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-
-          gap: 10px;
+            0
+            12px;
 
           border:
-            1px solid #cbd9e7;
+            1px solid
+            #d7e2ec;
 
-          border-radius: 11px;
+          border-radius:
+            11px;
 
-          background: #ffffff;
+          background:
+            #ffffff;
 
-          color: #40546b;
+          color:
+            #465d75;
 
-          font-family: inherit;
+          display:
+            flex;
 
-          font-size: 13px;
+          align-items:
+            center;
 
-          font-weight: 600;
+          justify-content:
+            space-between;
 
-          cursor: pointer;
+          font-size:
+            12px;
+
+          font-weight:
+            600;
+
+          cursor:
+            pointer;
 
           transition:
-            border-color 0.15s ease,
-            box-shadow 0.15s ease;
+            all
+            180ms
+            ease;
         }
 
 
         .cm-select:hover {
-          border-color: #aebfd0;
+          border-color:
+            #aebfd0;
         }
 
 
-        .cm-select:focus {
-          outline: none;
+        .cm-select-value {
+          overflow:
+            hidden;
 
-          border-color: #8fa9c1;
+          text-overflow:
+            ellipsis;
 
-          box-shadow:
-            0 0 0 3px
-            rgba(100,130,160,0.09);
+          white-space:
+            nowrap;
+
+          max-width:
+            250px;
+        }
+
+
+        .cm-select-placeholder {
+          color:
+            #465d75;
         }
 
 
         .cm-select-disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+          opacity:
+            0.55;
 
-
-        .cm-select-value,
-        .cm-select-placeholder {
-          min-width: 0;
-
-          overflow: hidden;
-
-          white-space: nowrap;
-
-          text-overflow: ellipsis;
-
-          text-align: left;
-        }
-
-
-        .cm-select-placeholder {
-          color: #40546b;
+          cursor:
+            not-allowed;
         }
 
 
@@ -1966,113 +1577,154 @@ export default function CityMapOverview({
         .cm-dropdown {
           position: absolute;
 
-          z-index: 1100;
+          z-index: 5000;
 
           top:
-            calc(100% + 6px);
+            calc(
+              100%
+              +
+              5px
+            );
 
           left: 0;
-          right: 0;
 
-          max-height: 260px;
+          width: 100%;
 
-          overflow-y: auto;
+          max-height:
+            235px;
 
-          padding: 4px;
+          overflow-y:
+            auto;
+
+          padding:
+            4px;
+
+          box-sizing:
+            border-box;
+
+          background:
+            #ffffff;
 
           border:
-            1px solid #d9e3ec;
+            1px solid
+            #dce5ed;
 
-          border-radius: 11px;
-
-          background: #ffffff;
+          border-radius:
+            11px;
 
           box-shadow:
-            0 12px 26px
-            rgba(31,45,61,0.13);
+            0
+            12px
+            28px
+            rgba(
+              31,
+              45,
+              61,
+              0.14
+            );
         }
 
 
         .cm-dropdown-option {
           width: 100%;
 
-          min-height: 38px;
+          min-height:
+            37px;
 
           padding:
-            7px 8px;
+            7px
+            9px;
 
           border: 0;
 
-          border-radius: 8px;
+          border-radius:
+            8px;
 
-          background: transparent;
+          background:
+            #ffffff;
 
-          display: flex;
+          color:
+            #465d75;
 
-          align-items: center;
+          display:
+            flex;
 
-          gap: 9px;
+          align-items:
+            center;
 
-          text-align: left;
+          gap:
+            8px;
 
-          font-family: inherit;
+          text-align:
+            left;
 
-          font-size: 12px;
+          font-size:
+            11px;
 
-          line-height: 1.3;
+          font-weight:
+            500;
 
-          font-weight: 500;
-
-          color: #435871;
-
-          cursor: pointer;
+          cursor:
+            pointer;
         }
 
 
         .cm-dropdown-option:hover {
-          background: #f2f6fa;
+          background:
+            #f4f7fa;
         }
 
 
         .cm-dropdown-option-active {
-          background: #edf4f9;
-          color: #263f58;
-          font-weight: 700;
+          background:
+            #eef4f8;
+
+          font-weight:
+            700;
+
+          color:
+            #263b50;
         }
 
 
-        /* ====================================================
-           ZONE DOT
-        ==================================================== */
-
         .cm-zone-dot {
-          width: 9px;
-          height: 9px;
+          width:
+            9px;
 
-          flex:
-            0 0 9px;
+          height:
+            9px;
 
-          border-radius: 50%;
+          min-width:
+            9px;
+
+          border-radius:
+            50%;
 
           border:
             1px solid
-            rgba(44,63,82,0.35);
+            rgba(
+              36,
+              53,
+              72,
+              0.25
+            );
         }
 
 
         .cm-zone-option-name {
-          min-width: 0;
+          overflow:
+            hidden;
 
-          overflow: hidden;
+          text-overflow:
+            ellipsis;
 
-          white-space: nowrap;
-
-          text-overflow: ellipsis;
+          white-space:
+            nowrap;
         }
 
 
         /* ====================================================
-           SELECTED ZONE CARD
+           SELECTED WARD CARD
         ==================================================== */
 
         .cm-selected-card {
@@ -2080,137 +1732,210 @@ export default function CityMapOverview({
 
           z-index: 1000;
 
-          left: 20px;
-          bottom: 20px;
+          left: 18px;
+          bottom: 18px;
 
-          width: 300px;
+          width:
+            280px;
 
           padding:
-            13px 15px;
+            13px
+            15px;
 
-          box-sizing: border-box;
-
-          border-radius: 13px;
+          box-sizing:
+            border-box;
 
           background:
-            rgba(255,255,255,0.96);
+            rgba(
+              255,
+              255,
+              255,
+              0.96
+            );
 
           border:
-            1px solid #dce5ed;
+            1px solid
+            #dce5ed;
+
+          border-radius:
+            14px;
 
           box-shadow:
-            0 7px 20px
-            rgba(31,45,61,0.09);
+            0
+            8px
+            24px
+            rgba(
+              31,
+              45,
+              61,
+              0.10
+            );
         }
 
 
         .cm-selected-label {
-          display: flex;
+          display:
+            flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 7px;
+          gap:
+            7px;
 
-          margin-bottom: 5px;
+          font-size:
+            10px;
 
-          font-size: 10px;
+          font-weight:
+            700;
 
-          font-weight: 700;
+          letter-spacing:
+            0.35px;
 
-          color: #8aa0b8;
-
-          text-transform: uppercase;
+          color:
+            #8aa0b6;
         }
 
 
         .cm-selected-dot {
-          width: 9px;
-          height: 9px;
+          width:
+            9px;
 
-          border-radius: 50%;
+          height:
+            9px;
+
+          border-radius:
+            50%;
 
           border:
-            1px solid #647d95;
+            1px solid
+            rgba(
+              36,
+              53,
+              72,
+              0.25
+            );
         }
 
 
         .cm-selected-name {
-          font-size: 13px;
+          margin-top:
+            5px;
 
-          line-height: 1.3;
+          font-size:
+            13px;
 
-          font-weight: 700;
+          font-weight:
+            700;
 
-          color: #34475b;
+          line-height:
+            1.25;
+
+          color:
+            #34475b;
         }
 
 
         .cm-selected-table {
-          margin-top: 4px;
+          margin-top:
+            4px;
 
-          font-size: 10px;
+          overflow:
+            hidden;
 
-          color: #8ca2ba;
+          text-overflow:
+            ellipsis;
 
-          overflow: hidden;
+          white-space:
+            nowrap;
 
-          text-overflow: ellipsis;
+          font-size:
+            9px;
 
-          white-space: nowrap;
+          color:
+            #8aa0b6;
         }
 
 
         /* ====================================================
-           LOADING / ERROR
+           STATE
         ==================================================== */
 
         .cm-state {
-          position: absolute;
+          position:
+            absolute;
 
-          z-index: 1200;
+          z-index:
+            1200;
 
-          inset: 0;
+          inset:
+            0;
 
-          display: flex;
+          display:
+            flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          justify-content: center;
+          justify-content:
+            center;
 
-          pointer-events: none;
+          pointer-events:
+            none;
         }
 
 
         .cm-state-card {
           padding:
-            10px 15px;
+            9px
+            14px;
 
-          border-radius: 10px;
+          border-radius:
+            10px;
 
           background:
-            rgba(255,255,255,0.96);
+            rgba(
+              255,
+              255,
+              255,
+              0.96
+            );
 
           border:
-            1px solid #dce5ed;
+            1px solid
+            #dce5ed;
 
           box-shadow:
-            0 7px 20px
-            rgba(31,45,61,0.10);
+            0
+            7px
+            20px
+            rgba(
+              31,
+              45,
+              61,
+              0.10
+            );
 
-          color: #50647a;
+          color:
+            #50647a;
 
-          font-size: 12px;
+          font-size:
+            11px;
 
-          font-weight: 600;
+          font-weight:
+            600;
         }
 
 
         .cm-error-card {
-          color: #9b3e3e;
+          color:
+            #9b3e3e;
 
-          max-width: 400px;
+          max-width:
+            400px;
 
-          text-align: center;
+          text-align:
+            center;
         }
 
 
@@ -2218,133 +1943,150 @@ export default function CityMapOverview({
            RESPONSIVE
         ==================================================== */
 
-        @media (max-width: 1100px) {
+        @media (
+          max-width: 1100px
+        ) {
 
           .cm-map-header {
-            width: 370px;
+            width:
+              390px;
           }
 
           .cm-filter-card {
-            width: 285px;
+            width:
+              285px;
           }
 
         }
 
 
-        @media (max-width: 800px) {
+        @media (
+          max-width: 800px
+        ) {
 
           .cm-wrapper {
-            padding: 12px;
-            border-radius: 14px;
+            padding:
+              10px;
+
+            border-radius:
+              14px;
           }
 
 
           .cm-heading {
-            font-size: 19px;
-            margin-bottom: 12px;
+            font-size:
+              18px;
+
+            margin-bottom:
+              10px;
           }
 
 
           .cm-map-shell {
-            height: 650px;
-            min-height: 560px;
+            height:
+              650px;
+
+            min-height:
+              550px;
           }
 
 
           .cm-map-header {
-            top: 12px;
-            left: 12px;
-            right: 12px;
+            top:
+              10px;
 
-            width: auto;
+            left:
+              10px;
 
-            min-height: 70px;
+            right:
+              10px;
+
+            width:
+              auto;
+
+            min-height:
+              62px;
 
             padding:
-              12px 14px;
+              10px
+              12px;
           }
 
 
           .cm-header-title {
-            font-size: 16px;
+            font-size:
+              15px;
           }
 
 
           .cm-header-city {
-            font-size: 11px;
+            font-size:
+              10px;
           }
 
 
           .cm-filter-card {
-            top: auto;
+            top:
+              auto;
 
-            right: 12px;
-            left: 12px;
-            bottom: 12px;
+            right:
+              10px;
 
-            width: auto;
+            left:
+              10px;
 
-            max-height: 300px;
+            bottom:
+              10px;
 
-            overflow-y: auto;
+            width:
+              auto;
+
+            max-height:
+              270px;
+
+            overflow-y:
+              auto;
           }
 
 
           .cm-selected-card {
-            display: none;
+            display:
+              none;
           }
 
         }
 
       `}</style>
 
-
       {/* ======================================================
           HEADING
       ====================================================== */}
 
-      <h2 className="cm-heading">
-        CITY OVERVIEW MAP
-      </h2>
-
+      <h2 className="cm-heading">CITY OVERVIEW MAP</h2>
 
       {/* ======================================================
           MAP
       ====================================================== */}
 
       <div className="cm-map-shell">
-
         <MapContainer
           ref={mapRef}
-          center={
-            initialCenter
-          }
+          center={initialCenter}
           zoom={10}
-          zoomControl={
-            false
-          }
+          zoomControl={false}
           className="cm-map"
-          preferCanvas={
-            false
-          }
+          preferCanvas={false}
         >
-
           {/* ==================================================
               GREY BASE MAP
           ================================================== */}
 
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-            subdomains={[
-              "a",
-              "b",
-              "c",
-              "d",
-            ]}
+            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+            subdomains={["a", "b", "c", "d"]}
             maxZoom={20}
           />
-
 
           {/* ==================================================
               MAP SIZE
@@ -2352,177 +2094,109 @@ export default function CityMapOverview({
 
           <MapSizeController />
 
-
           {/* ==================================================
               ZOOM
           ================================================== */}
 
-          <ZoomControl
-            position="topleft"
-          />
-
+          <ZoomControl position="topleft" />
 
           {/* ==================================================
-              FIT CITY
+              MAP BOUNDS
           ================================================== */}
 
           <MapBoundsController
-            cityBoundary={
-              cityBoundary
-            }
-            zones={
-              zones
-            }
+            cityBoundary={cityBoundary}
+            zones={mapZones}
+            selectedWard={selectedWard}
           />
 
-
           {/* ==================================================
-              ZONE LAYER
-              
-              IMPORTANT:
-              
-              ZONE DATA IS NORMALIZED FROM:
-              
-              [LAT,LNG]
-              
-              TO:
-              
-              [LNG,LAT]
-              
-              INSIDE ZoneLayer.
+              ZONE LAYERS
           ================================================== */}
 
           <Pane
-            name="zonePane"
+            name="zonesPane"
             style={{
-              zIndex: 410,
+              zIndex: 400,
             }}
           >
+            {visibleZones.map((zone, index) => {
+              const zoneId = getZoneId(zone);
 
-            {visibleZones.map(
-              (
-                zone,
-                index
-              ) => (
+              const selectedId = getZoneId(selectedZone);
 
+              const selected =
+                !!selectedZone &&
+                ((zoneId !== null &&
+                  selectedId !== null &&
+                  String(zoneId) === String(selectedId)) ||
+                  getZoneName(zone) === getZoneName(selectedZone));
+
+              return (
                 <ZoneLayer
-                  key={
-                    `zone-layer-${getZoneName(
-                      zone
-                    )}-${index}`
-                  }
-
-                  zone={
-                    zone
-                  }
-
-                  index={
-                    zones.indexOf(
-                      zone
-                    )
-                  }
-
-                  selected={
-                    !!selectedZone &&
-                    getZoneName(
-                      selectedZone
-                    ) ===
-                      getZoneName(
-                        zone
-                      )
-                  }
-
-                  onSelect={
-                    handleZoneSelect
-                  }
+                  key={`zone-layer-${zoneId ?? getZoneName(zone)}-${index}`}
+                  zone={zone}
+                  index={mapZones.indexOf(zone)}
+                  selected={selected}
+                  onSelect={handleZoneSelect}
                 />
-
-              )
-            )}
-
+              );
+            })}
           </Pane>
 
+          {/* ==================================================
+              SELECTED WARD
+              
+              Render this AFTER zones.
+              
+              This makes the selected ward sit visibly above
+              the colored zone.
+          ================================================== */}
+
+          {selectedWard && <SelectedWardLayer ward={selectedWard} />}
 
           {/* ==================================================
               CITY OUTLINE
               
-              Rendered AFTER the zones and in a higher pane.
-              
-              This keeps the Bengaluru city boundary visible
-              around all coloured zones.
+              Keep the city outline above everything.
           ================================================== */}
 
           <Pane
             name="cityBoundaryPane"
             style={{
-              zIndex: 420,
+              zIndex: 700,
             }}
           >
-
-            <CityBoundaryLayer
-              boundary={
-                cityBoundary
-              }
-            />
-
+            <CityBoundaryLayer boundary={cityBoundary} />
           </Pane>
-
         </MapContainer>
-
 
         {/* ====================================================
             TOP HEADER
         ==================================================== */}
 
         <div className="cm-map-header">
-
           <div className="cm-header-left">
-
-            <MapIcon
-              className="cm-header-icon"
-              strokeWidth={
-                1.8
-              }
-            />
+            <MapIcon className="cm-header-icon" strokeWidth={1.8} />
 
             <div>
-
-              <div className="cm-header-title">
-                City Overview Map
-              </div>
-
+              <div className="cm-header-title">City Overview Map</div>
 
               {city?.cityName && (
-                <div className="cm-header-city">
-                  {
-                    city.cityName
-                  }
-                </div>
+                <div className="cm-header-city">{city.cityName}</div>
               )}
-
             </div>
-
           </div>
 
-
-          <ChevronDown
-            className="cm-header-chevron"
-            size={18}
-          />
-
+          <ChevronDown className="cm-header-chevron" size={18} />
         </div>
-
 
         {/* ====================================================
             FILTER CARD
         ==================================================== */}
 
         <div className="cm-filter-card">
-
-          <div className="cm-filter-title">
-            MAP FILTERS
-          </div>
-
+          <div className="cm-filter-title">MAP FILTERS</div>
 
           {/* ==================================================
               ZONE
@@ -2530,297 +2204,162 @@ export default function CityMapOverview({
 
           <FilterDropdown
             label="ZONE"
-
-            value={
-              selectedZoneName ||
-              ""
-            }
-
+            value={selectedZoneName || ""}
             placeholder="All Zones"
-
-            options={
-              zoneOptions
-            }
-
-            open={
-              openDropdown ===
-              "ZONE"
-            }
-
-            setOpen={
-              setOpenDropdown
-            }
-
-            onChange={(
-              option
-            ) => {
-
-              /*
-               * ALL ZONES
-               */
-
-              if (
-                !option?.value
-              ) {
-
-                setSelectedZone(
-                  null
-                );
+            options={zoneOptions}
+            open={openDropdown === "ZONE"}
+            setOpen={setOpenDropdown}
+            onChange={(option) => {
+              if (!option?.value) {
+                setLocalSelectedZone(null);
 
                 return;
               }
 
-
-              /*
-               * INDIVIDUAL ZONE
-               */
-
-              setSelectedZone(
-                option.zone ||
-                  null
-              );
-
+              setLocalSelectedZone(option.zone || null);
             }}
-
-            renderOption={(
-              option,
-              index
-            ) => {
-
-              /*
-               * ALL ZONES
-               */
-
-              if (
-                !option.value
-              ) {
-                return (
-                  <span>
-                    All Zones
-                  </span>
-                );
+            renderOption={(option, index) => {
+              if (!option.value) {
+                return <span>All Zones</span>;
               }
 
-
-              /*
-               * FIND ZONE INDEX
-               */
-
-              const zoneIndex =
-                zones.findIndex(
-                  (
-                    zone
-                  ) =>
-                    getZoneName(
-                      zone
-                    ) ===
-                    option.value
-                );
-
+              const zoneIndex = mapZones.findIndex(
+                (zone) => getZoneName(zone) === option.value,
+              );
 
               const color =
                 ZONE_COLORS[
-                  (
-                    zoneIndex >=
-                    0
-                      ? zoneIndex
-                      : index
-                  ) %
-                    ZONE_COLORS.length
+                  (zoneIndex >= 0 ? zoneIndex : index) % ZONE_COLORS.length
                 ];
-
 
               return (
                 <>
-
                   <span
                     className="cm-zone-dot"
                     style={{
-                      backgroundColor:
-                        color,
+                      backgroundColor: color,
                     }}
                   />
 
-
-                  <span className="cm-zone-option-name">
-                    {
-                      option.label
-                    }
-                  </span>
-
+                  <span className="cm-zone-option-name">{option.label}</span>
                 </>
               );
-
             }}
           />
 
-
           {/* ==================================================
               DIVISION
+              
+              Division selection continues to come from the
+              global Header filter context.
           ================================================== */}
 
           <FilterDropdown
             label="DIVISION"
-
-            value=""
-
+            value={
+              globalSelectedDivision
+                ? globalSelectedDivision?.divisionName ||
+                  globalSelectedDivision?.division_name ||
+                  globalSelectedDivision?.name ||
+                  String(globalSelectedDivision)
+                : ""
+            }
             placeholder="All Divisions"
-
             options={[
               {
                 value: "",
-                label:
-                  "All Divisions",
+                label: "All Divisions",
               },
             ]}
-
-            open={
-              openDropdown ===
-              "DIVISION"
-            }
-
-            setOpen={
-              setOpenDropdown
-            }
-
+            open={openDropdown === "DIVISION"}
+            setOpen={setOpenDropdown}
             onChange={() => {}}
+            disabled={true}
           />
-
 
           {/* ==================================================
               WARD
+              
+              The actual ward is controlled by the global
+              Header FilterContext.
           ================================================== */}
 
           <FilterDropdown
             label="WARD"
-
-            value=""
-
+            value={selectedWard ? getWardName(selectedWard) : ""}
             placeholder="All Wards"
-
             options={[
               {
                 value: "",
-                label:
-                  "All Wards",
+                label: "All Wards",
               },
             ]}
-
-            open={
-              openDropdown ===
-              "WARD"
-            }
-
-            setOpen={
-              setOpenDropdown
-            }
-
+            open={openDropdown === "WARD"}
+            setOpen={setOpenDropdown}
             onChange={() => {}}
+            disabled={true}
           />
-
         </div>
 
-
         {/* ====================================================
-            SELECTED ZONE INFORMATION
+            SELECTED WARD CARD
         ==================================================== */}
 
-        {selectedZone && (
-
+        {selectedWard && (
           <div className="cm-selected-card">
-
             <div className="cm-selected-label">
-
               <span
                 className="cm-selected-dot"
                 style={{
-                  backgroundColor:
-                    ZONE_COLORS[
-                      zones.indexOf(
-                        selectedZone
-                      ) %
-                        ZONE_COLORS.length
-                    ],
+                  backgroundColor: "#7DD3FC",
                 }}
               />
-
-              SELECTED ZONE
-
+              SELECTED WARD
             </div>
-
 
             <div className="cm-selected-name">
+              {getWardName(selectedWard)}
 
-              {
-                getZoneName(
-                  selectedZone
-                )
-              }
-
+              {getWardNo(selectedWard) !== null && (
+                <> ({getWardNo(selectedWard)})</>
+              )}
             </div>
 
-
-            {getZoneTableName(
-              selectedZone
-            ) && (
-
+            {getWardTableName(selectedWard) && (
               <div className="cm-selected-table">
-
-                {
-                  getZoneTableName(
-                    selectedZone
-                  )
-                }
-
+                {getWardTableName(selectedWard)}
               </div>
-
             )}
-
           </div>
-
         )}
-
 
         {/* ====================================================
             LOADING
         ==================================================== */}
 
         {loading && (
-
           <div className="cm-state">
-
-            <div className="cm-state-card">
-
-              Loading city boundaries...
-
-            </div>
-
+            <div className="cm-state-card">Loading city boundaries...</div>
           </div>
-
         )}
-
 
         {/* ====================================================
             ERROR
         ==================================================== */}
 
-        {!loading &&
-          error && (
-
-            <div className="cm-state">
-
-              <div className="cm-state-card cm-error-card">
-
-                {error}
-
-              </div>
-
+        {!loading && error && (
+          <div className="cm-state">
+            <div
+              className="
+                cm-state-card
+                cm-error-card
+              "
+            >
+              {error}
             </div>
-
-          )}
-
+          </div>
+        )}
       </div>
-
     </section>
   );
 }
