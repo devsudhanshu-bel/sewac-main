@@ -7,9 +7,8 @@ import {
 } from "react";
 
 import Map, {
-  Layer,
+  Marker,
   Popup,
-  Source,
 } from "react-map-gl/maplibre";
 
 import {
@@ -90,10 +89,137 @@ const GREY_MAP_STYLE = {
 
 
 /* ==========================================================
-   NORMALIZE WARD
+   HEADER STORAGE KEYS
 ========================================================== */
 
-function normalizeWardNumber(value) {
+const HEADER_WARD_KEYS = [
+  "selectedWard",
+  "selectedWardNo",
+  "wardNo",
+  "ward",
+  "selected_ward",
+  "headerWardNo",
+];
+
+const HEADER_DATE_KEYS = [
+  "selectedDate",
+  "dashboardDate",
+  "headerDate",
+  "date",
+  "selected_date",
+  "dashboard_date",
+];
+
+
+/* ==========================================================
+   HEADER VALUE
+========================================================== */
+
+function getHeaderStoredValue(keys) {
+
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  /* LOCAL STORAGE */
+
+  for (
+    const key of keys
+  ) {
+
+    try {
+
+      const value =
+        window.localStorage.getItem(
+          key
+        );
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+
+    } catch {
+      // Ignore
+    }
+  }
+
+
+  /* SESSION STORAGE */
+
+  for (
+    const key of keys
+  ) {
+
+    try {
+
+      const value =
+        window.sessionStorage.getItem(
+          key
+        );
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+
+    } catch {
+      // Ignore
+    }
+  }
+
+
+  /* URL */
+
+  try {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    for (
+      const key of keys
+    ) {
+
+      const value =
+        params.get(key);
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+
+  } catch {
+    // Ignore
+  }
+
+
+  return null;
+}
+
+
+/* ==========================================================
+   WARD NORMALIZER
+========================================================== */
+
+function normalizeWardNumber(
+  value
+) {
+
   if (
     value === null ||
     value === undefined ||
@@ -102,54 +228,121 @@ function normalizeWardNumber(value) {
     return null;
   }
 
+
   if (
-    typeof value === "object"
+    typeof value ===
+      "object" &&
+    !Array.isArray(value)
   ) {
-    const possibleValues = [
+
+    const candidates = [
+
       value.ward_no,
+
       value.wardNo,
+
       value.ward_number,
+
       value.wardNumber,
+
       value.ward_id,
+
       value.id,
+
       value.value,
+
       value.ward_name,
+
       value.name,
+
     ];
 
-    for (const candidate of possibleValues) {
-      const normalized =
-        normalizeWardNumber(candidate);
 
-      if (normalized !== null) {
+    for (
+      const candidate of
+      candidates
+    ) {
+
+      const normalized =
+        normalizeWardNumber(
+          candidate
+        );
+
+      if (
+        normalized !== null
+      ) {
         return normalized;
       }
     }
 
+
     return null;
   }
 
+
   const match =
-    String(value).match(/\d+/);
+    String(value).match(
+      /\d+/
+    );
+
 
   if (!match) {
     return null;
   }
 
+
   const number =
     Number(match[0]);
 
-  return Number.isInteger(number)
+
+  return Number.isInteger(
+    number
+  )
     ? number
     : null;
 }
 
 
 /* ==========================================================
-   NORMALIZE DATE
+   DATE FORMAT
 ========================================================== */
 
-function normalizeHeaderDate(value) {
+function formatDateObject(
+  date
+) {
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  return `${year}-${month}-${day}`;
+}
+
+
+/* ==========================================================
+   DATE NORMALIZER
+========================================================== */
+
+function normalizeHeaderDate(
+  value
+) {
+
   if (
     value === null ||
     value === undefined ||
@@ -158,7 +351,11 @@ function normalizeHeaderDate(value) {
     return null;
   }
 
-  if (value instanceof Date) {
+
+  if (
+    value instanceof Date
+  ) {
+
     if (
       Number.isNaN(
         value.getTime()
@@ -167,46 +364,91 @@ function normalizeHeaderDate(value) {
       return null;
     }
 
-    return formatDateObject(value);
+
+    return formatDateObject(
+      value
+    );
   }
 
+
   const raw =
-    String(value)
-      .trim();
+    String(value).trim();
+
+
+  /* YYYY-MM-DD */
 
   let match =
     raw.match(
       /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/
     );
 
+
   if (match) {
+
     return [
       match[1],
-      String(match[2]).padStart(2, "0"),
-      String(match[3]).padStart(2, "0"),
+
+      String(
+        match[2]
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      String(
+        match[3]
+      ).padStart(
+        2,
+        "0"
+      ),
+
     ].join("-");
   }
+
+
+  /* DD-MM-YYYY */
 
   match =
     raw.match(
       /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/
     );
 
+
   if (match) {
+
     return [
       match[3],
-      String(match[2]).padStart(2, "0"),
-      String(match[1]).padStart(2, "0"),
+
+      String(
+        match[2]
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      String(
+        match[1]
+      ).padStart(
+        2,
+        "0"
+      ),
+
     ].join("-");
   }
+
+
+  /* DD MON YYYY */
 
   match =
     raw.match(
       /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/
     );
 
+
   if (match) {
-    const monthMap = {
+
+    const months = {
+
       jan: "01",
       january: "01",
 
@@ -242,70 +484,71 @@ function normalizeHeaderDate(value) {
 
       dec: "12",
       december: "12",
+
     };
 
+
     const month =
-      monthMap[
-        match[2].toLowerCase()
+      months[
+        match[2]
+          .toLowerCase()
       ];
 
+
     if (month) {
+
       return [
         match[3],
+
         month,
-        String(match[1]).padStart(2, "0"),
+
+        String(
+          match[1]
+        ).padStart(
+          2,
+          "0"
+        ),
+
       ].join("-");
     }
   }
 
+
+  /* JAVASCRIPT DATE */
+
   const parsed =
     new Date(raw);
+
 
   if (
     !Number.isNaN(
       parsed.getTime()
     )
   ) {
-    return formatDateObject(parsed);
+
+    return formatDateObject(
+      parsed
+    );
   }
+
 
   return null;
 }
 
 
 /* ==========================================================
-   FORMAT DATE OBJECT
-========================================================== */
-
-function formatDateObject(date) {
-  const year =
-    date.getFullYear();
-
-  const month =
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
-
-  const day =
-    String(
-      date.getDate()
-    ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-
-/* ==========================================================
-   FIND HEADER DATE
+   FIND DATE FROM HEADER
 ========================================================== */
 
 function findHeaderDate() {
+
   if (
     typeof document ===
     "undefined"
   ) {
     return null;
   }
+
 
   const buttons =
     Array.from(
@@ -314,39 +557,46 @@ function findHeaderDate() {
       )
     );
 
-  for (const button of buttons) {
+
+  for (
+    const button of
+    buttons
+  ) {
+
     const text =
       button.textContent
-        ?.replace(/\s+/g, " ")
+        ?.replace(
+          /\s+/g,
+          " "
+        )
         .trim();
+
 
     if (!text) {
       continue;
     }
 
-    const embedded =
+
+    const match =
       text.match(
         /\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}\b/
       );
 
-    if (embedded) {
+
+    if (match) {
+
       const parsed =
         normalizeHeaderDate(
-          embedded[0]
+          match[0]
         );
+
 
       if (parsed) {
         return parsed;
       }
     }
-
-    const normalized =
-      normalizeHeaderDate(text);
-
-    if (normalized) {
-      return normalized;
-    }
   }
+
 
   const headers =
     Array.from(
@@ -355,139 +605,50 @@ function findHeaderDate() {
       )
     );
 
-  for (const header of headers) {
+
+  for (
+    const header of
+    headers
+  ) {
+
     const text =
       header.textContent
-        ?.replace(/\s+/g, " ")
+        ?.replace(
+          /\s+/g,
+          " "
+        )
         .trim();
+
 
     if (!text) {
       continue;
     }
+
 
     const match =
       text.match(
         /\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}\b/
       );
 
+
     if (!match) {
       continue;
     }
+
 
     const parsed =
       normalizeHeaderDate(
         match[0]
       );
 
+
     if (parsed) {
       return parsed;
     }
   }
 
+
   return null;
-}
-
-
-/* ==========================================================
-   SAFE DISPLAY VALUE
-========================================================== */
-
-function formatValue(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return "—";
-  }
-
-  if (
-    typeof value === "boolean"
-  ) {
-    return value
-      ? "true"
-      : "false";
-  }
-
-  if (
-    typeof value === "object"
-  ) {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
-}
-
-
-/* ==========================================================
-   FORMAT FIELD NAME
-========================================================== */
-
-function formatFieldName(field) {
-  return String(field)
-    .replace(
-      /([A-Z])/g,
-      " $1"
-    )
-    .replace(
-      /[_-]+/g,
-      " "
-    )
-    .replace(
-      /^./,
-      (char) =>
-        char.toUpperCase()
-    );
-}
-
-
-/* ==========================================================
-   POPUP ROW
-========================================================== */
-
-function PopupDataRow({
-  label,
-  value,
-}) {
-  return (
-    <div
-      className="
-        grid
-        grid-cols-[105px_1fr]
-        gap-2
-        py-1.5
-        border-b
-        border-slate-100
-        last:border-b-0
-      "
-    >
-      <span
-        className="
-          text-[10px]
-          font-medium
-          text-slate-400
-          break-words
-        "
-      >
-        {label}
-      </span>
-
-      <span
-        className="
-          text-[10px]
-          font-medium
-          text-slate-700
-          break-words
-        "
-      >
-        {formatValue(value)}
-      </span>
-    </div>
-  );
 }
 
 
@@ -495,7 +656,10 @@ function PopupDataRow({
    NUMBER HELPER
 ========================================================== */
 
-function toFiniteNumber(value) {
+function toFiniteNumber(
+  value
+) {
+
   if (
     value === null ||
     value === undefined ||
@@ -504,76 +668,150 @@ function toFiniteNumber(value) {
     return null;
   }
 
+
   const number =
     Number(value);
 
-  return Number.isFinite(number)
+
+  return Number.isFinite(
+    number
+  )
     ? number
     : null;
 }
 
 
 /* ==========================================================
-   FIND COORDINATES FROM ANY POINT SHAPE
+   NORMALIZE COORDINATE PAIR
 ========================================================== */
 
 /*
- * This is the important fix.
+ * MapLibre expects:
  *
- * The old code only checked:
+ * longitude, latitude
  *
- * vehicle.points
+ * Bengaluru:
  *
- * This function supports all common backend
- * representations.
+ * latitude  ≈ 12.x
+ * longitude ≈ 77.x
+ *
+ * Therefore:
+ *
+ * [12.91, 77.63]
+ *
+ * is interpreted as:
+ *
+ * latitude, longitude
+ *
+ * and converted to:
+ *
+ * [77.63, 12.91]
  */
 
-function extractCoordinates(point) {
-  if (!point) {
+function normalizeCoordinatePair(
+  firstValue,
+  secondValue
+) {
+
+  const first =
+    toFiniteNumber(
+      firstValue
+    );
+
+  const second =
+    toFiniteNumber(
+      secondValue
+    );
+
+
+  if (
+    first === null ||
+    second === null
+  ) {
     return null;
   }
 
 
-  /* --------------------------------------------------------
-     ARRAY COORDINATES
-     [longitude, latitude]
-  -------------------------------------------------------- */
+  /* [LAT, LNG] */
+
+  if (
+    Math.abs(first) <= 30 &&
+    Math.abs(second) >= 60 &&
+    Math.abs(second) <= 180
+  ) {
+
+    return {
+
+      latitude:
+        first,
+
+      longitude:
+        second,
+
+    };
+  }
+
+
+  /* [LNG, LAT] */
+
+  if (
+    Math.abs(first) <= 180 &&
+    Math.abs(second) <= 90
+  ) {
+
+    return {
+
+      longitude:
+        first,
+
+      latitude:
+        second,
+
+    };
+  }
+
+
+  return null;
+}
+
+
+/* ==========================================================
+   EXTRACT COORDINATES
+========================================================== */
+
+function extractCoordinates(
+  point
+) {
+
+  if (
+    point === null ||
+    point === undefined
+  ) {
+    return null;
+  }
+
+
+  /* ARRAY */
 
   if (
     Array.isArray(point) &&
     point.length >= 2
   ) {
-    const first =
-      toFiniteNumber(point[0]);
 
-    const second =
-      toFiniteNumber(point[1]);
+    const result =
+      normalizeCoordinatePair(
+        point[0],
+        point[1]
+      );
 
-    if (
-      first !== null &&
-      second !== null
-    ) {
-      /*
-       * GeoJSON convention:
-       * [longitude, latitude]
-       */
 
-      if (
-        Math.abs(first) <= 180 &&
-        Math.abs(second) <= 90
-      ) {
-        return {
-          longitude: first,
-          latitude: second,
-        };
-      }
+    if (result) {
+      return result;
     }
   }
 
 
-  /* --------------------------------------------------------
-     coordinates: [lng, lat]
-  -------------------------------------------------------- */
+  /* coordinates */
 
   if (
     Array.isArray(
@@ -581,31 +819,21 @@ function extractCoordinates(point) {
     ) &&
     point.coordinates.length >= 2
   ) {
-    const longitude =
-      toFiniteNumber(
-        point.coordinates[0]
-      );
 
-    const latitude =
-      toFiniteNumber(
+    const result =
+      normalizeCoordinatePair(
+        point.coordinates[0],
         point.coordinates[1]
       );
 
-    if (
-      longitude !== null &&
-      latitude !== null
-    ) {
-      return {
-        longitude,
-        latitude,
-      };
+
+    if (result) {
+      return result;
     }
   }
 
 
-  /* --------------------------------------------------------
-     location.coordinates
-  -------------------------------------------------------- */
+  /* location.coordinates */
 
   if (
     point.location &&
@@ -614,104 +842,149 @@ function extractCoordinates(point) {
     ) &&
     point.location.coordinates.length >= 2
   ) {
-    const longitude =
-      toFiniteNumber(
-        point.location.coordinates[0]
-      );
 
-    const latitude =
-      toFiniteNumber(
+    const result =
+      normalizeCoordinatePair(
+        point.location.coordinates[0],
         point.location.coordinates[1]
       );
 
-    if (
-      longitude !== null &&
-      latitude !== null
-    ) {
-      return {
-        longitude,
-        latitude,
-      };
+
+    if (result) {
+      return result;
     }
   }
 
 
-  /* --------------------------------------------------------
-     LATITUDE / LONGITUDE
-  -------------------------------------------------------- */
+  /* latitude */
 
   const latitudeCandidates = [
+
     point.latitude,
+
     point.lat,
+
     point.latitud,
+
     point.gps_latitude,
+
     point.gpsLatitude,
+
     point.latitude_value,
+
+    point.lat_value,
+
   ];
+
+
+  /* longitude */
 
   const longitudeCandidates = [
+
     point.longitude,
+
     point.lng,
+
     point.lon,
+
     point.long,
+
     point.gps_longitude,
+
     point.gpsLongitude,
+
     point.longitude_value,
+
+    point.lng_value,
+
   ];
 
+
   let latitude = null;
+
   let longitude = null;
 
-  for (
-    const candidate
-    of latitudeCandidates
-  ) {
-    const value =
-      toFiniteNumber(candidate);
 
-    if (value !== null) {
-      latitude = value;
+  for (
+    const candidate of
+    latitudeCandidates
+  ) {
+
+    const value =
+      toFiniteNumber(
+        candidate
+      );
+
+
+    if (
+      value !== null
+    ) {
+
+      latitude =
+        value;
+
       break;
     }
   }
 
-  for (
-    const candidate
-    of longitudeCandidates
-  ) {
-    const value =
-      toFiniteNumber(candidate);
 
-    if (value !== null) {
-      longitude = value;
+  for (
+    const candidate of
+    longitudeCandidates
+  ) {
+
+    const value =
+      toFiniteNumber(
+        candidate
+      );
+
+
+    if (
+      value !== null
+    ) {
+
+      longitude =
+        value;
+
       break;
     }
   }
+
 
   if (
     latitude !== null &&
     longitude !== null
   ) {
-    return {
-      latitude,
-      longitude,
-    };
+
+    if (
+      Math.abs(latitude) <= 90 &&
+      Math.abs(longitude) <= 180
+    ) {
+
+      return {
+
+        latitude,
+
+        longitude,
+
+      };
+    }
   }
 
 
-  /* --------------------------------------------------------
-     NESTED LOCATION OBJECT
-  -------------------------------------------------------- */
+  /* NESTED LOCATION */
 
   if (
     point.location &&
     typeof point.location ===
       "object"
   ) {
+
     const nested =
       extractCoordinates(
         point.location
       );
+
 
     if (nested) {
       return nested;
@@ -719,19 +992,19 @@ function extractCoordinates(point) {
   }
 
 
-  /* --------------------------------------------------------
-     NESTED DATA OBJECT
-  -------------------------------------------------------- */
+  /* NESTED DATA */
 
   if (
     point.data &&
     typeof point.data ===
       "object"
   ) {
+
     const nested =
       extractCoordinates(
         point.data
       );
+
 
     if (nested) {
       return nested;
@@ -739,19 +1012,19 @@ function extractCoordinates(point) {
   }
 
 
-  /* --------------------------------------------------------
-     NESTED TELEMETRY
-  -------------------------------------------------------- */
+  /* NESTED TELEMETRY */
 
   if (
     point.telemetry &&
     typeof point.telemetry ===
       "object"
   ) {
+
     const nested =
       extractCoordinates(
         point.telemetry
       );
+
 
     if (nested) {
       return nested;
@@ -764,56 +1037,71 @@ function extractCoordinates(point) {
 
 
 /* ==========================================================
-   FIND POINT ARRAY INSIDE VEHICLE
+   FIND POINT ARRAY
 ========================================================== */
 
-function extractPointArray(vehicle) {
+function extractPointArray(
+  vehicle
+) {
+
   if (!vehicle) {
     return [];
   }
 
 
-  /* --------------------------------------------------------
-     DIRECT ARRAYS
-  -------------------------------------------------------- */
-
   const possibleArrays = [
+
     vehicle.points,
+
     vehicle.gps_points,
+
     vehicle.gpsPoints,
+
     vehicle.gps_data,
+
     vehicle.gpsData,
+
     vehicle.locations,
+
     vehicle.location_points,
+
     vehicle.locationPoints,
+
     vehicle.coordinates,
+
     vehicle.records,
+
     vehicle.records_data,
+
     vehicle.telemetry,
+
     vehicle.data?.points,
+
     vehicle.data?.gps_points,
+
     vehicle.data?.gpsPoints,
+
     vehicle.data?.locations,
+
     vehicle.data?.records,
+
   ];
 
 
   for (
-    const candidate
-    of possibleArrays
+    const candidate of
+    possibleArrays
   ) {
+
     if (
       Array.isArray(candidate) &&
       candidate.length > 0
     ) {
+
       return candidate;
     }
   }
 
-
-  /* --------------------------------------------------------
-     IF VEHICLE ITSELF IS AN ARRAY
-  -------------------------------------------------------- */
 
   if (
     Array.isArray(vehicle)
@@ -830,23 +1118,10 @@ function extractPointArray(vehicle) {
    NORMALIZE VEHICLES
 ========================================================== */
 
-/*
- * Supports:
- *
- * vehicles: {
- *   "vehicle1": {...},
- *   "vehicle2": {...}
- * }
- *
- * AND:
- *
- * vehicles: [
- *   {...},
- *   {...}
- * ]
- */
+function normalizeVehicles(
+  data
+) {
 
-function normalizeVehicles(data) {
   if (!data) {
     return [];
   }
@@ -866,8 +1141,13 @@ function normalizeVehicles(data) {
       vehicleCollection
     )
   ) {
+
     return vehicleCollection.map(
-      (vehicle, index) => ({
+      (
+        vehicle,
+        index
+      ) => ({
+
         vehicleKey:
           vehicle?.vehicleNumber ||
           vehicle?.vehicle_number ||
@@ -879,6 +1159,7 @@ function normalizeVehicles(data) {
           `vehicle-${index + 1}`,
 
         vehicle,
+
       })
     );
   }
@@ -889,6 +1170,7 @@ function normalizeVehicles(data) {
     typeof vehicleCollection ===
       "object"
   ) {
+
     return Object.entries(
       vehicleCollection
     ).map(
@@ -896,33 +1178,39 @@ function normalizeVehicles(data) {
         vehicleKey,
         vehicle,
       ]) => ({
+
         vehicleKey,
+
         vehicle,
+
       })
     );
   }
 
-
-  /*
-   * Some APIs return a single vehicle.
-   */
 
   if (
     data.vehicle &&
     typeof data.vehicle ===
       "object"
   ) {
+
     return [
+
       {
+
         vehicleKey:
-          data.vehicle.vehicleNumber ||
-          data.vehicle.vehicle_number ||
+          data.vehicle
+            .vehicleNumber ||
+          data.vehicle
+            .vehicle_number ||
           data.vehicle.id ||
           "vehicle-1",
 
         vehicle:
           data.vehicle,
+
       },
+
     ];
   }
 
@@ -932,24 +1220,36 @@ function normalizeVehicles(data) {
 
 
 /* ==========================================================
-   GET VEHICLE NAME
+   VEHICLE NAME
 ========================================================== */
 
 function getVehicleName(
   vehicleKey,
   vehicle
 ) {
+
   return (
+
     vehicle?.vehicleNumber ||
+
     vehicle?.vehicle_number ||
+
     vehicle?.vehicleNo ||
+
     vehicle?.vehicle_no ||
+
     vehicle?.vehicle_name ||
+
     vehicle?.vehicleName ||
+
     vehicle?.registrationNumber ||
+
     vehicle?.registration_number ||
+
     vehicleKey ||
+
     "Vehicle"
+
   );
 }
 
@@ -958,15 +1258,11 @@ function getVehicleName(
    EXTRACT ALL GPS POINTS
 ========================================================== */
 
-/*
- * This converts whatever the backend gives us
- * into one consistent array.
- */
-
 function extractAllGpsPoints(
   monitoringData,
   normalizedWard
 ) {
+
   const output = [];
 
 
@@ -974,10 +1270,6 @@ function extractAllGpsPoints(
     return output;
   }
 
-
-  /* --------------------------------------------------------
-     VEHICLE BASED DATA
-  -------------------------------------------------------- */
 
   const vehicles =
     normalizeVehicles(
@@ -1022,54 +1314,81 @@ function extractAllGpsPoints(
           }
 
 
+          if (
+            Math.abs(
+              coordinates.latitude
+            ) > 90 ||
+            Math.abs(
+              coordinates.longitude
+            ) > 180
+          ) {
+            return;
+          }
+
+
           output.push({
+
             vehicleKey,
+
             vehicle,
+
             point,
+
             pointIndex,
+
             coordinates,
+
             wardNo:
               vehicle?.ward_no ??
               vehicle?.wardNo ??
               vehicle?.ward_number ??
               normalizedWard,
+
           });
+
         }
       );
+
     }
   );
 
 
-  /* --------------------------------------------------------
-     TOP LEVEL POINT ARRAYS
-  -------------------------------------------------------- */
-
-  const topLevelArrays = [
-    monitoringData.points,
-    monitoringData.gps_points,
-    monitoringData.gpsPoints,
-    monitoringData.locations,
-    monitoringData.records,
-    monitoringData.data?.points,
-    monitoringData.data?.gps_points,
-    monitoringData.data?.gpsPoints,
-    monitoringData.data?.locations,
-    monitoringData.data?.records,
-  ];
-
-
-  /*
-   * Only use top-level arrays if vehicle extraction
-   * didn't already give us the same records.
-   */
+  /* ========================================================
+     TOP LEVEL ARRAYS
+  ======================================================== */
 
   if (
     output.length === 0
   ) {
 
+    const topLevelArrays = [
+
+      monitoringData.points,
+
+      monitoringData.gps_points,
+
+      monitoringData.gpsPoints,
+
+      monitoringData.locations,
+
+      monitoringData.records,
+
+      monitoringData.data?.points,
+
+      monitoringData.data?.gps_points,
+
+      monitoringData.data?.gpsPoints,
+
+      monitoringData.data?.locations,
+
+      monitoringData.data?.records,
+
+    ];
+
+
     for (
-      const candidate
-      of topLevelArrays
+      const candidate of
+      topLevelArrays
     ) {
 
       if (
@@ -1105,6 +1424,7 @@ function extractAllGpsPoints(
 
 
           output.push({
+
             vehicleKey:
               point?.vehicleNumber ||
               point?.vehicle_number ||
@@ -1127,7 +1447,9 @@ function extractAllGpsPoints(
               point?.ward_no ??
               point?.wardNo ??
               normalizedWard,
+
           });
+
         }
       );
 
@@ -1146,10 +1468,185 @@ function extractAllGpsPoints(
 
 
 /* ==========================================================
+   SAFE JSON
+========================================================== */
+
+function safeJSONStringify(
+  value
+) {
+
+  try {
+
+    return JSON.stringify(
+      value,
+      (
+        key,
+        currentValue
+      ) => {
+
+        if (
+          typeof currentValue ===
+          "bigint"
+        ) {
+
+          return String(
+            currentValue
+          );
+        }
+
+
+        return currentValue;
+
+      }
+    );
+
+  } catch {
+
+    return "{}";
+  }
+}
+
+
+/* ==========================================================
+   FORMAT VALUE
+========================================================== */
+
+function formatValue(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+
+    return "—";
+  }
+
+
+  if (
+    typeof value ===
+    "boolean"
+  ) {
+
+    return value
+      ? "true"
+      : "false";
+  }
+
+
+  if (
+    typeof value ===
+    "object"
+  ) {
+
+    try {
+
+      return JSON.stringify(
+        value
+      );
+
+    } catch {
+
+      return String(
+        value
+      );
+    }
+  }
+
+
+  return String(
+    value
+  );
+}
+
+
+/* ==========================================================
+   FORMAT FIELD NAME
+========================================================== */
+
+function formatFieldName(
+  field
+) {
+
+  return String(field)
+
+    .replace(
+      /([A-Z])/g,
+      " $1"
+    )
+
+    .replace(
+      /[_-]+/g,
+      " "
+    )
+
+    .replace(
+      /^./,
+      (char) =>
+        char.toUpperCase()
+    );
+}
+
+
+/* ==========================================================
+   POPUP ROW
+========================================================== */
+
+function PopupDataRow({
+  label,
+  value,
+}) {
+
+  return (
+
+    <div
+      className="
+        grid
+        grid-cols-[105px_1fr]
+        gap-2
+        py-1.5
+        border-b
+        border-slate-100
+        last:border-b-0
+      "
+    >
+
+      <span
+        className="
+          text-[10px]
+          font-medium
+          text-slate-400
+          break-words
+        "
+      >
+        {label}
+      </span>
+
+
+      <span
+        className="
+          text-[10px]
+          font-medium
+          text-slate-700
+          break-words
+        "
+      >
+        {formatValue(value)}
+      </span>
+
+    </div>
+  );
+}
+
+
+/* ==========================================================
    MAIN COMPONENT
 ========================================================== */
 
 export default function WasteGenMap({
+
   wardNo:
     wardNoProp = null,
 
@@ -1158,6 +1655,7 @@ export default function WasteGenMap({
 
   selectedDate:
     selectedDateProp = null,
+
 }) {
 
   /* ========================================================
@@ -1165,7 +1663,8 @@ export default function WasteGenMap({
   ======================================================== */
 
   const {
-    selectedWard: contextWard,
+    selectedWard:
+      contextWard,
   } =
     useFilters();
 
@@ -1222,6 +1721,12 @@ export default function WasteGenMap({
 
 
   const [
+    mapLoaded,
+    setMapLoaded,
+  ] = useState(false);
+
+
+  const [
     headerDate,
     setHeaderDate,
   ] = useState(
@@ -1229,7 +1734,10 @@ export default function WasteGenMap({
       normalizeHeaderDate(
         selectedDateProp
       ) ||
-      findHeaderDate()
+      findHeaderDate() ||
+      getHeaderStoredValue(
+        HEADER_DATE_KEYS
+      )
   );
 
 
@@ -1246,9 +1754,12 @@ export default function WasteGenMap({
   ======================================================== */
 
   const selectedWard =
-    selectedWardProp ||
-    wardNoProp ||
-    contextWard;
+    selectedWardProp ??
+    wardNoProp ??
+    contextWard ??
+    getHeaderStoredValue(
+      HEADER_WARD_KEYS
+    );
 
 
   const normalizedWard =
@@ -1271,7 +1782,9 @@ export default function WasteGenMap({
     normalizeHeaderDate(
       selectedDateProp
     ) ||
-    headerDate;
+    normalizeHeaderDate(
+      headerDate
+    );
 
 
   /* ========================================================
@@ -1299,10 +1812,12 @@ export default function WasteGenMap({
           detectedDate !==
             headerDate
         ) {
+
           console.log(
             "📅 HEADER DATE CHANGED:",
             detectedDate
           );
+
 
           setHeaderDate(
             detectedDate
@@ -1314,53 +1829,35 @@ export default function WasteGenMap({
     updateHeaderDate();
 
 
-    if (
-      typeof MutationObserver !==
-      "undefined"
-    ) {
-
-      const observer =
-        new MutationObserver(
-          () => {
-            updateHeaderDate();
-          }
-        );
-
-
-      observer.observe(
-        document.body,
-        {
-          childList: true,
-          subtree: true,
-          characterData: true,
+    const observer =
+      new MutationObserver(
+        () => {
+          updateHeaderDate();
         }
       );
 
 
+    observer.observe(
+      document.body,
+      {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      }
+    );
+
+
+    headerObserverRef.current =
+      observer;
+
+
+    return () => {
+
+      observer.disconnect();
+
       headerObserverRef.current =
-        observer;
-
-
-      return () => {
-        observer.disconnect();
-
-        headerObserverRef.current =
-          null;
-      };
-    }
-
-
-    const interval =
-      window.setInterval(
-        updateHeaderDate,
-        500
-      );
-
-
-    return () =>
-      window.clearInterval(
-        interval
-      );
+        null;
+    };
 
   }, [
     selectedDateProp,
@@ -1466,13 +1963,19 @@ export default function WasteGenMap({
         }
 
 
-        setLoading(true);
+        setLoading(
+          true
+        );
 
         setError("");
 
-        setHoveredPoint(null);
+        setHoveredPoint(
+          null
+        );
 
-        setHoverPosition(null);
+        setHoverPosition(
+          null
+        );
 
 
         try {
@@ -1488,7 +1991,7 @@ export default function WasteGenMap({
 
 
           console.log(
-            "================================================"
+            "=============================================="
           );
 
           console.log(
@@ -1511,7 +2014,7 @@ export default function WasteGenMap({
           );
 
           console.log(
-            "================================================"
+            "=============================================="
           );
 
 
@@ -1519,7 +2022,8 @@ export default function WasteGenMap({
             await fetch(
               url,
               {
-                method: "GET",
+                method:
+                  "GET",
 
                 headers: {
                   Accept:
@@ -1533,9 +2037,12 @@ export default function WasteGenMap({
 
 
           try {
+
             result =
               await response.json();
+
           } catch {
+
             throw new Error(
               "Backend returned an invalid JSON response."
             );
@@ -1545,6 +2052,7 @@ export default function WasteGenMap({
           if (
             !response.ok
           ) {
+
             throw new Error(
               result?.message ||
               `Collection point API returned HTTP ${response.status}`
@@ -1556,6 +2064,7 @@ export default function WasteGenMap({
             result?.success ===
             false
           ) {
+
             throw new Error(
               result?.message ||
               "Unable to retrieve collection point data."
@@ -1566,7 +2075,13 @@ export default function WasteGenMap({
           /*
            * IMPORTANT:
            *
-           * Don't blindly assume result.data.
+           * Support both:
+           *
+           * { data: {...} }
+           *
+           * and:
+           *
+           * {...}
            */
 
           const data =
@@ -1605,15 +2120,30 @@ export default function WasteGenMap({
 
 
           if (
-            extracted.length === 0
+            extracted.length >
+            0
+          ) {
+
+            console.log(
+              "📍 FIRST GPS POINT:",
+              extracted[0]
+            );
+
+
+            console.log(
+              "📍 FIRST COORDINATES:",
+              extracted[0].coordinates
+            );
+          }
+
+
+          if (
+            extracted.length ===
+            0
           ) {
 
             console.warn(
-              "⚠️ API returned GPS counts but no coordinates were found."
-            );
-
-            console.warn(
-              "⚠️ Inspect the object above under NORMALIZED DATA."
+              "⚠️ Point count exists, but no valid coordinates were extracted."
             );
           }
 
@@ -1638,9 +2168,12 @@ export default function WasteGenMap({
             "Failed to load collection point data."
           );
 
+
         } finally {
 
-          setLoading(false);
+          setLoading(
+            false
+          );
         }
 
       },
@@ -1665,7 +2198,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     EXTRACT GPS RECORDS
+     EXTRACT GPS
   ======================================================== */
 
   const extractedGpsPoints =
@@ -1683,128 +2216,184 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     GEOJSON
+     PREPARE MARKERS
   ======================================================== */
 
-  const geoJson =
+  const mapPoints =
     useMemo(
       () => {
 
-        const features = [];
+        return extractedGpsPoints
+
+          .map(
+            (
+              item,
+              index
+            ) => {
+
+              const longitude =
+                Number(
+                  item
+                    .coordinates
+                    .longitude
+                );
 
 
-        extractedGpsPoints.forEach(
-          ({
-            vehicleKey,
-            vehicle,
-            point,
-            pointIndex,
-            coordinates,
-            wardNo,
-          }) => {
-
-            const telemetry =
-              point?.data ||
-              point?.telemetry ||
-              point ||
-              {};
+              const latitude =
+                Number(
+                  item
+                    .coordinates
+                    .latitude
+                );
 
 
-            features.push({
+              if (
+                !Number.isFinite(
+                  longitude
+                ) ||
+                !Number.isFinite(
+                  latitude
+                )
+              ) {
 
-              type:
-                "Feature",
+                return null;
+              }
 
-              id:
-                `${vehicleKey}-${pointIndex}-${coordinates.longitude}-${coordinates.latitude}`,
 
-              geometry: {
+              return {
 
-                type:
-                  "Point",
+                ...item,
 
-                coordinates: [
-                  coordinates.longitude,
-                  coordinates.latitude,
-                ],
-              },
+                id:
+                  `${item.vehicleKey}-${item.pointIndex}-${index}`,
 
-              properties: {
+                longitude,
 
-                vehicleNumber:
+                latitude,
+
+                vehicleName:
                   getVehicleName(
-                    vehicleKey,
-                    vehicle
+                    item.vehicleKey,
+                    item.vehicle
                   ),
 
-                vehicleTableName:
-                  vehicle
-                    ?.vehicle_table_name ||
-                  vehicle
-                    ?.vehicleTableName ||
-                  vehicle
-                    ?.table_name ||
-                  vehicle
-                    ?.tableName ||
-                  "",
+              };
 
-                wardNo:
-                  wardNo ??
-                  normalizedWard,
+            }
+          )
 
-                pointIndex,
-
-                status:
-                  "registered",
-
-                telemetry:
-                  safeJSONStringify(
-                    telemetry
-                  ),
-              },
-            });
-          }
-        );
-
-
-        console.log(
-          "🗺️ GEOJSON FEATURES:",
-          features.length
-        );
-
-
-        return {
-
-          type:
-            "FeatureCollection",
-
-          features,
-        };
+          .filter(
+            Boolean
+          );
 
       },
       [
         extractedGpsPoints,
-        normalizedWard,
       ]
     );
 
 
   /* ========================================================
-     FIT MAP TO GPS DATA
+     GPS BOUNDS
+  ======================================================== */
+
+  const gpsBounds =
+    useMemo(
+      () => {
+
+        if (
+          mapPoints.length ===
+          0
+        ) {
+          return null;
+        }
+
+
+        let minLng =
+          Infinity;
+
+        let maxLng =
+          -Infinity;
+
+        let minLat =
+          Infinity;
+
+        let maxLat =
+          -Infinity;
+
+
+        mapPoints.forEach(
+          (
+            point
+          ) => {
+
+            minLng =
+              Math.min(
+                minLng,
+                point.longitude
+              );
+
+
+            maxLng =
+              Math.max(
+                maxLng,
+                point.longitude
+              );
+
+
+            minLat =
+              Math.min(
+                minLat,
+                point.latitude
+              );
+
+
+            maxLat =
+              Math.max(
+                maxLat,
+                point.latitude
+              );
+
+          }
+        );
+
+
+        return {
+
+          minLng,
+
+          maxLng,
+
+          minLat,
+
+          maxLat,
+
+        };
+
+      },
+      [
+        mapPoints,
+      ]
+    );
+
+
+  /* ========================================================
+     FIT MAP
   ======================================================== */
 
   useEffect(() => {
 
     if (
-      geoJson.features.length ===
-      0
+      !mapLoaded ||
+      !mapRef.current ||
+      !gpsBounds
     ) {
       return;
     }
 
 
     const map =
-      mapRef.current?.getMap();
+      mapRef.current.getMap();
 
 
     if (!map) {
@@ -1812,99 +2401,45 @@ export default function WasteGenMap({
     }
 
 
-    const coordinates =
-      geoJson.features
-        .map(
-          (
-            feature
-          ) =>
-            feature?.geometry?.coordinates
-        )
-        .filter(
-          (
-            coordinate
-          ) =>
-            Array.isArray(
-              coordinate
-            ) &&
-            coordinate.length === 2
-        );
+    const {
+      minLng,
+      maxLng,
+      minLat,
+      maxLat,
+    } =
+      gpsBounds;
 
+
+    console.log(
+      "🗺️ FITTING MAP:",
+      gpsBounds
+    );
+
+
+    /* ONE POINT */
 
     if (
-      coordinates.length ===
-      0
-    ) {
-      return;
-    }
-
-
-    if (
-      coordinates.length ===
-      1
+      minLng === maxLng &&
+      minLat === maxLat
     ) {
 
       map.flyTo({
 
-        center:
-          coordinates[0],
+        center: [
+          minLng,
+          minLat,
+        ],
 
         zoom:
           16,
 
         duration:
-          1200,
-      });
+          1000,
 
+      });
 
       return;
     }
-
-
-    let minLng =
-      Infinity;
-
-    let maxLng =
-      -Infinity;
-
-    let minLat =
-      Infinity;
-
-    let maxLat =
-      -Infinity;
-
-
-    coordinates.forEach(
-      ([
-        longitude,
-        latitude,
-      ]) => {
-
-        minLng =
-          Math.min(
-            minLng,
-            Number(longitude)
-          );
-
-        maxLng =
-          Math.max(
-            maxLng,
-            Number(longitude)
-          );
-
-        minLat =
-          Math.min(
-            minLat,
-            Number(latitude)
-          );
-
-        maxLat =
-          Math.max(
-            maxLat,
-            Number(latitude)
-          );
-      }
-    );
 
 
     const lngPadding =
@@ -1912,8 +2447,9 @@ export default function WasteGenMap({
         (
           maxLng -
           minLng
-        ) * 0.15,
-        0.002
+        ) * 0.12,
+
+        0.0015
       );
 
 
@@ -1922,193 +2458,177 @@ export default function WasteGenMap({
         (
           maxLat -
           minLat
-        ) * 0.15,
-        0.002
+        ) * 0.12,
+
+        0.0015
       );
 
 
     map.fitBounds(
+
       [
+
         [
+
           minLng -
             lngPadding,
 
           minLat -
             latPadding,
+
         ],
 
         [
+
           maxLng +
             lngPadding,
 
           maxLat +
             latPadding,
+
         ],
+
       ],
+
       {
-        padding: 45,
-        maxZoom: 16,
-        duration: 1200,
+
+        padding:
+          45,
+
+        maxZoom:
+          16,
+
+        duration:
+          1000,
+
       }
+
     );
 
   }, [
-    geoJson,
+    mapLoaded,
+    gpsBounds,
   ]);
 
 
   /* ========================================================
-     SNAP TO NEAREST POINT
+     MAP LOAD
   ======================================================== */
 
-  const handleMapMouseMove =
+  const handleMapLoad =
     useCallback(
-      (event) => {
+      () => {
 
-        const map =
-          mapRef.current?.getMap();
-
-
-        if (!map) {
-          return;
-        }
-
-
-        const x =
-          event.point.x;
-
-        const y =
-          event.point.y;
-
-
-        const SNAP_DISTANCE =
-          20;
-
-
-        const nearbyFeatures =
-          map.queryRenderedFeatures(
-            [
-              [
-                x -
-                  SNAP_DISTANCE,
-
-                y -
-                  SNAP_DISTANCE,
-              ],
-
-              [
-                x +
-                  SNAP_DISTANCE,
-
-                y +
-                  SNAP_DISTANCE,
-              ],
-            ],
-            {
-              layers: [
-                "collection-points",
-              ],
-            }
-          );
-
-
-        if (
-          !nearbyFeatures ||
-          nearbyFeatures.length ===
-            0
-        ) {
-
-          setHoveredPoint(null);
-
-          setHoverPosition(null);
-
-          return;
-        }
-
-
-        let nearestFeature =
-          nearbyFeatures[0];
-
-        let nearestDistance =
-          Infinity;
-
-
-        nearbyFeatures.forEach(
-          (feature) => {
-
-            if (
-              !feature?.geometry ||
-              feature.geometry.type !==
-                "Point"
-            ) {
-              return;
-            }
-
-
-            const coordinates =
-              feature.geometry.coordinates;
-
-
-            const projected =
-              map.project({
-
-                lng:
-                  Number(
-                    coordinates[0]
-                  ),
-
-                lat:
-                  Number(
-                    coordinates[1]
-                  ),
-              });
-
-
-            const distance =
-              Math.sqrt(
-
-                Math.pow(
-                  projected.x -
-                    x,
-                  2
-                ) +
-
-                Math.pow(
-                  projected.y -
-                    y,
-                  2
-                )
-
-              );
-
-
-            if (
-              distance <
-              nearestDistance
-            ) {
-
-              nearestDistance =
-                distance;
-
-              nearestFeature =
-                feature;
-            }
-          }
+        console.log(
+          "✅ MAPLIBRE MAP LOADED"
         );
 
 
-        if (
-          !nearestFeature?.geometry
-        ) {
-          return;
-        }
+        setMapLoaded(
+          true
+        );
 
 
-        const coordinates =
-          nearestFeature
-            .geometry
-            .coordinates;
+        setTimeout(
+          () => {
 
+            mapRef.current
+              ?.getMap()
+              ?.resize();
+
+          },
+          100
+        );
+
+      },
+      []
+    );
+
+
+  /* ========================================================
+     MAP RESIZE
+  ======================================================== */
+
+  useEffect(() => {
+
+    if (
+      !mapLoaded ||
+      !mapRef.current
+    ) {
+      return;
+    }
+
+
+    const map =
+      mapRef.current.getMap();
+
+
+    if (!map) {
+      return;
+    }
+
+
+    const timers = [
+
+      setTimeout(
+        () =>
+          map.resize(),
+        100
+      ),
+
+      setTimeout(
+        () =>
+          map.resize(),
+        500
+      ),
+
+      setTimeout(
+        () =>
+          map.resize(),
+        1000
+      ),
+
+    ];
+
+
+    const resize =
+      () =>
+        map.resize();
+
+
+    window.addEventListener(
+      "resize",
+      resize
+    );
+
+
+    return () => {
+
+      timers.forEach(
+        clearTimeout
+      );
+
+
+      window.removeEventListener(
+        "resize",
+        resize
+      );
+    };
+
+  }, [
+    mapLoaded,
+  ]);
+
+
+  /* ========================================================
+     POINT HOVER
+  ======================================================== */
+
+  const handlePointEnter =
+    useCallback(
+      (
+        point
+      ) => {
 
         let telemetryData =
           {};
@@ -2118,10 +2638,11 @@ export default function WasteGenMap({
 
           telemetryData =
             JSON.parse(
-              nearestFeature
-                ?.properties
-                ?.telemetry ||
-              "{}"
+              safeJSONStringify(
+                point?.point?.data ||
+                point?.point ||
+                {}
+              )
             );
 
         } catch {
@@ -2134,56 +2655,42 @@ export default function WasteGenMap({
         setHoveredPoint({
 
           vehicleNumber:
-            nearestFeature
-              ?.properties
-              ?.vehicleNumber ||
-            "Vehicle",
+            point.vehicleName,
 
           vehicleTableName:
-            nearestFeature
-              ?.properties
+            point.vehicle
+              ?.vehicle_table_name ||
+            point.vehicle
               ?.vehicleTableName ||
             "",
 
           wardNo:
-            nearestFeature
-              ?.properties
-              ?.wardNo ??
+            point.wardNo ??
             normalizedWard,
 
           pointIndex:
-            Number(
-              nearestFeature
-                ?.properties
-                ?.pointIndex
-            ) || 0,
+            point.pointIndex,
 
           latitude:
-            Number(
-              coordinates[1]
-            ),
+            point.latitude,
 
           longitude:
-            Number(
-              coordinates[0]
-            ),
+            point.longitude,
 
           data:
             telemetryData,
+
         });
 
 
         setHoverPosition({
 
           longitude:
-            Number(
-              coordinates[0]
-            ),
+            point.longitude,
 
           latitude:
-            Number(
-              coordinates[1]
-            ),
+            point.latitude,
+
         });
 
       },
@@ -2194,16 +2701,20 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     MOUSE LEAVE
+     POINT LEAVE
   ======================================================== */
 
-  const handleMapMouseLeave =
+  const handlePointLeave =
     useCallback(
       () => {
 
-        setHoveredPoint(null);
+        setHoveredPoint(
+          null
+        );
 
-        setHoverPosition(null);
+        setHoverPosition(
+          null
+        );
 
       },
       []
@@ -2211,7 +2722,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     ZOOM
+     ZOOM IN
   ======================================================== */
 
   const zoomIn =
@@ -2221,18 +2732,25 @@ export default function WasteGenMap({
         const map =
           mapRef.current?.getMap();
 
+
         if (!map) {
           return;
         }
 
+
         map.zoomIn({
-          duration: 300,
+          duration:
+            300,
         });
 
       },
       []
     );
 
+
+  /* ========================================================
+     ZOOM OUT
+  ======================================================== */
 
   const zoomOut =
     useCallback(
@@ -2241,12 +2759,15 @@ export default function WasteGenMap({
         const map =
           mapRef.current?.getMap();
 
+
         if (!map) {
           return;
         }
 
+
         map.zoomOut({
-          duration: 300,
+          duration:
+            300,
         });
 
       },
@@ -2260,30 +2781,25 @@ export default function WasteGenMap({
 
   const vehicleCount =
     Number(
-      monitoringData?.vehicle_count ??
-      monitoringData?.vehicleCount ??
-      monitoringData?.vehicles_count
-    ) ||
-    normalizeVehicles(
       monitoringData
-    ).length ||
-    0;
-
-
-  const apiPointCount =
-    Number(
-      monitoringData?.point_count ??
-      monitoringData?.pointCount ??
-      monitoringData?.gps_point_count ??
-      monitoringData?.gpsPointCount ??
-      monitoringData?.total_points ??
-      monitoringData?.totalPoints
-    ) || 0;
+        ?.vehicle_count
+    ) ||
+    new Set(
+      mapPoints.map(
+        (
+          point
+        ) =>
+          point.vehicleKey
+      )
+    ).size;
 
 
   const pointCount =
-    apiPointCount ||
-    geoJson.features.length;
+    Number(
+      monitoringData
+        ?.point_count
+    ) ||
+    mapPoints.length;
 
 
   /* ========================================================
@@ -2302,9 +2818,9 @@ export default function WasteGenMap({
       "
     >
 
-      {/* ====================================================
+      {/* ==================================================
           CARD
-      ==================================================== */}
+      ================================================== */}
 
       <div
         ref={collectionCardRef}
@@ -2355,6 +2871,8 @@ export default function WasteGenMap({
             "
           >
 
+            {/* REGISTERED */}
+
             <div
               className="
                 flex
@@ -2385,6 +2903,8 @@ export default function WasteGenMap({
 
             </div>
 
+
+            {/* VEHICLES */}
 
             <div
               className="
@@ -2420,6 +2940,8 @@ export default function WasteGenMap({
             </div>
 
 
+            {/* POINTS */}
+
             <div
               className="
                 hidden
@@ -2442,6 +2964,8 @@ export default function WasteGenMap({
             </div>
 
 
+            {/* REFRESH */}
+
             <button
               type="button"
               onClick={
@@ -2450,7 +2974,9 @@ export default function WasteGenMap({
               disabled={
                 loading
               }
-              title="Refresh collection points"
+              title="
+                Refresh collection points
+              "
               className="
                 w-8
                 h-8
@@ -2504,6 +3030,10 @@ export default function WasteGenMap({
 
             {...viewState}
 
+            onLoad={
+              handleMapLoad
+            }
+
             onMove={
               (event) =>
                 setViewState(
@@ -2511,31 +3041,16 @@ export default function WasteGenMap({
                 )
             }
 
-            onMouseMove={
-              handleMapMouseMove
-            }
-
-            onMouseLeave={
-              handleMapMouseLeave
-            }
-
-            interactiveLayerIds={[
-              "collection-points",
-            ]}
-
-            cursor={
-              hoveredPoint
-                ? "pointer"
-                : "default"
-            }
-
             mapStyle={
               GREY_MAP_STYLE
             }
 
             style={{
-              width: "100%",
-              height: "100%",
+              width:
+                "100%",
+
+              height:
+                "100%",
             }}
 
             attributionControl={
@@ -2544,213 +3059,104 @@ export default function WasteGenMap({
           >
 
             {/* =================================================
-                GPS SOURCE
+                ALL GPS POINTS
+
+                IMPORTANT:
+                We are deliberately using Marker instead of
+                the previous GeoJSON circle layer.
+
+                This directly places every GPS coordinate
+                on the map.
             ================================================= */}
 
-            <Source
-              id="collection-points-source"
-              type="geojson"
-              data={geoJson}
-            >
-
-              {/* WHITE HALO */}
-
-              <Layer
-                id="collection-points-halo"
-                type="circle"
-                paint={{
-
-                  "circle-radius": [
-                    "interpolate",
-
-                    [
-                      "linear",
-                    ],
-
-                    [
-                      "zoom",
-                    ],
-
-                    10,
-                    5,
-
-                    12,
-                    6.5,
-
-                    14,
-                    8,
-
-                    16,
-                    10,
-
-                    18,
-                    12,
-                  ],
-
-                  "circle-color":
-                    "#ffffff",
-
-                  "circle-opacity":
-                    0.96,
-
-                }}
-              />
-
-
-              {/* REGISTERED POINT */}
-
-              <Layer
-                id="collection-points"
-                type="circle"
-                paint={{
-
-                  "circle-radius": [
-                    "interpolate",
-
-                    [
-                      "linear",
-                    ],
-
-                    [
-                      "zoom",
-                    ],
-
-                    10,
-                    4.5,
-
-                    11,
-                    5,
-
-                    12,
-                    6,
-
-                    14,
-                    7.5,
-
-                    16,
-                    9,
-
-                    18,
-                    11,
-                  ],
-
-                  "circle-color":
-                    "#22c55e",
-
-                  "circle-opacity":
-                    0.96,
-
-                  "circle-stroke-color":
-                    "#ffffff",
-
-                  "circle-stroke-width":
-                    1.8,
-
-                  "circle-stroke-opacity":
-                    1,
-
-                }}
-              />
-
-            </Source>
-
-
-            {/* =================================================
-                HOVER SOURCE
-            ================================================= */}
-
-            {hoverPosition && (
-
-              <Source
-                id="collection-point-hover-source"
-                type="geojson"
-                data={{
-
-                  type:
-                    "FeatureCollection",
-
-                  features: [
-
-                    {
-
-                      type:
-                        "Feature",
-
-                      geometry: {
-
-                        type:
-                          "Point",
-
-                        coordinates: [
-
-                          hoverPosition
-                            .longitude,
-
-                          hoverPosition
-                            .latitude,
-
-                        ],
-                      },
-
-                      properties: {},
-                    },
-
-                  ],
-                }}
-              >
-
-                <Layer
-                  id="collection-point-hover-ring"
-                  type="circle"
-                  paint={{
-
-                    "circle-radius":
-                      14,
-
-                    "circle-color":
-                      "#22c55e",
-
-                    "circle-opacity":
-                      0.14,
-
-                    "circle-stroke-color":
-                      "#16a34a",
-
-                    "circle-stroke-width":
-                      2,
-
-                    "circle-stroke-opacity":
-                      0.9,
-
-                  }}
-                />
-
-
-                <Layer
-                  id="collection-point-hover-center"
-                  type="circle"
-                  paint={{
-
-                    "circle-radius":
-                      7,
-
-                    "circle-color":
-                      "#16a34a",
-
-                    "circle-opacity":
-                      1,
-
-                    "circle-stroke-color":
-                      "#ffffff",
-
-                    "circle-stroke-width":
-                      2,
-
-                  }}
-                />
-
-              </Source>
-
+            {mapPoints.map(
+              (
+                point
+              ) => (
+
+                <Marker
+                  key={
+                    point.id
+                  }
+
+                  longitude={
+                    point.longitude
+                  }
+
+                  latitude={
+                    point.latitude
+                  }
+
+                  anchor="center"
+                >
+
+                  <button
+                    type="button"
+
+                    aria-label={
+                      `GPS point ${
+                        point.pointIndex + 1
+                      }`
+                    }
+
+                    onMouseEnter={() =>
+                      handlePointEnter(
+                        point
+                      )
+                    }
+
+                    onMouseLeave={
+                      handlePointLeave
+                    }
+
+                    onFocus={() =>
+                      handlePointEnter(
+                        point
+                      )
+                    }
+
+                    onBlur={
+                      handlePointLeave
+                    }
+
+                    className="
+                      relative
+                      flex
+                      items-center
+                      justify-center
+                      w-[14px]
+                      h-[14px]
+                      rounded-full
+                      bg-green-500
+                      border-2
+                      border-white
+                      shadow-[0_1px_5px_rgba(0,0,0,0.35)]
+                      cursor-pointer
+                      p-0
+                      m-0
+                      outline-none
+                      transition-transform
+                      duration-150
+                      hover:scale-[1.35]
+                      focus:scale-[1.35]
+                    "
+                  >
+
+                    <span
+                      className="
+                        w-[5px]
+                        h-[5px]
+                        rounded-full
+                        bg-white
+                        pointer-events-none
+                      "
+                    />
+
+                  </button>
+
+                </Marker>
+
+              )
             )}
 
 
@@ -2783,7 +3189,9 @@ export default function WasteGenMap({
 
                   anchor="bottom"
 
-                  offset={18}
+                  offset={
+                    18
+                  }
 
                   className="
                     collection-point-popup
@@ -2799,6 +3207,8 @@ export default function WasteGenMap({
                       pr-1
                     "
                   >
+
+                    {/* HEADER */}
 
                     <div
                       className="
@@ -2871,6 +3281,8 @@ export default function WasteGenMap({
                     </div>
 
 
+                    {/* LOCATION */}
+
                     <div
                       className="
                         mb-2.5
@@ -2915,7 +3327,9 @@ export default function WasteGenMap({
                               Number(
                                 hoveredPoint
                                   .latitude
-                              ).toFixed(7)
+                              ).toFixed(
+                                7
+                              )
                             }
                           </p>
 
@@ -2948,7 +3362,9 @@ export default function WasteGenMap({
                               Number(
                                 hoveredPoint
                                   .longitude
-                              ).toFixed(7)
+                              ).toFixed(
+                                7
+                              )
                             }
                           </p>
 
@@ -2958,6 +3374,8 @@ export default function WasteGenMap({
 
                     </div>
 
+
+                    {/* BASIC DATA */}
 
                     <div
                       className="
@@ -2973,6 +3391,7 @@ export default function WasteGenMap({
                         }
                       />
 
+
                       <PopupDataRow
                         label="Vehicle Table"
                         value={
@@ -2980,6 +3399,7 @@ export default function WasteGenMap({
                             .vehicleTableName
                         }
                       />
+
 
                       <PopupDataRow
                         label="Point Index"
@@ -2991,10 +3411,12 @@ export default function WasteGenMap({
                         }
                       />
 
+
                       <PopupDataRow
                         label="Status"
                         value="Registered"
                       />
+
 
                       <PopupDataRow
                         label="Date"
@@ -3005,6 +3427,8 @@ export default function WasteGenMap({
 
                     </div>
 
+
+                    {/* TELEMETRY */}
 
                     <div>
 
@@ -3046,7 +3470,8 @@ export default function WasteGenMap({
                       {hoveredPoint.data &&
                         Object.keys(
                           hoveredPoint.data
-                        ).length > 0 ? (
+                        ).length >
+                          0 ? (
 
                         <div
                           className="
@@ -3066,12 +3491,16 @@ export default function WasteGenMap({
                             ]) => (
 
                               <PopupDataRow
-                                key={key}
+                                key={
+                                  key
+                                }
+
                                 label={
                                   formatFieldName(
                                     key
                                   )
                                 }
+
                                 value={
                                   value
                                 }
@@ -3136,7 +3565,9 @@ export default function WasteGenMap({
 
               <button
                 type="button"
-                onClick={zoomIn}
+                onClick={
+                  zoomIn
+                }
                 title="Zoom in"
                 className="
                   w-9
@@ -3162,7 +3593,9 @@ export default function WasteGenMap({
 
               <button
                 type="button"
-                onClick={zoomOut}
+                onClick={
+                  zoomOut
+                }
                 title="Zoom out"
                 className="
                   w-9
@@ -3189,7 +3622,7 @@ export default function WasteGenMap({
 
 
           {/* =================================================
-              WARD STATUS
+              WARD BADGE
           ================================================= */}
 
           {!loading &&
@@ -3231,6 +3664,7 @@ export default function WasteGenMap({
                     "
                   />
 
+
                   <span
                     className="
                       text-[10px]
@@ -3249,6 +3683,46 @@ export default function WasteGenMap({
 
 
           {/* =================================================
+              GPS PLOTTED BADGE
+          ================================================= */}
+
+          {!loading &&
+            !error &&
+            mapPoints.length > 0 && (
+
+              <div
+                className="
+                  absolute
+                  bottom-3
+                  left-3
+                  z-10
+                  bg-white/95
+                  backdrop-blur-sm
+                  rounded-lg
+                  border
+                  border-slate-100
+                  shadow-sm
+                  px-3
+                  py-1.5
+                "
+              >
+
+                <span
+                  className="
+                    text-[9px]
+                    font-semibold
+                    text-green-600
+                  "
+                >
+                  {mapPoints.length} GPS points plotted
+                </span>
+
+              </div>
+
+            )}
+
+
+          {/* =================================================
               LOADING
           ================================================= */}
 
@@ -3258,7 +3732,7 @@ export default function WasteGenMap({
               className="
                 absolute
                 inset-0
-                z-[5]
+                z-[20]
                 flex
                 items-center
                 justify-center
@@ -3290,6 +3764,7 @@ export default function WasteGenMap({
                   "
                 />
 
+
                 <span
                   className="
                     text-[11px]
@@ -3317,7 +3792,7 @@ export default function WasteGenMap({
                 className="
                   absolute
                   inset-0
-                  z-[5]
+                  z-[20]
                   flex
                   items-center
                   justify-center
@@ -3368,21 +3843,98 @@ export default function WasteGenMap({
 
 
           {/* =================================================
-              EMPTY
+              POINTS EXIST BUT NO COORDINATES
           ================================================= */}
 
           {!loading &&
             !error &&
             normalizedWard &&
             currentDate &&
-            geoJson.features.length ===
-              0 && (
+            pointCount > 0 &&
+            mapPoints.length === 0 && (
 
               <div
                 className="
                   absolute
                   inset-0
-                  z-[4]
+                  z-[15]
+                  flex
+                  items-center
+                  justify-center
+                  pointer-events-none
+                "
+              >
+
+                <div
+                  className="
+                    bg-white/95
+                    backdrop-blur-sm
+                    rounded-xl
+                    px-5
+                    py-4
+                    shadow-sm
+                    border
+                    border-red-100
+                    text-center
+                  "
+                >
+
+                  <MapPin
+                    size={18}
+                    className="
+                      mx-auto
+                      text-red-300
+                      mb-2
+                    "
+                  />
+
+
+                  <p
+                    className="
+                      text-[12px]
+                      font-medium
+                      text-slate-500
+                    "
+                  >
+                    No GPS coordinates found
+                  </p>
+
+
+                  <p
+                    className="
+                      text-[10px]
+                      text-slate-400
+                      mt-1
+                    "
+                  >
+                    The API returned {pointCount}{" "}
+                    points, but no valid latitude
+                    and longitude fields could be
+                    extracted.
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+          {/* =================================================
+              ZERO POINTS
+          ================================================= */}
+
+          {!loading &&
+            !error &&
+            normalizedWard &&
+            currentDate &&
+            pointCount === 0 && (
+
+              <div
+                className="
+                  absolute
+                  inset-0
+                  z-[15]
                   flex
                   items-center
                   justify-center
@@ -3421,7 +3973,7 @@ export default function WasteGenMap({
                       text-slate-500
                     "
                   >
-                    No GPS coordinates found
+                    No collection points found
                   </p>
 
 
@@ -3432,10 +3984,9 @@ export default function WasteGenMap({
                       mt-1
                     "
                   >
-                    The API returned {pointCount}{" "}
-                    points, but no valid latitude
-                    and longitude fields could be
-                    extracted.
+                    No GPS records were returned
+                    for Ward {normalizedWard}
+                    on {currentDate}.
                   </p>
 
                 </div>
@@ -3446,7 +3997,7 @@ export default function WasteGenMap({
 
 
           {/* =================================================
-              NO HEADER SELECTION
+              NO FILTER
           ================================================= */}
 
           {!loading &&
@@ -3459,7 +4010,7 @@ export default function WasteGenMap({
                 className="
                   absolute
                   inset-0
-                  z-[4]
+                  z-[15]
                   flex
                   items-center
                   justify-center
@@ -3543,37 +4094,28 @@ export default function WasteGenMap({
             className="
               flex
               items-center
-              gap-4
+              gap-2
             "
           >
 
-            <div
+            <span
               className="
-                flex
-                items-center
-                gap-2
+                w-2
+                h-2
+                rounded-full
+                bg-green-500
+              "
+            />
+
+
+            <span
+              className="
+                text-[10px]
+                text-slate-500
               "
             >
-
-              <span
-                className="
-                  w-2
-                  h-2
-                  rounded-full
-                  bg-green-500
-                "
-              />
-
-              <span
-                className="
-                  text-[10px]
-                  text-slate-500
-                "
-              >
-                All GPS points are registered
-              </span>
-
-            </div>
+              All GPS points are registered
+            </span>
 
           </div>
 
@@ -3613,38 +4155,4 @@ export default function WasteGenMap({
 
     </section>
   );
-}
-
-
-/* ==========================================================
-   SAFE JSON STRINGIFY
-========================================================== */
-
-function safeJSONStringify(value) {
-  try {
-
-    return JSON.stringify(
-      value,
-      (
-        key,
-        currentValue
-      ) => {
-
-        if (
-          typeof currentValue ===
-          "bigint"
-        ) {
-          return String(
-            currentValue
-          );
-        }
-
-        return currentValue;
-      }
-    );
-
-  } catch {
-
-    return "{}";
-  }
 }
