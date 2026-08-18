@@ -76,23 +76,10 @@ const GREY_MAP_STYLE = {
       source: "osm",
 
       paint: {
-        /*
-         * Strong desaturation gives us the
-         * grey map appearance.
-         */
-
         "raster-saturation": -1,
-
-        /*
-         * Slightly soften the map.
-         */
-
         "raster-contrast": -0.12,
-
-        /*
-         * Keep the GPS points dominant.
-         */
-
+        "raster-brightness-min": 0.12,
+        "raster-brightness-max": 0.92,
         "raster-opacity": 0.82,
       },
     },
@@ -101,59 +88,130 @@ const GREY_MAP_STYLE = {
 
 
 /* ==========================================================
-   GET TODAY'S DATE
+   HEADER STORAGE KEYS
 ========================================================== */
 
-function getTodayDate() {
-  const now = new Date();
+/*
+ * IMPORTANT:
+ *
+ * We are NOT changing the Header.
+ *
+ * WasteGenMap simply reads the values already maintained
+ * by the Header.
+ *
+ * Ward keys:
+ */
 
-  const year =
-    now.getFullYear();
+const HEADER_WARD_KEYS = [
+  "selectedWard",
+  "selectedWardNo",
+  "wardNo",
+  "ward",
+  "selected_ward",
+  "headerWardNo",
+];
 
-  const month =
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0");
 
-  const day =
-    String(
-      now.getDate()
-    ).padStart(2, "0");
+/*
+ * Date keys:
+ */
 
-  return `${year}-${month}-${day}`;
-}
+const HEADER_DATE_KEYS = [
+  "selectedDate",
+  "dashboardDate",
+  "headerDate",
+  "date",
+  "selected_date",
+  "dashboard_date",
+];
 
 
 /* ==========================================================
-   LOCAL STORAGE HELPER
+   READ HEADER VALUE
 ========================================================== */
 
-function getStoredValue(
-  ...keys
-) {
+function getHeaderStoredValue(keys) {
   if (
-    typeof window ===
-    "undefined"
+    typeof window === "undefined"
   ) {
     return null;
   }
 
-  for (
-    const key of keys
-  ) {
-    const value =
-      localStorage.getItem(
-        key
-      );
+  /*
+   * Check localStorage first.
+   */
 
-    if (
-      value !== null &&
-      value !== undefined &&
-      value !== ""
-    ) {
-      return value;
+  for (const key of keys) {
+    try {
+      const value =
+        window.localStorage.getItem(key);
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+    } catch {
+      // Ignore storage errors.
     }
   }
+
+
+  /*
+   * Then check sessionStorage.
+   */
+
+  for (const key of keys) {
+    try {
+      const value =
+        window.sessionStorage.getItem(key);
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+    } catch {
+      // Ignore storage errors.
+    }
+  }
+
+
+  /*
+   * Finally check URL query parameters.
+   *
+   * This does NOT change the Header.
+   * It simply allows the component to consume
+   * an existing dynamic header selection if it
+   * is represented in the URL.
+   */
+
+  try {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    for (const key of keys) {
+      const value =
+        params.get(key);
+
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+  } catch {
+    // Ignore URL parsing errors.
+  }
+
 
   return null;
 }
@@ -172,9 +230,7 @@ function getStoredValue(
  * "Ibbalur (216)"
  */
 
-function normalizeWardNumber(
-  value
-) {
+function normalizeWardNumber(value) {
   if (
     value === null ||
     value === undefined ||
@@ -195,11 +251,160 @@ function normalizeWardNumber(
   const number =
     Number(match[0]);
 
-  return Number.isInteger(
-    number
-  )
+  return Number.isInteger(number)
     ? number
     : null;
+}
+
+
+/* ==========================================================
+   NORMALIZE HEADER DATE
+========================================================== */
+
+/*
+ * Backend expects:
+ *
+ * YYYY-MM-DD
+ *
+ * Supported Header values:
+ *
+ * 2026-08-17
+ * 2026/08/17
+ * 17-08-2026
+ * 17/08/2026
+ * ISO datetime strings
+ */
+
+function normalizeHeaderDate(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const raw =
+    String(value).trim();
+
+
+  /*
+   * YYYY-MM-DD
+   */
+
+  let match =
+    raw.match(
+      /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/
+    );
+
+  if (match) {
+    const year =
+      match[1];
+
+    const month =
+      String(match[2]).padStart(
+        2,
+        "0"
+      );
+
+    const day =
+      String(match[3]).padStart(
+        2,
+        "0"
+      );
+
+    return `${year}-${month}-${day}`;
+  }
+
+
+  /*
+   * DD-MM-YYYY
+   *
+   * or
+   *
+   * DD/MM/YYYY
+   */
+
+  match =
+    raw.match(
+      /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/
+    );
+
+  if (match) {
+    const day =
+      String(match[1]).padStart(
+        2,
+        "0"
+      );
+
+    const month =
+      String(match[2]).padStart(
+        2,
+        "0"
+      );
+
+    const year =
+      match[3];
+
+    return `${year}-${month}-${day}`;
+  }
+
+
+  /*
+   * If Header stores a normal
+   * JavaScript date / ISO datetime.
+   */
+
+  const parsed =
+    new Date(raw);
+
+  if (
+    !Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    const year =
+      parsed.getFullYear();
+
+    const month =
+      String(
+        parsed.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      );
+
+    const day =
+      String(
+        parsed.getDate()
+      ).padStart(
+        2,
+        "0"
+      );
+
+    return `${year}-${month}-${day}`;
+  }
+
+
+  return null;
+}
+
+
+/* ==========================================================
+   INITIAL HEADER STATE
+========================================================== */
+
+function getHeaderWard() {
+  return getHeaderStoredValue(
+    HEADER_WARD_KEYS
+  );
+}
+
+
+function getHeaderDate() {
+  return getHeaderStoredValue(
+    HEADER_DATE_KEYS
+  );
 }
 
 
@@ -207,9 +412,7 @@ function normalizeWardNumber(
    SAFE DISPLAY VALUE
 ========================================================== */
 
-function formatValue(
-  value
-) {
+function formatValue(value) {
   if (
     value === null ||
     value === undefined ||
@@ -219,8 +422,7 @@ function formatValue(
   }
 
   if (
-    typeof value ===
-    "boolean"
+    typeof value === "boolean"
   ) {
     return value
       ? "true"
@@ -228,23 +430,18 @@ function formatValue(
   }
 
   if (
-    typeof value ===
-    "object"
+    typeof value === "object"
   ) {
     try {
       return JSON.stringify(
         value
       );
     } catch {
-      return String(
-        value
-      );
+      return String(value);
     }
   }
 
-  return String(
-    value
-  );
+  return String(value);
 }
 
 
@@ -252,9 +449,7 @@ function formatValue(
    FORMAT FIELD NAME
 ========================================================== */
 
-function formatFieldName(
-  field
-) {
+function formatFieldName(field) {
   return String(field)
     .replace(
       /([A-Z])/g,
@@ -322,11 +517,7 @@ function PopupDataRow({
    MAIN COMPONENT
 ========================================================== */
 
-export default function WasteGenMap({
-  wardNo: wardNoProp = null,
-  selectedWard: selectedWardProp = null,
-  selectedDate: selectedDateProp = null,
-}) {
+export default function WasteGenMap() {
 
   /* ========================================================
      REFS
@@ -343,7 +534,59 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     STATE
+     HEADER STATE
+  ======================================================== */
+
+  const [
+    headerWard,
+    setHeaderWard,
+  ] = useState(
+    getHeaderWard
+  );
+
+  const [
+    headerDate,
+    setHeaderDate,
+  ] = useState(
+    getHeaderDate
+  );
+
+
+  /* ========================================================
+     NORMALIZED HEADER VALUES
+  ======================================================== */
+
+  const normalizedWard =
+    useMemo(
+      () =>
+        normalizeWardNumber(
+          headerWard
+        ),
+      [headerWard]
+    );
+
+
+  /*
+   * IMPORTANT:
+   *
+   * There is intentionally NO getTodayDate()
+   * fallback here.
+   *
+   * The date MUST come from Header.
+   */
+
+  const currentDate =
+    useMemo(
+      () =>
+        normalizeHeaderDate(
+          headerDate
+        ),
+      [headerDate]
+    );
+
+
+  /* ========================================================
+     DATA STATE
   ======================================================== */
 
   const [
@@ -380,49 +623,114 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     RESOLVE HEADER WARD
-  ======================================================== */
-
-  const selectedWard =
-    selectedWardProp ??
-    wardNoProp ??
-    getStoredValue(
-      "selectedWard",
-      "selectedWardNo",
-      "wardNo",
-      "ward",
-      "selected_ward",
-      "headerWardNo"
-    );
-
-  const normalizedWard =
-    useMemo(
-      () =>
-        normalizeWardNumber(
-          selectedWard
-        ),
-      [selectedWard]
-    );
-
-
-  /* ========================================================
-     RESOLVE DATE
-  ======================================================== */
-
-  const currentDate =
-    selectedDateProp ||
-    getStoredValue(
-      "selectedDate",
-      "dashboardDate"
-    ) ||
-    getTodayDate();
-
-
-  /* ========================================================
-     GSAP CARD ANIMATION
+     READ HEADER CHANGES
   ======================================================== */
 
   useEffect(() => {
+
+    /*
+     * The Header can update localStorage/sessionStorage
+     * inside the same browser tab.
+     *
+     * Because the native "storage" event does not fire
+     * in the same tab that changed localStorage, we also
+     * perform a lightweight check periodically.
+     */
+
+    const checkHeaderState =
+      () => {
+
+        const nextWard =
+          getHeaderWard();
+
+        const nextDate =
+          getHeaderDate();
+
+
+        setHeaderWard(
+          (previous) => {
+
+            if (
+              String(previous ?? "") !==
+              String(nextWard ?? "")
+            ) {
+              return nextWard;
+            }
+
+            return previous;
+          }
+        );
+
+
+        setHeaderDate(
+          (previous) => {
+
+            if (
+              String(previous ?? "") !==
+              String(nextDate ?? "")
+            ) {
+              return nextDate;
+            }
+
+            return previous;
+          }
+        );
+      };
+
+
+    /*
+     * Immediately check.
+     */
+
+    checkHeaderState();
+
+
+    /*
+     * Listen for cross-tab storage changes.
+     */
+
+    window.addEventListener(
+      "storage",
+      checkHeaderState
+    );
+
+
+    /*
+     * Lightweight same-tab polling.
+     *
+     * This means the Header does NOT need
+     * to be modified.
+     */
+
+    const interval =
+      window.setInterval(
+        checkHeaderState,
+        500
+      );
+
+
+    return () => {
+
+      window.removeEventListener(
+        "storage",
+        checkHeaderState
+      );
+
+      window.clearInterval(
+        interval
+      );
+
+    };
+
+  }, []);
+
+
+  /* ========================================================
+     GSAP ANIMATION
+  ======================================================== */
+
+  useEffect(() => {
+
     const ctx =
       gsap.context(
         () => {
@@ -434,6 +742,7 @@ export default function WasteGenMap({
                   "power3.out",
               },
             });
+
 
           tl.from(
             sectionRef.current,
@@ -455,6 +764,7 @@ export default function WasteGenMap({
         },
         sectionRef
       );
+
 
     return () =>
       ctx.revert();
@@ -495,6 +805,30 @@ export default function WasteGenMap({
 
 
         /* --------------------------------------------------
+           NO DATE
+        -------------------------------------------------- */
+
+        if (
+          !currentDate
+        ) {
+
+          setMonitoringData(
+            null
+          );
+
+          setError(
+            "Please select a date from the header."
+          );
+
+          setLoading(
+            false
+          );
+
+          return;
+        }
+
+
+        /* --------------------------------------------------
            START LOADING
         -------------------------------------------------- */
 
@@ -516,7 +850,7 @@ export default function WasteGenMap({
         try {
 
           /* ----------------------------------------------
-             BUILD API URL
+             API URL
           ---------------------------------------------- */
 
           const url =
@@ -538,12 +872,12 @@ export default function WasteGenMap({
           );
 
           console.log(
-            "WARD:",
+            "WARD FROM HEADER:",
             normalizedWard
           );
 
           console.log(
-            "DATE:",
+            "DATE FROM HEADER:",
             currentDate
           );
 
@@ -577,7 +911,7 @@ export default function WasteGenMap({
 
 
           /* ----------------------------------------------
-             PARSE RESPONSE
+             PARSE JSON
           ---------------------------------------------- */
 
           let result;
@@ -680,7 +1014,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     FETCH WHEN HEADER WARD / DATE CHANGES
+     FETCH WHEN HEADER CHANGES
   ======================================================== */
 
   useEffect(() => {
@@ -754,9 +1088,9 @@ export default function WasteGenMap({
                   );
 
 
-                /* ----------------------------------------
-                   VALID GPS
-                ---------------------------------------- */
+                /*
+                 * Ignore invalid coordinates.
+                 */
 
                 if (
                   !Number.isFinite(
@@ -770,17 +1104,25 @@ export default function WasteGenMap({
                 }
 
 
-                /*
-                 * Ignore obviously invalid
-                 * 0,0 coordinates.
-                 */
-
                 if (
                   latitude === 0 &&
                   longitude === 0
                 ) {
                   return;
                 }
+
+
+                /*
+                 * Complete telemetry row.
+                 *
+                 * Backend already converts BigInt
+                 * into JSON-safe values.
+                 */
+
+                const telemetry =
+                  point?.data ||
+                  point ||
+                  {};
 
 
                 features.push({
@@ -811,27 +1153,21 @@ export default function WasteGenMap({
                     vehicleTableName:
                       vehicle
                         ?.vehicle_table_name ||
+                      vehicle
+                        ?.vehicleTableName ||
                       "",
 
                     wardNo:
                       vehicle?.ward_no ??
+                      vehicle?.wardNo ??
                       normalizedWard,
 
                     pointIndex:
                       pointIndex,
 
-                    /*
-                     * Complete telemetry row.
-                     *
-                     * Backend has already converted
-                     * BigInt values into JSON-safe
-                     * strings.
-                     */
-
                     telemetry:
                       JSON.stringify(
-                        point?.data ||
-                        {}
+                        telemetry
                       ),
 
                   },
@@ -863,7 +1199,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     FIT MAP TO ALL GPS POINTS
+     FIT MAP TO GPS POINTS
   ======================================================== */
 
   useEffect(() => {
@@ -923,7 +1259,7 @@ export default function WasteGenMap({
 
 
     /* ------------------------------------------------------
-       SINGLE POINT
+       SINGLE GPS POINT
     ------------------------------------------------------ */
 
     if (
@@ -974,33 +1310,25 @@ export default function WasteGenMap({
         minLng =
           Math.min(
             minLng,
-            Number(
-              longitude
-            )
+            Number(longitude)
           );
 
         maxLng =
           Math.max(
             maxLng,
-            Number(
-              longitude
-            )
+            Number(longitude)
           );
 
         minLat =
           Math.min(
             minLat,
-            Number(
-              latitude
-            )
+            Number(latitude)
           );
 
         maxLat =
           Math.max(
             maxLat,
-            Number(
-              latitude
-            )
+            Number(latitude)
           );
 
       }
@@ -1008,7 +1336,7 @@ export default function WasteGenMap({
 
 
     /* ------------------------------------------------------
-       FIT
+       FIT BOUNDS
     ------------------------------------------------------ */
 
     map.fitBounds(
@@ -1039,7 +1367,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     HOVER / SNAP TO NEAREST POINT
+     HOVER / SNAP TO NEAREST GPS POINT
   ======================================================== */
 
   const handleMapMouseMove =
@@ -1055,22 +1383,22 @@ export default function WasteGenMap({
         }
 
 
-        /*
-         * Instead of requiring the mouse to be
-         * exactly over a 6px point, we search a
-         * small 18px square around the cursor.
-         *
-         * This creates the requested SNAP behaviour.
-         */
-
         const x =
           event.point.x;
 
         const y =
           event.point.y;
 
+
+        /*
+         * Snap radius.
+         *
+         * The point does NOT need to be
+         * hit exactly.
+         */
+
         const SNAP_DISTANCE =
-          14;
+          18;
 
 
         const nearbyFeatures =
@@ -1115,10 +1443,9 @@ export default function WasteGenMap({
         }
 
 
-        /*
-         * Find the feature closest to
-         * the actual cursor.
-         */
+        /* --------------------------------------------------
+           FIND NEAREST POINT
+        -------------------------------------------------- */
 
         let nearestFeature =
           nearbyFeatures[0];
@@ -1148,19 +1475,17 @@ export default function WasteGenMap({
 
 
             const projected =
-              map.project(
-                {
-                  lng:
-                    Number(
-                      coordinates[0]
-                    ),
+              map.project({
+                lng:
+                  Number(
+                    coordinates[0]
+                  ),
 
-                  lat:
-                    Number(
-                      coordinates[1]
-                    ),
-                }
-              );
+                lat:
+                  Number(
+                    coordinates[1]
+                  ),
+              });
 
 
             const distance =
@@ -1209,9 +1534,9 @@ export default function WasteGenMap({
             .coordinates;
 
 
-        /* ----------------------------------------------------
-           TELEMETRY DATA
-        ---------------------------------------------------- */
+        /* --------------------------------------------------
+           PARSE TELEMETRY
+        -------------------------------------------------- */
 
         let telemetryData =
           {};
@@ -1235,9 +1560,9 @@ export default function WasteGenMap({
         }
 
 
-        /* ----------------------------------------------------
-           UPDATE HOVERED POINT
-        ---------------------------------------------------- */
+        /* --------------------------------------------------
+           SET HOVERED POINT
+        -------------------------------------------------- */
 
         setHoveredPoint({
 
@@ -1282,12 +1607,8 @@ export default function WasteGenMap({
 
 
         /*
-         * IMPORTANT:
-         *
-         * Popup goes to the GPS coordinate,
-         * NOT the cursor position.
-         *
-         * This gives the snap effect.
+         * Popup is anchored to the
+         * actual GPS point.
          */
 
         setHoverPosition({
@@ -1336,46 +1657,54 @@ export default function WasteGenMap({
      ZOOM IN
   ======================================================== */
 
-  function zoomIn() {
+  const zoomIn =
+    useCallback(
+      () => {
 
-    const map =
-      mapRef.current?.getMap();
-
-
-    if (!map) {
-      return;
-    }
+        const map =
+          mapRef.current?.getMap();
 
 
-    map.zoomIn({
-      duration:
-        300,
-    });
+        if (!map) {
+          return;
+        }
 
-  }
+
+        map.zoomIn({
+          duration:
+            300,
+        });
+
+      },
+      []
+    );
 
 
   /* ========================================================
      ZOOM OUT
   ======================================================== */
 
-  function zoomOut() {
+  const zoomOut =
+    useCallback(
+      () => {
 
-    const map =
-      mapRef.current?.getMap();
-
-
-    if (!map) {
-      return;
-    }
+        const map =
+          mapRef.current?.getMap();
 
 
-    map.zoomOut({
-      duration:
-        300,
-    });
+        if (!map) {
+          return;
+        }
 
-  }
+
+        map.zoomOut({
+          duration:
+            300,
+        });
+
+      },
+      []
+    );
 
 
   /* ========================================================
@@ -1383,14 +1712,20 @@ export default function WasteGenMap({
   ======================================================== */
 
   const vehicleCount =
-    monitoringData
-      ?.vehicle_count ||
-    0;
+    Number(
+      monitoringData
+        ?.vehicle_count ||
+      0
+    );
+
 
   const pointCount =
-    monitoringData
-      ?.point_count ||
-    0;
+    Number(
+      monitoringData
+        ?.point_count ||
+      geoJson.features.length ||
+      0
+    );
 
 
   /* ========================================================
@@ -1478,7 +1813,7 @@ export default function WasteGenMap({
             "
           >
 
-            {/* REGISTERED */}
+            {/* REGISTERED POINT */}
 
             <div
               className="
@@ -1582,9 +1917,7 @@ export default function WasteGenMap({
               disabled={
                 loading
               }
-              title="
-                Refresh collection points
-              "
+              title="Refresh collection points"
               className="
                 w-8
                 h-8
@@ -1632,10 +1965,6 @@ export default function WasteGenMap({
             bg-[#F7F8FB]
           "
         >
-
-          {/* =================================================
-              MAP
-          ================================================= */}
 
           <Map
             ref={mapRef}
@@ -1685,19 +2014,13 @@ export default function WasteGenMap({
           >
 
             {/* =================================================
-                GPS POINT SOURCE
+                COLLECTION POINT SOURCE
             ================================================= */}
 
             <Source
-              id="
-                collection-points-source
-              "
-
+              id="collection-points-source"
               type="geojson"
-
-              data={
-                geoJson
-              }
+              data={geoJson}
             >
 
               {/* =============================================
@@ -1705,39 +2028,29 @@ export default function WasteGenMap({
               ============================================= */}
 
               <Layer
-                id="
-                  collection-points-halo
-                "
-
+                id="collection-points-halo"
                 type="circle"
-
                 paint={{
 
                   "circle-radius": [
                     "interpolate",
-
-                    [
-                      "linear",
-                    ],
-
-                    [
-                      "zoom",
-                    ],
+                    ["linear"],
+                    ["zoom"],
 
                     10,
-                    5.5,
-
-                    12,
                     7,
 
+                    12,
+                    9,
+
                     14,
-                    8.5,
+                    11,
 
                     16,
-                    10,
+                    13,
 
                     18,
-                    12,
+                    15,
                   ],
 
                   "circle-color":
@@ -1751,71 +2064,61 @@ export default function WasteGenMap({
 
 
               {/* =============================================
-                  REGISTERED GPS POINTS
+                  ALL GPS POINTS
+                  ALL = REGISTERED
               ============================================= */}
 
               <Layer
-                id="
-                  collection-points
-                "
-
+                id="collection-points"
                 type="circle"
-
                 paint={{
 
                   /*
-                   * Thick points.
+                   * THICK GPS POINTS
                    */
 
                   "circle-radius": [
                     "interpolate",
-
-                    [
-                      "linear",
-                    ],
-
-                    [
-                      "zoom",
-                    ],
+                    ["linear"],
+                    ["zoom"],
 
                     10,
-                    4.5,
+                    5.5,
 
                     11,
-                    5,
+                    6,
 
                     12,
-                    5.8,
-
-                    14,
                     7,
 
+                    13,
+                    8,
+
+                    14,
+                    9,
+
                     16,
-                    8.5,
+                    10.5,
 
                     18,
-                    10.5,
+                    12,
                   ],
 
                   /*
-                   * ALL points are registered.
+                   * ALL POINTS ARE REGISTERED.
                    */
 
                   "circle-color":
                     "#22c55e",
 
                   "circle-opacity":
-                    0.96,
-
-                  /*
-                   * White border.
-                   */
+                    0.98,
 
                   "circle-stroke-color":
                     "#ffffff",
 
                   "circle-stroke-width":
-                    1.8,
+                    2,
 
                   "circle-stroke-opacity":
                     1,
@@ -1833,12 +2136,8 @@ export default function WasteGenMap({
             {hoverPosition && (
 
               <Source
-                id="
-                  collection-point-hover-source
-                "
-
+                id="collection-point-hover-source"
                 type="geojson"
-
                 data={{
                   type:
                     "FeatureCollection",
@@ -1849,6 +2148,7 @@ export default function WasteGenMap({
                         "Feature",
 
                       geometry: {
+
                         type:
                           "Point",
 
@@ -1856,6 +2156,7 @@ export default function WasteGenMap({
                           hoverPosition.longitude,
                           hoverPosition.latitude,
                         ],
+
                       },
 
                       properties: {},
@@ -1867,22 +2168,18 @@ export default function WasteGenMap({
                 {/* OUTER SNAP RING */}
 
                 <Layer
-                  id="
-                    collection-point-hover-ring
-                  "
-
+                  id="collection-point-hover-ring"
                   type="circle"
-
                   paint={{
 
                     "circle-radius":
-                      13,
+                      16,
 
                     "circle-color":
                       "#22c55e",
 
                     "circle-opacity":
-                      0.16,
+                      0.12,
 
                     "circle-stroke-color":
                       "#16a34a",
@@ -1891,7 +2188,7 @@ export default function WasteGenMap({
                       2,
 
                     "circle-stroke-opacity":
-                      0.85,
+                      0.9,
 
                   }}
                 />
@@ -1900,16 +2197,12 @@ export default function WasteGenMap({
                 {/* SNAP CENTER */}
 
                 <Layer
-                  id="
-                    collection-point-hover-center
-                  "
-
+                  id="collection-point-hover-center"
                   type="circle"
-
                   paint={{
 
                     "circle-radius":
-                      7,
+                      8,
 
                     "circle-color":
                       "#16a34a",
@@ -1921,7 +2214,7 @@ export default function WasteGenMap({
                       "#ffffff",
 
                     "circle-stroke-width":
-                      2,
+                      2.5,
 
                   }}
                 />
@@ -1958,7 +2251,7 @@ export default function WasteGenMap({
                   anchor="bottom"
 
                   offset={
-                    16
+                    18
                   }
 
                   className="
@@ -1992,8 +2285,6 @@ export default function WasteGenMap({
                       "
                     >
 
-                      {/* ICON */}
-
                       <div
                         className="
                           w-8
@@ -2016,8 +2307,6 @@ export default function WasteGenMap({
 
                       </div>
 
-
-                      {/* VEHICLE */}
 
                       <div
                         className="
@@ -2178,11 +2467,18 @@ export default function WasteGenMap({
                         }
                       />
 
+                      <PopupDataRow
+                        label="Date"
+                        value={
+                          currentDate
+                        }
+                      />
+
                     </div>
 
 
                     {/* ======================================
-                        TELEMETRY DATA
+                        TELEMETRY
                     ====================================== */}
 
                     <div>
@@ -2215,7 +2511,7 @@ export default function WasteGenMap({
                             font-medium
                           "
                         >
-                          LIVE RECORD
+                          REGISTERED
                         </span>
 
                       </div>
@@ -2317,8 +2613,6 @@ export default function WasteGenMap({
               "
             >
 
-              {/* PLUS */}
-
               <button
                 type="button"
                 onClick={
@@ -2346,8 +2640,6 @@ export default function WasteGenMap({
 
               </button>
 
-
-              {/* MINUS */}
 
               <button
                 type="button"
@@ -2385,7 +2677,8 @@ export default function WasteGenMap({
 
           {!loading &&
             !error &&
-            normalizedWard && (
+            normalizedWard &&
+            currentDate && (
 
               <div
                 className="
@@ -2429,6 +2722,24 @@ export default function WasteGenMap({
                     "
                   >
                     Ward {normalizedWard}
+                  </span>
+
+                  <span
+                    className="
+                      text-[9px]
+                      text-slate-400
+                    "
+                  >
+                    •
+                  </span>
+
+                  <span
+                    className="
+                      text-[9px]
+                      text-slate-400
+                    "
+                  >
+                    {currentDate}
                   </span>
 
                 </div>
@@ -2525,7 +2836,7 @@ export default function WasteGenMap({
                     border
                     border-red-100
                     text-center
-                    max-w-[280px]
+                    max-w-[300px]
                   "
                 >
 
@@ -2563,6 +2874,7 @@ export default function WasteGenMap({
           {!loading &&
             !error &&
             normalizedWard &&
+            currentDate &&
             geoJson.features.length ===
               0 && (
 
@@ -2630,11 +2942,12 @@ export default function WasteGenMap({
 
 
           {/* =================================================
-              NO WARD
+              NO HEADER SELECTION
           ================================================= */}
 
           {!loading &&
-            !normalizedWard && (
+            (!normalizedWard ||
+              !currentDate) && (
 
               <div
                 className="
@@ -2678,7 +2991,7 @@ export default function WasteGenMap({
                       text-slate-500
                     "
                   >
-                    Select a ward
+                    Select ward and date
                   </p>
 
                   <p
@@ -2688,8 +3001,9 @@ export default function WasteGenMap({
                       mt-1
                     "
                   >
-                    Choose a ward from the header
-                    to load collection points.
+                    Choose the ward and date from
+                    the header to load collection
+                    points.
                   </p>
 
                 </div>
