@@ -1,42 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import Map, {
   Layer,
-  NavigationControl,
   Popup,
   Source,
 } from "react-map-gl/maplibre";
 
-import { Plus, Minus, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Minus,
+  RefreshCw,
+  MapPin,
+  Truck,
+} from "lucide-react";
+
 import { gsap } from "gsap";
-
-
-/* ==========================================================
-   MAPLIBRE CSS
-========================================================== */
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
 
 /* ==========================================================
-   CONFIG
+   API CONFIG
 ========================================================== */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5000";
+
+
+/* ==========================================================
+   DEFAULT MAP VIEW
+========================================================== */
+
+const DEFAULT_VIEW_STATE = {
+  longitude: 77.5946,
+  latitude: 12.9716,
+  zoom: 11,
+};
 
 
 /* ==========================================================
    GREY MAP STYLE
 ========================================================== */
-
-/*
- * We use OpenStreetMap raster tiles and apply a strong
- * desaturation effect through MapLibre.
- *
- * This gives the map the grey / neutral appearance required
- * for the dashboard.
- */
 
 const GREY_MAP_STYLE = {
   version: 8,
@@ -53,13 +64,12 @@ const GREY_MAP_STYLE = {
 
       attribution:
         "© OpenStreetMap contributors",
-
     },
   },
 
   layers: [
     {
-      id: "osm",
+      id: "osm-grey",
 
       type: "raster",
 
@@ -67,22 +77,23 @@ const GREY_MAP_STYLE = {
 
       paint: {
         /*
-         * Make the base map grey.
+         * Strong desaturation gives us the
+         * grey map appearance.
          */
 
         "raster-saturation": -1,
 
         /*
-         * Slightly reduce contrast / visual intensity.
+         * Slightly soften the map.
          */
 
-        "raster-contrast": -0.15,
+        "raster-contrast": -0.12,
 
         /*
-         * Keep the map visible behind the points.
+         * Keep the GPS points dominant.
          */
 
-        "raster-opacity": 0.78,
+        "raster-opacity": 0.82,
       },
     },
   ],
@@ -90,145 +101,242 @@ const GREY_MAP_STYLE = {
 
 
 /* ==========================================================
-   DEFAULT CENTER
+   GET TODAY'S DATE
 ========================================================== */
-
-const DEFAULT_VIEW_STATE = {
-  longitude: 77.5946,
-  latitude: 12.9716,
-  zoom: 11,
-};
-
-
-/* ==========================================================
-   HELPERS
-========================================================== */
-
-
-/*
- * Convert:
- *
- * 2026-08-18
- *
- * into:
- *
- * day_18082026
- *
- * Backend handles this itself, so the frontend only sends
- * the normal YYYY-MM-DD date.
- */
 
 function getTodayDate() {
-
-  const now =
-    new Date();
-
+  const now = new Date();
 
   const year =
     now.getFullYear();
-
 
   const month =
     String(
       now.getMonth() + 1
     ).padStart(2, "0");
 
-
   const day =
     String(
       now.getDate()
     ).padStart(2, "0");
 
-
   return `${year}-${month}-${day}`;
-
 }
 
 
 /* ==========================================================
-   SAFE VALUE FORMATTER
+   LOCAL STORAGE HELPER
 ========================================================== */
 
-function formatValue(
+function getStoredValue(
+  ...keys
+) {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return null;
+  }
+
+  for (
+    const key of keys
+  ) {
+    const value =
+      localStorage.getItem(
+        key
+      );
+
+    if (
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+
+/* ==========================================================
+   NORMALIZE WARD NUMBER
+========================================================== */
+
+/*
+ * Supports:
+ *
+ * 216
+ * "216"
+ * "Ward 216"
+ * "Ibbalur (216)"
+ */
+
+function normalizeWardNumber(
   value
 ) {
-
   if (
     value === null ||
     value === undefined ||
     value === ""
   ) {
-
-    return "—";
-
+    return null;
   }
 
+  const match =
+    String(value).match(
+      /\d+/
+    );
 
-  if (
-    typeof value === "object"
-  ) {
-
-    try {
-
-      return JSON.stringify(
-        value
-      );
-
-    } catch {
-
-      return String(
-        value
-      );
-
-    }
-
+  if (!match) {
+    return null;
   }
 
+  const number =
+    Number(match[0]);
 
-  return String(
-    value
-  );
-
+  return Number.isInteger(
+    number
+  )
+    ? number
+    : null;
 }
 
 
 /* ==========================================================
-   TELEMETRY FIELD LABEL
+   SAFE DISPLAY VALUE
+========================================================== */
+
+function formatValue(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  if (
+    typeof value ===
+    "boolean"
+  ) {
+    return value
+      ? "true"
+      : "false";
+  }
+
+  if (
+    typeof value ===
+    "object"
+  ) {
+    try {
+      return JSON.stringify(
+        value
+      );
+    } catch {
+      return String(
+        value
+      );
+    }
+  }
+
+  return String(
+    value
+  );
+}
+
+
+/* ==========================================================
+   FORMAT FIELD NAME
 ========================================================== */
 
 function formatFieldName(
   field
 ) {
-
-  return field
+  return String(field)
     .replace(
       /([A-Z])/g,
       " $1"
+    )
+    .replace(
+      /[_-]+/g,
+      " "
     )
     .replace(
       /^./,
       (char) =>
         char.toUpperCase()
     );
-
 }
 
 
 /* ==========================================================
-   COMPONENT
+   POPUP DATA ROW
+========================================================== */
+
+function PopupDataRow({
+  label,
+  value,
+}) {
+  return (
+    <div
+      className="
+        grid
+        grid-cols-[105px_1fr]
+        gap-2
+        py-1.5
+        border-b
+        border-slate-100
+        last:border-b-0
+      "
+    >
+      <span
+        className="
+          text-[10px]
+          font-medium
+          text-slate-400
+          break-words
+        "
+      >
+        {label}
+      </span>
+
+      <span
+        className="
+          text-[10px]
+          font-medium
+          text-slate-700
+          break-words
+        "
+      >
+        {formatValue(value)}
+      </span>
+    </div>
+  );
+}
+
+
+/* ==========================================================
+   MAIN COMPONENT
 ========================================================== */
 
 export default function WasteGenMap({
-  wardNo: wardNoProp,
+  wardNo: wardNoProp = null,
+  selectedWard: selectedWardProp = null,
+  selectedDate: selectedDateProp = null,
 }) {
+
+  /* ========================================================
+     REFS
+  ======================================================== */
 
   const sectionRef =
     useRef(null);
 
-
   const collectionCardRef =
     useRef(null);
-
 
   const mapRef =
     useRef(null);
@@ -243,30 +351,25 @@ export default function WasteGenMap({
     setMonitoringData,
   ] = useState(null);
 
-
   const [
     loading,
     setLoading,
-  ] = useState(true);
-
+  ] = useState(false);
 
   const [
     error,
     setError,
-  ] = useState(null);
-
+  ] = useState("");
 
   const [
     hoveredPoint,
     setHoveredPoint,
   ] = useState(null);
 
-
   const [
     hoverPosition,
     setHoverPosition,
   ] = useState(null);
-
 
   const [
     viewState,
@@ -276,94 +379,82 @@ export default function WasteGenMap({
   );
 
 
-  const [
-    currentDate,
-    setCurrentDate,
-  ] = useState(
-    getTodayDate()
-  );
-
-
   /* ========================================================
-     WARD NUMBER
+     RESOLVE HEADER WARD
   ======================================================== */
 
-  /*
-   * Preferred:
-   *
-   * <WasteGenMap wardNo={wardNo} />
-   *
-   * We also check common localStorage keys so that the
-   * component can work while the Header integration is being
-   * connected.
-   */
+  const selectedWard =
+    selectedWardProp ??
+    wardNoProp ??
+    getStoredValue(
+      "selectedWard",
+      "selectedWardNo",
+      "wardNo",
+      "ward",
+      "selected_ward",
+      "headerWardNo"
+    );
 
-  const wardNo =
-    wardNoProp ||
-    localStorage.getItem(
-      "wardNo"
-    ) ||
-    localStorage.getItem(
-      "ward_no"
-    ) ||
-    localStorage.getItem(
-      "wardNumber"
-    ) ||
-    localStorage.getItem(
-      "ward_number"
+  const normalizedWard =
+    useMemo(
+      () =>
+        normalizeWardNumber(
+          selectedWard
+        ),
+      [selectedWard]
     );
 
 
   /* ========================================================
-     GSAP ANIMATION
+     RESOLVE DATE
+  ======================================================== */
+
+  const currentDate =
+    selectedDateProp ||
+    getStoredValue(
+      "selectedDate",
+      "dashboardDate"
+    ) ||
+    getTodayDate();
+
+
+  /* ========================================================
+     GSAP CARD ANIMATION
   ======================================================== */
 
   useEffect(() => {
-
     const ctx =
       gsap.context(
         () => {
 
           const tl =
             gsap.timeline({
-
               defaults: {
                 ease:
                   "power3.out",
               },
-
             });
-
 
           tl.from(
             sectionRef.current,
             {
               opacity: 0,
-
-              duration:
-                0.25,
+              duration: 0.25,
             }
-          )
-            .from(
-              collectionCardRef.current,
-              {
-                opacity: 0,
-
-                y: 55,
-
-                scale:
-                  0.96,
-
-                duration:
-                  1.1,
-              },
-              "-=0.05"
-            );
+          ).from(
+            collectionCardRef.current,
+            {
+              opacity: 0,
+              y: 55,
+              scale: 0.96,
+              duration: 1.1,
+            },
+            "-=0.05"
+          );
 
         },
         sectionRef
       );
-
 
     return () =>
       ctx.revert();
@@ -375,128 +466,221 @@ export default function WasteGenMap({
      FETCH COLLECTION POINT DATA
   ======================================================== */
 
-  async function fetchCollectionPoints() {
+  const fetchCollectionPoints =
+    useCallback(
+      async () => {
 
-    if (
-      !wardNo
-    ) {
+        /* --------------------------------------------------
+           NO WARD
+        -------------------------------------------------- */
 
-      setLoading(
-        false
-      );
+        if (
+          !normalizedWard
+        ) {
 
-      setError(
-        "Ward number is not available."
-      );
+          setMonitoringData(
+            null
+          );
 
-      return;
+          setError(
+            "Please select a ward from the header."
+          );
 
-    }
+          setLoading(
+            false
+          );
+
+          return;
+        }
 
 
-    setLoading(
-      true
+        /* --------------------------------------------------
+           START LOADING
+        -------------------------------------------------- */
+
+        setLoading(
+          true
+        );
+
+        setError("");
+
+        setHoveredPoint(
+          null
+        );
+
+        setHoverPosition(
+          null
+        );
+
+
+        try {
+
+          /* ----------------------------------------------
+             BUILD API URL
+          ---------------------------------------------- */
+
+          const url =
+            `${API_BASE_URL}/api/collection-point-monitoring` +
+            `?wardNo=${encodeURIComponent(
+              normalizedWard
+            )}` +
+            `&date=${encodeURIComponent(
+              currentDate
+            )}`;
+
+
+          console.log(
+            "=============================================="
+          );
+
+          console.log(
+            "📍 COLLECTION POINT MONITORING"
+          );
+
+          console.log(
+            "WARD:",
+            normalizedWard
+          );
+
+          console.log(
+            "DATE:",
+            currentDate
+          );
+
+          console.log(
+            "API:",
+            url
+          );
+
+          console.log(
+            "=============================================="
+          );
+
+
+          /* ----------------------------------------------
+             REQUEST
+          ---------------------------------------------- */
+
+          const response =
+            await fetch(
+              url,
+              {
+                method:
+                  "GET",
+
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+              }
+            );
+
+
+          /* ----------------------------------------------
+             PARSE RESPONSE
+          ---------------------------------------------- */
+
+          let result;
+
+          try {
+
+            result =
+              await response.json();
+
+          } catch {
+
+            throw new Error(
+              "Backend returned an invalid JSON response."
+            );
+
+          }
+
+
+          /* ----------------------------------------------
+             HTTP ERROR
+          ---------------------------------------------- */
+
+          if (
+            !response.ok
+          ) {
+
+            throw new Error(
+              result?.message ||
+              `Collection point API returned HTTP ${response.status}`
+            );
+
+          }
+
+
+          /* ----------------------------------------------
+             API ERROR
+          ---------------------------------------------- */
+
+          if (
+            result?.success ===
+            false
+          ) {
+
+            throw new Error(
+              result?.message ||
+              "Unable to retrieve collection point data."
+            );
+
+          }
+
+
+          /* ----------------------------------------------
+             STORE DATA
+          ---------------------------------------------- */
+
+          setMonitoringData(
+            result?.data ||
+            null
+          );
+
+
+          console.log(
+            "✅ COLLECTION POINT DATA:",
+            result?.data
+          );
+
+
+        } catch (
+          requestError
+        ) {
+
+          console.error(
+            "❌ COLLECTION POINT MONITORING ERROR:",
+            requestError
+          );
+
+          setMonitoringData(
+            null
+          );
+
+          setError(
+            requestError?.message ||
+            "Failed to load collection point data."
+          );
+
+        } finally {
+
+          setLoading(
+            false
+          );
+
+        }
+
+      },
+      [
+        normalizedWard,
+        currentDate,
+      ]
     );
-
-    setError(
-      null
-    );
-
-
-    try {
-
-      const url =
-        `${API_BASE_URL}/api/collection-point-monitoring` +
-        `?wardNo=${encodeURIComponent(
-          wardNo
-        )}` +
-        `&date=${encodeURIComponent(
-          currentDate
-        )}`;
-
-
-      console.log(
-        "📍 Collection Point Monitoring:",
-        url
-      );
-
-
-      const response =
-        await fetch(
-          url
-        );
-
-
-      if (
-        !response.ok
-      ) {
-
-        throw new Error(
-          `Request failed with status ${response.status}`
-        );
-
-      }
-
-
-      const result =
-        await response.json();
-
-
-      if (
-        !result.success
-      ) {
-
-        throw new Error(
-          result.message ||
-            "Failed to retrieve collection point data"
-        );
-
-      }
-
-
-      console.log(
-        "📍 Collection Point Monitoring Data:",
-        result
-      );
-
-
-      setMonitoringData(
-        result.data
-      );
-
-    } catch (
-      fetchError
-    ) {
-
-      console.error(
-        "❌ Collection Point Monitoring:",
-        fetchError
-      );
-
-
-      setError(
-        fetchError.message ||
-          "Failed to load collection point data"
-      );
-
-
-      setMonitoringData(
-        null
-      );
-
-    } finally {
-
-      setLoading(
-        false
-      );
-
-    }
-
-  }
 
 
   /* ========================================================
-     FETCH WHEN WARD / DATE CHANGES
+     FETCH WHEN HEADER WARD / DATE CHANGES
   ======================================================== */
 
   useEffect(() => {
@@ -504,8 +688,7 @@ export default function WasteGenMap({
     fetchCollectionPoints();
 
   }, [
-    wardNo,
-    currentDate,
+    fetchCollectionPoints,
   ]);
 
 
@@ -514,16 +697,153 @@ export default function WasteGenMap({
   ======================================================== */
 
   const geoJson =
-    useMemo(() => {
+    useMemo(
+      () => {
 
-      const features =
-        [];
+        const features =
+          [];
 
 
-      if (
-        !monitoringData ||
-        !monitoringData.vehicles
-      ) {
+        if (
+          !monitoringData ||
+          !monitoringData.vehicles
+        ) {
+
+          return {
+            type:
+              "FeatureCollection",
+
+            features,
+          };
+
+        }
+
+
+        Object.entries(
+          monitoringData.vehicles
+        ).forEach(
+          ([
+            vehicleNumber,
+            vehicle,
+          ]) => {
+
+            if (
+              !vehicle ||
+              !Array.isArray(
+                vehicle.points
+              )
+            ) {
+              return;
+            }
+
+
+            vehicle.points.forEach(
+              (
+                point,
+                pointIndex
+              ) => {
+
+                const latitude =
+                  Number(
+                    point?.latitude
+                  );
+
+                const longitude =
+                  Number(
+                    point?.longitude
+                  );
+
+
+                /* ----------------------------------------
+                   VALID GPS
+                ---------------------------------------- */
+
+                if (
+                  !Number.isFinite(
+                    latitude
+                  ) ||
+                  !Number.isFinite(
+                    longitude
+                  )
+                ) {
+                  return;
+                }
+
+
+                /*
+                 * Ignore obviously invalid
+                 * 0,0 coordinates.
+                 */
+
+                if (
+                  latitude === 0 &&
+                  longitude === 0
+                ) {
+                  return;
+                }
+
+
+                features.push({
+
+                  type:
+                    "Feature",
+
+                  id:
+                    `${vehicleNumber}-${pointIndex}`,
+
+                  geometry: {
+
+                    type:
+                      "Point",
+
+                    coordinates: [
+                      longitude,
+                      latitude,
+                    ],
+
+                  },
+
+                  properties: {
+
+                    vehicleNumber:
+                      vehicleNumber,
+
+                    vehicleTableName:
+                      vehicle
+                        ?.vehicle_table_name ||
+                      "",
+
+                    wardNo:
+                      vehicle?.ward_no ??
+                      normalizedWard,
+
+                    pointIndex:
+                      pointIndex,
+
+                    /*
+                     * Complete telemetry row.
+                     *
+                     * Backend has already converted
+                     * BigInt values into JSON-safe
+                     * strings.
+                     */
+
+                    telemetry:
+                      JSON.stringify(
+                        point?.data ||
+                        {}
+                      ),
+
+                  },
+
+                });
+
+              }
+            );
+
+          }
+        );
+
 
         return {
 
@@ -534,146 +854,26 @@ export default function WasteGenMap({
 
         };
 
-      }
-
-
-      Object.entries(
-        monitoringData.vehicles
-      ).forEach(
-        ([
-          vehicleNumber,
-          vehicle,
-        ]) => {
-
-          if (
-            !vehicle ||
-            !Array.isArray(
-              vehicle.points
-            )
-          ) {
-
-            return;
-
-          }
-
-
-          vehicle.points.forEach(
-            (
-              point,
-              index
-            ) => {
-
-              const latitude =
-                Number(
-                  point.latitude
-                );
-
-
-              const longitude =
-                Number(
-                  point.longitude
-                );
-
-
-              if (
-                !Number.isFinite(
-                  latitude
-                ) ||
-                !Number.isFinite(
-                  longitude
-                )
-              ) {
-
-                return;
-
-              }
-
-
-              features.push({
-
-                type:
-                  "Feature",
-
-                geometry: {
-
-                  type:
-                    "Point",
-
-                  coordinates: [
-                    longitude,
-                    latitude,
-                  ],
-
-                },
-
-                properties: {
-
-                  /*
-                   * Vehicle information
-                   */
-
-                  vehicleNumber,
-
-                  vehicleTableName:
-                    vehicle.vehicle_table_name ||
-                    "",
-
-                  wardNo:
-                    vehicle.ward_no ??
-                    wardNo,
-
-                  pointIndex:
-                    index,
-
-                  /*
-                   * Store the complete telemetry data
-                   * as JSON.
-                   */
-
-                  telemetry:
-                    JSON.stringify(
-                      point.data || {}
-                    ),
-
-                },
-
-              });
-
-            }
-          );
-
-        }
-      );
-
-
-      return {
-
-        type:
-          "FeatureCollection",
-
-        features,
-
-      };
-
-    }, [
-      monitoringData,
-      wardNo,
-    ]);
+      },
+      [
+        monitoringData,
+        normalizedWard,
+      ]
+    );
 
 
   /* ========================================================
-     FIT MAP TO ALL POINTS
+     FIT MAP TO ALL GPS POINTS
   ======================================================== */
 
   useEffect(() => {
 
     if (
       !geoJson ||
-      geoJson.features.length === 0
+      geoJson.features.length ===
+        0
     ) {
-
       return;
-
     }
 
 
@@ -682,22 +882,53 @@ export default function WasteGenMap({
 
 
     if (!map) {
-
       return;
-
     }
 
 
     const coordinates =
-      geoJson.features.map(
-        (feature) =>
-          feature.geometry
-            .coordinates
-      );
+      geoJson.features
+        .map(
+          (feature) =>
+            feature
+              ?.geometry
+              ?.coordinates
+        )
+        .filter(
+          (coordinate) =>
+            Array.isArray(
+              coordinate
+            ) &&
+            coordinate.length ===
+              2 &&
+            Number.isFinite(
+              Number(
+                coordinate[0]
+              )
+            ) &&
+            Number.isFinite(
+              Number(
+                coordinate[1]
+              )
+            )
+        );
 
 
     if (
-      coordinates.length === 1
+      coordinates.length ===
+      0
+    ) {
+      return;
+    }
+
+
+    /* ------------------------------------------------------
+       SINGLE POINT
+    ------------------------------------------------------ */
+
+    if (
+      coordinates.length ===
+      1
     ) {
 
       map.flyTo({
@@ -713,11 +944,13 @@ export default function WasteGenMap({
 
       });
 
-
       return;
-
     }
 
+
+    /* ------------------------------------------------------
+       CALCULATE BOUNDS
+    ------------------------------------------------------ */
 
     let minLng =
       Infinity;
@@ -741,30 +974,42 @@ export default function WasteGenMap({
         minLng =
           Math.min(
             minLng,
-            longitude
+            Number(
+              longitude
+            )
           );
 
         maxLng =
           Math.max(
             maxLng,
-            longitude
+            Number(
+              longitude
+            )
           );
 
         minLat =
           Math.min(
             minLat,
-            latitude
+            Number(
+              latitude
+            )
           );
 
         maxLat =
           Math.max(
             maxLat,
-            latitude
+            Number(
+              latitude
+            )
           );
 
       }
     );
 
+
+    /* ------------------------------------------------------
+       FIT
+    ------------------------------------------------------ */
 
     map.fitBounds(
       [
@@ -772,22 +1017,19 @@ export default function WasteGenMap({
           minLng,
           minLat,
         ],
-
         [
           maxLng,
           maxLat,
         ],
       ],
       {
-
-        padding: 55,
+        padding: 60,
 
         maxZoom:
           16,
 
         duration:
           1200,
-
       }
     );
 
@@ -797,150 +1039,301 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     MAP LOAD
+     HOVER / SNAP TO NEAREST POINT
   ======================================================== */
 
-  function handleMapLoad() {
+  const handleMapMouseMove =
+    useCallback(
+      (event) => {
 
-    if (
-      geoJson.features.length === 0
-    ) {
-
-      return;
-
-    }
+        const map =
+          mapRef.current?.getMap();
 
 
-    /*
-     * Fitting is handled by the GeoJSON effect.
-     */
-
-  }
+        if (!map) {
+          return;
+        }
 
 
-  /* ========================================================
-     MAP HOVER
-  ======================================================== */
+        /*
+         * Instead of requiring the mouse to be
+         * exactly over a 6px point, we search a
+         * small 18px square around the cursor.
+         *
+         * This creates the requested SNAP behaviour.
+         */
 
-  function handleMapMouseMove(
-    event
-  ) {
+        const x =
+          event.point.x;
 
-    const features =
-      event.features;
+        const y =
+          event.point.y;
 
-
-    if (
-      !features ||
-      features.length === 0
-    ) {
-
-      setHoveredPoint(
-        null
-      );
-
-      setHoverPosition(
-        null
-      );
-
-      return;
-
-    }
+        const SNAP_DISTANCE =
+          14;
 
 
-    /*
-     * First feature = topmost / nearest rendered point.
-     *
-     * This gives the "snap" behaviour when moving over
-     * dense GPS points.
-     */
+        const nearbyFeatures =
+          map.queryRenderedFeatures(
+            [
+              [
+                x -
+                  SNAP_DISTANCE,
+                y -
+                  SNAP_DISTANCE,
+              ],
+              [
+                x +
+                  SNAP_DISTANCE,
+                y +
+                  SNAP_DISTANCE,
+              ],
+            ],
+            {
+              layers: [
+                "collection-points",
+              ],
+            }
+          );
 
-    const feature =
-      features[0];
+
+        if (
+          !nearbyFeatures ||
+          nearbyFeatures.length ===
+            0
+        ) {
+
+          setHoveredPoint(
+            null
+          );
+
+          setHoverPosition(
+            null
+          );
+
+          return;
+        }
 
 
-    const coordinates =
-      feature.geometry.coordinates;
+        /*
+         * Find the feature closest to
+         * the actual cursor.
+         */
+
+        let nearestFeature =
+          nearbyFeatures[0];
+
+        let nearestDistance =
+          Infinity;
 
 
-    let telemetryData =
-      {};
+        nearbyFeatures.forEach(
+          (feature) => {
+
+            if (
+              !feature?.geometry ||
+              feature
+                .geometry
+                .type !==
+                "Point"
+            ) {
+              return;
+            }
 
 
-    try {
+            const coordinates =
+              feature
+                .geometry
+                .coordinates;
 
-      telemetryData =
-        JSON.parse(
-          feature.properties.telemetry ||
-            "{}"
+
+            const projected =
+              map.project(
+                {
+                  lng:
+                    Number(
+                      coordinates[0]
+                    ),
+
+                  lat:
+                    Number(
+                      coordinates[1]
+                    ),
+                }
+              );
+
+
+            const distance =
+              Math.sqrt(
+                Math.pow(
+                  projected.x -
+                    x,
+                  2
+                ) +
+                Math.pow(
+                  projected.y -
+                    y,
+                  2
+                )
+              );
+
+
+            if (
+              distance <
+              nearestDistance
+            ) {
+
+              nearestDistance =
+                distance;
+
+              nearestFeature =
+                feature;
+
+            }
+
+          }
         );
 
-    } catch {
 
-      telemetryData =
-        {};
+        if (
+          !nearestFeature?.geometry
+        ) {
 
-    }
-
-
-    setHoveredPoint({
-
-      vehicleNumber:
-        feature.properties.vehicleNumber,
-
-      vehicleTableName:
-        feature.properties.vehicleTableName,
-
-      wardNo:
-        feature.properties.wardNo,
-
-      pointIndex:
-        feature.properties.pointIndex,
-
-      latitude:
-        coordinates[1],
-
-      longitude:
-        coordinates[0],
-
-      data:
-        telemetryData,
-
-    });
+          return;
+        }
 
 
-    setHoverPosition({
+        const coordinates =
+          nearestFeature
+            .geometry
+            .coordinates;
 
-      longitude:
-        coordinates[0],
 
-      latitude:
-        coordinates[1],
+        /* ----------------------------------------------------
+           TELEMETRY DATA
+        ---------------------------------------------------- */
 
-    });
+        let telemetryData =
+          {};
 
-  }
+
+        try {
+
+          telemetryData =
+            JSON.parse(
+              nearestFeature
+                ?.properties
+                ?.telemetry ||
+              "{}"
+            );
+
+        } catch {
+
+          telemetryData =
+            {};
+
+        }
+
+
+        /* ----------------------------------------------------
+           UPDATE HOVERED POINT
+        ---------------------------------------------------- */
+
+        setHoveredPoint({
+
+          vehicleNumber:
+            nearestFeature
+              ?.properties
+              ?.vehicleNumber ||
+            "Vehicle",
+
+          vehicleTableName:
+            nearestFeature
+              ?.properties
+              ?.vehicleTableName ||
+            "",
+
+          wardNo:
+            nearestFeature
+              ?.properties
+              ?.wardNo ??
+            normalizedWard,
+
+          pointIndex:
+            nearestFeature
+              ?.properties
+              ?.pointIndex ??
+            0,
+
+          latitude:
+            Number(
+              coordinates[1]
+            ),
+
+          longitude:
+            Number(
+              coordinates[0]
+            ),
+
+          data:
+            telemetryData,
+
+        });
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Popup goes to the GPS coordinate,
+         * NOT the cursor position.
+         *
+         * This gives the snap effect.
+         */
+
+        setHoverPosition({
+
+          longitude:
+            Number(
+              coordinates[0]
+            ),
+
+          latitude:
+            Number(
+              coordinates[1]
+            ),
+
+        });
+
+      },
+      [
+        normalizedWard,
+      ]
+    );
 
 
   /* ========================================================
-     MAP LEAVE
+     MOUSE LEAVE
   ======================================================== */
 
-  function handleMapMouseLeave() {
+  const handleMapMouseLeave =
+    useCallback(
+      () => {
 
-    setHoveredPoint(
-      null
+        setHoveredPoint(
+          null
+        );
+
+        setHoverPosition(
+          null
+        );
+
+      },
+      []
     );
-
-    setHoverPosition(
-      null
-    );
-
-  }
 
 
   /* ========================================================
-     ZOOM
+     ZOOM IN
   ======================================================== */
 
   function zoomIn() {
@@ -949,24 +1342,22 @@ export default function WasteGenMap({
       mapRef.current?.getMap();
 
 
-    if (
-      !map
-    ) {
-
+    if (!map) {
       return;
-
     }
 
 
     map.zoomIn({
-
       duration:
         300,
-
     });
 
   }
 
+
+  /* ========================================================
+     ZOOM OUT
+  ======================================================== */
 
   function zoomOut() {
 
@@ -974,36 +1365,31 @@ export default function WasteGenMap({
       mapRef.current?.getMap();
 
 
-    if (
-      !map
-    ) {
-
+    if (!map) {
       return;
-
     }
 
 
     map.zoomOut({
-
       duration:
         300,
-
     });
 
   }
 
 
   /* ========================================================
-     POINT COUNT
+     COUNTS
   ======================================================== */
 
-  const pointCount =
-    monitoringData?.point_count ||
+  const vehicleCount =
+    monitoringData
+      ?.vehicle_count ||
     0;
 
-
-  const vehicleCount =
-    monitoringData?.vehicle_count ||
+  const pointCount =
+    monitoringData
+      ?.point_count ||
     0;
 
 
@@ -1023,9 +1409,9 @@ export default function WasteGenMap({
       "
     >
 
-      {/* ==================================================
+      {/* ====================================================
           COLLECTION POINT CARD
-      ================================================== */}
+      ==================================================== */}
 
       <div
         ref={collectionCardRef}
@@ -1053,12 +1439,19 @@ export default function WasteGenMap({
             flex
             items-center
             justify-between
+            gap-4
           "
         >
 
           {/* TITLE */}
 
-          <div>
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
 
             <h3
               className="
@@ -1070,52 +1463,12 @@ export default function WasteGenMap({
               Collection Point Monitoring
             </h3>
 
-            <div
-              className="
-                flex
-                items-center
-                gap-2
-                mt-1
-              "
-            >
-
-              <span
-                className="
-                  text-[10px]
-                  text-slate-400
-                "
-              >
-                Ward {wardNo || "—"}
-              </span>
-
-
-              <span
-                className="
-                  text-slate-300
-                  text-[10px]
-                "
-              >
-                •
-              </span>
-
-
-              <span
-                className="
-                  text-[10px]
-                  text-slate-400
-                "
-              >
-                {currentDate}
-              </span>
-
-            </div>
-
           </div>
 
 
-          {/* ==================================================
-              LEGEND + STATS
-          ================================================== */}
+          {/* =================================================
+              LEGEND + COUNTS
+          ================================================= */}
 
           <div
             className="
@@ -1141,7 +1494,8 @@ export default function WasteGenMap({
                   h-2.5
                   rounded-full
                   bg-green-500
-                  shadow-[0_0_0_3px_rgba(34,197,94,0.12)]
+                  ring-2
+                  ring-green-100
                 "
               />
 
@@ -1161,10 +1515,22 @@ export default function WasteGenMap({
 
             <div
               className="
+                hidden
+                sm:flex
+                items-center
+                gap-1.5
                 text-[11px]
                 text-slate-400
               "
             >
+
+              <Truck
+                size={13}
+                className="
+                  text-slate-400
+                "
+              />
+
               <span
                 className="
                   font-semibold
@@ -1172,8 +1538,12 @@ export default function WasteGenMap({
                 "
               >
                 {vehicleCount}
-              </span>{" "}
-              vehicles
+              </span>
+
+              <span>
+                vehicles
+              </span>
+
             </div>
 
 
@@ -1181,10 +1551,13 @@ export default function WasteGenMap({
 
             <div
               className="
+                hidden
+                sm:block
                 text-[11px]
                 text-slate-400
               "
             >
+
               <span
                 className="
                   font-semibold
@@ -1193,26 +1566,32 @@ export default function WasteGenMap({
               >
                 {pointCount}
               </span>{" "}
+
               points
+
             </div>
 
 
             {/* REFRESH */}
 
             <button
+              type="button"
               onClick={
                 fetchCollectionPoints
               }
               disabled={
                 loading
               }
-              title="Refresh collection points"
+              title="
+                Refresh collection points
+              "
               className="
                 w-8
                 h-8
                 rounded-lg
                 border
                 border-slate-200
+                bg-white
                 flex
                 items-center
                 justify-center
@@ -1222,6 +1601,7 @@ export default function WasteGenMap({
                 transition-all
                 duration-200
                 disabled:opacity-40
+                disabled:cursor-not-allowed
               "
             >
 
@@ -1253,19 +1633,20 @@ export default function WasteGenMap({
           "
         >
 
+          {/* =================================================
+              MAP
+          ================================================= */}
+
           <Map
             ref={mapRef}
 
             {...viewState}
 
-            onMove={(event) =>
-              setViewState(
-                event.viewState
-              )
-            }
-
-            onLoad={
-              handleMapLoad
+            onMove={
+              (event) =>
+                setViewState(
+                  event.viewState
+                )
             }
 
             onMouseMove={
@@ -1303,12 +1684,14 @@ export default function WasteGenMap({
             }
           >
 
-            {/* ==================================================
-                COLLECTION POINT SOURCE
-            ================================================== */}
+            {/* =================================================
+                GPS POINT SOURCE
+            ================================================= */}
 
             <Source
-              id="collection-points-source"
+              id="
+                collection-points-source
+              "
 
               type="geojson"
 
@@ -1317,40 +1700,44 @@ export default function WasteGenMap({
               }
             >
 
-              {/* ==================================================
-                  OUTER POINT
-              ================================================== */}
+              {/* =============================================
+                  WHITE OUTER HALO
+              ============================================= */}
 
               <Layer
-                id="collection-points-halo"
+                id="
+                  collection-points-halo
+                "
 
                 type="circle"
 
                 paint={{
 
-                  /*
-                   * Thick outer ring.
-                   */
-
                   "circle-radius": [
                     "interpolate",
 
                     [
-                      "linear"
+                      "linear",
                     ],
 
                     [
-                      "zoom"
+                      "zoom",
                     ],
 
                     10,
-                    5,
+                    5.5,
 
-                    14,
+                    12,
                     7,
 
-                    18,
+                    14,
+                    8.5,
+
+                    16,
                     10,
+
+                    18,
+                    12,
                   ],
 
                   "circle-color":
@@ -1359,68 +1746,69 @@ export default function WasteGenMap({
                   "circle-opacity":
                     0.95,
 
-                  "circle-stroke-width":
-                    0,
-
                 }}
               />
 
 
-              {/* ==================================================
-                  REGISTERED POINT
-              ================================================== */}
+              {/* =============================================
+                  REGISTERED GPS POINTS
+              ============================================= */}
 
               <Layer
-                id="collection-points"
+                id="
+                  collection-points
+                "
 
                 type="circle"
 
                 paint={{
 
                   /*
-                   * Thick visible point.
+                   * Thick points.
                    */
 
                   "circle-radius": [
                     "interpolate",
 
                     [
-                      "linear"
+                      "linear",
                     ],
 
                     [
-                      "zoom"
+                      "zoom",
                     ],
 
                     10,
-                    3.8,
+                    4.5,
 
-                    12,
+                    11,
                     5,
 
+                    12,
+                    5.8,
+
                     14,
-                    6.5,
+                    7,
 
                     16,
-                    8,
+                    8.5,
 
                     18,
-                    10,
+                    10.5,
                   ],
 
                   /*
-                   * All points are registered.
+                   * ALL points are registered.
                    */
 
                   "circle-color":
                     "#22c55e",
 
                   "circle-opacity":
-                    0.92,
+                    0.96,
 
                   /*
-                   * White border makes dense GPS
-                   * points distinguishable.
+                   * White border.
                    */
 
                   "circle-stroke-color":
@@ -1435,52 +1823,117 @@ export default function WasteGenMap({
                 }}
               />
 
-
-              {/* ==================================================
-                  HOVER EFFECT
-              ================================================== */}
-
-              <Layer
-                id="collection-points-hover"
-
-                type="circle"
-
-                filter={[
-                  "==",
-
-                  [
-                    "id"
-                  ],
-
-                  "__hover__",
-                ]}
-
-                paint={{
-
-                  "circle-radius":
-                    11,
-
-                  "circle-color":
-                    "#16a34a",
-
-                  "circle-opacity":
-                    0.22,
-
-                  "circle-stroke-color":
-                    "#16a34a",
-
-                  "circle-stroke-width":
-                    2,
-
-                }}
-              />
-
             </Source>
 
 
-            {/* ==================================================
+            {/* =================================================
+                SNAP HIGHLIGHT
+            ================================================= */}
+
+            {hoverPosition && (
+
+              <Source
+                id="
+                  collection-point-hover-source
+                "
+
+                type="geojson"
+
+                data={{
+                  type:
+                    "FeatureCollection",
+
+                  features: [
+                    {
+                      type:
+                        "Feature",
+
+                      geometry: {
+                        type:
+                          "Point",
+
+                        coordinates: [
+                          hoverPosition.longitude,
+                          hoverPosition.latitude,
+                        ],
+                      },
+
+                      properties: {},
+                    },
+                  ],
+                }}
+              >
+
+                {/* OUTER SNAP RING */}
+
+                <Layer
+                  id="
+                    collection-point-hover-ring
+                  "
+
+                  type="circle"
+
+                  paint={{
+
+                    "circle-radius":
+                      13,
+
+                    "circle-color":
+                      "#22c55e",
+
+                    "circle-opacity":
+                      0.16,
+
+                    "circle-stroke-color":
+                      "#16a34a",
+
+                    "circle-stroke-width":
+                      2,
+
+                    "circle-stroke-opacity":
+                      0.85,
+
+                  }}
+                />
+
+
+                {/* SNAP CENTER */}
+
+                <Layer
+                  id="
+                    collection-point-hover-center
+                  "
+
+                  type="circle"
+
+                  paint={{
+
+                    "circle-radius":
+                      7,
+
+                    "circle-color":
+                      "#16a34a",
+
+                    "circle-opacity":
+                      1,
+
+                    "circle-stroke-color":
+                      "#ffffff",
+
+                    "circle-stroke-width":
+                      2,
+
+                  }}
+                />
+
+              </Source>
+
+            )}
+
+
+            {/* =================================================
                 POPUP
-            ================================================== */}
+            ================================================= */}
 
             {hoveredPoint &&
               hoverPosition && (
@@ -1504,10 +1957,9 @@ export default function WasteGenMap({
 
                   anchor="bottom"
 
-                  offset={[
-                    0,
-                    -10,
-                  ]}
+                  offset={
+                    16
+                  }
 
                   className="
                     collection-point-popup
@@ -1516,352 +1968,319 @@ export default function WasteGenMap({
 
                   <div
                     className="
-                      w-[290px]
-                      max-h-[270px]
+                      w-[310px]
+                      max-w-[310px]
+                      max-h-[280px]
                       overflow-y-auto
                       pr-1
                     "
                   >
 
-                    {/* ==================================================
+                    {/* ======================================
                         POPUP HEADER
-                    ================================================== */}
+                    ====================================== */}
 
                     <div
                       className="
                         flex
                         items-center
-                        justify-between
-                        gap-3
-                        pb-2
+                        gap-2.5
+                        pb-2.5
                         mb-2
                         border-b
                         border-slate-100
                       "
                     >
 
-                      <div>
-
-                        <div
-                          className="
-                            flex
-                            items-center
-                            gap-2
-                          "
-                        >
-
-                          <span
-                            className="
-                              w-2.5
-                              h-2.5
-                              rounded-full
-                              bg-green-500
-                              shadow-[0_0_0_3px_rgba(34,197,94,0.12)]
-                            "
-                          />
-
-                          <span
-                            className="
-                              text-[12px]
-                              font-semibold
-                              text-[#16295A]
-                            "
-                          >
-                            Registered Point
-                          </span>
-
-                        </div>
-
-                        <p
-                          className="
-                            text-[10px]
-                            text-slate-400
-                            mt-1
-                          "
-                        >
-                          Collection telemetry
-                        </p>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* ==================================================
-                        LOCATION
-                    ================================================== */}
-
-                    <div
-                      className="
-                        grid
-                        grid-cols-2
-                        gap-2
-                        mb-3
-                      "
-                    >
+                      {/* ICON */}
 
                       <div
                         className="
-                          rounded-lg
-                          bg-slate-50
-                          px-2.5
-                          py-2
-                        "
-                      >
-
-                        <p
-                          className="
-                            text-[9px]
-                            uppercase
-                            tracking-wide
-                            text-slate-400
-                          "
-                        >
-                          Latitude
-                        </p>
-
-                        <p
-                          className="
-                            text-[11px]
-                            font-medium
-                            text-slate-700
-                            mt-0.5
-                          "
-                        >
-                          {Number(
-                            hoveredPoint.latitude
-                          ).toFixed(7)}
-                        </p>
-
-                      </div>
-
-
-                      <div
-                        className="
-                          rounded-lg
-                          bg-slate-50
-                          px-2.5
-                          py-2
-                        "
-                      >
-
-                        <p
-                          className="
-                            text-[9px]
-                            uppercase
-                            tracking-wide
-                            text-slate-400
-                          "
-                        >
-                          Longitude
-                        </p>
-
-                        <p
-                          className="
-                            text-[11px]
-                            font-medium
-                            text-slate-700
-                            mt-0.5
-                          "
-                        >
-                          {Number(
-                            hoveredPoint.longitude
-                          ).toFixed(7)}
-                        </p>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* ==================================================
-                        VEHICLE
-                    ================================================== */}
-
-                    <div
-                      className="
-                        mb-3
-                        rounded-lg
-                        border
-                        border-slate-100
-                        p-2.5
-                      "
-                    >
-
-                      <div
-                        className="
+                          w-8
+                          h-8
+                          rounded-full
+                          bg-green-50
                           flex
                           items-center
-                          justify-between
-                          mb-1
+                          justify-center
+                          shrink-0
                         "
                       >
 
-                        <span
+                        <MapPin
+                          size={15}
                           className="
-                            text-[9px]
-                            uppercase
-                            tracking-wide
-                            text-slate-400
+                            text-green-600
                           "
-                        >
-                          Vehicle
-                        </span>
+                        />
 
-                        <span
+                      </div>
+
+
+                      {/* VEHICLE */}
+
+                      <div
+                        className="
+                          min-w-0
+                        "
+                      >
+
+                        <p
                           className="
-                            text-[11px]
+                            text-[12px]
                             font-semibold
                             text-[#16295A]
+                            truncate
                           "
                         >
                           {
                             hoveredPoint.vehicleNumber
                           }
-                        </span>
+                        </p>
 
-                      </div>
-
-
-                      <div
-                        className="
-                          flex
-                          items-center
-                          justify-between
-                        "
-                      >
-
-                        <span
+                        <p
                           className="
                             text-[9px]
-                            uppercase
-                            tracking-wide
                             text-slate-400
+                            mt-0.5
                           "
                         >
-                          Point
-                        </span>
-
-                        <span
-                          className="
-                            text-[10px]
-                            text-slate-600
-                          "
-                        >
-                          #
-                          {Number(
-                            hoveredPoint.pointIndex
-                          ) + 1}
-                        </span>
+                          Registered Collection Point
+                        </p>
 
                       </div>
 
                     </div>
 
 
-                    {/* ==================================================
-                        COMPLETE TELEMETRY DATA
-                    ================================================== */}
+                    {/* ======================================
+                        LOCATION
+                    ====================================== */}
 
-                    <div>
-
-                      <p
-                        className="
-                          text-[9px]
-                          uppercase
-                          tracking-wide
-                          font-semibold
-                          text-slate-400
-                          mb-2
-                        "
-                      >
-                        Telemetry Data
-                      </p>
-
+                    <div
+                      className="
+                        mb-2.5
+                        rounded-lg
+                        bg-slate-50
+                        px-3
+                        py-2
+                      "
+                    >
 
                       <div
                         className="
-                          space-y-1
+                          grid
+                          grid-cols-2
+                          gap-2
                         "
                       >
 
-                        {Object.entries(
-                          hoveredPoint.data || {}
-                        ).map(
-                          ([
-                            key,
-                            value,
-                          ]) => {
+                        <div>
 
-                            /*
-                             * Don't duplicate coordinates because
-                             * they are already shown above.
-                             */
+                          <p
+                            className="
+                              text-[8px]
+                              uppercase
+                              tracking-wide
+                              text-slate-400
+                            "
+                          >
+                            Latitude
+                          </p>
 
-                            if (
-                              key ===
-                                "latitude" ||
-                              key ===
-                                "longitude"
-                            ) {
-
-                              return null;
-
+                          <p
+                            className="
+                              text-[10px]
+                              font-semibold
+                              text-slate-700
+                              mt-0.5
+                            "
+                          >
+                            {
+                              Number(
+                                hoveredPoint.latitude
+                              ).toFixed(
+                                7
+                              )
                             }
+                          </p>
+
+                        </div>
 
 
-                            return (
+                        <div>
 
-                              <div
+                          <p
+                            className="
+                              text-[8px]
+                              uppercase
+                              tracking-wide
+                              text-slate-400
+                            "
+                          >
+                            Longitude
+                          </p>
+
+                          <p
+                            className="
+                              text-[10px]
+                              font-semibold
+                              text-slate-700
+                              mt-0.5
+                            "
+                          >
+                            {
+                              Number(
+                                hoveredPoint.longitude
+                              ).toFixed(
+                                7
+                              )
+                            }
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+
+                    {/* ======================================
+                        VEHICLE INFORMATION
+                    ====================================== */}
+
+                    <div
+                      className="
+                        mb-2.5
+                      "
+                    >
+
+                      <PopupDataRow
+                        label="Ward"
+                        value={
+                          hoveredPoint.wardNo
+                        }
+                      />
+
+                      <PopupDataRow
+                        label="Vehicle Table"
+                        value={
+                          hoveredPoint.vehicleTableName
+                        }
+                      />
+
+                      <PopupDataRow
+                        label="Point Index"
+                        value={
+                          Number(
+                            hoveredPoint.pointIndex
+                          ) + 1
+                        }
+                      />
+
+                    </div>
+
+
+                    {/* ======================================
+                        TELEMETRY DATA
+                    ====================================== */}
+
+                    <div>
+
+                      <div
+                        className="
+                          flex
+                          items-center
+                          justify-between
+                          mb-1.5
+                        "
+                      >
+
+                        <span
+                          className="
+                            text-[9px]
+                            font-semibold
+                            uppercase
+                            tracking-wide
+                            text-slate-400
+                          "
+                        >
+                          Telemetry Data
+                        </span>
+
+                        <span
+                          className="
+                            text-[8px]
+                            text-green-500
+                            font-medium
+                          "
+                        >
+                          LIVE RECORD
+                        </span>
+
+                      </div>
+
+
+                      {hoveredPoint.data &&
+                        Object.keys(
+                          hoveredPoint.data
+                        ).length >
+                          0 ? (
+
+                        <div
+                          className="
+                            rounded-lg
+                            border
+                            border-slate-100
+                            overflow-hidden
+                          "
+                        >
+
+                          {Object.entries(
+                            hoveredPoint.data
+                          ).map(
+                            ([
+                              key,
+                              value,
+                            ]) => (
+
+                              <PopupDataRow
                                 key={
                                   key
                                 }
-                                className="
-                                  flex
-                                  items-start
-                                  justify-between
-                                  gap-3
-                                  py-1
-                                  border-b
-                                  border-slate-50
-                                "
-                              >
 
-                                <span
-                                  className="
-                                    text-[9px]
-                                    text-slate-400
-                                    shrink-0
-                                  "
-                                >
-                                  {formatFieldName(
+                                label={
+                                  formatFieldName(
                                     key
-                                  )}
-                                </span>
+                                  )
+                                }
 
+                                value={
+                                  value
+                                }
+                              />
 
-                                <span
-                                  className="
-                                    text-[9px]
-                                    font-medium
-                                    text-slate-700
-                                    text-right
-                                    break-all
-                                  "
-                                >
-                                  {formatValue(
-                                    value
-                                  )}
-                                </span>
+                            )
+                          )}
 
-                              </div>
+                        </div>
 
-                            );
+                      ) : (
 
-                          }
-                        )}
+                        <div
+                          className="
+                            rounded-lg
+                            bg-slate-50
+                            px-3
+                            py-2
+                            text-[10px]
+                            text-slate-400
+                          "
+                        >
+                          No telemetry data available.
+                        </div>
 
-                      </div>
+                      )}
 
                     </div>
 
@@ -1871,23 +2290,12 @@ export default function WasteGenMap({
 
               )}
 
-
-            {/* ==================================================
-                MAP NAVIGATION
-            ================================================== */}
-
-            <NavigationControl
-              position="bottom-right"
-              showCompass={false}
-              showZoom={false}
-            />
-
           </Map>
 
 
-          {/* ==================================================
+          {/* =================================================
               CUSTOM ZOOM CONTROLS
-          ================================================== */}
+          ================================================= */}
 
           <div
             className="
@@ -1909,11 +2317,14 @@ export default function WasteGenMap({
               "
             >
 
+              {/* PLUS */}
+
               <button
+                type="button"
                 onClick={
                   zoomIn
                 }
-
+                title="Zoom in"
                 className="
                   w-9
                   h-9
@@ -1922,44 +2333,43 @@ export default function WasteGenMap({
                   justify-center
                   border-b
                   border-slate-100
+                  text-slate-700
                   hover:bg-slate-50
                   transition-colors
-                  duration-300
+                  duration-200
                 "
               >
 
                 <Plus
                   size={16}
-                  className="
-                    text-slate-600
-                  "
                 />
 
               </button>
 
 
+              {/* MINUS */}
+
               <button
+                type="button"
                 onClick={
                   zoomOut
                 }
-
+                title="Zoom out"
                 className="
                   w-9
                   h-9
                   flex
                   items-center
                   justify-center
+                  text-slate-700
                   hover:bg-slate-50
                   transition-colors
-                  duration-300
+                  duration-200
                 "
               >
 
                 <Minus
                   size={16}
-                  className="
-                    text-slate-600
-                  "
                 />
 
               </button>
@@ -1969,9 +2379,68 @@ export default function WasteGenMap({
           </div>
 
 
-          {/* ==================================================
+          {/* =================================================
+              TOP RIGHT STATUS
+          ================================================= */}
+
+          {!loading &&
+            !error &&
+            normalizedWard && (
+
+              <div
+                className="
+                  absolute
+                  top-4
+                  right-4
+                  z-10
+                  bg-white/95
+                  backdrop-blur-sm
+                  rounded-lg
+                  border
+                  border-slate-100
+                  shadow-sm
+                  px-3
+                  py-2
+                "
+              >
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                  "
+                >
+
+                  <span
+                    className="
+                      w-2
+                      h-2
+                      rounded-full
+                      bg-green-500
+                    "
+                  />
+
+                  <span
+                    className="
+                      text-[10px]
+                      font-medium
+                      text-slate-600
+                    "
+                  >
+                    Ward {normalizedWard}
+                  </span>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+          {/* =================================================
               LOADING
-          ================================================== */}
+          ================================================= */}
 
           {loading && (
 
@@ -2027,9 +2496,9 @@ export default function WasteGenMap({
           )}
 
 
-          {/* ==================================================
+          {/* =================================================
               ERROR
-          ================================================== */}
+          ================================================= */}
 
           {!loading &&
             error && (
@@ -2038,10 +2507,10 @@ export default function WasteGenMap({
                 className="
                   absolute
                   inset-0
+                  z-[5]
                   flex
                   items-center
                   justify-center
-                  z-[4]
                   pointer-events-none
                 "
               >
@@ -2056,6 +2525,7 @@ export default function WasteGenMap({
                     border
                     border-red-100
                     text-center
+                    max-w-[280px]
                   "
                 >
 
@@ -2086,22 +2556,24 @@ export default function WasteGenMap({
             )}
 
 
-          {/* ==================================================
-              EMPTY STATE
-          ================================================== */}
+          {/* =================================================
+              EMPTY
+          ================================================= */}
 
           {!loading &&
             !error &&
-            geoJson.features.length === 0 && (
+            normalizedWard &&
+            geoJson.features.length ===
+              0 && (
 
               <div
                 className="
                   absolute
                   inset-0
+                  z-[4]
                   flex
                   items-center
                   justify-center
-                  z-[4]
                   pointer-events-none
                 "
               >
@@ -2113,12 +2585,21 @@ export default function WasteGenMap({
                     rounded-xl
                     px-5
                     py-4
-                    shadow-lg
+                    shadow-sm
                     border
                     border-slate-100
                     text-center
                   "
                 >
+
+                  <MapPin
+                    size={18}
+                    className="
+                      mx-auto
+                      text-slate-300
+                      mb-2
+                    "
+                  />
 
                   <p
                     className="
@@ -2137,8 +2618,78 @@ export default function WasteGenMap({
                       mt-1
                     "
                   >
-                    No GPS telemetry is available
-                    for this ward today.
+                    No GPS records were returned
+                    for this ward and date.
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+          {/* =================================================
+              NO WARD
+          ================================================= */}
+
+          {!loading &&
+            !normalizedWard && (
+
+              <div
+                className="
+                  absolute
+                  inset-0
+                  z-[4]
+                  flex
+                  items-center
+                  justify-center
+                  pointer-events-none
+                "
+              >
+
+                <div
+                  className="
+                    bg-white/95
+                    backdrop-blur-sm
+                    rounded-xl
+                    px-5
+                    py-4
+                    shadow-sm
+                    border
+                    border-slate-100
+                    text-center
+                  "
+                >
+
+                  <MapPin
+                    size={18}
+                    className="
+                      mx-auto
+                      text-slate-300
+                      mb-2
+                    "
+                  />
+
+                  <p
+                    className="
+                      text-[12px]
+                      font-medium
+                      text-slate-500
+                    "
+                  >
+                    Select a ward
+                  </p>
+
+                  <p
+                    className="
+                      text-[10px]
+                      text-slate-400
+                      mt-1
+                    "
+                  >
+                    Choose a ward from the header
+                    to load collection points.
                   </p>
 
                 </div>
@@ -2149,10 +2700,100 @@ export default function WasteGenMap({
 
         </div>
 
+
+        {/* ==================================================
+            BOTTOM STATUS
+        ================================================== */}
+
+        <div
+          className="
+            h-[54px]
+            px-5
+            flex
+            items-center
+            justify-between
+            border-t
+            border-slate-100
+            bg-white
+          "
+        >
+
+          {/* LEFT */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-4
+            "
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+
+              <span
+                className="
+                  w-2
+                  h-2
+                  rounded-full
+                  bg-green-500
+                "
+              />
+
+              <span
+                className="
+                  text-[10px]
+                  text-slate-500
+                "
+              >
+                All GPS points are registered
+              </span>
+
+            </div>
+
+          </div>
+
+
+          {/* RIGHT */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-4
+            "
+          >
+
+            <span
+              className="
+                text-[10px]
+                text-slate-400
+              "
+            >
+              {pointCount} points
+            </span>
+
+            <span
+              className="
+                text-[10px]
+                text-slate-400
+              "
+            >
+              {vehicleCount} vehicles
+            </span>
+
+          </div>
+
+        </div>
+
       </div>
 
     </section>
 
   );
-
 }
