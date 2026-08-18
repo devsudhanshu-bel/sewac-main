@@ -128,6 +128,28 @@ const masterCitizenMapRoutes =
 
 
 // =====================================================
+// COLLECTION POINT MONITORING
+// =====================================================
+//
+// Actual location:
+//
+// src/wasteGen/
+//
+// Files:
+//
+// collectionPointMonitoring.controller.js
+// collectionPointMonitoring.routes.js
+// collectionPointMonitoring.service.js
+//
+// =====================================================
+
+const collectionPointMonitoringRoutes =
+  require(
+    "./wasteGen/collectionPointMonitoring.routes"
+  );
+
+
+// =====================================================
 // MASTER CITIZEN BACKGROUND JOB
 // =====================================================
 
@@ -462,6 +484,42 @@ app.use(
 app.use(
   "/api/route-map",
   routeMapRoutes
+);
+
+
+// =====================================================
+// COLLECTION POINT MONITORING API
+// =====================================================
+//
+// GET:
+//
+// /api/collection-point-monitoring
+//
+// Example:
+//
+// /api/collection-point-monitoring
+//   ?wardNo=216
+//   &date=2026-08-18
+//
+// FLOW:
+//
+// Header Ward
+//      ↓
+// wardNo = 216
+//      ↓
+// day_18082026
+//      ↓
+// vehicles where ward_no = 216
+//      ↓
+// vehicle_table_name
+//      ↓
+// latitude + longitude + complete telemetry
+//
+// =====================================================
+
+app.use(
+  "/api/collection-point-monitoring",
+  collectionPointMonitoringRoutes
 );
 
 
