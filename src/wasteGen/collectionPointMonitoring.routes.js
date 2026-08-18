@@ -4,13 +4,21 @@
  * ==========================================================
  */
 
-const express = require("express");
+const express =
+  require("express");
+
 
 const {
   getCollectionPointMonitoringController,
-} = require("../controllers/collectionPointMonitoring.controller");
+} =
+  require(
+    "./collectionPointMonitoring.controller"
+  );
 
-const router = express.Router();
+
+const router =
+  express.Router();
+
 
 /* ==========================================================
    GET COLLECTION POINT MONITORING
@@ -20,13 +28,20 @@ const router = express.Router();
  * Example:
  *
  * GET
- * /api/collection-point-monitoring?wardNo=216&date=2026-08-18
+ *
+ * /api/collection-point-monitoring?wardNo=216&date=2026-08-17
  *
  */
 
 router.get(
   "/",
-  getCollectionPointMonitoringController,
+  getCollectionPointMonitoringController
 );
 
-module.exports = router;
+
+/* ==========================================================
+   EXPORT
+========================================================== */
+
+module.exports =
+  router;

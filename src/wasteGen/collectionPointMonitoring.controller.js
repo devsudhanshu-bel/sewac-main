@@ -6,7 +6,10 @@
 
 const {
   getCollectionPointMonitoring,
-} = require("../services/collectionPointMonitoring.service");
+} = require(
+  "./collectionPointMonitoring.service"
+);
+
 
 /* ==========================================================
    GET COLLECTION POINT MONITORING
@@ -14,70 +17,156 @@ const {
 
 async function getCollectionPointMonitoringController(
   req,
-  res,
+  res
 ) {
+
   try {
-    const { wardNo, date } = req.query;
 
     /* ======================================================
-       VALIDATION
+       READ QUERY PARAMETERS
     ====================================================== */
 
-    if (!wardNo) {
-      return res.status(400).json({
-        success: false,
-        message: "wardNo is required",
-      });
+    const {
+      wardNo,
+      date,
+    } = req.query;
+
+
+    /* ======================================================
+       VALIDATE WARD
+    ====================================================== */
+
+    if (
+      wardNo === undefined ||
+      wardNo === null ||
+      wardNo === ""
+    ) {
+
+      return res
+        .status(400)
+        .json({
+
+          success: false,
+
+          message:
+            "wardNo is required",
+
+        });
+
     }
 
-    if (!date) {
-      return res.status(400).json({
-        success: false,
-        message: "date is required",
-      });
+
+    /* ======================================================
+       VALIDATE DATE
+    ====================================================== */
+
+    if (
+      date === undefined ||
+      date === null ||
+      date === ""
+    ) {
+
+      return res
+        .status(400)
+        .json({
+
+          success: false,
+
+          message:
+            "date is required",
+
+        });
+
     }
+
 
     /* ======================================================
        SERVICE
     ====================================================== */
 
-    const data = await getCollectionPointMonitoring({
-      wardNo,
-      date,
-    });
+    const data =
+      await getCollectionPointMonitoring({
+
+        wardNo,
+
+        date,
+
+      });
+
 
     /* ======================================================
-       RESPONSE
+       SUCCESS RESPONSE
     ====================================================== */
 
-    return res.status(200).json({
-      success: true,
+    return res
+      .status(200)
+      .json({
 
-      message:
-        "Collection point monitoring data retrieved successfully",
+        success: true,
 
-      data,
-    });
+        message:
+          "Collection point monitoring data retrieved successfully",
+
+        data,
+
+      });
+
   } catch (error) {
+
+    /* ======================================================
+       ERROR LOG
+    ====================================================== */
+
+    console.error("");
+
     console.error(
-      "Collection Point Monitoring Controller Error:",
-      error,
+      "================================================"
     );
 
-    return res.status(500).json({
-      success: false,
+    console.error(
+      "❌ COLLECTION POINT MONITORING CONTROLLER ERROR"
+    );
 
-      message:
-        "Failed to retrieve collection point monitoring data",
+    console.error(
+      error
+    );
 
-      error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : undefined,
-    });
+    console.error(
+      "================================================"
+    );
+
+
+    /* ======================================================
+       ERROR RESPONSE
+    ====================================================== */
+
+    return res
+      .status(500)
+      .json({
+
+        success: false,
+
+        message:
+          "Failed to retrieve collection point monitoring data",
+
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : undefined,
+
+      });
+
   }
+
 }
 
+
+/* ==========================================================
+   EXPORT
+========================================================== */
+
 module.exports = {
+
   getCollectionPointMonitoringController,
+
 };
