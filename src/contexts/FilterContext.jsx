@@ -117,9 +117,8 @@ export function FilterProvider({ children }) {
         );
 
         setDivisions(divisionList);
-
-        // Default division = Bommanahalli Division
-        // Default division = Bommanahalli Division
+        console.log("SOUTH DIVISIONS:", divisionList);
+        
         // Default division = Bommanahalli Division
         const defaultDivision = divisionList.find((division) => {
           const name = division.division_name?.trim().toLowerCase();
