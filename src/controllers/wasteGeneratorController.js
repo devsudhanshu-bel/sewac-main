@@ -3,6 +3,7 @@ const { PrismaClient: SewacClient } = require("../generated/sewac");
 
 const helperPrisma = new HelperClient();
 const sewacPrisma = new SewacClient();
+
 const wasteGeneratorService = require("../services/wasteGeneratorService");
 
 /*
@@ -12,11 +13,6 @@ const wasteGeneratorService = require("../services/wasteGeneratorService");
 */
 exports.getAllWasteGenerators = async (req, res) => {
   try {
-    /*
-    ===========================================
-    READ HEADER GEOGRAPHIC FILTERS
-    ===========================================
-    */
     const { cityId, zoneId, divisionId, wardId } = req.query;
 
     const data = await wasteGeneratorService.getAllWasteGenerators({
@@ -41,6 +37,11 @@ exports.getAllWasteGenerators = async (req, res) => {
   }
 };
 
+/*
+===========================================
+GET ONE WASTE GENERATOR
+===========================================
+*/
 exports.getWasteGeneratorByPhone = async (req, res) => {
   try {
     const data = await wasteGeneratorService.getWasteGeneratorByPhone(
@@ -59,25 +60,13 @@ exports.getWasteGeneratorByPhone = async (req, res) => {
   }
 };
 
+/*
+===========================================
+2. SUMMARY
+===========================================
+*/
 exports.getSummary = async (req, res) => {
   try {
-    /*
-    ===========================================
-    READ OVERVIEW HEADER FILTERS
-    ===========================================
-    
-    These values come from the global Header:
-
-    cityId
-    zoneId
-    divisionId
-    wardId
-
-    The controller does NOT interpret these IDs.
-    It simply passes them to the service.
-    ===========================================
-    */
-
     const { date, cityId, zoneId, divisionId, wardId } = req.query;
 
     const data = await wasteGeneratorService.getSummary({
@@ -104,7 +93,7 @@ exports.getSummary = async (req, res) => {
 
 /*
 ===========================================
-2. WASTE GENERATORS DIRECTORY
+3. WASTE GENERATORS DIRECTORY
 ===========================================
 */
 exports.getDirectory = async (req, res) => {
@@ -145,16 +134,9 @@ exports.getDirectory = async (req, res) => {
 
 /*
 ===========================================
-3. GVP GENERATION TREND
-===========================================
-
-Formula:
-
-GVP = Total Waste Collected - Total Waste Generated
-
+4. CREATE
 ===========================================
 */
-
 exports.createWasteGenerator = async (req, res) => {
   try {
     const data = await wasteGeneratorService.createWasteGenerator(
@@ -174,6 +156,11 @@ exports.createWasteGenerator = async (req, res) => {
   }
 };
 
+/*
+===========================================
+5. UPDATE
+===========================================
+*/
 exports.updateWasteGenerator = async (req, res) => {
   try {
     const data = await wasteGeneratorService.updateWasteGenerator(
@@ -194,6 +181,11 @@ exports.updateWasteGenerator = async (req, res) => {
   }
 };
 
+/*
+===========================================
+6. DELETE
+===========================================
+*/
 exports.deleteWasteGenerator = async (req, res) => {
   try {
     const data = await wasteGeneratorService.deleteWasteGenerator(
@@ -213,6 +205,11 @@ exports.deleteWasteGenerator = async (req, res) => {
   }
 };
 
+/*
+===========================================
+7. GVP GENERATION TREND
+===========================================
+*/
 exports.getGVPTrend = async (req, res) => {
   try {
     const { date, cityId, zoneId, divisionId, wardId } = req.query;
@@ -239,18 +236,45 @@ exports.getGVPTrend = async (req, res) => {
   }
 };
 
+/*
+===========================================
+8. TELEMETRY MAP
+===========================================
+
+Flow:
+
+City
+ ↓
+Zone
+ ↓
+Division
+ ↓
+Ward
+ ↓
+Date
+ ↓
+day_DDMMYYYY
+ ↓
+vehicles assigned to selected ward
+ ↓
+vehicle_DDMMYYYY tables
+ ↓
+latitude / longitude
+===========================================
+*/
 exports.getMap = async (req, res) => {
   try {
-    const { cityId, zoneId, divisionId, wardId } = req.query;
+    const { date, cityId, zoneId, divisionId, wardId } = req.query;
 
-    if (!cityId || !zoneId || !divisionId || !wardId) {
+    if (!date || !cityId || !zoneId || !divisionId || !wardId) {
       return res.status(400).json({
         success: false,
-        message: "cityId, zoneId, divisionId and wardId are required",
+        message: "date, cityId, zoneId, divisionId and wardId are required",
       });
     }
 
     const data = await wasteGeneratorService.getWasteGeneratorMap({
+      date,
       cityId,
       zoneId,
       divisionId,

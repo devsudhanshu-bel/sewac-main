@@ -1,4 +1,5 @@
 const express = require("express");
+
 const router = express.Router();
 
 const wasteGeneratorController = require("./controllers/wasteGeneratorController");
@@ -7,18 +8,31 @@ const authMiddleware = require("./middlewares/authMiddleware");
 const checkPermission = require("./middlewares/checkPermission");
 const checkTemporaryPermission = require("./middlewares/checkTemporaryPermission");
 
-// ============================================================
-// GET ALL WASTE GENERATORS
-// ============================================================
-
+/*
+============================================================
+GET ALL WASTE GENERATORS
+============================================================
+*/
 router.get("/", wasteGeneratorController.getAllWasteGenerators);
 
-// ============================================================
-// MAP
-// IMPORTANT:
-// /map MUST COME BEFORE /:phoneNumber
-// ============================================================
+/*
+============================================================
+MAP
+============================================================
 
+IMPORTANT:
+This MUST remain before /:phoneNumber.
+
+Request:
+
+GET /api/waste-generators/map
+    ?date=2026-08-19
+    &cityId=1
+    &zoneId=4
+    &divisionId=5
+    &wardId=216
+============================================================
+*/
 router.get(
   "/map",
   authMiddleware,
@@ -26,10 +40,11 @@ router.get(
   wasteGeneratorController.getMap,
 );
 
-// ============================================================
-// SUMMARY
-// ============================================================
-
+/*
+============================================================
+SUMMARY
+============================================================
+*/
 router.get(
   "/summary",
   authMiddleware,
@@ -37,10 +52,11 @@ router.get(
   wasteGeneratorController.getSummary,
 );
 
-// ============================================================
-// DIRECTORY
-// ============================================================
-
+/*
+============================================================
+DIRECTORY
+============================================================
+*/
 router.get(
   "/directory",
   authMiddleware,
@@ -48,35 +64,48 @@ router.get(
   wasteGeneratorController.getDirectory,
 );
 
-// ============================================================
-// GVP TREND
-// ============================================================
-
+/*
+============================================================
+GVP TREND
+============================================================
+*/
 router.get(
   "/gvp-trend",
   authMiddleware,
   checkPermission("waste_generators"),
-  wasteGeneratorController.getGvpTrend,
+  wasteGeneratorController.getGVPTrend,
 );
 
-// ============================================================
-// GET ONE WASTE GENERATOR
-// IMPORTANT:
-// Keep this AFTER /map
-// ============================================================
+/*
+============================================================
+GET ONE WASTE GENERATOR
+============================================================
 
+Keep this AFTER /map.
+Otherwise:
+
+/map
+
+could be interpreted as:
+
+/:phoneNumber
+
+============================================================
+*/
 router.get("/:phoneNumber", wasteGeneratorController.getWasteGeneratorByPhone);
 
-// ============================================================
-// CREATE
-// ============================================================
-
+/*
+============================================================
+CREATE
+============================================================
+*/
 router.post("/", authMiddleware, wasteGeneratorController.createWasteGenerator);
 
-// ============================================================
-// UPDATE
-// ============================================================
-
+/*
+============================================================
+UPDATE
+============================================================
+*/
 router.put(
   "/:phoneNumber",
   authMiddleware,
@@ -84,10 +113,11 @@ router.put(
   wasteGeneratorController.updateWasteGenerator,
 );
 
-// ============================================================
-// DELETE
-// ============================================================
-
+/*
+============================================================
+DELETE
+============================================================
+*/
 router.delete(
   "/:phoneNumber",
   authMiddleware,
