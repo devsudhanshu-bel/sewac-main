@@ -5036,7 +5036,6 @@ const handleMapViewChange =
 ==================================================== */}
 
 {mapView === "gvp" && (
-
   <div
     className="
       cm-special-view
@@ -5046,11 +5045,11 @@ const handleMapViewChange =
       min-h-0
     "
   >
-
-    <WasteGenMap />
-
+    <WasteGenMap
+      selectedDate={headerSelectedDate}
+      selectedWard={headerSelectedWard}
+    />
   </div>
-
 )}
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
