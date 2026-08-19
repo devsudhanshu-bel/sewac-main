@@ -2,8 +2,66 @@ import { useEffect, useRef } from "react";
 import { Trash2, Scale, UserRound } from "lucide-react";
 import { gsap } from "gsap";
 
+/*
+|--------------------------------------------------------------------------
+| WASTE DISPLAY FORMATTER
+|--------------------------------------------------------------------------
+|
+| Backend values are ALWAYS in KG.
+|
+| Display rule:
+|
+| <= 1000 KG  → KG
+| > 1000 KG   → TONS
+|
+| IMPORTANT:
+| Exactly 1000 KG remains KG.
+|--------------------------------------------------------------------------
+*/
+
+const formatWaste = (value) => {
+  const kg = Number(value ?? 0);
+
+  if (!Number.isFinite(kg)) {
+    return {
+      value: "0.00",
+      unit: "KG",
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | KEEP KG UNTIL 1000 KG
+  |--------------------------------------------------------------------------
+  */
+
+  if (kg <= 1000) {
+    return {
+      value: kg.toFixed(2),
+      unit: "KG",
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ABOVE 1000 KG → TONS
+  |--------------------------------------------------------------------------
+  */
+
+  return {
+    value: (kg / 1000).toFixed(2),
+    unit: "TONS",
+  };
+};
+
 export default function WasteGenKPIs({ summary }) {
   const sectionRef = useRef(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ANIMATION
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -22,16 +80,53 @@ export default function WasteGenKPIs({ summary }) {
     return () => ctx.revert();
   }, []);
 
+  /*
+  |--------------------------------------------------------------------------
+  | NO DATA
+  |--------------------------------------------------------------------------
+  */
+
   if (!summary) {
     return null;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | FORMAT TOTAL WASTE
+  |--------------------------------------------------------------------------
+  */
+
+  const totalWaste = formatWaste(summary?.totalWasteGenerated ?? 0);
+
+  /*
+  |--------------------------------------------------------------------------
+  | FORMAT AVERAGE WASTE
+  |--------------------------------------------------------------------------
+  */
+
+  const averageWaste = formatWaste(summary?.averageWaste ?? 0);
+
+  /*
+  |--------------------------------------------------------------------------
+  | RENDER
+  |--------------------------------------------------------------------------
+  */
+
   return (
     <section
       ref={sectionRef}
-      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-6"
+      className="
+        grid
+        grid-cols-1
+        md:grid-cols-2
+        xl:grid-cols-4
+        gap-6
+        mt-6
+      "
     >
-      {/* ========================= Waste Generator Status ========================= */}
+      {/* ================================================================ */}
+      {/* WASTE GENERATOR STATUS                                           */}
+      {/* ================================================================ */}
 
       <div
         className="
@@ -52,6 +147,10 @@ export default function WasteGenKPIs({ summary }) {
         <h3 className="text-[12px] font-semibold text-slate-800 mb-5">
           Waste Generator Status
         </h3>
+
+        {/* ============================================================ */}
+        {/* ACTIVE                                                         */}
+        {/* ============================================================ */}
 
         <div className="flex items-center gap-3">
           <UserRound size={20} className="text-green-600" fill="currentColor" />
@@ -96,6 +195,10 @@ export default function WasteGenKPIs({ summary }) {
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-5"></div>
+
+        {/* ============================================================ */}
+        {/* INACTIVE                                                       */}
+        {/* ============================================================ */}
 
         <div className="flex items-center gap-3">
           <UserRound
@@ -144,7 +247,9 @@ export default function WasteGenKPIs({ summary }) {
         </div>
       </div>
 
-      {/* ========================= Total Waste Generated ========================= */}
+      {/* ================================================================ */}
+      {/* TOTAL WASTE GENERATED                                            */}
+      {/* ================================================================ */}
 
       <div
         className="
@@ -162,6 +267,10 @@ export default function WasteGenKPIs({ summary }) {
           min-h-[185px]
         "
       >
+        {/* ============================================================ */}
+        {/* HEADER                                                         */}
+        {/* ============================================================ */}
+
         <div className="flex items-center gap-3">
           <div
             className="
@@ -185,6 +294,10 @@ export default function WasteGenKPIs({ summary }) {
           </p>
         </div>
 
+        {/* ============================================================ */}
+        {/* VALUE                                                          */}
+        {/* ============================================================ */}
+
         <div className="flex justify-center items-center h-[95px]">
           <div className="flex items-end gap-2">
             <h2
@@ -195,7 +308,7 @@ export default function WasteGenKPIs({ summary }) {
                 text-[#18214D]
               "
             >
-              {(Number(summary?.totalWasteGenerated ?? 0) / 1000).toFixed(2)}
+              {totalWaste.value}
             </h2>
 
             <span
@@ -206,13 +319,15 @@ export default function WasteGenKPIs({ summary }) {
                 mb-2
               "
             >
-              TONS
+              {totalWaste.unit}
             </span>
           </div>
         </div>
       </div>
 
-      {/* ========================= Average Waste ========================= */}
+      {/* ================================================================ */}
+      {/* AVERAGE WASTE                                                    */}
+      {/* ================================================================ */}
 
       <div
         className="
@@ -230,6 +345,10 @@ export default function WasteGenKPIs({ summary }) {
           min-h-[185px]
         "
       >
+        {/* ============================================================ */}
+        {/* HEADER                                                         */}
+        {/* ============================================================ */}
+
         <div className="flex items-center gap-4">
           <div
             className="
@@ -252,6 +371,10 @@ export default function WasteGenKPIs({ summary }) {
           </div>
         </div>
 
+        {/* ============================================================ */}
+        {/* VALUE                                                          */}
+        {/* ============================================================ */}
+
         <div className="flex flex-col justify-center items-center h-[95px]">
           <div className="flex items-end gap-2">
             <h2
@@ -262,7 +385,7 @@ export default function WasteGenKPIs({ summary }) {
                 text-[#18214D]
               "
             >
-              {(Number(summary?.averageWaste ?? 0) / 1000).toFixed(2)}
+              {averageWaste.value}
             </h2>
 
             <span
@@ -273,7 +396,7 @@ export default function WasteGenKPIs({ summary }) {
                 mb-2
               "
             >
-              TONS
+              {averageWaste.unit}
             </span>
           </div>
 
@@ -283,7 +406,9 @@ export default function WasteGenKPIs({ summary }) {
         </div>
       </div>
 
-      {/* ========================= Waste Generator Classification ========================= */}
+      {/* ================================================================ */}
+      {/* WASTE GENERATOR CLASSIFICATION                                   */}
+      {/* ================================================================ */}
 
       <div
         className="
@@ -304,6 +429,10 @@ export default function WasteGenKPIs({ summary }) {
         <h3 className="text-[11px] font-semibold text-slate-800 mb-5">
           Waste Generator Classification
         </h3>
+
+        {/* ============================================================ */}
+        {/* ABOVE AVERAGE                                                  */}
+        {/* ============================================================ */}
 
         <div className="flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-green-500"></span>
@@ -346,6 +475,10 @@ export default function WasteGenKPIs({ summary }) {
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-5"></div>
+
+        {/* ============================================================ */}
+        {/* BELOW AVERAGE                                                  */}
+        {/* ============================================================ */}
 
         <div className="flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-orange-500"></span>
