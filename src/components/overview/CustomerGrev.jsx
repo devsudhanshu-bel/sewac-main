@@ -1,280 +1,254 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMap,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import Map, { Marker, Popup } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
-/* ============================================================
-   API
-============================================================ */
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  "";
 
-const COMPLAINTS_API =
-  "https://sewac-main.onrender.com/api/complaintsGrev";
+const COMPLAINTS_ENDPOINT = `${API_BASE_URL}/api/complaints-grev/locations`;
 
-/* ============================================================
-   DEFAULT MAP POSITION
-============================================================ */
-
-const DEFAULT_CENTER = [12.9715987, 77.5945627];
-const DEFAULT_ZOOM = 12;
-
-/* ============================================================
-   PERSON ICON
-============================================================ */
-
-const createPersonIcon = () =>
-  L.divIcon({
-    className: "",
-    html: `
-      <div
-        style="
-          width:34px;
-          height:34px;
-          border-radius:50%;
-          background:#ffffff;
-          border:2px solid #64748b;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          box-shadow:0 4px 12px rgba(15,23,42,0.22);
-          font-size:19px;
-        "
-      >
-        👤
-      </div>
-    `,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -18],
-  });
-
-const personIcon = createPersonIcon();
-
-/* ============================================================
-   MAP RESIZE FIX
-============================================================ */
-
-function MapResizeHandler() {
-  const map = useMap();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [map]);
-
-  return null;
-}
-
-/* ============================================================
-   FIT MAP TO COMPLAINTS
-============================================================ */
-
-function ComplaintMapController({ complaints }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!complaints || complaints.length === 0) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      return;
-    }
-
-    const validPoints = complaints
-      .filter(
-        (item) =>
-          Number.isFinite(Number(item.lat)) &&
-          Number.isFinite(Number(item.long))
-      )
-      .map((item) => [
-        Number(item.lat),
-        Number(item.long),
-      ]);
-
-    if (validPoints.length === 0) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      return;
-    }
-
-    if (validPoints.length === 1) {
-      map.setView(validPoints[0], 14);
-      return;
-    }
-
-    const bounds = L.latLngBounds(validPoints);
-
-    map.fitBounds(bounds, {
-      padding: [50, 50],
-      maxZoom: 15,
-    });
-  }, [complaints, map]);
-
-  return null;
-}
-
-/* ============================================================
-   STATUS COLOR
-============================================================ */
-
-const getStatusClasses = (status) => {
-  switch (status) {
-    case "CLOSED":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-
-    case "PENDING":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-
-    case "ASSIGNED":
-      return "bg-blue-50 text-blue-700 border-blue-200";
-
-    case "IN_PROGRESS":
-      return "bg-purple-50 text-purple-700 border-purple-200";
-
-    case "READY_FOR_VERIFICATION":
-      return "bg-orange-50 text-orange-700 border-orange-200";
-
-    case "OTP_SENT":
-      return "bg-cyan-50 text-cyan-700 border-cyan-200";
-
-    default:
-      return "bg-slate-50 text-slate-700 border-slate-200";
-  }
+const DEFAULT_VIEW = {
+  longitude: 77.5945627,
+  latitude: 12.9715987,
+  zoom: 11,
 };
 
-/* ============================================================
-   POPUP
-============================================================ */
+const STATUS_STYLES = {
+  PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+  ASSIGNED: "bg-blue-50 text-blue-700 border-blue-200",
+  IN_PROGRESS: "bg-purple-50 text-purple-700 border-purple-200",
+  READY_FOR_VERIFICATION:
+    "bg-orange-50 text-orange-700 border-orange-200",
+  OTP_SENT: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  CLOSED: "bg-green-50 text-green-700 border-green-200",
+};
 
-function ComplaintPopup({ complaint }) {
-  const data = complaint?.data || {};
+const CATEGORY_LABELS = {
+  MISSED_COLLECTION: "Missed Collection",
+  OVERFLOWING_BIN: "Overflowing Bin",
+  ILLEGAL_DUMPING: "Illegal Dumping",
+  STREET_LITTER: "Street Litter",
+  DAMAGED_BIN: "Damaged Bin",
+  OTHER: "Other",
+};
+
+function formatCategory(category) {
+  if (!category) return "N/A";
 
   return (
-    <div className="w-[280px] font-sans text-slate-700">
-      {/* Header */}
-      <div className="mb-3 border-b border-slate-200 pb-3">
-        <div className="text-[15px] font-bold text-slate-800">
-          {data.title || "Customer Grievance"}
-        </div>
+    CATEGORY_LABELS[category] ||
+    category
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  );
+}
 
-        <div className="mt-1 text-[11px] font-medium text-slate-500">
-          {data.ticket_number || "No ticket number"}
-        </div>
-      </div>
+function formatStatus(status) {
+  if (!status) return "N/A";
 
-      {/* Status */}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          Status
-        </span>
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
-        <span
-          className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
-            data.status
-          )}`}
+function ComplaintMarker({ selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-transform duration-150 hover:scale-110 focus:outline-none"
+      title="Customer grievance"
+    >
+      <span
+        className={`absolute inset-0 rounded-full border-2 ${
+          selected ? "border-purple-500" : "border-blue-500"
+        }`}
+      />
+
+      <span
+        className={`flex h-8 w-8 items-center justify-center rounded-full ${
+          selected ? "bg-purple-600" : "bg-blue-600"
+        }`}
+      >
+        {/* Person icon */}
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          {data.status || "UNKNOWN"}
-        </span>
-      </div>
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5.5 20c.7-3.4 2.9-5.5 6.5-5.5s5.8 2.1 6.5 5.5" />
+        </svg>
+      </span>
+    </button>
+  );
+}
 
-      {/* Details */}
-      <div className="space-y-2.5 text-[12px]">
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            ID
+function ComplaintPopup({ complaint, onClose }) {
+  if (!complaint) return null;
+
+  const data = complaint.data || {};
+  const statusClass =
+    STATUS_STYLES[data.status] ||
+    "bg-gray-50 text-gray-700 border-gray-200";
+
+  return (
+    <div className="w-[330px] max-w-[calc(100vw-60px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      {/* Header */}
+      <div className="border-b border-slate-100 px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              Customer Grievance
+            </p>
+
+            <h3 className="mt-1 truncate text-sm font-bold text-slate-800">
+              {data.ticket_number || "Complaint"}
+            </h3>
           </div>
 
-          <div className="font-medium text-slate-700">
-            {data.id ?? "-"}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Phone Number
-          </div>
-
-          <div className="font-medium text-slate-700">
-            {data.phone_number || "-"}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Category
-          </div>
-
-          <div className="font-medium text-slate-700">
-            {data.category || "-"}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Address
-          </div>
-
-          <div className="font-medium leading-4 text-slate-700">
-            {data.address || "-"}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Description
-          </div>
-
-          <div className="leading-4 text-slate-600">
-            {data.description || "-"}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-            Coordinates
-          </div>
-
-          <div className="font-mono text-[10px] text-slate-600">
-            {Number(complaint.lat).toFixed(7)},{" "}
-            {Number(complaint.long).toFixed(7)}
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+          >
+            ×
+          </button>
         </div>
       </div>
 
-      {/* Image */}
-      {data.image_url && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
-          <img
-            src={data.image_url}
-            alt="Complaint"
-            className="h-32 w-full object-cover"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
-          />
+      {/* Body */}
+      <div className="max-h-[390px] overflow-y-auto px-4 py-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-slate-500">
+            Status
+          </span>
+
+          <span
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${statusClass}`}
+          >
+            {formatStatus(data.status)}
+          </span>
         </div>
-      )}
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Title
+            </p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">
+              {data.title || "N/A"}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Description
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {data.description || "N/A"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Category
+              </p>
+              <p className="mt-1 text-xs font-semibold text-slate-700">
+                {formatCategory(data.category)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                ID
+              </p>
+              <p className="mt-1 text-xs font-semibold text-slate-700">
+                #{data.id ?? "N/A"}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Phone Number
+            </p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">
+              {data.phone_number || "N/A"}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              Address
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {data.address || "N/A"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Latitude
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-slate-700">
+                {complaint.lat}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Longitude
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-slate-700">
+                {complaint.long}
+              </p>
+            </div>
+          </div>
+
+          {data.image_url && (
+            <div>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                Complaint Image
+              </p>
+
+              <img
+                src={data.image_url}
+                alt="Complaint"
+                className="h-32 w-full rounded-xl border border-slate-200 object-cover"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ============================================================
-   MAIN COMPONENT
-============================================================ */
-
 export default function CustomerGrev() {
   const [complaints, setComplaints] = useState([]);
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+
+  const [viewState, setViewState] = useState(DEFAULT_VIEW);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  /* ==========================================================
-     FETCH COMPLAINTS
-  ========================================================== */
 
   useEffect(() => {
     let mounted = true;
@@ -284,12 +258,10 @@ export default function CustomerGrev() {
         setLoading(true);
         setError("");
 
-        console.log("==========================================");
         console.log("📍 CUSTOMER GRIEVANCES MAP REQUEST");
-        console.log("ENDPOINT:", COMPLAINTS_API);
-        console.log("==========================================");
+        console.log("ENDPOINT:", COMPLAINTS_ENDPOINT);
 
-        const response = await fetch(COMPLAINTS_API);
+        const response = await fetch(COMPLAINTS_ENDPOINT);
 
         if (!response.ok) {
           throw new Error(
@@ -301,48 +273,48 @@ export default function CustomerGrev() {
 
         console.log("📍 CUSTOMER GRIEVANCES RESPONSE:", result);
 
-        if (!result?.success) {
-          throw new Error(
-            result?.message || "Failed to load customer grievances"
-          );
-        }
+        if (!mounted) return;
 
-        const rows = Array.isArray(result?.data)
+        const locations = Array.isArray(result?.data)
           ? result.data
           : [];
 
-        const validRows = rows.filter((item) => {
+        const validLocations = locations.filter((item) => {
           const lat = Number(item?.lat);
           const long = Number(item?.long);
 
           return (
             Number.isFinite(lat) &&
-            Number.isFinite(long)
+            Number.isFinite(long) &&
+            lat >= -90 &&
+            lat <= 90 &&
+            long >= -180 &&
+            long <= 180
           );
         });
 
-        console.log(
-          "📍 CUSTOMER GRIEVANCES LOADED:",
-          validRows.length
-        );
+        setComplaints(validLocations);
 
-        if (mounted) {
-          setComplaints(validRows);
+        if (validLocations.length > 0) {
+          const first = validLocations[0];
+
+          setViewState((previous) => ({
+            ...previous,
+            longitude: Number(first.long),
+            latitude: Number(first.lat),
+            zoom: 11,
+          }));
         }
       } catch (err) {
-        console.error(
-          "❌ CUSTOMER GRIEVANCES ERROR:",
-          err
+        console.error("CUSTOMER GRIEVANCES ERROR:", err);
+
+        if (!mounted) return;
+
+        setError(
+          err?.message ||
+            "Unable to load customer grievances."
         );
-
-        if (mounted) {
-          setError(
-            err?.message ||
-              "Unable to load customer grievances"
-          );
-
-          setComplaints([]);
-        }
+        setComplaints([]);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -357,199 +329,146 @@ export default function CustomerGrev() {
     };
   }, []);
 
-  /* ==========================================================
-     MEMOIZED STATS
-  ========================================================== */
+  const boundsCenter = useMemo(() => {
+    if (!complaints.length) return null;
 
-  const complaintCount = complaints.length;
+    const latitudes = complaints.map((item) => Number(item.lat));
+    const longitudes = complaints.map((item) => Number(item.long));
 
-  const statusCount = useMemo(() => {
-    return complaints.reduce((acc, complaint) => {
-      const status =
-        complaint?.data?.status || "UNKNOWN";
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLong = Math.min(...longitudes);
+    const maxLong = Math.max(...longitudes);
 
-      acc[status] = (acc[status] || 0) + 1;
-
-      return acc;
-    }, {});
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLong + maxLong) / 2,
+    };
   }, [complaints]);
 
-  /* ==========================================================
-     RENDER
-  ========================================================== */
+  useEffect(() => {
+    if (!boundsCenter || complaints.length <= 1) return;
+
+    setViewState((previous) => ({
+      ...previous,
+      latitude: boundsCenter.latitude,
+      longitude: boundsCenter.longitude,
+      zoom: 10,
+    }));
+  }, [boundsCenter, complaints.length]);
 
   return (
-    <section className="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
         <div>
           <h2 className="text-lg font-bold tracking-tight text-slate-800">
-            Customer Grievances
+            CUSTOMER GRIEVANCES
           </h2>
 
           <p className="mt-0.5 text-xs font-medium text-slate-400">
-            Live citizen complaint locations
+            Citizen complaint locations
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Complaints
-            </div>
-
-            <div className="text-sm font-bold text-slate-700">
-              {loading ? "..." : complaintCount}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Closed
-            </div>
-
-            <div className="text-sm font-bold text-emerald-600">
-              {loading
-                ? "..."
-                : statusCount.CLOSED || 0}
-            </div>
-          </div>
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+          {loading ? "Loading..." : `${complaints.length} Complaints`}
         </div>
       </div>
 
-      {/* ======================================================
-          ERROR
-      ====================================================== */}
-
-      {error && (
-        <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* ======================================================
-          MAP
-      ====================================================== */}
-
-      <div className="relative h-[520px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-        <MapContainer
-          center={DEFAULT_CENTER}
-          zoom={DEFAULT_ZOOM}
-          scrollWheelZoom={true}
-          zoomControl={true}
-          className="h-full w-full"
+      {/* Map */}
+      <div className="relative h-[520px] w-full">
+        <Map
+          {...viewState}
+          onMove={(event) => setViewState(event.viewState)}
+          mapStyle="https://tiles.openfreemap.org/styles/bright"
+          attributionControl={false}
+          reuseMaps
         >
-          {/* Pale / white map */}
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
-
-          <MapResizeHandler />
-
-          <ComplaintMapController
-            complaints={complaints}
-          />
-
-          {/* ==================================================
-              COMPLAINT MARKERS
-          ================================================== */}
-
           {complaints.map((complaint, index) => {
-            const lat = Number(complaint.lat);
-            const long = Number(complaint.long);
-
-            if (
-              !Number.isFinite(lat) ||
-              !Number.isFinite(long)
-            ) {
-              return null;
-            }
+            const latitude = Number(complaint.lat);
+            const longitude = Number(complaint.long);
 
             return (
               <Marker
                 key={
                   complaint?.data?.id ??
-                  complaint?.data?.ticket_number ??
-                  `${lat}-${long}-${index}`
+                  `${latitude}-${longitude}-${index}`
                 }
-                position={[lat, long]}
-                icon={personIcon}
+                latitude={latitude}
+                longitude={longitude}
+                anchor="center"
               >
-                <Popup
-                  closeButton={true}
-                  maxWidth={320}
-                  minWidth={280}
-                >
-                  <ComplaintPopup
-                    complaint={complaint}
-                  />
-                </Popup>
+                <ComplaintMarker
+                  selected={
+                    selectedComplaint?.data?.id ===
+                    complaint?.data?.id
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedComplaint(complaint);
+                  }}
+                />
               </Marker>
             );
           })}
-        </MapContainer>
 
-        {/* ====================================================
-            LOADING
-        ==================================================== */}
+          {selectedComplaint && (
+            <Popup
+              latitude={Number(selectedComplaint.lat)}
+              longitude={Number(selectedComplaint.long)}
+              anchor="bottom"
+              closeButton={false}
+              closeOnClick={false}
+              onClose={() => setSelectedComplaint(null)}
+              offset={22}
+            >
+              <ComplaintPopup
+                complaint={selectedComplaint}
+                onClose={() => setSelectedComplaint(null)}
+              />
+            </Popup>
+          )}
+        </Map>
 
+        {/* Loading */}
         {loading && (
-          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
-            <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
-
-                <span className="text-xs font-semibold text-slate-600">
-                  Loading grievances...
-                </span>
-              </div>
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+            <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-lg">
+              Loading customer grievances...
             </div>
           </div>
         )}
 
-        {/* ====================================================
-            EMPTY STATE
-        ==================================================== */}
+        {/* Error */}
+        {!loading && error && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50">
+            <div className="mx-4 max-w-md rounded-2xl border border-red-200 bg-white px-6 py-5 text-center shadow-xl">
+              <p className="text-sm font-bold text-red-600">
+                Unable to load grievances
+              </p>
 
-        {!loading &&
-          !error &&
-          complaints.length === 0 && (
-            <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
-              <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 text-center shadow-lg">
-                <div className="text-sm font-bold text-slate-700">
-                  No customer grievances available
-                </div>
-
-                <div className="mt-1 text-xs text-slate-400">
-                  No valid complaint coordinates were
-                  returned by the API.
-                </div>
-              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                {error}
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
-        {/* ====================================================
-            MAP LEGEND
-        ==================================================== */}
+        {/* Empty */}
+        {!loading && !error && complaints.length === 0 && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-4 text-center shadow-lg">
+              <p className="text-sm font-bold text-slate-600">
+                No customer grievances available
+              </p>
 
-        {!loading &&
-          complaints.length > 0 && (
-            <div className="absolute bottom-4 left-4 z-[800] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur">
-              <div className="flex items-center gap-2">
-                <span className="text-base">
-                  👤
-                </span>
-
-                <span className="text-[10px] font-semibold text-slate-600">
-                  Citizen grievance
-                </span>
-              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                No valid complaint coordinates were returned.
+              </p>
             </div>
-          )}
+          </div>
+        )}
       </div>
     </section>
   );
