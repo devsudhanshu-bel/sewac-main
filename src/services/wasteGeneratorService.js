@@ -1543,6 +1543,51 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| MAP
+|--------------------------------------------------------------------------
+|
+| FINAL FLOW:
+|
+| selected date
+|   ↓
+| day_DDMMYYYY
+|   ↓
+| selected ward
+|   ↓
+| ALL vehicle tables registered for that ward
+|   ↓
+| UNION ALL vehicle telemetry tables
+|   ↓
+| selected date
+|   ↓
+| ALL valid coordinates
+|
+| TWO MAP LAYERS:
+|
+| 1. points
+|    → ALL telemetry coordinates
+|    → GREEN
+|
+| 2. gvpPoints
+|    → telemetry satisfying the existing GVP rules
+|    → RED
+|
+| GVP RULE:
+|
+| unitNumber exists
+| AND unitNumber does NOT contain "UHF"
+| AND remarks = "O"
+| AND citizenContact is NULL / empty
+|
+| IMPORTANT:
+|
+| We do NOT use point-in-polygon filtering.
+| The selected ward is used to select its vehicle tables.
+|--------------------------------------------------------------------------
+*/
+
 const getWasteGeneratorMap = async ({
   date,
   cityId,
@@ -1573,17 +1618,23 @@ const getWasteGeneratorMap = async ({
 
   const divisionTable = quoteIdentifier(ward.divisionTableName);
 
+  /*
+  |--------------------------------------------------------------------------
+  | GET SELECTED WARD BOUNDARY
+  |--------------------------------------------------------------------------
+  */
+
   const boundaryRows = await masterCitizenPrisma.$queryRawUnsafe(
     `
-          SELECT
-            ward_id,
-            ward_no,
-            ward_name,
-            geo_boundary
-          FROM ${divisionTable}
-          WHERE ward_id = $1
-          LIMIT 1
-        `,
+      SELECT
+        ward_id,
+        ward_no,
+        ward_name,
+        geo_boundary
+      FROM ${divisionTable}
+      WHERE ward_id = $1
+      LIMIT 1
+    `,
     ward.wardId,
   );
 
@@ -1596,126 +1647,271 @@ const getWasteGeneratorMap = async ({
   }
 
   /*
-    |--------------------------------------------------------------------------
-    | DAY TABLE → ALL VEHICLES FOR WARD
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | GET ALL VEHICLE TABLES FOR SELECTED DATE + WARD
+  |--------------------------------------------------------------------------
+  */
 
   const vehicleTables = await getVehicleTablesForDate(dateObject, [wardNo]);
 
   /*
-    |--------------------------------------------------------------------------
-    | ALL VEHICLE TABLES → ALL TELEMETRY
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | GET ALL TELEMETRY FROM ALL VEHICLE TABLES
+  |--------------------------------------------------------------------------
+  */
 
   const telemetryRows = await getMapTelemetryRows(vehicleTables, selectedDate);
 
   /*
-    |--------------------------------------------------------------------------
-    | NORMALIZE EVERY POINT
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | ALL TELEMETRY POINTS
+  |--------------------------------------------------------------------------
+  */
 
-  const points = telemetryRows
-    .map((row) => {
-      const latitude = Number(row.latitude);
-
-      const longitude = Number(row.longitude);
-
-      const sourceVehicleTable = row.sourceVehicleTable
-        ? String(row.sourceVehicleTable)
-        : null;
-
-      const vehicleNumber = row.vehicleNumber
-        ? String(row.vehicleNumber).trim()
-        : null;
-
-      const rawId = Number(row.id);
-
-      /*
-       * GLOBAL POINT KEY
-       *
-       * Vehicle table + row id are required because
-       * different vehicle tables can all have id = 1.
-       */
-      const pointKey = [
-        sourceVehicleTable || "UNKNOWN_TABLE",
-        vehicleNumber || "UNKNOWN_VEHICLE",
-        Number.isFinite(rawId) ? rawId : "NO_ID",
-        row.iotTimestamp
-          ? new Date(row.iotTimestamp).toISOString()
-          : "NO_TIMESTAMP",
-        latitude.toFixed(7),
-        longitude.toFixed(7),
-      ].join("|");
-
-      return {
-        id: Number.isFinite(rawId) ? rawId : null,
-
-        pointKey,
-
-        sourceVehicleTable,
-
-        latitude,
-
-        longitude,
-
-        vehicleNumber,
-
-        citizenId:
-          row.citizenId === null || row.citizenId === undefined
-            ? null
-            : Number(row.citizenId),
-
-        iotTimestamp: row.iotTimestamp || null,
-
-        receivedTimestamp: row.receivedTimestamp || null,
-
-        wetWeight:
-          row.wetWeight === null || row.wetWeight === undefined
-            ? null
-            : Number(row.wetWeight),
-
-        dryWeight:
-          row.dryWeight === null || row.dryWeight === undefined
-            ? null
-            : Number(row.dryWeight),
-
-        otherWeight:
-          row.otherWeight === null || row.otherWeight === undefined
-            ? null
-            : Number(row.otherWeight),
-
-        cumulativeWeight:
-          row.cumulativeWeight === null || row.cumulativeWeight === undefined
-            ? null
-            : Number(row.cumulativeWeight),
-
-        unitNumber: row.unitNumber || null,
-
-        remarks: row.remarks || null,
-
-        citizenContact: row.citizenContact || null,
-
-        wardNo:
-          row.wardNo === null || row.wardNo === undefined
-            ? wardNo
-            : Number(row.wardNo),
-      };
-    })
-    .filter(
-      (point) =>
-        Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
-    );
+  const points = [];
 
   /*
+  |--------------------------------------------------------------------------
+  | GVP POINTS
+  |--------------------------------------------------------------------------
+  */
+
+  const gvpPoints = [];
+
+  /*
+  |--------------------------------------------------------------------------
+  | PREVIOUS CUMULATIVE WEIGHT
+  |--------------------------------------------------------------------------
+  |
+  | This is maintained separately for every vehicle.
+  |
+  | vehicle A:
+  |   100 -> 120 -> 145
+  |
+  | deltas:
+  |   100 -> 20 -> 25
+  |
+  | vehicle B has its own independent sequence.
+  |--------------------------------------------------------------------------
+  */
+
+  const previousCumulative = new Map();
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROCESS EVERY TELEMETRY ROW
+  |--------------------------------------------------------------------------
+  */
+
+  for (const row of telemetryRows) {
+    const latitude = Number(row.latitude);
+
+    const longitude = Number(row.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      continue;
+    }
+
+    const sourceVehicleTable = row.sourceVehicleTable
+      ? String(row.sourceVehicleTable)
+      : null;
+
+    const vehicleNumber = row.vehicleNumber
+      ? String(row.vehicleNumber).trim()
+      : null;
+
+    const rawId = Number(row.id);
+
+    /*
     |--------------------------------------------------------------------------
-    | VEHICLE POINT COUNTS
+    | GLOBAL POINT KEY
+    |--------------------------------------------------------------------------
+    |
+    | Every vehicle table can have id = 1.
+    |
+    | Therefore:
+    |
+    | vehicleTable + vehicle + id + timestamp + coordinates
+    |
+    | is used instead of id alone.
     |--------------------------------------------------------------------------
     */
 
+    const pointKey = [
+      sourceVehicleTable || "UNKNOWN_TABLE",
+      vehicleNumber || "UNKNOWN_VEHICLE",
+      Number.isFinite(rawId) ? rawId : "NO_ID",
+      row.iotTimestamp
+        ? new Date(row.iotTimestamp).toISOString()
+        : "NO_TIMESTAMP",
+      latitude.toFixed(7),
+      longitude.toFixed(7),
+    ].join("|");
+
+    /*
+    |--------------------------------------------------------------------------
+    | VEHICLE CUMULATIVE WEIGHT
+    |--------------------------------------------------------------------------
+    */
+
+    const currentCumulative = Number(row.cumulativeWeight || 0);
+
+    const previousCumulativeWeight =
+      previousCumulative.get(vehicleNumber || sourceVehicleTable) || 0;
+
+    const weightDelta = Math.max(
+      currentCumulative - previousCumulativeWeight,
+      0,
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | GVP QUALIFICATION
+    |--------------------------------------------------------------------------
+    |
+    | SAME LOGIC ALREADY USED BY getGVPTrend()
+    |--------------------------------------------------------------------------
+    */
+
+    const unitNumber = row.unitNumber ? String(row.unitNumber).trim() : "";
+
+    const citizenContact = row.citizenContact;
+
+    const isGVP =
+      Boolean(unitNumber) &&
+      !unitNumber.toUpperCase().includes("UHF") &&
+      row.remarks === "O" &&
+      (citizenContact === null ||
+        citizenContact === undefined ||
+        String(citizenContact).trim() === "");
+
+    /*
+    |--------------------------------------------------------------------------
+    | COMMON POINT OBJECT
+    |--------------------------------------------------------------------------
+    */
+
+    const point = {
+      id: Number.isFinite(rawId) ? rawId : null,
+
+      pointKey,
+
+      sourceVehicleTable,
+
+      latitude,
+
+      longitude,
+
+      vehicleNumber,
+
+      citizenId:
+        row.citizenId === null || row.citizenId === undefined
+          ? null
+          : Number(row.citizenId),
+
+      iotTimestamp: row.iotTimestamp || null,
+
+      receivedTimestamp: row.receivedTimestamp || null,
+
+      wetWeight:
+        row.wetWeight === null || row.wetWeight === undefined
+          ? null
+          : Number(row.wetWeight),
+
+      dryWeight:
+        row.dryWeight === null || row.dryWeight === undefined
+          ? null
+          : Number(row.dryWeight),
+
+      otherWeight:
+        row.otherWeight === null || row.otherWeight === undefined
+          ? null
+          : Number(row.otherWeight),
+
+      cumulativeWeight:
+        row.cumulativeWeight === null || row.cumulativeWeight === undefined
+          ? null
+          : Number(row.cumulativeWeight),
+
+      /*
+      |--------------------------------------------------------------
+      | INCREMENTAL WEIGHT
+      |--------------------------------------------------------------
+      */
+
+      weightDelta: Number(weightDelta.toFixed(3)),
+
+      unitNumber: row.unitNumber || null,
+
+      remarks: row.remarks || null,
+
+      citizenContact: row.citizenContact || null,
+
+      wardNo:
+        row.wardNo === null || row.wardNo === undefined
+          ? wardNo
+          : Number(row.wardNo),
+
+      /*
+      |--------------------------------------------------------------
+      | GVP FLAG
+      |--------------------------------------------------------------
+      */
+
+      isGVP,
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD TO ALL TELEMETRY POINTS
+    |--------------------------------------------------------------------------
+    */
+
+    points.push(point);
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD GVP POINT
+    |--------------------------------------------------------------------------
+    */
+
+    if (isGVP) {
+      gvpPoints.push({
+        ...point,
+
+        /*
+        | Explicit GVP type makes frontend handling easier.
+        */
+        pointType: "GVP",
+
+        /*
+        | Keep the incremental waste available for tooltip.
+        */
+        gvpWaste: Number(weightDelta.toFixed(3)),
+      });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PREVIOUS CUMULATIVE WEIGHT
+    |--------------------------------------------------------------------------
+    */
+
+    previousCumulative.set(
+      vehicleNumber || sourceVehicleTable,
+      currentCumulative,
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | VEHICLE POINT COUNTS
+  |--------------------------------------------------------------------------
+  */
+
   const vehiclePointCounts = new Map();
+
+  const vehicleGVPCounts = new Map();
 
   for (const point of points) {
     const tableKey = point.sourceVehicleTable || "UNKNOWN_TABLE";
@@ -1725,11 +1921,19 @@ const getWasteGeneratorMap = async ({
     vehiclePointCounts.set(tableKey, existing + 1);
   }
 
+  for (const point of gvpPoints) {
+    const tableKey = point.sourceVehicleTable || "UNKNOWN_TABLE";
+
+    const existing = vehicleGVPCounts.get(tableKey) || 0;
+
+    vehicleGVPCounts.set(tableKey, existing + 1);
+  }
+
   /*
-    |--------------------------------------------------------------------------
-    | VEHICLE SUMMARY
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | VEHICLE SUMMARY
+  |--------------------------------------------------------------------------
+  */
 
   const vehicles = vehicleTables.map((vehicle) => ({
     vehicleNumber: vehicle.vehicleNumber,
@@ -1739,29 +1943,39 @@ const getWasteGeneratorMap = async ({
     wardNo: vehicle.wardNo,
 
     points: vehiclePointCounts.get(vehicle.vehicleTableName) || 0,
+
+    gvpPoints: vehicleGVPCounts.get(vehicle.vehicleTableName) || 0,
   }));
 
   /*
-    |--------------------------------------------------------------------------
-    | SERVER DIAGNOSTIC
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | SERVER DIAGNOSTIC
+  |--------------------------------------------------------------------------
+  */
 
   console.log("Waste Generator Map:", {
     selectedDate,
+
     dayTable: getDayTableName(dateObject),
+
     wardNo,
+
     vehicleTables: vehicleTables.length,
+
     telemetryRows: telemetryRows.length,
+
     validCoordinatePoints: points.length,
+
+    gvpPoints: gvpPoints.length,
+
     vehicles,
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | FINAL RESPONSE
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | FINAL RESPONSE
+  |--------------------------------------------------------------------------
+  */
 
   return {
     date: selectedDate,
@@ -1784,15 +1998,43 @@ const getWasteGeneratorMap = async ({
       zoneName: ward.zoneName,
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | WARD BOUNDARY
+    |--------------------------------------------------------------------------
+    */
+
     boundary: boundaryRow?.geo_boundary || null,
 
     boundaryAvailable: Boolean(boundaryRow?.geo_boundary),
 
+    /*
+    |--------------------------------------------------------------------------
+    | VEHICLES
+    |--------------------------------------------------------------------------
+    */
+
     vehicles,
+
+    /*
+    |--------------------------------------------------------------------------
+    | ALL COLLECTION TELEMETRY
+    |--------------------------------------------------------------------------
+    */
 
     points,
 
     totalPoints: points.length,
+
+    /*
+    |--------------------------------------------------------------------------
+    | GVP TELEMETRY
+    |--------------------------------------------------------------------------
+    */
+
+    gvpPoints,
+
+    totalGVPPoints: gvpPoints.length,
   };
 };
 
