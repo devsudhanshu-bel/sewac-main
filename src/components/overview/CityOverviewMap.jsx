@@ -5054,6 +5054,26 @@ const handleMapViewChange =
         headerSelectedDate
       }
 
+      /* CITY FROM HEADER */
+      selectedCity={
+        headerSelectedCity
+      }
+
+      /* ZONE FROM HEADER */
+      selectedZone={
+        headerSelectedZone
+      }
+
+      /* DIVISION FROM HEADER */
+      selectedDivision={
+        headerSelectedDivision
+      }
+
+      /* WARD FROM HEADER */
+      selectedWard={
+        headerSelectedWard
+      }
+
     />
 
   </div>
