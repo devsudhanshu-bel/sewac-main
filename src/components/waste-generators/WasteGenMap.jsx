@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import L from "leaflet";
+
 import {
   CircleMarker,
   GeoJSON,
@@ -23,6 +24,7 @@ import { useFilters } from "../../contexts/FilterContext";
 */
 
 const DEFAULT_CENTER = [12.9716, 77.5946];
+
 const DEFAULT_ZOOM = 11;
 
 const CARTO_LIGHT_URL =
@@ -33,13 +35,6 @@ const CARTO_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
 /*
 |--------------------------------------------------------------------------
 | GEOJSON HELPERS
-|--------------------------------------------------------------------------
-|
-| Database boundary:
-|   [latitude, longitude]
-|
-| GeoJSON:
-|   [longitude, latitude]
 |--------------------------------------------------------------------------
 */
 
@@ -79,6 +74,7 @@ const normalizeGeometry = (value) => {
       geometry = JSON.parse(geometry);
     } catch (error) {
       console.error("Unable to parse ward boundary:", error);
+
       return null;
     }
   }
@@ -94,6 +90,7 @@ const normalizeGeometry = (value) => {
 
     return {
       type: geometry.type,
+
       coordinates: reverseCoordinates(geometry.coordinates),
     };
   }
@@ -136,6 +133,7 @@ const normalizeGeometry = (value) => {
 
     return {
       type: "MultiPolygon",
+
       coordinates: polygons,
     };
   }
@@ -149,7 +147,7 @@ const normalizeGeometry = (value) => {
 
 /*
 |--------------------------------------------------------------------------
-| MAP SIZE FIX
+| MAP SIZE CONTROLLER
 |--------------------------------------------------------------------------
 */
 
@@ -159,7 +157,9 @@ function MapSizeController() {
   useEffect(() => {
     const timers = [
       setTimeout(() => map.invalidateSize(), 100),
+
       setTimeout(() => map.invalidateSize(), 500),
+
       setTimeout(() => map.invalidateSize(), 1000),
     ];
 
@@ -171,6 +171,7 @@ function MapSizeController() {
 
     return () => {
       timers.forEach(clearTimeout);
+
       window.removeEventListener("resize", handleResize);
     };
   }, [map]);
@@ -180,27 +181,18 @@ function MapSizeController() {
 
 /*
 |--------------------------------------------------------------------------
-| FIT MAP TO TELEMETRY + WARD
+| FIT MAP TO DATA
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
+| Includes:
 |
-| The ward boundary is VISUAL ONLY.
-|
-| We do NOT remove telemetry points based on the boundary.
-|
-| The map tries to include:
-|
-|   1. All returned telemetry points
-|   2. The selected ward boundary
-|
-| This prevents valid telemetry points from being outside
-| the current viewport simply because the map was fitted
-| only to the ward polygon.
+| 1. All collection telemetry
+| 2. All GVP telemetry
+| 3. Selected ward boundary
 |--------------------------------------------------------------------------
 */
 
-function FitMapToData({ boundary, points, fitKey }) {
+function FitMapToData({ boundary, points, gvpPoints, fitKey }) {
   const map = useMap();
 
   useEffect(() => {
@@ -208,11 +200,15 @@ function FitMapToData({ boundary, points, fitKey }) {
       const bounds = L.latLngBounds([]);
 
       /*
-       * Add every valid telemetry point.
-       */
+      |--------------------------------------------------------------------------
+      | COLLECTION POINTS
+      |--------------------------------------------------------------------------
+      */
+
       if (Array.isArray(points)) {
         points.forEach((point) => {
           const latitude = Number(point.latitude);
+
           const longitude = Number(point.longitude);
 
           if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
@@ -222,10 +218,32 @@ function FitMapToData({ boundary, points, fitKey }) {
       }
 
       /*
-       * Add ward boundary as well.
-       */
+      |--------------------------------------------------------------------------
+      | GVP POINTS
+      |--------------------------------------------------------------------------
+      */
+
+      if (Array.isArray(gvpPoints)) {
+        gvpPoints.forEach((point) => {
+          const latitude = Number(point.latitude);
+
+          const longitude = Number(point.longitude);
+
+          if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            bounds.extend([latitude, longitude]);
+          }
+        });
+      }
+
+      /*
+      |--------------------------------------------------------------------------
+      | WARD BOUNDARY
+      |--------------------------------------------------------------------------
+      */
+
       if (boundary) {
         const boundaryLayer = L.geoJSON(boundary);
+
         const boundaryBounds = boundaryLayer.getBounds();
 
         if (boundaryBounds.isValid()) {
@@ -234,8 +252,11 @@ function FitMapToData({ boundary, points, fitKey }) {
       }
 
       /*
-       * Nothing valid to fit.
-       */
+      |--------------------------------------------------------------------------
+      | NOTHING TO SHOW
+      |--------------------------------------------------------------------------
+      */
+
       if (!bounds.isValid()) {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
           animate: true,
@@ -245,49 +266,55 @@ function FitMapToData({ boundary, points, fitKey }) {
       }
 
       /*
-       * Fit everything returned by backend.
-       *
-       * maxZoom prevents the map from becoming excessively
-       * zoomed into a tiny cluster.
-       */
+      |--------------------------------------------------------------------------
+      | FIT EVERYTHING
+      |--------------------------------------------------------------------------
+      */
+
       map.fitBounds(bounds, {
         padding: [30, 30],
+
         maxZoom: 15,
+
         animate: true,
+
         duration: 0.8,
       });
     } catch (error) {
-      console.error("Unable to fit telemetry/ward bounds:", error);
+      console.error("Unable to fit map bounds:", error);
 
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
         animate: true,
       });
     }
-  }, [boundary, points, fitKey, map]);
+  }, [boundary, points, gvpPoints, fitKey, map]);
 
   return null;
 }
 
 /*
 |--------------------------------------------------------------------------
-| MAIN MAP
+| MAIN COMPONENT
 |--------------------------------------------------------------------------
 */
 
 export default function WasteGenMap({ selectedDate }) {
   const sectionRef = useRef(null);
+
   const collectionCardRef = useRef(null);
 
   const { selectedCity, selectedZone, selectedDivision, selectedWard } =
     useFilters();
 
   const [mapData, setMapData] = useState(null);
+
   const [loading, setLoading] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState("");
 
   /*
   |--------------------------------------------------------------------------
-  | GSAP ANIMATION
+  | GSAP
   |--------------------------------------------------------------------------
   */
 
@@ -302,14 +329,19 @@ export default function WasteGenMap({ selectedDate }) {
       timeline
         .from(sectionRef.current, {
           opacity: 0,
+
           duration: 0.25,
         })
+
         .from(
           collectionCardRef.current,
           {
             opacity: 0,
+
             y: 55,
+
             scale: 0.96,
+
             duration: 1.1,
           },
           "-=0.05",
@@ -328,8 +360,11 @@ export default function WasteGenMap({ selectedDate }) {
   */
 
   const cityId = selectedCity?.city_id ?? null;
+
   const zoneId = selectedZone?.zone_id ?? null;
+
   const divisionId = selectedDivision?.division_id ?? null;
+
   const wardId = selectedWard?.ward_id ?? null;
 
   const filterKey = [
@@ -342,7 +377,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | LOAD MAP
+  | LOAD MAP DATA
   |--------------------------------------------------------------------------
   */
 
@@ -352,22 +387,29 @@ export default function WasteGenMap({ selectedDate }) {
     const loadMap = async () => {
       if (!cityId || !zoneId || !divisionId || !wardId) {
         setMapData(null);
+
         setErrorMessage("");
+
         setLoading(false);
 
         return;
       }
 
       setLoading(true);
+
       setErrorMessage("");
 
       try {
         const response = await api.get("/api/waste-generators/map", {
           params: {
             date: selectedDate,
+
             cityId,
+
             zoneId,
+
             divisionId,
+
             wardId,
           },
         });
@@ -386,10 +428,21 @@ export default function WasteGenMap({ selectedDate }) {
 
         console.log("Waste Generator Map response:", {
           date: data?.date,
+
           dayTable: data?.dayTable,
+
           ward: data?.ward,
+
           totalPoints: data?.totalPoints,
+
           returnedPoints: Array.isArray(data?.points) ? data.points.length : 0,
+
+          totalGVPPoints: data?.totalGVPPoints,
+
+          returnedGVPPoints: Array.isArray(data?.gvpPoints)
+            ? data.gvpPoints.length
+            : 0,
+
           vehicles: data?.vehicles,
         });
 
@@ -424,7 +477,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | NORMALIZE BOUNDARY
+  | BOUNDARY
   |--------------------------------------------------------------------------
   */
 
@@ -434,14 +487,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | VALID TELEMETRY POINTS
-  |--------------------------------------------------------------------------
-  |
-  | IMPORTANT:
-  |
-  | There is NO point-in-polygon filtering here.
-  |
-  | Every valid coordinate returned by the backend is rendered.
+  | ALL COLLECTION POINTS
   |--------------------------------------------------------------------------
   */
 
@@ -452,11 +498,32 @@ export default function WasteGenMap({ selectedDate }) {
 
     return mapData.points.filter((point) => {
       const latitude = Number(point.latitude);
+
       const longitude = Number(point.longitude);
 
       return Number.isFinite(latitude) && Number.isFinite(longitude);
     });
   }, [mapData?.points]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | GVP POINTS
+  |--------------------------------------------------------------------------
+  */
+
+  const visibleGVPPoints = useMemo(() => {
+    if (!Array.isArray(mapData?.gvpPoints)) {
+      return [];
+    }
+
+    return mapData.gvpPoints.filter((point) => {
+      const latitude = Number(point.latitude);
+
+      const longitude = Number(point.longitude);
+
+      return Number.isFinite(latitude) && Number.isFinite(longitude);
+    });
+  }, [mapData?.gvpPoints]);
 
   /*
   |--------------------------------------------------------------------------
@@ -469,13 +536,13 @@ export default function WasteGenMap({ selectedDate }) {
 
   const wardNo = mapData?.ward?.wardNo ?? selectedWard?.ward_no ?? null;
 
-  /*
-   * Use backend total when available.
-   * visiblePoints should normally be identical.
-   */
   const pointCount = Number.isFinite(Number(mapData?.totalPoints))
     ? Number(mapData.totalPoints)
     : visiblePoints.length;
+
+  const gvpCount = Number.isFinite(Number(mapData?.totalGVPPoints))
+    ? Number(mapData.totalGVPPoints)
+    : visibleGVPPoints.length;
 
   /*
   |--------------------------------------------------------------------------
@@ -498,13 +565,13 @@ export default function WasteGenMap({ selectedDate }) {
           h-full
         "
       >
-        {/* ==========================================================
+        {/* ========================================================
             HEADER
-        ========================================================== */}
+        ======================================================== */}
 
         <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h3 className="text-[14px] font-semibold text-[#16295A]">
                 Collection Point Monitoring
               </h3>
@@ -527,21 +594,42 @@ export default function WasteGenMap({ selectedDate }) {
                 {mapData.ward.divisionName}
                 {" · "}
                 {wardName}
+
                 {wardNo !== null ? ` · Ward ${wardNo}` : ""}
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          {/* ======================================================
+              LEGEND
+          ====================================================== */}
 
-            <span className="text-[11px] text-slate-500">Collection Point</span>
+          <div className="flex items-center gap-4 shrink-0">
+            {/* GREEN */}
+
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+
+              <span className="text-[11px] text-slate-500">
+                Collection Point
+              </span>
+            </div>
+
+            {/* RED */}
+
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+
+              <span className="text-[11px] text-slate-500">GVP Point</span>
+
+              <span className="text-[10px] text-slate-400">({gvpCount})</span>
+            </div>
           </div>
         </div>
 
-        {/* ==========================================================
+        {/* ========================================================
             MAP
-        ========================================================== */}
+        ======================================================== */}
 
         <div className="relative h-[310px] bg-[#F7F8FB]">
           <MapContainer
@@ -565,12 +653,13 @@ export default function WasteGenMap({ selectedDate }) {
             <FitMapToData
               boundary={boundary}
               points={visiblePoints}
+              gvpPoints={visibleGVPPoints}
               fitKey={filterKey}
             />
 
-            {/* ======================================================
+            {/* ====================================================
                 SELECTED WARD BOUNDARY
-            ====================================================== */}
+            ==================================================== */}
 
             {boundary && (
               <GeoJSON
@@ -578,62 +667,57 @@ export default function WasteGenMap({ selectedDate }) {
                 data={boundary}
                 style={{
                   color: "#4F46E5",
+
                   weight: 3,
+
                   opacity: 1,
+
                   fillColor: "#6366F1",
+
                   fillOpacity: 0.07,
                 }}
               />
             )}
 
-            {/* ======================================================
-                ALL TELEMETRY COLLECTION POINTS
-            ====================================================== */}
+            {/* ====================================================
+                ALL COLLECTION TELEMETRY — GREEN
+            ==================================================== */}
 
             {visiblePoints.map((point, index) => {
               const latitude = Number(point.latitude);
-              const longitude = Number(point.longitude);
 
-              /*
-               * IMPORTANT:
-               *
-               * IDs are only unique inside an individual
-               * vehicle table.
-               *
-               * Example:
-               *
-               * vehicle A → id 1
-               * vehicle B → id 1
-               * vehicle C → id 1
-               *
-               * Therefore point.id alone CANNOT be used
-               * as a React key.
-               *
-               * The backend now provides sourceVehicleTable
-               * and pointKey. We still construct a safe fallback.
-               */
+              const longitude = Number(point.longitude);
 
               const pointKey =
                 point.pointKey ||
                 [
                   point.sourceVehicleTable || "UNKNOWN_TABLE",
+
                   point.vehicleNumber || "UNKNOWN_VEHICLE",
+
                   point.id ?? "NO_ID",
+
                   point.iotTimestamp || "NO_TIMESTAMP",
+
                   latitude.toFixed(7),
+
                   longitude.toFixed(7),
+
                   index,
                 ].join("-");
 
               return (
                 <CircleMarker
-                  key={String(pointKey)}
+                  key={`collection-${String(pointKey)}`}
                   center={[latitude, longitude]}
                   radius={4}
                   pathOptions={{
                     color: "#FFFFFF",
+
                     weight: 1.25,
+
                     fillColor: "#16A34A",
+
                     fillOpacity: 0.9,
                   }}
                 >
@@ -653,17 +737,92 @@ export default function WasteGenMap({ selectedDate }) {
                         </div>
                       )}
 
-                      {point.receivedTimestamp && (
+                      <div>
+                        Coordinates: {latitude.toFixed(6)},{" "}
+                        {longitude.toFixed(6)}
+                      </div>
+
+                      {wardNo !== null && <div>Ward {wardNo}</div>}
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
+              );
+            })}
+
+            {/* ====================================================
+                GVP TELEMETRY — RED
+            ==================================================== */}
+
+            {visibleGVPPoints.map((point, index) => {
+              const latitude = Number(point.latitude);
+
+              const longitude = Number(point.longitude);
+
+              const gvpKey =
+                point.pointKey ||
+                [
+                  "GVP",
+
+                  point.sourceVehicleTable || "UNKNOWN_TABLE",
+
+                  point.vehicleNumber || "UNKNOWN_VEHICLE",
+
+                  point.id ?? "NO_ID",
+
+                  point.iotTimestamp || "NO_TIMESTAMP",
+
+                  latitude.toFixed(7),
+
+                  longitude.toFixed(7),
+
+                  index,
+                ].join("-");
+
+              return (
+                <CircleMarker
+                  key={`gvp-${String(gvpKey)}`}
+                  center={[latitude, longitude]}
+                  radius={5.5}
+                  pathOptions={{
+                    color: "#FFFFFF",
+
+                    weight: 1.5,
+
+                    fillColor: "#EF4444",
+
+                    fillOpacity: 0.95,
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs">
+                      <div className="font-semibold text-red-600">
+                        GVP Point
+                      </div>
+
+                      {point.vehicleNumber && (
+                        <div>Vehicle: {point.vehicleNumber}</div>
+                      )}
+
+                      {point.sourceVehicleTable && (
+                        <div>Table: {point.sourceVehicleTable}</div>
+                      )}
+
+                      {point.iotTimestamp && (
                         <div>
-                          Received:{" "}
-                          {new Date(point.receivedTimestamp).toLocaleString()}
+                          IoT: {new Date(point.iotTimestamp).toLocaleString()}
                         </div>
                       )}
 
-                      {point.citizenId !== null &&
-                        point.citizenId !== undefined && (
-                          <div>Citizen ID: {point.citizenId}</div>
-                        )}
+                      {point.unitNumber && <div>Unit: {point.unitNumber}</div>}
+
+                      {point.remarks && <div>Remarks: {point.remarks}</div>}
+
+                      <div>
+                        GVP waste:{" "}
+                        {Number(
+                          point.gvpWaste ?? point.weightDelta ?? 0,
+                        ).toFixed(3)}
+                      </div>
 
                       <div>
                         Coordinates: {latitude.toFixed(6)},{" "}
@@ -678,9 +837,9 @@ export default function WasteGenMap({ selectedDate }) {
             })}
           </MapContainer>
 
-          {/* ========================================================
+          {/* ======================================================
               LOADING
-          ======================================================== */}
+          ====================================================== */}
 
           {loading && (
             <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/55 backdrop-blur-[1px] pointer-events-none">
@@ -690,9 +849,9 @@ export default function WasteGenMap({ selectedDate }) {
             </div>
           )}
 
-          {/* ========================================================
+          {/* ======================================================
               NO WARD
-          ======================================================== */}
+          ====================================================== */}
 
           {!loading && !errorMessage && !wardId && (
             <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
@@ -708,9 +867,9 @@ export default function WasteGenMap({ selectedDate }) {
             </div>
           )}
 
-          {/* ========================================================
+          {/* ======================================================
               ERROR
-          ======================================================== */}
+          ====================================================== */}
 
           {!loading && errorMessage && (
             <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
@@ -724,9 +883,9 @@ export default function WasteGenMap({ selectedDate }) {
             </div>
           )}
 
-          {/* ========================================================
+          {/* ======================================================
               NO BOUNDARY
-          ======================================================== */}
+          ====================================================== */}
 
           {!loading && !errorMessage && wardId && mapData && !boundary && (
             <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
@@ -736,9 +895,9 @@ export default function WasteGenMap({ selectedDate }) {
             </div>
           )}
 
-          {/* ========================================================
+          {/* ======================================================
               NO POINTS
-          ======================================================== */}
+          ====================================================== */}
 
           {!loading &&
             !errorMessage &&
@@ -752,16 +911,24 @@ export default function WasteGenMap({ selectedDate }) {
               </div>
             )}
 
-          {/* ========================================================
-              DEBUG INFORMATION
-          ======================================================== */}
+          {/* ======================================================
+              MAP SUMMARY
+          ====================================================== */}
 
           {!loading && !errorMessage && mapData && visiblePoints.length > 0 && (
             <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
               <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                Showing {visiblePoints.length} telemetry coordinates from{" "}
+                Showing <strong>{visiblePoints.length}</strong> telemetry
+                coordinates from{" "}
                 {Array.isArray(mapData.vehicles) ? mapData.vehicles.length : 0}{" "}
                 vehicle tables
+                {gvpCount > 0 && (
+                  <>
+                    {" · "}
+                    <strong className="text-red-500">{gvpCount}</strong> GVP
+                    points
+                  </>
+                )}
               </div>
             </div>
           )}
