@@ -2983,7 +2983,7 @@ export default function CityMapOverview({
 
           width: 100%;
 
-          height: 790px;
+          height: 600px;
 
           min-height:
             600px;
