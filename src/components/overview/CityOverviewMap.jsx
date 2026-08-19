@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 
 import Plants from "../plants/Plants";
 import CustomerGrev from "./CustomerGrev";
+import GVPGen from "../waste-generators/GVPGen";
 
 import "leaflet/dist/leaflet.css";
 
@@ -5004,6 +5005,25 @@ const handleMapViewChange =
           <div className="cm-special-view cm-grievances-view">
 
             <CustomerGrev />
+
+          </div>
+
+        )}
+
+        {/* ====================================================
+            GVP POINTS
+        ==================================================== */}
+
+        {mapView === "gvp" && (
+
+          <div className="cm-special-view cm-gvp-view">
+
+            <GVPGen
+              selectedDate={null}
+              selectedCity={city}
+              selectedZone={selectedZone}
+              selectedDivision={selectedDivision}
+            />
 
           </div>
 
