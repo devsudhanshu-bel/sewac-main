@@ -1,3 +1,6 @@
+
+
+
 import React, {
   useCallback,
   useEffect,
@@ -30,6 +33,8 @@ import {
 } from "lucide-react";
 
 import { createPortal } from "react-dom";
+
+import Plants from "../plants/Plants";
 
 import "leaflet/dist/leaflet.css";
 
@@ -67,6 +72,13 @@ const DIVISION_WARDS_ENDPOINT = (
   `${API_BASE_URL}/api/master-citizen/map/division/${encodeURIComponent(
     divisionTableName
   )}/wards`;
+
+/* ============================================================
+   PLANTS ENDPOINT
+============================================================ */
+
+const PLANTS_ENDPOINT =
+  `${API_BASE_URL}/api/plants`;
 
 
 /* ============================================================
@@ -1629,6 +1641,38 @@ export default function CityMapOverview({
   ] = useState(false);
 
 
+  /* ==========================================================
+     MAP VIEW
+  ========================================================== */
+
+  const [
+    mapView,
+    setMapView,
+  ] = useState(
+    "overview"
+  );
+
+
+  /* ==========================================================
+     PLANT STATE
+  ========================================================== */
+
+  const [
+    plants,
+    setPlants,
+  ] = useState([]);
+
+  const [
+    plantsLoading,
+    setPlantsLoading,
+  ] = useState(false);
+
+  const [
+    plantsError,
+    setPlantsError,
+  ] = useState("");
+
+
   const mapRef =
     useRef(null);
 
@@ -1636,6 +1680,9 @@ export default function CityMapOverview({
     useRef(null);
 
   const wardAbortRef =
+    useRef(null);
+
+  const plantsAbortRef =
     useRef(null);
 
 
@@ -1832,10 +1879,140 @@ export default function CityMapOverview({
 
       wardAbortRef.current?.abort();
 
+      plantsAbortRef.current?.abort();
+
     };
 
   }, [
     fetchCityMapData,
+  ]);
+
+
+  /* ==========================================================
+     FETCH PLANTS
+  ========================================================== */
+
+  const fetchPlants =
+    useCallback(
+      async () => {
+
+        plantsAbortRef.current?.abort();
+
+        const controller =
+          new AbortController();
+
+        plantsAbortRef.current =
+          controller;
+
+        try {
+
+          setPlantsLoading(true);
+          setPlantsError("");
+
+          const response =
+            await fetch(
+              PLANTS_ENDPOINT,
+              {
+                method: "GET",
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+                signal:
+                  controller.signal,
+              }
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              `Plants request failed with status ${response.status}`
+            );
+          }
+
+          const result =
+            await response.json();
+
+          if (
+            result?.success ===
+            false
+          ) {
+            throw new Error(
+              result.message ||
+                "Unable to fetch plants."
+            );
+          }
+
+          const loadedPlants =
+            extractArray(
+              result,
+              "plants"
+            );
+
+          setPlants(
+            loadedPlants
+          );
+
+        } catch (requestError) {
+
+          if (
+            requestError?.name ===
+            "AbortError"
+          ) {
+            return;
+          }
+
+          console.error(
+            "PLANTS ERROR:",
+            requestError
+          );
+
+          setPlantsError(
+            requestError?.message ||
+              "Unable to load plants."
+          );
+
+          setPlants([]);
+
+        } finally {
+
+          if (
+            !controller.signal.aborted
+          ) {
+            setPlantsLoading(false);
+          }
+
+        }
+
+      },
+      []
+    );
+
+
+  /* ==========================================================
+     LOAD PLANTS ONLY WHEN PLANT VIEW IS SELECTED
+  ========================================================== */
+
+  useEffect(() => {
+
+    if (
+      mapView !==
+      "plants"
+    ) {
+      return;
+    }
+
+    if (
+      plants.length > 0
+    ) {
+      return;
+    }
+
+    fetchPlants();
+
+  }, [
+    mapView,
+    plants.length,
+    fetchPlants,
   ]);
 
 
@@ -2724,6 +2901,10 @@ export default function CityMapOverview({
     useCallback(
       () => {
 
+        setMapView(
+          "overview"
+        );
+
         setSelectedZone(
           null
         );
@@ -2813,52 +2994,128 @@ export default function CityMapOverview({
 
 
   /* ==========================================================
-     MAP VIEW CHANGE
+   MAP VIEW CHANGE
 ========================================================== */
 
-  const handleMapViewChange =
-    useCallback(
-      (
-        view
-      ) => {
+const handleMapViewChange =
+  useCallback(
+    (
+      view
+    ) => {
 
-        setShowViewMenu(
-          false
-        );
+      setShowViewMenu(
+        false
+      );
+
+      setOpenDropdown(
+        null
+      );
 
 
-        /*
-         * Preserve existing parent callback.
-         */
+      /*
+       * Route Maps still
+       * uses the existing
+       * dedicated page.
+       */
+
+      if (
+        view ===
+        "route"
+      ) {
 
         if (
           typeof onViewChange ===
           "function"
         ) {
+
           onViewChange(
             view
           );
+
         }
 
 
-        /*
-         * Existing Route Map behaviour.
-         */
+        window.location.href =
+          "/admin/route-map";
 
-        if (
-          view ===
-          "route"
-        ) {
-          window.location.href =
-            "/admin/route-map";
-        }
+        return;
 
-      },
-      [
-        onViewChange,
-      ]
-    );
+      }
 
+
+      /*
+       * EVERYTHING ELSE
+       * stays inside this
+       * component.
+       *
+       * THIS is what makes
+       * Plants dynamically
+       * replace the City Map.
+       */
+
+      setMapView(
+        view
+      );
+
+
+      if (
+        typeof onViewChange ===
+        "function"
+      ) {
+
+        onViewChange(
+          view
+        );
+
+      }
+
+
+      /*
+       * When returning to
+       * City Overview, reset
+       * the city map state.
+       */
+
+      if (
+        view ===
+        "overview"
+      ) {
+
+        setSelectedZone(
+          null
+        );
+
+        setSelectedDivision(
+          null
+        );
+
+        setSelectedWard(
+          null
+        );
+
+        setDivisions(
+          []
+        );
+
+        setWards(
+          []
+        );
+
+        setDivisionError(
+          ""
+        );
+
+        setWardError(
+          ""
+        );
+
+      }
+
+    },
+    [
+      onViewChange,
+    ]
+  );
 
   /* ==========================================================
      VIEW MENU OPTIONS
@@ -2921,6 +3178,23 @@ export default function CityMapOverview({
           MessageSquareWarning,
       },
     ];
+
+
+  /* ==========================================================
+     CURRENT VIEW META
+  ========================================================== */
+
+  const currentView =
+    mapViewOptions.find(
+      (option) =>
+        option.id ===
+        mapView
+    ) ||
+    mapViewOptions[0];
+
+
+  const CurrentViewIcon =
+    currentView.icon;
 
 
   /* ==========================================================
@@ -4170,6 +4444,66 @@ export default function CityMapOverview({
 
 
         /* ====================================================
+           SPECIAL MAP VIEWS
+        ==================================================== */
+
+        .cm-special-view {
+          width: 100%;
+          min-height: 100%;
+          height: 100%;
+          overflow: auto;
+          box-sizing: border-box;
+          background: #eef1f3;
+        }
+
+        .cm-special-loading,
+        .cm-placeholder-view {
+          width: 100%;
+          min-height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+          padding: 30px;
+        }
+
+        .cm-placeholder-card {
+          width: min(420px, 90%);
+          padding: 28px;
+          border-radius: 16px;
+          background: rgba(255,255,255,.97);
+          border: 1px solid #dce4ec;
+          box-shadow: 0 12px 30px rgba(30,45,60,.08);
+          text-align: center;
+        }
+
+        .cm-placeholder-icon {
+          width: 58px;
+          height: 58px;
+          margin: 0 auto 14px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #ede9fe;
+          color: #7c3aed;
+        }
+
+        .cm-placeholder-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #34475b;
+        }
+
+        .cm-placeholder-description {
+          margin-top: 8px;
+          font-size: 12px;
+          line-height: 1.5;
+          color: #8aa1bb;
+        }
+
+
+        /* ====================================================
            RESPONSIVE
         ==================================================== */
 
@@ -4301,6 +4635,9 @@ export default function CityMapOverview({
       ==================================================== */}
 
       <div className="cm-map-shell">
+
+        {mapView ===
+          "overview" && (
 
         <MapContainer
           ref={mapRef}
@@ -4641,6 +4978,62 @@ export default function CityMapOverview({
 
         </MapContainer>
 
+        )}
+
+
+        {/* ==================================================
+            PLANTS
+        ================================================== */}
+
+        {mapView ===
+          "plants" && (
+
+          <div className="cm-special-view">
+
+            {plantsLoading ? (
+
+              <div className="cm-special-loading">
+                Loading plant locations...
+              </div>
+
+            ) : plantsError ? (
+
+              <div className="cm-placeholder-view">
+
+                <div className="cm-placeholder-card">
+
+                  <div className="cm-placeholder-icon">
+
+                    <Factory
+                      size={32}
+                    />
+
+                  </div>
+
+                  <div className="cm-placeholder-title">
+                    Unable to Load Plants
+                  </div>
+
+                  <div className="cm-placeholder-description">
+                    {plantsError}
+                  </div>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <Plants
+                plants={plants}
+              />
+
+            )}
+
+          </div>
+
+        )}
+
 
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
@@ -4658,25 +5051,32 @@ export default function CityMapOverview({
 
           <div className="cm-header-left">
 
-            <MapIcon
+            <CurrentViewIcon
               className="cm-header-icon"
-              strokeWidth={
-                1.8
-              }
+              strokeWidth={1.8}
             />
 
             <div>
 
               <div className="cm-header-title">
-                City Overview Map
+                {currentView.label}
               </div>
 
-              {city?.cityName && (
+              {mapView === "overview" &&
+                city?.cityName && (
+
                 <div className="cm-header-city">
-                  {
-                    city.cityName
-                  }
+                  {city.cityName}
                 </div>
+
+              )}
+
+              {mapView === "plants" && (
+
+                <div className="cm-header-city">
+                  Plant Locations
+                </div>
+
               )}
 
             </div>
@@ -4730,7 +5130,7 @@ export default function CityMapOverview({
 
                   const isActive =
                     option.id ===
-                    "overview";
+                    mapView;
 
                   return (
 
@@ -4749,26 +5149,11 @@ export default function CityMapOverview({
                         }`
                       }
 
-                      onClick={() => {
-
-                        if (
-                          option.id ===
-                          "overview"
-                        ) {
-
-                          setShowViewMenu(
-                            false
-                          );
-
-                          return;
-
-                        }
-
+                      onClick={() =>
                         handleMapViewChange(
                           option.id
-                        );
-
-                      }}
+                        )
+                      }
                     >
 
                       <OptionIcon
@@ -4795,6 +5180,8 @@ export default function CityMapOverview({
           )}
 
         </div>
+
+        
 
 
         {/* ====================================================
