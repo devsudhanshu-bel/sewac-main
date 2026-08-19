@@ -40,8 +40,6 @@ const CARTO_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
 |
 | GeoJSON:
 |   [longitude, latitude]
-|
-| Leaflet GeoJSON therefore needs the coordinates reversed.
 |--------------------------------------------------------------------------
 */
 
@@ -76,15 +74,11 @@ const normalizeGeometry = (value) => {
 
   let geometry = value;
 
-  /*
-   * Handle JSON strings.
-   */
   if (typeof geometry === "string") {
     try {
       geometry = JSON.parse(geometry);
     } catch (error) {
       console.error("Unable to parse ward boundary:", error);
-
       return null;
     }
   }
@@ -93,9 +87,6 @@ const normalizeGeometry = (value) => {
     return null;
   }
 
-  /*
-   * Direct Polygon / MultiPolygon.
-   */
   if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
     if (!Array.isArray(geometry.coordinates)) {
       return null;
@@ -107,16 +98,10 @@ const normalizeGeometry = (value) => {
     };
   }
 
-  /*
-   * GeoJSON Feature.
-   */
   if (geometry.type === "Feature") {
     return normalizeGeometry(geometry.geometry);
   }
 
-  /*
-   * GeoJSON FeatureCollection.
-   */
   if (
     geometry.type === "FeatureCollection" &&
     Array.isArray(geometry.features)
@@ -155,9 +140,6 @@ const normalizeGeometry = (value) => {
     };
   }
 
-  /*
-   * Handle { geometry: ... } wrappers.
-   */
   if (geometry.geometry) {
     return normalizeGeometry(geometry.geometry);
   }
@@ -168,10 +150,6 @@ const normalizeGeometry = (value) => {
 /*
 |--------------------------------------------------------------------------
 | MAP SIZE FIX
-|--------------------------------------------------------------------------
-|
-| Leaflet sometimes calculates the map dimensions incorrectly when it is
-| rendered inside an animated/card container. invalidateSize() fixes that.
 |--------------------------------------------------------------------------
 */
 
@@ -202,30 +180,62 @@ function MapSizeController() {
 
 /*
 |--------------------------------------------------------------------------
-| FIT SELECTED WARD
+| FIT MAP TO TELEMETRY + WARD
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| The ward boundary is VISUAL ONLY.
+|
+| We do NOT remove telemetry points based on the boundary.
+|
+| The map tries to include:
+|
+|   1. All returned telemetry points
+|   2. The selected ward boundary
+|
+| This prevents valid telemetry points from being outside
+| the current viewport simply because the map was fitted
+| only to the ward polygon.
 |--------------------------------------------------------------------------
 */
 
-function FitWardBoundary({ boundary, fitKey }) {
+function FitMapToData({ boundary, points, fitKey }) {
   const map = useMap();
 
   useEffect(() => {
-    /*
-     * No selected ward boundary.
-     */
-    if (!boundary) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
-        animate: true,
-      });
-
-      return;
-    }
-
     try {
-      const layer = L.geoJSON(boundary);
+      const bounds = L.latLngBounds([]);
 
-      const bounds = layer.getBounds();
+      /*
+       * Add every valid telemetry point.
+       */
+      if (Array.isArray(points)) {
+        points.forEach((point) => {
+          const latitude = Number(point.latitude);
+          const longitude = Number(point.longitude);
 
+          if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            bounds.extend([latitude, longitude]);
+          }
+        });
+      }
+
+      /*
+       * Add ward boundary as well.
+       */
+      if (boundary) {
+        const boundaryLayer = L.geoJSON(boundary);
+        const boundaryBounds = boundaryLayer.getBounds();
+
+        if (boundaryBounds.isValid()) {
+          bounds.extend(boundaryBounds);
+        }
+      }
+
+      /*
+       * Nothing valid to fit.
+       */
       if (!bounds.isValid()) {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
           animate: true,
@@ -235,22 +245,25 @@ function FitWardBoundary({ boundary, fitKey }) {
       }
 
       /*
-       * Zoom directly into the selected ward.
+       * Fit everything returned by backend.
+       *
+       * maxZoom prevents the map from becoming excessively
+       * zoomed into a tiny cluster.
        */
       map.fitBounds(bounds, {
         padding: [30, 30],
-        maxZoom: 16,
+        maxZoom: 15,
         animate: true,
         duration: 0.8,
       });
     } catch (error) {
-      console.error("Unable to fit selected ward boundary:", error);
+      console.error("Unable to fit telemetry/ward bounds:", error);
 
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
         animate: true,
       });
     }
-  }, [boundary, fitKey, map]);
+  }, [boundary, points, fitKey, map]);
 
   return null;
 }
@@ -274,7 +287,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | EXISTING GSAP ANIMATION
+  | GSAP ANIMATION
   |--------------------------------------------------------------------------
   */
 
@@ -315,11 +328,8 @@ export default function WasteGenMap({ selectedDate }) {
   */
 
   const cityId = selectedCity?.city_id ?? null;
-
   const zoneId = selectedZone?.zone_id ?? null;
-
   const divisionId = selectedDivision?.division_id ?? null;
-
   const wardId = selectedWard?.ward_id ?? null;
 
   const filterKey = [
@@ -332,20 +342,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | LOAD SELECTED WARD MAP
-  |--------------------------------------------------------------------------
-  |
-  | We deliberately require all four filters.
-  |
-  | City
-  |   ↓
-  | Zone
-  |   ↓
-  | Division
-  |   ↓
-  | Ward
-  |
-  | The backend then resolves the physical ward table.
+  | LOAD MAP
   |--------------------------------------------------------------------------
   */
 
@@ -385,7 +382,18 @@ export default function WasteGenMap({ selectedDate }) {
           );
         }
 
-        setMapData(response?.data?.data || null);
+        const data = response?.data?.data || null;
+
+        console.log("Waste Generator Map response:", {
+          date: data?.date,
+          dayTable: data?.dayTable,
+          ward: data?.ward,
+          totalPoints: data?.totalPoints,
+          returnedPoints: Array.isArray(data?.points) ? data.points.length : 0,
+          vehicles: data?.vehicles,
+        });
+
+        setMapData(data);
       } catch (error) {
         if (cancelled) {
           return;
@@ -416,7 +424,7 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | NORMALIZE WARD BOUNDARY
+  | NORMALIZE BOUNDARY
   |--------------------------------------------------------------------------
   */
 
@@ -426,27 +434,14 @@ export default function WasteGenMap({ selectedDate }) {
 
   /*
   |--------------------------------------------------------------------------
-  | POINTS
+  | VALID TELEMETRY POINTS
   |--------------------------------------------------------------------------
   |
   | IMPORTANT:
   |
-  | We do NOT perform another point-in-polygon calculation here.
+  | There is NO point-in-polygon filtering here.
   |
-  | The backend already resolved:
-  |
-  | Selected date
-  |   ↓
-  | day_DDMMYYYY
-  |   ↓
-  | vehicle tables registered to the selected ward
-  |   ↓
-  | telemetry latitude/longitude
-  |   ↓
-  | selected ward boundary
-  |
-  | The backend returns only telemetry points that fall inside
-  | the selected ward boundary.
+  | Every valid coordinate returned by the backend is rendered.
   |--------------------------------------------------------------------------
   */
 
@@ -457,7 +452,6 @@ export default function WasteGenMap({ selectedDate }) {
 
     return mapData.points.filter((point) => {
       const latitude = Number(point.latitude);
-
       const longitude = Number(point.longitude);
 
       return Number.isFinite(latitude) && Number.isFinite(longitude);
@@ -475,7 +469,13 @@ export default function WasteGenMap({ selectedDate }) {
 
   const wardNo = mapData?.ward?.wardNo ?? selectedWard?.ward_no ?? null;
 
-  const pointCount = visiblePoints.length;
+  /*
+   * Use backend total when available.
+   * visiblePoints should normally be identical.
+   */
+  const pointCount = Number.isFinite(Number(mapData?.totalPoints))
+    ? Number(mapData.totalPoints)
+    : visiblePoints.length;
 
   /*
   |--------------------------------------------------------------------------
@@ -562,7 +562,11 @@ export default function WasteGenMap({ selectedDate }) {
 
             <MapSizeController />
 
-            <FitWardBoundary boundary={boundary} fitKey={filterKey} />
+            <FitMapToData
+              boundary={boundary}
+              points={visiblePoints}
+              fitKey={filterKey}
+            />
 
             {/* ======================================================
                 SELECTED WARD BOUNDARY
@@ -583,30 +587,54 @@ export default function WasteGenMap({ selectedDate }) {
             )}
 
             {/* ======================================================
-                COLLECTION POINTS
+                ALL TELEMETRY COLLECTION POINTS
             ====================================================== */}
 
             {visiblePoints.map((point, index) => {
               const latitude = Number(point.latitude);
-
               const longitude = Number(point.longitude);
 
               /*
-               * Some datasets may not have an ID.
-               * Use a stable fallback key.
+               * IMPORTANT:
+               *
+               * IDs are only unique inside an individual
+               * vehicle table.
+               *
+               * Example:
+               *
+               * vehicle A → id 1
+               * vehicle B → id 1
+               * vehicle C → id 1
+               *
+               * Therefore point.id alone CANNOT be used
+               * as a React key.
+               *
+               * The backend now provides sourceVehicleTable
+               * and pointKey. We still construct a safe fallback.
                */
-              const pointKey = point.id ?? `${latitude}-${longitude}-${index}`;
+
+              const pointKey =
+                point.pointKey ||
+                [
+                  point.sourceVehicleTable || "UNKNOWN_TABLE",
+                  point.vehicleNumber || "UNKNOWN_VEHICLE",
+                  point.id ?? "NO_ID",
+                  point.iotTimestamp || "NO_TIMESTAMP",
+                  latitude.toFixed(7),
+                  longitude.toFixed(7),
+                  index,
+                ].join("-");
 
               return (
                 <CircleMarker
                   key={String(pointKey)}
                   center={[latitude, longitude]}
-                  radius={5}
+                  radius={4}
                   pathOptions={{
                     color: "#FFFFFF",
-                    weight: 1.5,
+                    weight: 1.25,
                     fillColor: "#16A34A",
-                    fillOpacity: 0.95,
+                    fillOpacity: 0.9,
                   }}
                 >
                   <Tooltip direction="top">
@@ -615,6 +643,16 @@ export default function WasteGenMap({ selectedDate }) {
                         {point.vehicleNumber || "Collection Vehicle"}
                       </div>
 
+                      {point.sourceVehicleTable && (
+                        <div>Table: {point.sourceVehicleTable}</div>
+                      )}
+
+                      {point.iotTimestamp && (
+                        <div>
+                          IoT: {new Date(point.iotTimestamp).toLocaleString()}
+                        </div>
+                      )}
+
                       {point.receivedTimestamp && (
                         <div>
                           Received:{" "}
@@ -622,17 +660,15 @@ export default function WasteGenMap({ selectedDate }) {
                         </div>
                       )}
 
-                      {point.iotTimestamp && (
-                        <div>
-                          IoT:{" "}
-                          {new Date(point.iotTimestamp).toLocaleString()}
-                        </div>
-                      )}
-
                       {point.citizenId !== null &&
                         point.citizenId !== undefined && (
                           <div>Citizen ID: {point.citizenId}</div>
                         )}
+
+                      <div>
+                        Coordinates: {latitude.toFixed(6)},{" "}
+                        {longitude.toFixed(6)}
+                      </div>
 
                       {wardNo !== null && <div>Ward {wardNo}</div>}
                     </div>
@@ -715,6 +751,20 @@ export default function WasteGenMap({ selectedDate }) {
                 </div>
               </div>
             )}
+
+          {/* ========================================================
+              DEBUG INFORMATION
+          ======================================================== */}
+
+          {!loading && !errorMessage && mapData && visiblePoints.length > 0 && (
+            <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
+              <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                Showing {visiblePoints.length} telemetry coordinates from{" "}
+                {Array.isArray(mapData.vehicles) ? mapData.vehicles.length : 0}{" "}
+                vehicle tables
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>
