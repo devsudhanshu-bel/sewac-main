@@ -297,14 +297,6 @@ function isReasonableDate(
   const day =
     Number(match[3]);
 
-  /*
-   * Prevent stale garbage dates such as:
-   *
-   * 2001-01-05
-   *
-   * from reaching the backend.
-   */
-
   if (
     year < 2020 ||
     year > 2100
@@ -371,10 +363,6 @@ function normalizeHeaderDate(
   let raw =
     String(value)
       .trim();
-
-  /*
-   * Remove accidental JSON quotes.
-   */
 
   raw =
     raw.replace(
@@ -535,15 +523,7 @@ function normalizeHeaderDate(
   /*
    * IMPORTANT:
    *
-   * DO NOT use:
-   *
-   * new Date(raw)
-   *
-   * here.
-   *
-   * That was one of the reasons
-   * strange dates could reach the
-   * backend.
+   * Never use new Date(raw) here.
    */
 
   return null;
@@ -561,10 +541,6 @@ function findHeaderDate() {
   ) {
     return null;
   }
-
-  /*
-   * Search buttons first.
-   */
 
   const buttons =
     Array.from(
@@ -587,10 +563,6 @@ function findHeaderDate() {
     if (!text) {
       continue;
     }
-
-    /*
-     * Exact date formats.
-     */
 
     const patterns = [
       /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/,
@@ -621,10 +593,6 @@ function findHeaderDate() {
       }
     }
   }
-
-  /*
-   * Search entire header as fallback.
-   */
 
   const headers =
     Array.from(
@@ -722,12 +690,95 @@ function validLongitude(
    EXTRACT COORDINATES
 ========================================================== */
 
+/*
+ * IMPORTANT FIX:
+ *
+ * The previous implementation recursively inspected
+ * point.coordinates.
+ *
+ * If point.coordinates was:
+ *
+ * [77.5946, 12.9716]
+ *
+ * the function could repeatedly inspect the same array
+ * and eventually crash with:
+ *
+ * Maximum call stack size exceeded
+ *
+ * This version handles arrays FIRST and NEVER recursively
+ * passes point.coordinates into itself.
+ */
+
 function extractCoordinates(
   point
 ) {
   if (!point) {
     return null;
   }
+
+  /*
+   * --------------------------------------------------------
+   * GEOJSON ARRAY
+   *
+   * [longitude, latitude]
+   * --------------------------------------------------------
+   */
+
+  if (
+    Array.isArray(
+      point
+    )
+  ) {
+    if (
+      point.length >=
+      2
+    ) {
+      const first =
+        Number(
+          point[0]
+        );
+
+      const second =
+        Number(
+          point[1]
+        );
+
+      if (
+        validLongitude(
+          first
+        ) &&
+        validLatitude(
+          second
+        ) &&
+        !(
+          first === 0 &&
+          second === 0
+        )
+      ) {
+        return {
+          latitude:
+            second,
+
+          longitude:
+            first,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /*
+   * Only objects are processed below.
+   */
+
+  if (
+    typeof point !==
+    "object"
+  ) {
+    return null;
+  }
+
 
   /*
    * --------------------------------------------------------
@@ -813,7 +864,7 @@ function extractCoordinates(
 
   /*
    * --------------------------------------------------------
-   * longitude / latitude aliases
+   * OTHER LATITUDE / LONGITUDE ALIASES
    * --------------------------------------------------------
    */
 
@@ -861,7 +912,63 @@ function extractCoordinates(
 
   /*
    * --------------------------------------------------------
+   * GEOJSON GEOMETRY
+   * --------------------------------------------------------
+   */
+
+  const geometryCoordinates =
+    point.geometry?.coordinates;
+
+  if (
+    Array.isArray(
+      geometryCoordinates
+    ) &&
+    geometryCoordinates.length >=
+      2
+  ) {
+    const first =
+      Number(
+        geometryCoordinates[0]
+      );
+
+    const second =
+      Number(
+        geometryCoordinates[1]
+      );
+
+    if (
+      validLongitude(
+        first
+      ) &&
+      validLatitude(
+        second
+      ) &&
+      !(
+        first === 0 &&
+        second === 0
+      )
+    ) {
+      return {
+        latitude:
+          second,
+
+        longitude:
+          first,
+      };
+    }
+  }
+
+
+  /*
+   * --------------------------------------------------------
    * NESTED DATA
+   * --------------------------------------------------------
+   *
+   * IMPORTANT:
+   *
+   * point.coordinates is deliberately NOT included.
+   *
+   * It was the source of the recursive crash.
    * --------------------------------------------------------
    */
 
@@ -871,7 +978,6 @@ function extractCoordinates(
     point.location,
     point.position,
     point.gps,
-    point.coordinates,
   ];
 
   for (
@@ -899,112 +1005,6 @@ function extractCoordinates(
   }
 
 
-  /*
-   * --------------------------------------------------------
-   * GEOJSON COORDINATES
-   *
-   * GeoJSON:
-   *
-   * [longitude, latitude]
-   * --------------------------------------------------------
-   */
-
-  if (
-    Array.isArray(
-      point.coordinates
-    ) &&
-    point.coordinates.length >=
-      2
-  ) {
-    const first =
-      Number(
-        point.coordinates[0]
-      );
-
-    const second =
-      Number(
-        point.coordinates[1]
-      );
-
-    /*
-     * Normal GeoJSON:
-     * [lng, lat]
-     */
-
-    if (
-      validLongitude(first) &&
-      validLatitude(second)
-    ) {
-      if (
-        !(
-          first === 0 &&
-          second === 0
-        )
-      ) {
-        return {
-          latitude:
-            second,
-
-          longitude:
-            first,
-        };
-      }
-    }
-  }
-
-
-  /*
-   * --------------------------------------------------------
-   * GEOJSON GEOMETRY
-   * --------------------------------------------------------
-   */
-
-  if (
-    point.geometry?.coordinates
-  ) {
-    const coordinates =
-      point.geometry.coordinates;
-
-    if (
-      Array.isArray(
-        coordinates
-      ) &&
-      coordinates.length >=
-        2
-    ) {
-      const first =
-        Number(
-          coordinates[0]
-        );
-
-      const second =
-        Number(
-          coordinates[1]
-        );
-
-      if (
-        validLongitude(first) &&
-        validLatitude(second)
-      ) {
-        if (
-          !(
-            first === 0 &&
-            second === 0
-          )
-        ) {
-          return {
-            latitude:
-              second,
-
-            longitude:
-              first,
-          };
-        }
-      }
-    }
-  }
-
-
   return null;
 }
 
@@ -1021,12 +1021,13 @@ function normalizeVehicles(
   }
 
   const collection =
-    data.vehicles ||
-    data.vehicleData ||
-    data.vehicle_data ||
-    data.trucks ||
-    data.vehicleRecords ||
+    data.vehicles ??
+    data.vehicleData ??
+    data.vehicle_data ??
+    data.trucks ??
+    data.vehicleRecords ??
     data.vehicle_records;
+
 
   /*
    * ARRAY
@@ -1175,6 +1176,7 @@ function extractAllGpsPoints(
   if (!monitoringData) {
     return output;
   }
+
 
   /*
    * --------------------------------------------------------
@@ -1611,9 +1613,8 @@ export default function WasteGenMap({
     DEFAULT_VIEW_STATE
   );
 
+
   /*
-   * IMPORTANT:
-   *
    * Header DOM date gets priority.
    */
 
@@ -1719,15 +1720,7 @@ export default function WasteGenMap({
         }
       };
 
-    /*
-     * Initial check.
-     */
-
     updateHeaderDate();
-
-    /*
-     * MutationObserver.
-     */
 
     if (
       typeof MutationObserver !==
@@ -1759,10 +1752,6 @@ export default function WasteGenMap({
           null;
       };
     }
-
-    /*
-     * Fallback.
-     */
 
     const interval =
       window.setInterval(
@@ -1855,6 +1844,7 @@ export default function WasteGenMap({
           return;
         }
 
+
         /*
          * ----------------------------------------------------
          * DATE VALIDATION
@@ -1882,6 +1872,7 @@ export default function WasteGenMap({
           return;
         }
 
+
         /*
          * ----------------------------------------------------
          * ABORT PREVIOUS REQUEST
@@ -1899,6 +1890,7 @@ export default function WasteGenMap({
 
         requestAbortRef.current =
           controller;
+
 
         /*
          * ----------------------------------------------------
@@ -1919,6 +1911,7 @@ export default function WasteGenMap({
         setHoverPosition(
           null
         );
+
 
         /*
          * ----------------------------------------------------
@@ -1962,6 +1955,7 @@ export default function WasteGenMap({
           "=============================================="
         );
 
+
         try {
           /*
            * --------------------------------------------------
@@ -1986,6 +1980,7 @@ export default function WasteGenMap({
               }
             );
 
+
           /*
            * --------------------------------------------------
            * JSON
@@ -2008,6 +2003,7 @@ export default function WasteGenMap({
             result
           );
 
+
           /*
            * --------------------------------------------------
            * HTTP ERROR
@@ -2023,6 +2019,7 @@ export default function WasteGenMap({
               `Collection point API returned HTTP ${response.status}`
             );
           }
+
 
           /*
            * --------------------------------------------------
@@ -2040,17 +2037,10 @@ export default function WasteGenMap({
             );
           }
 
+
           /*
            * --------------------------------------------------
            * NORMALIZE RESPONSE
-           *
-           * Supports:
-           *
-           * { data: {...} }
-           *
-           * OR
-           *
-           * {...}
            * --------------------------------------------------
            */
 
@@ -2077,6 +2067,7 @@ export default function WasteGenMap({
             "📍 POINT COUNT:",
             data?.point_count
           );
+
 
           /*
            * --------------------------------------------------
@@ -2108,10 +2099,8 @@ export default function WasteGenMap({
           );
 
           /*
-           * IMPORTANT:
-           *
-           * Keep map component alive.
-           * Do not throw.
+           * Never throw here.
+           * Keep React component alive.
            */
 
           setError(
@@ -2160,7 +2149,7 @@ export default function WasteGenMap({
 
 
   /* ========================================================
-     CLEANUP MAP
+     CLEANUP REQUEST
   ======================================================== */
 
   useEffect(() => {
@@ -2194,7 +2183,7 @@ export default function WasteGenMap({
 
   /* ========================================================
      GEOJSON
-========================================================== */
+  ======================================================== */
 
   const geoJson =
     useMemo(
@@ -2229,15 +2218,6 @@ export default function WasteGenMap({
                 type:
                   "Feature",
 
-                /*
-                 * IMPORTANT:
-                 *
-                 * NO SPACES.
-                 *
-                 * This is a clean MapLibre
-                 * feature ID.
-                 */
-
                 id:
                   `gps-point-${index}`,
 
@@ -2246,9 +2226,7 @@ export default function WasteGenMap({
                     "Point",
 
                   /*
-                   * GeoJSON MUST be:
-                   *
-                   * [longitude, latitude]
+                   * GeoJSON = [longitude, latitude]
                    */
 
                   coordinates: [
@@ -2404,16 +2382,9 @@ export default function WasteGenMap({
       return;
     }
 
-    console.log(
-      "🗺️ FITTING MAP TO:",
-      coordinates.length,
-      "GPS POINTS"
-    );
 
     /*
-     * ------------------------------------------------------
      * SINGLE POINT
-     * ------------------------------------------------------
      */
 
     if (
@@ -2440,10 +2411,9 @@ export default function WasteGenMap({
       return;
     }
 
+
     /*
-     * ------------------------------------------------------
      * BOUNDS
-     * ------------------------------------------------------
      */
 
     let minLng =
@@ -2496,9 +2466,9 @@ export default function WasteGenMap({
       }
     );
 
+
     /*
-     * Protect against zero-size
-     * bounds.
+     * Zero-size bounds
      */
 
     if (
@@ -2521,6 +2491,7 @@ export default function WasteGenMap({
       return;
     }
 
+
     const lngPadding =
       Math.max(
         (
@@ -2542,6 +2513,7 @@ export default function WasteGenMap({
 
         0.002
       );
+
 
     map.fitBounds(
       [
@@ -2640,6 +2612,7 @@ export default function WasteGenMap({
             [];
         }
 
+
         if (
           !nearbyFeatures ||
           nearbyFeatures.length ===
@@ -2656,11 +2629,13 @@ export default function WasteGenMap({
           return;
         }
 
+
         let nearestFeature =
           nearbyFeatures[0];
 
         let nearestDistance =
           Infinity;
+
 
         nearbyFeatures.forEach(
           (
@@ -2727,16 +2702,19 @@ export default function WasteGenMap({
           }
         );
 
+
         if (
           !nearestFeature?.geometry
         ) {
           return;
         }
 
+
         const coordinates =
           nearestFeature
             .geometry
             .coordinates;
+
 
         let telemetryData =
           {};
@@ -2754,6 +2732,7 @@ export default function WasteGenMap({
             {};
         }
 
+
         const latitude =
           Number(
             coordinates[1]
@@ -2763,6 +2742,7 @@ export default function WasteGenMap({
           Number(
             coordinates[0]
           );
+
 
         setHoveredPoint({
           vehicleNumber:
@@ -2797,6 +2777,7 @@ export default function WasteGenMap({
           data:
             telemetryData,
         });
+
 
         setHoverPosition({
           longitude,
@@ -2893,6 +2874,7 @@ export default function WasteGenMap({
       )
     ).size ||
     0;
+
 
   const pointCount =
     Number(
@@ -3176,9 +3158,6 @@ export default function WasteGenMap({
 
             {/* =================================================
                 GPS SOURCE
-
-                IMPORTANT:
-                IDs contain NO SPACES.
             ================================================= */}
 
             <Source
@@ -3289,8 +3268,6 @@ export default function WasteGenMap({
 
             {/* =================================================
                 HOVER HIGHLIGHT
-
-                Again: NO WHITESPACE in IDs.
             ================================================= */}
 
             {hoverPosition && (
