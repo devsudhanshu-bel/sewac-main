@@ -5,7 +5,7 @@ import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
 import ComplaintFilters from "../components/complaints/ComplaintFilters";
 import ComplaintTable from "../components/complaints/ComplaintTable";
 import ComplaintDetails from "../components/complaints/ComplaintDetails";
-const API_BASE_URL = "https://sewac-main.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
