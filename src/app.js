@@ -56,6 +56,32 @@ const complaintRoutes =
 
 
 // =====================================================
+// COMPLAINT GRIEVANCE MAP
+// =====================================================
+//
+// Actual location:
+//
+// src/complaintsGrev/
+//
+// Files:
+//
+// complaintsGrev.controller.js
+// complaintsGrev.routes.js
+// complaintsGrev.service.js
+//
+// Endpoint:
+//
+// GET /api/complaints-grev/locations
+//
+// =====================================================
+
+const complaintsGrevRoutes =
+  require(
+    "./complaintsGrev/routes/complaintsGrev.routes"
+  );
+
+
+// =====================================================
 // ROUTE MAP
 // =====================================================
 
@@ -231,6 +257,7 @@ app.use(
      * Brotli/GZIP depending on what the client supports.
      *
      * This is especially useful for the map endpoint.
+     *
      */
 
   })
@@ -462,6 +489,48 @@ app.use(
 app.use(
   "/api/complaints",
   complaintRoutes
+);
+
+
+// =====================================================
+// COMPLAINT GRIEVANCE MAP API
+// =====================================================
+//
+// GET:
+//
+// /api/complaints-grev/locations
+//
+//
+//
+// RESPONSE:
+//
+// {
+//   success: true,
+//   count: 3,
+//   data: [
+//     {
+//       lat: 12.9716,
+//       long: 77.5946,
+//       data: {
+//         id: 1,
+//         ticket_number: "...",
+//         phone_number: "...",
+//         title: "...",
+//         description: "...",
+//         category: "...",
+//         image_url: "...",
+//         address: "...",
+//         status: "..."
+//       }
+//     }
+//   ]
+// }
+//
+// =====================================================
+
+app.use(
+  "/api/complaints-grev",
+  complaintsGrevRoutes
 );
 
 
