@@ -22,7 +22,7 @@ export default function Complaints() {
   });
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
-
+  const [savingComplaint, setSavingComplaint] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -121,6 +121,70 @@ export default function Complaints() {
     }
   };
 
+  const saveComplaintChanges = async (updates) => {
+    if (!selectedComplaint?.ticket_number) {
+      return;
+    }
+
+    try {
+      setSavingComplaint(true);
+
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error("Admin authentication token not found.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+          selectedComplaint.ticket_number,
+        )}`,
+        {
+          method: "PATCH",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: updates.status,
+            assigned_to: updates.assigned_to,
+            remarks: updates.remarks,
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Failed to update complaint.");
+      }
+
+      /*
+       * Update drawer immediately.
+       */
+      setSelectedComplaint(result.data);
+
+      /*
+       * Refresh table.
+       */
+      await fetchComplaints(pagination.page);
+
+      /*
+       * Refresh KPI cards.
+       */
+      await fetchKPIs();
+
+      alert("Complaint updated successfully.");
+    } catch (err) {
+      console.error("Save complaint changes error:", err);
+
+      alert(err.message || "Unable to update complaint.");
+    } finally {
+      setSavingComplaint(false);
+    }
+  };
+
   const requestVerification = async () => {
     if (!selectedComplaint?.ticket_number) {
       return;
@@ -152,7 +216,46 @@ export default function Complaints() {
       }
 
       console.log("Verification OTP requested:", result);
+
       setOtpSent(true);
+
+      /*
+       * Refresh complaint list so the table reflects
+       * the backend status.
+       */
+      await fetchComplaints(pagination.page);
+
+      /*
+       * Refresh KPI values.
+       */
+      await fetchKPIs();
+
+      /*
+       * Refresh the selected complaint itself.
+       */
+      try {
+        const detailResponse = await fetch(
+          `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+            selectedComplaint.ticket_number,
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const detailResult = await detailResponse.json();
+
+        if (detailResponse.ok && detailResult.success === true) {
+          setSelectedComplaint(detailResult.data);
+        }
+      } catch (detailError) {
+        console.error("Refresh complaint details error:", detailError);
+      }
+
       alert("OTP sent successfully to the citizen.");
     } catch (err) {
       console.error("Request verification error:", err);
@@ -255,8 +358,10 @@ export default function Complaints() {
           <ComplaintDetails
             complaint={selectedComplaint}
             otpSent={otpSent}
+            saving={savingComplaint}
             onRequestVerification={requestVerification}
             onVerifyOTP={verifyOTP}
+            onSaveChanges={saveComplaintChanges}
           />
         </div>
       </div>

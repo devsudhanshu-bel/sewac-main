@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   X,
@@ -19,8 +19,98 @@ export default function ComplaintDetails({
   otpSent,
   onRequestVerification,
   onVerifyOTP,
+  onSaveChanges,
+  saving = false,
 }) {
   const [otp, setOtp] = useState("");
+
+  const [status, setStatus] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [remarks, setRemarks] = useState("");
+
+  /*
+   * =========================================================
+   * SYNC LOCAL FORM WITH SELECTED COMPLAINT
+   * =========================================================
+   */
+  useEffect(() => {
+    if (!complaint) {
+      setStatus("");
+      setAssignedTo("");
+      setRemarks("");
+      setOtp("");
+      return;
+    }
+
+    setStatus(complaint.status || "");
+    setAssignedTo(complaint.assigned_to || "");
+    setRemarks(complaint.remarks || "");
+    setOtp("");
+  }, [complaint]);
+
+  /*
+   * =========================================================
+   * STATUS RULES
+   * =========================================================
+   */
+
+  const currentStatus = complaint?.status || "";
+
+  const canMoveToReady = currentStatus === "PENDING";
+
+  const isReadyForVerification = currentStatus === "READY_FOR_VERIFICATION";
+
+  const isOtpSent = currentStatus === "OTP_SENT" || otpSent;
+
+  const isClosed = currentStatus === "CLOSED";
+
+  /*
+   * Only these statuses are editable by Admin.
+   *
+   * PENDING
+   * READY_FOR_VERIFICATION
+   */
+  const adminStatusOptions = [
+    {
+      value: "PENDING",
+      label: "Pending",
+    },
+    {
+      value: "READY_FOR_VERIFICATION",
+      label: "Ready for Verification",
+    },
+  ];
+
+  /*
+   * =========================================================
+   * SAVE
+   * =========================================================
+   */
+
+  const handleSave = () => {
+    if (!complaint?.ticket_number) {
+      return;
+    }
+
+    onSaveChanges?.({
+      status,
+      assigned_to: assignedTo,
+      remarks,
+    });
+  };
+
+  /*
+   * =========================================================
+   * OTP
+   * =========================================================
+   */
+
+  const handleOTPChange = (event) => {
+    const value = event.target.value.replace(/\D/g, "").slice(0, 6);
+
+    setOtp(value);
+  };
+
   return (
     <div
       className="
@@ -33,7 +123,9 @@ export default function ComplaintDetails({
         overflow-hidden
       "
     >
-      {/* ================= HEADER ================= */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <h2 className="text-[15px] font-bold text-[#16295A]">
@@ -59,10 +151,14 @@ export default function ComplaintDetails({
         </button>
       </div>
 
-      {/* ================= SCROLL CONTENT ================= */}
+      {/* =====================================================
+          SCROLL CONTENT
+      ===================================================== */}
 
       <div className="h-[calc(100%-65px)] overflow-y-auto px-5 py-4">
-        {/* ================= TICKET ================= */}
+        {/* ===================================================
+            TICKET
+        =================================================== */}
 
         <div className="mb-4">
           <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
@@ -85,24 +181,33 @@ export default function ComplaintDetails({
             </span>
 
             <span
-              className="
+              className={`
                 px-2.5
                 py-1
                 rounded-full
-                bg-[#FFF5D9]
                 text-[10px]
                 font-semibold
-                text-[#D99100]
-              "
+                ${
+                  currentStatus === "CLOSED"
+                    ? "bg-[#E4F8EE] text-[#20A66A]"
+                    : currentStatus === "READY_FOR_VERIFICATION"
+                      ? "bg-[#E7F1FF] text-[#2878D8]"
+                      : currentStatus === "OTP_SENT"
+                        ? "bg-[#F3E8FF] text-[#7C3AED]"
+                        : "bg-[#FFF5D9] text-[#D99100]"
+                }
+              `}
             >
-              {complaint?.status || "—"}
+              {currentStatus || "—"}
             </span>
           </div>
         </div>
 
         <div className="border-b border-gray-100 mb-4" />
 
-        {/* ================= TITLE ================= */}
+        {/* ===================================================
+            TITLE
+        =================================================== */}
 
         <div className="flex gap-2.5 mb-4">
           <Tag size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -116,7 +221,9 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        {/* ================= CATEGORY ================= */}
+        {/* ===================================================
+            CATEGORY
+        =================================================== */}
 
         <div className="flex gap-2.5 mb-4">
           <FolderOpen size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -130,7 +237,9 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        {/* ================= PHONE ================= */}
+        {/* ===================================================
+            PHONE
+        =================================================== */}
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2.5">
@@ -167,7 +276,9 @@ export default function ComplaintDetails({
           </button>
         </div>
 
-        {/* ================= ADDRESS ================= */}
+        {/* ===================================================
+            ADDRESS
+        =================================================== */}
 
         <div className="flex gap-2.5 mb-4">
           <MapPin size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -181,7 +292,9 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        {/* ================= COORDINATES ================= */}
+        {/* ===================================================
+            COORDINATES
+        =================================================== */}
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2.5">
@@ -218,7 +331,9 @@ export default function ComplaintDetails({
           </button>
         </div>
 
-        {/* ================= IMAGE ================= */}
+        {/* ===================================================
+            IMAGE
+        =================================================== */}
 
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-2">
@@ -287,7 +402,9 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        {/* ================= DESCRIPTION ================= */}
+        {/* ===================================================
+            DESCRIPTION
+        =================================================== */}
 
         <div className="flex gap-2.5 mb-4">
           <FileText size={14} className="text-gray-500 mt-0.5 shrink-0" />
@@ -303,7 +420,9 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        {/* ================= ASSIGNED TO ================= */}
+        {/* ===================================================
+            ASSIGNED TO
+        =================================================== */}
 
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
@@ -315,11 +434,9 @@ export default function ComplaintDetails({
           </div>
 
           <select
-            value={complaint?.assigned_to || ""}
-            onChange={(e) => {
-              console.log("Selected assignee:", e.target.value);
-            }}
-            disabled={!complaint}
+            value={assignedTo}
+            onChange={(event) => setAssignedTo(event.target.value)}
+            disabled={!complaint || saving}
             className="
               w-full
               h-9
@@ -338,9 +455,7 @@ export default function ComplaintDetails({
               disabled:text-gray-400
             "
           >
-            <option value="">
-              {complaint ? "Unassigned" : "Select Assignee"}
-            </option>
+            <option value="">Unassigned</option>
 
             <option value="ramesh">Ramesh K.</option>
 
@@ -350,7 +465,9 @@ export default function ComplaintDetails({
           </select>
         </div>
 
-        {/* ================= STATUS ================= */}
+        {/* ===================================================
+            STATUS
+        =================================================== */}
 
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
@@ -359,51 +476,79 @@ export default function ComplaintDetails({
             <p className="text-[10px] font-semibold text-gray-500">Status</p>
           </div>
 
-          <select
-            value={complaint?.status || ""}
-            onChange={(e) => {
-              console.log("Selected status:", e.target.value);
-            }}
-            disabled={!complaint}
-            className="
-              w-full
-              h-9
-              rounded-lg
-              border
-              border-gray-200
-              bg-white
-              px-3
-              text-[11px]
-              text-[#16295A]
-              outline-none
-              focus:border-violet-400
-              focus:ring-2
-              focus:ring-violet-100
-              disabled:bg-gray-50
-              disabled:text-gray-400
-            "
-          >
-            <option value="" disabled>
-              Select Status
-            </option>
-
-            <option value="PENDING">Pending</option>
-
-            <option value="ASSIGNED">Assigned</option>
-
-            <option value="IN_PROGRESS">In Progress</option>
-
-            <option value="READY_FOR_VERIFICATION">
-              Ready for Verification
-            </option>
-
-            <option value="OTP_SENT">OTP Sent</option>
-
-            <option value="CLOSED">Closed</option>
-          </select>
+          {isClosed ? (
+            <div
+              className="
+                w-full
+                h-9
+                rounded-lg
+                border
+                border-green-200
+                bg-green-50
+                px-3
+                flex
+                items-center
+                text-[11px]
+                font-semibold
+                text-green-700
+              "
+            >
+              Closed — Citizen Verified
+            </div>
+          ) : isOtpSent ? (
+            <div
+              className="
+                w-full
+                h-9
+                rounded-lg
+                border
+                border-violet-200
+                bg-violet-50
+                px-3
+                flex
+                items-center
+                text-[11px]
+                font-semibold
+                text-violet-700
+              "
+            >
+              Verification OTP Sent
+            </div>
+          ) : (
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              disabled={!complaint || saving}
+              className="
+                w-full
+                h-9
+                rounded-lg
+                border
+                border-gray-200
+                bg-white
+                px-3
+                text-[11px]
+                text-[#16295A]
+                outline-none
+                focus:border-violet-400
+                focus:ring-2
+                focus:ring-violet-100
+                disabled:bg-gray-50
+                disabled:text-gray-400
+              "
+            >
+              {adminStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        {/* ================= REMARKS ================= */}
+        {/* ===================================================
+            REMARKS
+        =================================================== */}
 
         <div className="mb-4">
           <div className="flex items-center gap-2.5 mb-1.5">
@@ -413,11 +558,9 @@ export default function ComplaintDetails({
           </div>
 
           <textarea
-            value={complaint?.remarks || ""}
-            onChange={(e) => {
-              console.log("Remarks:", e.target.value);
-            }}
-            disabled={!complaint}
+            value={remarks}
+            onChange={(event) => setRemarks(event.target.value)}
+            disabled={!complaint || saving}
             placeholder={
               complaint ? "Add remarks..." : "Select a complaint first..."
             }
@@ -443,89 +586,104 @@ export default function ComplaintDetails({
           />
         </div>
 
-        {/* ================= ACTIONS ================= */}
+        {/* ===================================================
+            ACTIONS
+        =================================================== */}
 
-        <div className="flex justify-end gap-2 pt-1 pb-2">
-          <button
-            type="button"
-            disabled={!complaint}
-            className="
-              h-8
-              px-4
-              rounded-lg
-              border
-              border-gray-200
-              bg-white
-              text-[11px]
-              font-semibold
-              text-gray-600
-              hover:bg-gray-50
-              transition
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-            "
-          >
-            Cancel
-          </button>
+        {!isClosed && !isOtpSent && (
+          <div className="flex justify-end gap-2 pt-1 pb-2">
+            <button
+              type="button"
+              disabled={!complaint || saving}
+              onClick={() => {
+                if (!complaint) {
+                  return;
+                }
 
-          <button
-            type="button"
-            disabled={!complaint}
-            onClick={() => {
-              console.log(
-                "Save Changes clicked for:",
-                complaint?.ticket_number,
-              );
-            }}
-            className="
-              h-8
-              px-4
-              rounded-lg
-              bg-gradient-to-r
-              from-violet-600
-              to-fuchsia-600
-              text-white
-              text-[11px]
-              font-semibold
-              shadow-sm
-              hover:opacity-95
-              transition
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-            "
-          >
-            Save Changes
-          </button>
-        </div>
+                setStatus(complaint.status || "PENDING");
 
-        {/* ================= VERIFICATION ================= */}
+                setAssignedTo(complaint.assigned_to || "");
+
+                setRemarks(complaint.remarks || "");
+              }}
+              className="
+                h-8
+                px-4
+                rounded-lg
+                border
+                border-gray-200
+                bg-white
+                text-[11px]
+                font-semibold
+                text-gray-600
+                hover:bg-gray-50
+                transition
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+              "
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              disabled={!complaint || saving}
+              onClick={handleSave}
+              className="
+                h-8
+                px-4
+                rounded-lg
+                bg-gradient-to-r
+                from-violet-600
+                to-fuchsia-600
+                text-white
+                text-[11px]
+                font-semibold
+                shadow-sm
+                hover:opacity-95
+                transition
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+              "
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        )}
+
+        {/* ===================================================
+            VERIFICATION
+        =================================================== */}
 
         <div className="border-t border-gray-100 mt-2 pt-4">
-          <button
-            type="button"
-            disabled={!complaint || !complaint.ticket_number}
-            onClick={() => onRequestVerification?.()}
-            className="
-              w-full
-              h-9
-              rounded-lg
-              bg-gradient-to-r
-              from-violet-600
-              to-fuchsia-600
-              text-white
-              text-[11px]
-              font-semibold
-              shadow-sm
-              hover:opacity-95
-              transition
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-            "
-          >
-            Request Verification OTP
-          </button>
-          {otpSent && (
-            <div className="mt-4">
+          {isReadyForVerification && !otpSent && (
+            <button
+              type="button"
+              disabled={!complaint || saving}
+              onClick={() => onRequestVerification?.()}
+              className="
+                w-full
+                h-9
+                rounded-lg
+                bg-gradient-to-r
+                from-violet-600
+                to-fuchsia-600
+                text-white
+                text-[11px]
+                font-semibold
+                shadow-sm
+                hover:opacity-95
+                transition
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+              "
+            >
+              Request Verification OTP
+            </button>
+          )}
+
+          {isOtpSent && (
+            <div className="mt-1">
               <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
                 Enter Verification OTP
               </p>
@@ -535,30 +693,26 @@ export default function ComplaintDetails({
                 inputMode="numeric"
                 maxLength={6}
                 value={otp}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-
-                  setOtp(value);
-                }}
+                onChange={handleOTPChange}
                 placeholder="Enter 6-digit OTP"
                 className="
-        w-full
-        h-9
-        rounded-lg
-        border
-        border-gray-200
-        bg-white
-        px-3
-        text-[12px]
-        tracking-[0.25em]
-        text-[#16295A]
-        outline-none
-        placeholder:text-gray-400
-        placeholder:tracking-normal
-        focus:border-violet-400
-        focus:ring-2
-        focus:ring-violet-100
-      "
+                  w-full
+                  h-9
+                  rounded-lg
+                  border
+                  border-gray-200
+                  bg-white
+                  px-3
+                  text-[12px]
+                  tracking-[0.25em]
+                  text-[#16295A]
+                  outline-none
+                  placeholder:text-gray-400
+                  placeholder:tracking-normal
+                  focus:border-violet-400
+                  focus:ring-2
+                  focus:ring-violet-100
+                "
               />
 
               <button
@@ -566,24 +720,43 @@ export default function ComplaintDetails({
                 disabled={!complaint || otp.length !== 6}
                 onClick={() => onVerifyOTP?.(otp)}
                 className="
-        w-full
-        h-9
-        mt-2
-        rounded-lg
-        border
-        border-violet-200
-        bg-violet-50
-        text-violet-700
-        text-[11px]
-        font-semibold
-        hover:bg-violet-100
-        transition
-        disabled:opacity-50
-        disabled:cursor-not-allowed
-      "
+                  w-full
+                  h-9
+                  mt-2
+                  rounded-lg
+                  border
+                  border-violet-200
+                  bg-violet-50
+                  text-violet-700
+                  text-[11px]
+                  font-semibold
+                  hover:bg-violet-100
+                  transition
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                "
               >
                 Verify OTP & Close Complaint
               </button>
+            </div>
+          )}
+
+          {isClosed && (
+            <div
+              className="
+                rounded-lg
+                bg-green-50
+                border
+                border-green-100
+                px-3
+                py-2.5
+                text-[10px]
+                font-semibold
+                text-green-700
+                text-center
+              "
+            >
+              Complaint closed after successful citizen verification.
             </div>
           )}
         </div>
