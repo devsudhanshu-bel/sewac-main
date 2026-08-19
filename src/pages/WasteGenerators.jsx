@@ -17,12 +17,8 @@ export default function WasteGenerators() {
     new Date().toISOString().split("T")[0],
   );
 
-  const {
-    selectedCity,
-    selectedZone,
-    selectedDivision,
-    selectedWard,
-  } = useFilters();
+  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
+    useFilters();
 
   const loadSummary = async () => {
     try {
@@ -41,10 +37,7 @@ export default function WasteGenerators() {
       }
 
       if (selectedDivision?.division_id) {
-        params.set(
-          "divisionId",
-          selectedDivision.division_id,
-        );
+        params.set("divisionId", selectedDivision.division_id);
       }
 
       if (selectedWard?.ward_id) {
@@ -57,10 +50,7 @@ export default function WasteGenerators() {
 
       setSummary(response?.data?.data || null);
     } catch (error) {
-      console.error(
-        "Waste Generator Summary Error:",
-        error,
-      );
+      console.error("Waste Generator Summary Error:", error);
 
       setSummary(null);
     }
@@ -78,10 +68,7 @@ export default function WasteGenerators() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-      />
+      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
       <div className="w-full px-8 py-7 overflow-x-hidden">
         <div>
@@ -90,9 +77,8 @@ export default function WasteGenerators() {
           </h1>
 
           <p className="mt-1 text-[14px] text-slate-500">
-            Overview of waste generators participation,
-            waste contribution, activity, monitoring and
-            collection performance.
+            Overview of waste generators participation, waste contribution,
+            activity, monitoring and collection performance.
           </p>
         </div>
 
@@ -111,7 +97,7 @@ export default function WasteGenerators() {
           "
         >
           <div className="min-w-0 h-full">
-            <WasteGenMap />
+            <WasteGenMap selectedDate={selectedDate} />
           </div>
 
           <div className="min-w-0 h-full">

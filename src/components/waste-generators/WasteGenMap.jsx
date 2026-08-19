@@ -261,7 +261,7 @@ function FitWardBoundary({ boundary, fitKey }) {
 |--------------------------------------------------------------------------
 */
 
-export default function WasteGenMap() {
+export default function WasteGenMap({ selectedDate }) {
   const sectionRef = useRef(null);
   const collectionCardRef = useRef(null);
 
@@ -327,6 +327,7 @@ export default function WasteGenMap() {
     zoneId ?? "",
     divisionId ?? "",
     wardId ?? "",
+    selectedDate ?? "",
   ].join(":");
 
   /*
@@ -366,6 +367,7 @@ export default function WasteGenMap() {
       try {
         const response = await api.get("/api/waste-generators/map", {
           params: {
+            date: selectedDate,
             cityId,
             zoneId,
             divisionId,
@@ -433,18 +435,18 @@ export default function WasteGenMap() {
   |
   | The backend already resolved:
   |
-  | City
+  | Selected date
   |   ↓
-  | Zone
+  | day_DDMMYYYY
   |   ↓
-  | Division
+  | vehicle tables registered to the selected ward
   |   ↓
-  | Ward
+  | telemetry latitude/longitude
   |   ↓
-  | physical ward table
+  | selected ward boundary
   |
-  | Therefore the points returned by the API are already scoped
-  | to the selected ward.
+  | The backend returns only telemetry points that fall inside
+  | the selected ward boundary.
   |--------------------------------------------------------------------------
   */
 
@@ -510,6 +512,12 @@ export default function WasteGenMap() {
               <span className="text-[11px] text-slate-400">
                 {pointCount} points
               </span>
+
+              {selectedDate && (
+                <span className="text-[11px] text-slate-400">
+                  · {selectedDate}
+                </span>
+              )}
             </div>
 
             {mapData?.ward && (
@@ -604,10 +612,27 @@ export default function WasteGenMap() {
                   <Tooltip direction="top">
                     <div className="text-xs">
                       <div className="font-semibold">
-                        {point.personName || "Collection Point"}
+                        {point.vehicleNumber || "Collection Vehicle"}
                       </div>
 
-                      {point.area && <div>{point.area}</div>}
+                      {point.receivedTimestamp && (
+                        <div>
+                          Received:{" "}
+                          {new Date(point.receivedTimestamp).toLocaleString()}
+                        </div>
+                      )}
+
+                      {point.iotTimestamp && (
+                        <div>
+                          IoT:{" "}
+                          {new Date(point.iotTimestamp).toLocaleString()}
+                        </div>
+                      )}
+
+                      {point.citizenId !== null &&
+                        point.citizenId !== undefined && (
+                          <div>Citizen ID: {point.citizenId}</div>
+                        )}
 
                       {wardNo !== null && <div>Ward {wardNo}</div>}
                     </div>
@@ -624,7 +649,7 @@ export default function WasteGenMap() {
           {loading && (
             <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/55 backdrop-blur-[1px] pointer-events-none">
               <div className="rounded-xl bg-white px-4 py-2 shadow text-xs text-slate-500">
-                Loading ward map...
+                Loading daily vehicle telemetry...
               </div>
             </div>
           )}
@@ -670,7 +695,7 @@ export default function WasteGenMap() {
           {!loading && !errorMessage && wardId && mapData && !boundary && (
             <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
               <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                Boundary unavailable for this ward
+                Ward boundary unavailable for this selection
               </div>
             </div>
           )}
@@ -686,7 +711,7 @@ export default function WasteGenMap() {
             visiblePoints.length === 0 && (
               <div className="absolute bottom-3 right-3 z-[900] pointer-events-none">
                 <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                  No mapped collection points
+                  No telemetry points for this date
                 </div>
               </div>
             )}
