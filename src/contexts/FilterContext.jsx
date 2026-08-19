@@ -68,12 +68,20 @@ export function FilterProvider({ children }) {
         setZones(zoneList);
 
         // Default zone = Bangalore South Zone
+        // Default zone = Bengaluru South City Corporation
         const defaultZone =
-          zoneList.find(
-            (zone) => zone.zone_name?.toLowerCase() === "bangalore south zone",
-          ) ||
+          zoneList.find((zone) => {
+            const name = zone.zone_name?.trim().toLowerCase();
+
+            return (
+              name === "bengaluru south city corporation" ||
+              name === "bangalore south city corporation" ||
+              name === "bangalore south zone" ||
+              name === "bengaluru south zone"
+            );
+          }) ||
           zoneList.find((zone) =>
-            zone.zone_name?.toLowerCase().includes("south"),
+            zone.zone_name?.trim().toLowerCase().includes("south"),
           ) ||
           zoneList[0];
 
@@ -111,10 +119,12 @@ export function FilterProvider({ children }) {
         setDivisions(divisionList);
 
         // Default division = Bommanahalli Division
+        // Default division = Bommanahalli Division
         const defaultDivision =
           divisionList.find(
             (division) =>
-              division.division_name?.toLowerCase() === "bommanahalli division",
+              division.division_name?.trim().toLowerCase() ===
+              "bommanahalli division",
           ) || divisionList[0];
 
         setSelectedDivision(defaultDivision || null);
@@ -152,9 +162,10 @@ export function FilterProvider({ children }) {
         setWards(wardList);
 
         // Default ward = Ibbalur
+        // Default ward = Ibbalur
         const defaultWard =
           wardList.find(
-            (ward) => ward.ward_name?.toLowerCase() === "ibbalur",
+            (ward) => ward.ward_name?.trim().toLowerCase() === "ibbalur",
           ) || wardList[0];
 
         setSelectedWard(defaultWard || null);
