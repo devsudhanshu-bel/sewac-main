@@ -47,10 +47,6 @@ const ContractorUsers = () => {
                 <h2 className="text-[16px] font-semibold text-gray-900">
                   Contractor Users
                 </h2>
-
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-medium">
-                  Limited Access
-                </span>
               </div>
 
               <p className="mt-0.5 text-[12px] text-gray-500">
@@ -73,8 +69,7 @@ const ContractorUsers = () => {
             />
           </div>
 
-          <button className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-medium flex items-center gap-2 transition">
-            <Plus className="w-4 h-4" />
+<button className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2">            <Plus className="w-4 h-4" />
 
             Add Contractor
           </button>

@@ -52,10 +52,6 @@ const AdminUsers = () => {
                 <h2 className="text-[16px] font-semibold text-gray-900">
                   Admin Level 1 Users
                 </h2>
-
-                <span className="px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 text-[11px] font-medium">
-                  Full access to system
-                </span>
               </div>
 
               <p className="mt-0.5 text-[12px] text-gray-500">
