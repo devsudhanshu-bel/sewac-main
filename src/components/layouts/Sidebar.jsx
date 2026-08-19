@@ -15,49 +15,112 @@ import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
 
-const menuItems = [
-  {
-    name: "Overview",
-    path: "/dashboard/admin/overview",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Waste Generators",
-    path: "/dashboard/admin/waste-generators",
-    icon: Users,
-  },
-  {
-    name: "Vehicles",
-    path: "/dashboard/admin/vehicles",
-    icon: Truck,
-  },
-  {
-    name: "Plant",
-    path: "/dashboard/admin/plants",
-    icon: Factory,
-  },
-  {
-    name: "Logs",
-    path: "/dashboard/admin/logs",
-    icon: FileText,
-  },
-  {
-    name: "Complaints",
-    path: "/dashboard/admin/complaints",
-    icon: MessageCircle,
-  },
-  {
-    name: "Users",
-    path: "/dashboard/admin/users2",
-    icon: Users,
-  },
-];
+/* =========================================================
+   AUTHENTICATED USER ROLE
+========================================================= */
+
+function getAuthenticatedRole() {
+  try {
+    const token = sessionStorage.getItem("token");
+
+    if (!token) {
+      return null;
+    }
+
+    const payload = token.split(".")[1];
+
+    if (!payload) {
+      return null;
+    }
+
+    const decoded = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
+    return decoded.role || null;
+  } catch (error) {
+    console.error(
+      "Failed to read authenticated user role:",
+      error
+    );
+
+    return null;
+  }
+}
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
 export default function Sidebar() {
   const sidebarRef = useRef(null);
   const logoRef = useRef(null);
   const navRef = useRef(null);
   const logoutRef = useRef(null);
+
+  /* =======================================================
+     AUTHENTICATED ROLE
+  ======================================================= */
+
+  const role = getAuthenticatedRole();
+
+  /* =======================================================
+     USERS ROUTE
+     
+     Admin Layer 1 → Users.jsx
+     Admin Layer 2 → Users2.jsx
+  ======================================================= */
+
+  const usersPath =
+    role === "ADMIN_LAYER_1"
+      ? "/dashboard/admin/users"
+      : "/dashboard/admin/users2";
+
+  /* =======================================================
+     MENU
+  ======================================================= */
+
+  const menuItems = [
+    {
+      name: "Overview",
+      path: "/dashboard/admin/overview",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Waste Generators",
+      path: "/dashboard/admin/waste-generators",
+      icon: Users,
+    },
+    {
+      name: "Vehicles",
+      path: "/dashboard/admin/vehicles",
+      icon: Truck,
+    },
+    {
+      name: "Plant",
+      path: "/dashboard/admin/plants",
+      icon: Factory,
+    },
+    {
+      name: "Logs",
+      path: "/dashboard/admin/logs",
+      icon: FileText,
+    },
+    {
+      name: "Complaints",
+      path: "/dashboard/admin/complaints",
+      icon: MessageCircle,
+    },
+    {
+      name: "Users",
+      path: usersPath,
+      icon: Users,
+    },
+  ];
+
+  /* =======================================================
+     LOGOUT
+  ======================================================= */
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -66,6 +129,10 @@ export default function Sidebar() {
       "https://app-authentication-frontend.onrender.com"
     );
   };
+
+  /* =======================================================
+     SIDEBAR ANIMATION
+  ======================================================= */
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -143,6 +210,10 @@ export default function Sidebar() {
     return () => ctx.revert();
   }, []);
 
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
   return (
     <aside
       ref={sidebarRef}
@@ -191,6 +262,7 @@ export default function Sidebar() {
       {/* ================= CONTENT ================= */}
 
       <div className="relative z-10 flex flex-col h-full">
+
         {/* ================= LOGO ================= */}
 
         <div
