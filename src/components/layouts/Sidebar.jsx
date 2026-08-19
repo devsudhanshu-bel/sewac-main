@@ -13,6 +13,7 @@ import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
+import { useLanguage } from "../../i18n";
 
 /* =========================================================
    AUTHENTICATED USER ROLE
@@ -58,6 +59,12 @@ export default function Sidebar() {
   const logoutRef = useRef(null);
 
   /* =======================================================
+     LANGUAGE
+  ======================================================= */
+
+  const { t } = useLanguage();
+
+  /* =======================================================
      AUTHENTICATED ROLE
   ======================================================= */
 
@@ -65,7 +72,7 @@ export default function Sidebar() {
 
   /* =======================================================
      USERS ROUTE
-     
+
      Admin Layer 1 → Users.jsx
      Admin Layer 2 → Users2.jsx
   ======================================================= */
@@ -81,35 +88,40 @@ export default function Sidebar() {
 
   const menuItems = [
     {
-      name: "Overview",
+      key: "overview",
       path: "/dashboard/admin/overview",
       icon: LayoutDashboard,
+      label: t("sidebar.overview"),
     },
     {
-      name: "Waste Generators",
+      key: "wasteGenerators",
       path: "/dashboard/admin/waste-generators",
       icon: Users,
+      label: t("sidebar.wasteGenerators"),
     },
     {
-      name: "Vehicles",
+      key: "vehicles",
       path: "/dashboard/admin/vehicles",
       icon: Truck,
+      label: t("sidebar.vehicles"),
     },
     {
-      name: "Plant",
+      key: "plant",
       path: "/dashboard/admin/plants",
       icon: Factory,
+      label: t("sidebar.plant"),
     },
-
     {
-      name: "Complaints",
+      key: "complaints",
       path: "/dashboard/admin/complaints",
       icon: MessageCircle,
+      label: t("sidebar.complaints"),
     },
     {
-      name: "Users",
+      key: "users",
       path: usersPath,
       icon: Users,
+      label: t("sidebar.users"),
     },
   ];
 
@@ -131,6 +143,10 @@ export default function Sidebar() {
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
+      if (!navRef.current) {
+        return;
+      }
+
       const navItems = Array.from(navRef.current.children);
 
       const tl = gsap.timeline({
@@ -139,20 +155,23 @@ export default function Sidebar() {
         },
       });
 
-      tl.fromTo(
-        sidebarRef.current,
-        {
-          opacity: 0,
-          x: -16,
-        },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.28,
-        }
-      )
+      if (sidebarRef.current) {
+        tl.fromTo(
+          sidebarRef.current,
+          {
+            opacity: 0,
+            x: -16,
+          },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.28,
+          }
+        );
+      }
 
-        .fromTo(
+      if (logoRef.current) {
+        tl.fromTo(
           logoRef.current,
           {
             opacity: 0,
@@ -166,9 +185,11 @@ export default function Sidebar() {
             duration: 0.45,
           },
           "-=0.12"
-        )
+        );
+      }
 
-        .fromTo(
+      if (navItems.length > 0) {
+        tl.fromTo(
           navItems,
           {
             opacity: 0,
@@ -183,9 +204,11 @@ export default function Sidebar() {
             stagger: 0.045,
           },
           "-=0.18"
-        )
+        );
+      }
 
-        .fromTo(
+      if (logoutRef.current) {
+        tl.fromTo(
           logoutRef.current,
           {
             opacity: 0,
@@ -200,6 +223,7 @@ export default function Sidebar() {
           },
           "-=0.18"
         );
+      }
     });
 
     return () => ctx.revert();
@@ -288,7 +312,7 @@ export default function Sidebar() {
 
             return (
               <NavLink
-                key={item.name}
+                key={item.key}
                 to={item.path}
                 className={({ isActive }) =>
                   `
@@ -337,7 +361,7 @@ export default function Sidebar() {
                 />
 
                 <span className="text-[14px] font-medium tracking-wide">
-                  {item.name}
+                  {item.label}
                 </span>
               </NavLink>
             );
@@ -378,10 +402,14 @@ export default function Sidebar() {
           >
             <LogOut
               size={17}
-              className="transition-transform duration-300 group-hover:scale-110"
+              className="
+                transition-transform
+                duration-300
+                group-hover:scale-110
+              "
             />
 
-            Logout
+            {t("sidebar.logout")}
           </button>
         </div>
       </div>

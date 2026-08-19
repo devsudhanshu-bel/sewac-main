@@ -2,7 +2,6 @@ import {
   Search,
   Globe,
   ChevronDown,
-  CalendarDays,
   Settings,
   LogOut,
   Check,
@@ -18,7 +17,26 @@ import { gsap } from "gsap";
 
 import Calendar from "../Calendar/Calendar";
 
-const languages = ["English", "Kannada", "Hindi"];
+import { useLanguage } from "../../i18n";
+
+/* =========================================================
+   LANGUAGE OPTIONS
+========================================================= */
+
+const languages = [
+  {
+    code: "en",
+    translationKey: "language.english",
+  },
+  {
+    code: "kn",
+    translationKey: "language.kannada",
+  },
+  {
+    code: "hi",
+    translationKey: "language.hindi",
+  },
+];
 
 /* =========================================================
    ROLE HELPERS
@@ -51,7 +69,7 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
     );
 
     return {
@@ -59,7 +77,10 @@ function getUserFromToken() {
       role: decoded.role || "ADMIN_LAYER_1",
     };
   } catch (error) {
-    console.error("Failed to decode authentication token:", error);
+    console.error(
+      "Failed to decode authentication token:",
+      error
+    );
 
     return {
       name: "Admin",
@@ -76,7 +97,13 @@ function getRoleLabel(role) {
    DROPDOWN
 ========================================================= */
 
-function Dropdown({ width, value, options, onChange }) {
+function Dropdown({
+  width,
+  value,
+  options,
+  onChange,
+  placeholder = "Select",
+}) {
   const [open, setOpen] = useState(false);
 
   const wrapperRef = useRef(null);
@@ -111,14 +138,18 @@ function Dropdown({ width, value, options, onChange }) {
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        },
+        }
       );
     }
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className={`relative ${width}`}>
+    <div
+      ref={wrapperRef}
+      className={`relative ${width}`}
+    >
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className="
           w-full
@@ -139,11 +170,14 @@ function Dropdown({ width, value, options, onChange }) {
           duration-300
         "
       >
-        <span>{value}</span>
+        <span className="truncate">
+          {value || placeholder}
+        </span>
 
         <ChevronDown
           size={14}
           className={`
+            shrink-0
             transition-transform
             duration-300
             ${open ? "rotate-180" : ""}
@@ -155,23 +189,22 @@ function Dropdown({ width, value, options, onChange }) {
         <div
           ref={menuRef}
           className="
-    absolute
-    top-11
-    left-0
-    w-full
-    max-h-[315px]
-    overflow-y-auto
-    rounded-2xl
-    bg-white
-    border
-    border-gray-100
-    shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-    z-[9999]
-
-    scrollbar-thin
-    scrollbar-thumb-violet-300
-    scrollbar-track-transparent
-  "
+            absolute
+            top-11
+            left-0
+            w-full
+            max-h-[315px]
+            overflow-y-auto
+            rounded-2xl
+            bg-white
+            border
+            border-gray-100
+            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+            z-[9999]
+            scrollbar-thin
+            scrollbar-thumb-violet-300
+            scrollbar-track-transparent
+          "
         >
           {options.map((item) => {
             const label =
@@ -190,6 +223,7 @@ function Dropdown({ width, value, options, onChange }) {
 
             return (
               <button
+                type="button"
                 key={key}
                 onClick={() => {
                   onChange(item);
@@ -205,12 +239,18 @@ function Dropdown({ width, value, options, onChange }) {
                   text-[12px]
                   hover:bg-violet-50
                   transition
+                  text-left
                 "
               >
-                {label}
+                <span className="truncate">
+                  {label}
+                </span>
 
                 {label === value && (
-                  <Check size={14} className="text-violet-600" />
+                  <Check
+                    size={14}
+                    className="text-violet-600 shrink-0"
+                  />
                 )}
               </button>
             );
@@ -232,12 +272,21 @@ export default function Header({
 }) {
   const navigate = useNavigate();
 
+  /* =======================================================
+     LANGUAGE
+  ======================================================= */
+
+  const {
+    language,
+    setLanguage,
+    t,
+  } = useLanguage();
+
   const headerRef = useRef(null);
   const controlsRef = useRef(null);
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const languageRef = useRef(null);
-  const languageMenuRef = useRef(null);
 
   /* =======================================================
      FILTER CONTEXT
@@ -266,17 +315,18 @@ export default function Header({
      USER
   ======================================================= */
 
-  const [user, setUser] = useState(() => getUserFromToken());
+  const [user, setUser] = useState(() =>
+    getUserFromToken()
+  );
 
   const roleLabel = getRoleLabel(user.role);
 
-  const userInitial = user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+  const userInitial =
+    user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
 
   /* =======================================================
      STATE
   ======================================================= */
-
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   const [dayType, setDayType] = useState("wet");
 
@@ -300,7 +350,8 @@ export default function Header({
 
   // Wednesday = 3
   // Saturday = 6
-  const isDryDay = selectedDay === 3 || selectedDay === 6;
+  const isDryDay =
+    selectedDay === 3 || selectedDay === 6;
 
   /* =======================================================
      REFRESH USER FROM SESSION
@@ -336,7 +387,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2",
+        "-=0.2"
       );
     }
 
@@ -394,7 +445,9 @@ export default function Header({
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace("https://app-authentication-frontend.onrender.com");
+    window.location.replace(
+      "https://app-authentication-frontend.onrender.com"
+    );
   };
 
   /* =======================================================
@@ -404,12 +457,36 @@ export default function Header({
   const formatLocalDate = (date) => {
     const year = date.getFullYear();
 
-    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
 
-    const day = String(date.getDate()).padStart(2, "0");
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   };
+
+  /* =======================================================
+     LANGUAGE HANDLER
+  ======================================================= */
+
+  const handleLanguageChange = (languageCode) => {
+    setLanguage(languageCode);
+    setLanguageOpen(false);
+  };
+
+  /* =======================================================
+     CURRENT LANGUAGE CODE
+  ======================================================= */
+
+  const currentLanguageCode =
+    language === "en"
+      ? "EN"
+      : language === "kn"
+        ? "KN"
+        : "HI";
 
   /* =======================================================
      RENDER
@@ -436,37 +513,53 @@ export default function Header({
           LEFT
       =================================================== */}
 
-      <div ref={controlsRef} className="flex items-center gap-3">
+      <div
+        ref={controlsRef}
+        className="flex items-center gap-3"
+      >
         {isDashboard ? (
           <div className="flex items-center gap-2">
-            {/* City */}
+
+            {/* ================= CITY ================= */}
 
             <Dropdown
               width="w-[118px]"
-              value={selectedCity?.city_name || "Select City"}
+              value={
+                selectedCity?.city_name ||
+                t("filters.city")
+              }
               options={cities}
               onChange={setSelectedCity}
+              placeholder={t("filters.city")}
             />
 
-            {/* Zone */}
+            {/* ================= ZONE ================= */}
 
             <Dropdown
               width="w-[200px]"
-              value={selectedZone?.zone_name || "Select Zone"}
+              value={
+                selectedZone?.zone_name ||
+                t("filters.zone")
+              }
               options={zones}
               onChange={setSelectedZone}
+              placeholder={t("filters.zone")}
             />
 
-            {/* Division */}
+            {/* ================= DIVISION ================= */}
 
             <Dropdown
               width="w-[138px]"
-              value={selectedDivision?.division_name || "Select Division"}
+              value={
+                selectedDivision?.division_name ||
+                "Select Division"
+              }
               options={divisions}
               onChange={setSelectedDivision}
+              placeholder="Select Division"
             />
 
-            {/* Ward */}
+            {/* ================= WARD ================= */}
 
             <Dropdown
               width="w-[122px]"
@@ -477,10 +570,12 @@ export default function Header({
               }
               options={wards}
               onChange={setSelectedWard}
+              placeholder="Select Ward"
             />
+
           </div>
         ) : (
-          /* Search */
+          /* ================= SEARCH ================= */
 
           <div className="relative">
             <Search
@@ -498,8 +593,10 @@ export default function Header({
               ref={searchRef}
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              placeholder={t("header.search")}
               className="
                 w-[330px]
                 h-9
@@ -521,6 +618,7 @@ export default function Header({
 
             {search.length > 0 && (
               <button
+                type="button"
                 onClick={() => setSearch("")}
                 className="
                   absolute
@@ -544,6 +642,7 @@ export default function Header({
       =================================================== */}
 
       <div className="flex items-center gap-2.5">
+
         {/* =================================================
             CALENDAR
         ================================================= */}
@@ -552,7 +651,9 @@ export default function Header({
           <Calendar
             value={selectedDateObj}
             onChange={(date) => {
-              setSelectedDate(formatLocalDate(date));
+              setSelectedDate(
+                formatLocalDate(date)
+              );
             }}
           />
         </div>
@@ -572,6 +673,7 @@ export default function Header({
         >
           {isDryDay && (
             <button
+              type="button"
               onClick={() => setDayType("dry")}
               className={`
                 h-9
@@ -588,11 +690,12 @@ export default function Header({
                 }
               `}
             >
-              Dry Day
+              {t("header.dryDay")}
             </button>
           )}
 
           <button
+            type="button"
             onClick={() => setDayType("wet")}
             className={`
               h-9
@@ -609,7 +712,7 @@ export default function Header({
               }
             `}
           >
-            Wet Day
+            {t("header.wetDay")}
           </button>
         </div>
 
@@ -617,9 +720,15 @@ export default function Header({
             LANGUAGE
         ================================================= */}
 
-        <div ref={languageRef} className="relative">
+        <div
+          ref={languageRef}
+          className="relative"
+        >
           <button
-            onClick={() => setLanguageOpen(!languageOpen)}
+            type="button"
+            onClick={() =>
+              setLanguageOpen(!languageOpen)
+            }
             className="
               h-9
               px-3
@@ -635,14 +744,13 @@ export default function Header({
               duration-300
             "
           >
-            <Globe size={15} className="text-violet-600" />
+            <Globe
+              size={15}
+              className="text-violet-600"
+            />
 
             <span className="text-[12px] font-semibold text-[#16295A]">
-              {selectedLanguage === "English"
-                ? "EN"
-                : selectedLanguage === "Kannada"
-                  ? "KN"
-                  : "HI"}
+              {currentLanguageCode}
             </span>
 
             <ChevronDown
@@ -650,14 +758,17 @@ export default function Header({
               className={`
                 transition-transform
                 duration-300
-                ${languageOpen ? "rotate-180" : ""}
+                ${
+                  languageOpen
+                    ? "rotate-180"
+                    : ""
+                }
               `}
             />
           </button>
 
           {languageOpen && (
             <div
-              ref={languageMenuRef}
               className="
                 absolute
                 right-0
@@ -672,14 +783,15 @@ export default function Header({
                 z-[9999]
               "
             >
-              {languages.map((language) => (
+              {languages.map((item) => (
                 <button
-                  key={language}
-                  onClick={() => {
-                    setSelectedLanguage(language);
-
-                    setLanguageOpen(false);
-                  }}
+                  type="button"
+                  key={item.code}
+                  onClick={() =>
+                    handleLanguageChange(
+                      item.code
+                    )
+                  }
                   className="
                     w-full
                     px-4
@@ -690,12 +802,18 @@ export default function Header({
                     text-[12px]
                     hover:bg-violet-50
                     transition
+                    text-left
                   "
                 >
-                  {language}
+                  <span>
+                    {t(item.translationKey)}
+                  </span>
 
-                  {selectedLanguage === language && (
-                    <Check size={14} className="text-violet-600" />
+                  {language === item.code && (
+                    <Check
+                      size={14}
+                      className="text-violet-600"
+                    />
                   )}
                 </button>
               ))}
@@ -707,9 +825,15 @@ export default function Header({
             PROFILE
         ================================================= */}
 
-        <div ref={profileRef} className="relative">
+        <div
+          ref={profileRef}
+          className="relative"
+        >
           <button
-            onClick={() => setProfileOpen(!profileOpen)}
+            type="button"
+            onClick={() =>
+              setProfileOpen(!profileOpen)
+            }
             className="
               h-9
               pl-2
@@ -726,7 +850,7 @@ export default function Header({
               duration-300
             "
           >
-            {/* Avatar */}
+            {/* ================= AVATAR ================= */}
 
             <div
               className="
@@ -747,14 +871,16 @@ export default function Header({
               {userInitial}
             </div>
 
-            {/* User info */}
+            {/* ================= USER INFO ================= */}
 
             <div className="text-left leading-tight">
               <h4 className="text-[12px] font-semibold text-[#16295A]">
                 {user.name}
               </h4>
 
-              <p className="text-[10px] text-gray-500">{roleLabel}</p>
+              <p className="text-[10px] text-gray-500">
+                {roleLabel}
+              </p>
             </div>
 
             <ChevronDown
@@ -762,7 +888,11 @@ export default function Header({
               className={`
                 transition-transform
                 duration-300
-                ${profileOpen ? "rotate-180" : ""}
+                ${
+                  profileOpen
+                    ? "rotate-180"
+                    : ""
+                }
               `}
             />
           </button>
@@ -801,15 +931,16 @@ export default function Header({
                       y: 0,
                       duration: 0.22,
                       ease: "power3.out",
-                    },
+                    }
                   );
                 }
               }}
             >
-              {/* User information */}
+              {/* ================= USER INFORMATION ================= */}
 
               <div className="px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
+
                   <div
                     className="
                       w-9
@@ -838,16 +969,20 @@ export default function Header({
                       {roleLabel}
                     </p>
                   </div>
+
                 </div>
               </div>
 
-              {/* Settings */}
+              {/* ================= SETTINGS ================= */}
 
               <button
+                type="button"
                 onClick={() => {
                   setProfileOpen(false);
 
-                  navigate("/dashboard/admin/settings");
+                  navigate(
+                    "/dashboard/admin/settings"
+                  );
                 }}
                 className="
                   w-full
@@ -863,12 +998,14 @@ export default function Header({
                 "
               >
                 <Settings size={16} />
-                Settings
+
+                {t("sidebar.settings")}
               </button>
 
-              {/* Logout */}
+              {/* ================= LOGOUT ================= */}
 
               <button
+                type="button"
                 onClick={() => {
                   setProfileOpen(false);
 
@@ -888,7 +1025,8 @@ export default function Header({
                 "
               >
                 <LogOut size={16} />
-                Logout
+
+                {t("sidebar.logout")}
               </button>
             </div>
           )}
