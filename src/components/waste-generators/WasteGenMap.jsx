@@ -412,7 +412,7 @@ export default function WasteGenMap({ selectedDate }) {
     return () => {
       cancelled = true;
     };
-  }, [cityId, zoneId, divisionId, wardId]);
+  }, [cityId, zoneId, divisionId, wardId, selectedDate]);
 
   /*
   |--------------------------------------------------------------------------
