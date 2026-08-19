@@ -5032,10 +5032,11 @@ const handleMapViewChange =
         )}
 
 {/* ====================================================
-    COLLECTION POINT / GVP MAP
+    GVP POINTS
 ==================================================== */}
 
 {mapView === "gvp" && (
+
   <div
     className="
       cm-special-view
@@ -5043,24 +5044,14 @@ const handleMapViewChange =
       w-full
       h-full
       min-h-0
-      overflow-hidden
     "
   >
-    <WasteGenMap
-      selectedDate={headerSelectedDate}
-      selectedWard={headerSelectedWard}
-      wardNo={
-        headerSelectedWard?.ward_no ??
-        headerSelectedWard?.wardNo ??
-        headerSelectedWard?.ward_number ??
-        headerSelectedWard?.wardNumber ??
-        headerSelectedWard?.id ??
-        null
-      }
-    />
-  </div>
-)}
 
+    <WasteGenMap />
+
+  </div>
+
+)}
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
         ==================================================== */}
