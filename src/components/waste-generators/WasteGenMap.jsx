@@ -1,245 +1,297 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import L from "leaflet";
+import {
+  CircleMarker,
+  GeoJSON,
+  MapContainer,
+  TileLayer,
+  Tooltip,
+  ZoomControl,
+  useMap,
+} from "react-leaflet";
+
 import "leaflet/dist/leaflet.css";
 
+import api from "../../api/axios";
 import { useFilters } from "../../contexts/FilterContext";
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT MAP POSITION
+| MAP DEFAULTS
 |--------------------------------------------------------------------------
 */
 
-const BANGALORE_CENTER = [12.9716, 77.5946];
+const DEFAULT_CENTER = [12.9716, 77.5946];
+const DEFAULT_ZOOM = 11;
+
+const CARTO_LIGHT_URL =
+  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+
+const CARTO_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
 
 /*
 |--------------------------------------------------------------------------
-| API BASE URL
+| GEOJSON HELPERS
 |--------------------------------------------------------------------------
 |
-| Use your existing Vite environment variable.
+| Database boundary:
+|   [latitude, longitude]
 |
-| Example:
-| VITE_API_BASE_URL=http://localhost:5000
+| GeoJSON:
+|   [longitude, latitude]
 |
-| or your deployed backend URL.
-|
+| Leaflet GeoJSON therefore needs the coordinates reversed.
+|--------------------------------------------------------------------------
 */
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5000";
+const isCoordinatePair = (value) =>
+  Array.isArray(value) &&
+  value.length >= 2 &&
+  typeof value[0] === "number" &&
+  typeof value[1] === "number";
+
+const reverseCoordinates = (value) => {
+  if (isCoordinatePair(value)) {
+    return [value[1], value[0]];
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(reverseCoordinates);
+  }
+
+  return value;
+};
 
 /*
 |--------------------------------------------------------------------------
-| AUTHORIZATION HELPER
+| NORMALIZE BOUNDARY
 |--------------------------------------------------------------------------
-|
-| We only classify a point as explicitly unauthorized when the telemetry
-| row actually contains an authorization/status value indicating that.
-|
-| If no authorization information exists in the telemetry row, the point
-| defaults to green because the current backend does not define an
-| authorization field in the collection-point-monitoring service.
-|
 */
 
-function isUnauthorizedPoint(data = {}) {
-  const booleanFields = [
-    data.authorized,
-    data.isAuthorized,
-    data.is_authorized,
-  ];
+const normalizeGeometry = (value) => {
+  if (!value) {
+    return null;
+  }
 
-  for (const value of booleanFields) {
-    if (typeof value === "boolean") {
-      return value === false;
+  let geometry = value;
+
+  /*
+   * Handle JSON strings.
+   */
+  if (typeof geometry === "string") {
+    try {
+      geometry = JSON.parse(geometry);
+    } catch (error) {
+      console.error("Unable to parse ward boundary:", error);
+
+      return null;
     }
   }
 
-  const statusFields = [
-    data.authorizationStatus,
-    data.authorization_status,
-    data.collectionPointStatus,
-    data.collection_point_status,
-    data.pointStatus,
-    data.point_status,
-  ];
-
-  for (const value of statusFields) {
-    if (typeof value !== "string") continue;
-
-    const normalized = value.trim().toLowerCase();
-
-    if (
-      normalized === "unauthorized" ||
-      normalized === "un_authorized" ||
-      normalized === "not authorized" ||
-      normalized === "not_authorized"
-    ) {
-      return true;
-    }
-
-    if (normalized === "authorized" || normalized === "authorised") {
-      return false;
-    }
+  if (!geometry || typeof geometry !== "object") {
+    return null;
   }
 
-  return false;
+  /*
+   * Direct Polygon / MultiPolygon.
+   */
+  if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
+    if (!Array.isArray(geometry.coordinates)) {
+      return null;
+    }
+
+    return {
+      type: geometry.type,
+      coordinates: reverseCoordinates(geometry.coordinates),
+    };
+  }
+
+  /*
+   * GeoJSON Feature.
+   */
+  if (geometry.type === "Feature") {
+    return normalizeGeometry(geometry.geometry);
+  }
+
+  /*
+   * GeoJSON FeatureCollection.
+   */
+  if (
+    geometry.type === "FeatureCollection" &&
+    Array.isArray(geometry.features)
+  ) {
+    const geometries = geometry.features
+      .map((feature) => normalizeGeometry(feature?.geometry))
+      .filter(Boolean);
+
+    if (geometries.length === 0) {
+      return null;
+    }
+
+    if (geometries.length === 1) {
+      return geometries[0];
+    }
+
+    const polygons = [];
+
+    geometries.forEach((item) => {
+      if (item.type === "Polygon") {
+        polygons.push(item.coordinates);
+      }
+
+      if (item.type === "MultiPolygon") {
+        polygons.push(...item.coordinates);
+      }
+    });
+
+    if (polygons.length === 0) {
+      return null;
+    }
+
+    return {
+      type: "MultiPolygon",
+      coordinates: polygons,
+    };
+  }
+
+  /*
+   * Handle { geometry: ... } wrappers.
+   */
+  if (geometry.geometry) {
+    return normalizeGeometry(geometry.geometry);
+  }
+
+  return null;
+};
+
+/*
+|--------------------------------------------------------------------------
+| MAP SIZE FIX
+|--------------------------------------------------------------------------
+|
+| Leaflet sometimes calculates the map dimensions incorrectly when it is
+| rendered inside an animated/card container. invalidateSize() fixes that.
+|--------------------------------------------------------------------------
+*/
+
+function MapSizeController() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 100),
+      setTimeout(() => map.invalidateSize(), 500),
+      setTimeout(() => map.invalidateSize(), 1000),
+    ];
+
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+
+  return null;
 }
 
 /*
 |--------------------------------------------------------------------------
-| POPUP HTML
+| FIT SELECTED WARD
 |--------------------------------------------------------------------------
 */
 
-function buildPopupContent({ vehicleNumber, point }) {
-  const data = point?.data || {};
+function FitWardBoundary({ boundary, fitKey }) {
+  const map = useMap();
 
-  const timestamp =
-    data.iotTimestamp ||
-    data.receivedTimestamp ||
-    data.created_at ||
-    data.createdAt ||
-    "N/A";
+  useEffect(() => {
+    /*
+     * No selected ward boundary.
+     */
+    if (!boundary) {
+      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+        animate: true,
+      });
 
-  const latitude = Number.isFinite(Number(point.latitude))
-    ? Number(point.latitude).toFixed(6)
-    : "N/A";
+      return;
+    }
 
-  const longitude = Number.isFinite(Number(point.longitude))
-    ? Number(point.longitude).toFixed(6)
-    : "N/A";
+    try {
+      const layer = L.geoJSON(boundary);
 
-  const driver = data.driverName || data.driver_name || "N/A";
+      const bounds = layer.getBounds();
 
-  const weight =
-    data.cumulativeWeight ?? data.cumulative_weight ?? data.weight ?? "N/A";
+      if (!bounds.isValid()) {
+        map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+          animate: true,
+        });
 
-  const wasteType = data.wasteType || data.waste_type || "N/A";
+        return;
+      }
 
-  const rfid =
-    data.rfidEpc ||
-    data.rfid_epc ||
-    data.rfidNumber ||
-    data.rfid_number ||
-    "N/A";
+      /*
+       * Zoom directly into the selected ward.
+       */
+      map.fitBounds(bounds, {
+        padding: [30, 30],
+        maxZoom: 16,
+        animate: true,
+        duration: 0.8,
+      });
+    } catch (error) {
+      console.error("Unable to fit selected ward boundary:", error);
 
-  const status = isUnauthorizedPoint(data) ? "Unauthorized" : "Authorized";
+      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+        animate: true,
+      });
+    }
+  }, [boundary, fitKey, map]);
 
-  return `
-    <div style="
-      min-width: 220px;
-      font-family: Inter, Arial, sans-serif;
-      color: #16295A;
-    ">
-      <div style="
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 10px;
-      ">
-        Collection Point
-      </div>
-
-      <div style="
-        display: grid;
-        grid-template-columns: 90px 1fr;
-        gap: 6px 8px;
-        font-size: 11px;
-      ">
-        <span style="color:#64748b;">Vehicle</span>
-        <strong>${vehicleNumber || "N/A"}</strong>
-
-        <span style="color:#64748b;">Status</span>
-        <strong style="
-          color:${status === "Unauthorized" ? "#ef4444" : "#16a34a"};
-        ">
-          ${status}
-        </strong>
-
-        <span style="color:#64748b;">Latitude</span>
-        <span>${latitude}</span>
-
-        <span style="color:#64748b;">Longitude</span>
-        <span>${longitude}</span>
-
-        <span style="color:#64748b;">Driver</span>
-        <span>${driver}</span>
-
-        <span style="color:#64748b;">Waste Type</span>
-        <span>${wasteType}</span>
-
-        <span style="color:#64748b;">Weight</span>
-        <span>${weight}</span>
-
-        <span style="color:#64748b;">RFID</span>
-        <span>${rfid}</span>
-
-        <span style="color:#64748b;">Time</span>
-        <span>${timestamp}</span>
-      </div>
-    </div>
-  `;
+  return null;
 }
 
 /*
 |--------------------------------------------------------------------------
-| COMPONENT
+| MAIN MAP
 |--------------------------------------------------------------------------
 */
 
-export default function WasteGenMap({ selectedDate }) {
+export default function WasteGenMap() {
   const sectionRef = useRef(null);
   const collectionCardRef = useRef(null);
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
-  const pointsLayerRef = useRef(null);
 
-  const { selectedWard } = useFilters();
+  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
+    useFilters();
 
+  const [mapData, setMapData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [pointCount, setPointCount] = useState(0);
-  const [vehicleCount, setVehicleCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
 
   /*
   |--------------------------------------------------------------------------
-  | DEFAULT DATE
-  |--------------------------------------------------------------------------
-  */
-
-  const effectiveDate =
-    typeof selectedDate === "string" && selectedDate
-      ? selectedDate
-      : new Date().toISOString().split("T")[0];
-
-  /*
-  |--------------------------------------------------------------------------
-  | GSAP CARD ANIMATION
+  | EXISTING GSAP ANIMATION
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
+      const timeline = gsap.timeline({
         defaults: {
           ease: "power3.out",
         },
       });
 
-      if (sectionRef.current) {
-        tl.from(sectionRef.current, {
+      timeline
+        .from(sectionRef.current, {
           opacity: 0,
           duration: 0.25,
-        });
-      }
-
-      if (collectionCardRef.current) {
-        tl.from(
+        })
+        .from(
           collectionCardRef.current,
           {
             opacity: 0,
@@ -249,325 +301,179 @@ export default function WasteGenMap({ selectedDate }) {
           },
           "-=0.05",
         );
-      }
     }, sectionRef);
 
-    return () => ctx.revert();
-  }, []);
-
-  /*
-  |--------------------------------------------------------------------------
-  | INITIALIZE LEAFLET MAP
-  |--------------------------------------------------------------------------
-  */
-
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Prevent duplicate map initialization
-    |--------------------------------------------------------------------------
-    */
-
-    if (mapRef.current) {
-      return;
-    }
-
-    const map = L.map(mapContainerRef.current, {
-      center: BANGALORE_CENTER,
-      zoom: 12,
-      zoomControl: false,
-      attributionControl: true,
-      scrollWheelZoom: true,
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | OpenStreetMap grayscale tiles
-    |--------------------------------------------------------------------------
-    |
-    | Leaflet supports OpenStreetMap tile layers directly.
-    | We apply grayscale through the tile pane so the map has the
-    | grey visual style requested for the dashboard.
-    |
-    */
-
-    const tiles = L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
-        className: "sewac-grey-map-tiles",
-      },
-    );
-
-    tiles.addTo(map);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Point layer
-    |--------------------------------------------------------------------------
-    */
-
-    const pointLayer = L.layerGroup().addTo(map);
-
-    mapRef.current = map;
-    pointsLayerRef.current = pointLayer;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Small delay so Leaflet correctly calculates its dimensions
-    |--------------------------------------------------------------------------
-    */
-
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEANUP
-    |--------------------------------------------------------------------------
-    */
-
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-
-      pointsLayerRef.current = null;
+      ctx.revert();
     };
   }, []);
 
   /*
   |--------------------------------------------------------------------------
-  | FETCH + PLOT COLLECTION POINTS
+  | FILTER VALUES
+  |--------------------------------------------------------------------------
+  */
+
+  const cityId = selectedCity?.city_id ?? null;
+
+  const zoneId = selectedZone?.zone_id ?? null;
+
+  const divisionId = selectedDivision?.division_id ?? null;
+
+  const wardId = selectedWard?.ward_id ?? null;
+
+  const filterKey = [
+    cityId ?? "",
+    zoneId ?? "",
+    divisionId ?? "",
+    wardId ?? "",
+  ].join(":");
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD SELECTED WARD MAP
+  |--------------------------------------------------------------------------
+  |
+  | We deliberately require all four filters.
+  |
+  | City
+  |   ↓
+  | Zone
+  |   ↓
+  | Division
+  |   ↓
+  | Ward
+  |
+  | The backend then resolves the physical ward table.
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    const map = mapRef.current;
-    const pointLayer = pointsLayerRef.current;
+    let cancelled = false;
 
-    if (!map || !pointLayer) return;
+    const loadMap = async () => {
+      if (!cityId || !zoneId || !divisionId || !wardId) {
+        setMapData(null);
+        setErrorMessage("");
+        setLoading(false);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Clear old points
-    |--------------------------------------------------------------------------
-    */
+        return;
+      }
 
-    pointLayer.clearLayers();
+      setLoading(true);
+      setErrorMessage("");
 
-    setPointCount(0);
-    setVehicleCount(0);
-    setError("");
-
-    /*
-    |--------------------------------------------------------------------------
-    | No ward selected
-    |--------------------------------------------------------------------------
-    */
-
-    if (!selectedWard?.ward_no) {
-      map.setView(BANGALORE_CENTER, 12);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    async function loadCollectionPoints() {
       try {
-        setLoading(true);
-
-        const wardNo = selectedWard.ward_no;
-
-        const url =
-          `${API_BASE_URL}/api/collection-point-monitoring` +
-          `?wardNo=${encodeURIComponent(wardNo)}` +
-          `&date=${encodeURIComponent(effectiveDate)}`;
-
-        const response = await fetch(url, {
-          method: "GET",
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
+        const response = await api.get("/api/waste-generators/map", {
+          params: {
+            cityId,
+            zoneId,
+            divisionId,
+            wardId,
           },
         });
 
-        if (!response.ok) {
-          let message = `Request failed with status ${response.status}`;
-
-          try {
-            const errorBody = await response.json();
-
-            if (errorBody?.message) {
-              message = errorBody.message;
-            }
-          } catch {
-            // Keep default error message.
-          }
-
-          throw new Error(message);
-        }
-
-        const result = await response.json();
-
-        if (!result?.success) {
-          throw new Error(
-            result?.message || "Failed to retrieve collection point data",
-          );
-        }
-
-        const monitoringData = result.data || {};
-
-        const vehicles = monitoringData.vehicles || {};
-
-        const vehicleEntries = Object.entries(vehicles);
-
-        setVehicleCount(vehicleEntries.length);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Flatten every vehicle's points into one array.
-        |--------------------------------------------------------------------------
-        */
-
-        const allPoints = [];
-
-        vehicleEntries.forEach(([vehicleNumber, vehicle]) => {
-          const points = Array.isArray(vehicle?.points) ? vehicle.points : [];
-
-          points.forEach((point) => {
-            const latitude = Number(point?.latitude);
-            const longitude = Number(point?.longitude);
-
-            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-              return;
-            }
-
-            allPoints.push({
-              vehicleNumber,
-              vehicle,
-              point: {
-                ...point,
-                latitude,
-                longitude,
-              },
-            });
-          });
-        });
-
-        setPointCount(allPoints.length);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Plot every GPS point
-        |--------------------------------------------------------------------------
-        */
-
-        const bounds = [];
-
-        allPoints.forEach(({ vehicleNumber, point }) => {
-          const { latitude, longitude, data = {} } = point;
-
-          const unauthorized = isUnauthorizedPoint(data);
-
-          const markerColor = unauthorized ? "#ef4444" : "#16a34a";
-
-          const marker = L.circleMarker([latitude, longitude], {
-            radius: 6,
-            color: "#ffffff",
-            weight: 2,
-            fillColor: markerColor,
-            fillOpacity: 0.95,
-            opacity: 1,
-            bubblingMouseEvents: true,
-          });
-
-          marker.bindPopup(
-            buildPopupContent({
-              vehicleNumber,
-              point,
-            }),
-            {
-              maxWidth: 320,
-              closeButton: true,
-            },
-          );
-
-          marker.addTo(pointLayer);
-
-          bounds.push([latitude, longitude]);
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Automatically fit map to all points
-        |--------------------------------------------------------------------------
-        */
-
-        if (bounds.length > 0) {
-          const latLngBounds = L.latLngBounds(bounds);
-
-          map.fitBounds(latLngBounds, {
-            padding: [35, 35],
-            maxZoom: 16,
-            animate: true,
-          });
-        } else {
-          /*
-          |--------------------------------------------------------------------------
-          | No GPS data
-          |--------------------------------------------------------------------------
-          */
-
-          map.setView(BANGALORE_CENTER, 12);
-        }
-      } catch (err) {
-        if (err?.name === "AbortError") {
+        if (cancelled) {
           return;
         }
 
-        console.error("Collection point monitoring map error:", err);
+        if (response?.data?.success === false) {
+          throw new Error(
+            response.data.message || "Unable to load the selected ward map.",
+          );
+        }
 
-        setError(err?.message || "Unable to load collection points");
+        setMapData(response?.data?.data || null);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
 
-        map.setView(BANGALORE_CENTER, 12);
+        console.error("Waste Generator Map Error:", error);
+
+        setMapData(null);
+
+        setErrorMessage(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Unable to load the selected ward map.",
+        );
       } finally {
-        if (!controller.signal.aborted) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
-    }
+    };
 
-    loadCollectionPoints();
+    loadMap();
 
     return () => {
-      controller.abort();
+      cancelled = true;
     };
-  }, [selectedWard?.ward_no, effectiveDate]);
+  }, [cityId, zoneId, divisionId, wardId]);
 
   /*
   |--------------------------------------------------------------------------
-  | CUSTOM ZOOM BUTTONS
+  | NORMALIZE WARD BOUNDARY
   |--------------------------------------------------------------------------
   */
 
-  const handleZoomIn = () => {
-    if (!mapRef.current) return;
+  const boundary = useMemo(() => {
+    return normalizeGeometry(mapData?.boundary);
+  }, [mapData?.boundary]);
 
-    mapRef.current.zoomIn();
-  };
+  /*
+  |--------------------------------------------------------------------------
+  | POINTS
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | We do NOT perform another point-in-polygon calculation here.
+  |
+  | The backend already resolved:
+  |
+  | City
+  |   ↓
+  | Zone
+  |   ↓
+  | Division
+  |   ↓
+  | Ward
+  |   ↓
+  | physical ward table
+  |
+  | Therefore the points returned by the API are already scoped
+  | to the selected ward.
+  |--------------------------------------------------------------------------
+  */
 
-  const handleZoomOut = () => {
-    if (!mapRef.current) return;
+  const visiblePoints = useMemo(() => {
+    if (!Array.isArray(mapData?.points)) {
+      return [];
+    }
 
-    mapRef.current.zoomOut();
-  };
+    return mapData.points.filter((point) => {
+      const latitude = Number(point.latitude);
+
+      const longitude = Number(point.longitude);
+
+      return Number.isFinite(latitude) && Number.isFinite(longitude);
+    });
+  }, [mapData?.points]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | DISPLAY DATA
+  |--------------------------------------------------------------------------
+  */
+
+  const wardName =
+    mapData?.ward?.wardName || selectedWard?.ward_name || "Selected Ward";
+
+  const wardNo = mapData?.ward?.wardNo ?? selectedWard?.ward_no ?? null;
+
+  const pointCount = visiblePoints.length;
 
   /*
   |--------------------------------------------------------------------------
@@ -590,309 +496,202 @@ export default function WasteGenMap({ selectedDate }) {
           h-full
         "
       >
-        {/* =====================================================
+        {/* ==========================================================
             HEADER
-        ===================================================== */}
+        ========================================================== */}
 
-        <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h3 className="text-[14px] font-semibold text-[#16295A]">
-              Collection Point Monitoring
-            </h3>
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <h3 className="text-[14px] font-semibold text-[#16295A]">
+                Collection Point Monitoring
+              </h3>
 
-            {pointCount > 0 && (
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[11px] text-slate-400">
                 {pointCount} points
               </span>
+            </div>
+
+            {mapData?.ward && (
+              <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                {mapData.ward.zoneName}
+                {" · "}
+                {mapData.ward.divisionName}
+                {" · "}
+                {wardName}
+                {wardNo !== null ? ` · Ward ${wardNo}` : ""}
+              </p>
             )}
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Authorized */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
 
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-
-              <span className="text-[11px] text-slate-500">
-                Authorized Point
-              </span>
-            </div>
-
-            {/* Unauthorized */}
-
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-
-              <span className="text-[11px] text-slate-500">
-                Unauthorized Point
-              </span>
-            </div>
+            <span className="text-[11px] text-slate-500">Collection Point</span>
           </div>
         </div>
 
-        {/* =====================================================
+        {/* ==========================================================
             MAP
-        ===================================================== */}
+        ========================================================== */}
 
         <div className="relative h-[310px] bg-[#F7F8FB]">
-          {/* ===================================================
-              LEAFLET MAP CONTAINER
-          =================================================== */}
+          <MapContainer
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
+            scrollWheelZoom
+            zoomControl={false}
+            className="h-full w-full"
+          >
+            <TileLayer
+              attribution={CARTO_ATTRIBUTION}
+              url={CARTO_LIGHT_URL}
+              subdomains={["a", "b", "c", "d"]}
+              maxZoom={20}
+            />
 
-          <div ref={mapContainerRef} className="absolute inset-0 z-0" />
+            <ZoomControl position="topleft" />
 
-          {/* ===================================================
-              CUSTOM ZOOM CONTROLS
-          =================================================== */}
+            <MapSizeController />
 
-          <div className="absolute top-4 left-4 z-[1000]">
-            <div
-              className="
-                bg-white
-                rounded-xl
-                shadow-[0_2px_10px_rgba(0,0,0,0.12)]
-                overflow-hidden
-                border
-                border-gray-200
-              "
-            >
-              <button
-                type="button"
-                onClick={handleZoomIn}
-                className="
-                  w-9
-                  h-9
-                  flex
-                  items-center
-                  justify-center
-                  border-b
-                  border-gray-200
-                  hover:bg-slate-50
-                  transition-colors
-                  duration-300
-                "
-                aria-label="Zoom in"
-              >
-                <Plus size={16} />
-              </button>
+            <FitWardBoundary boundary={boundary} fitKey={filterKey} />
 
-              <button
-                type="button"
-                onClick={handleZoomOut}
-                className="
-                  w-9
-                  h-9
-                  flex
-                  items-center
-                  justify-center
-                  hover:bg-slate-50
-                  transition-colors
-                  duration-300
-                "
-                aria-label="Zoom out"
-              >
-                <Minus size={16} />
-              </button>
-            </div>
-          </div>
+            {/* ======================================================
+                SELECTED WARD BOUNDARY
+            ====================================================== */}
 
-          {/* ===================================================
+            {boundary && (
+              <GeoJSON
+                key={`ward-boundary-${filterKey}`}
+                data={boundary}
+                style={{
+                  color: "#4F46E5",
+                  weight: 3,
+                  opacity: 1,
+                  fillColor: "#6366F1",
+                  fillOpacity: 0.07,
+                }}
+              />
+            )}
+
+            {/* ======================================================
+                COLLECTION POINTS
+            ====================================================== */}
+
+            {visiblePoints.map((point, index) => {
+              const latitude = Number(point.latitude);
+
+              const longitude = Number(point.longitude);
+
+              /*
+               * Some datasets may not have an ID.
+               * Use a stable fallback key.
+               */
+              const pointKey = point.id ?? `${latitude}-${longitude}-${index}`;
+
+              return (
+                <CircleMarker
+                  key={String(pointKey)}
+                  center={[latitude, longitude]}
+                  radius={5}
+                  pathOptions={{
+                    color: "#FFFFFF",
+                    weight: 1.5,
+                    fillColor: "#16A34A",
+                    fillOpacity: 0.95,
+                  }}
+                >
+                  <Tooltip direction="top">
+                    <div className="text-xs">
+                      <div className="font-semibold">
+                        {point.personName || "Collection Point"}
+                      </div>
+
+                      {point.area && <div>{point.area}</div>}
+
+                      {wardNo !== null && <div>Ward {wardNo}</div>}
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
+
+          {/* ========================================================
               LOADING
-          =================================================== */}
+          ======================================================== */}
 
           {loading && (
-            <div
-              className="
-                absolute
-                inset-0
-                z-[900]
-                pointer-events-none
-                flex
-                items-center
-                justify-center
-              "
-            >
-              <div
-                className="
-                  bg-white/95
-                  backdrop-blur-sm
-                  rounded-xl
-                  px-4
-                  py-2.5
-                  shadow-[0_4px_20px_rgba(0,0,0,0.08)]
-                  border
-                  border-gray-100
-                "
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="
-                      w-3.5
-                      h-3.5
-                      rounded-full
-                      border-2
-                      border-violet-200
-                      border-t-violet-600
-                      animate-spin
-                    "
-                  />
+            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/55 backdrop-blur-[1px] pointer-events-none">
+              <div className="rounded-xl bg-white px-4 py-2 shadow text-xs text-slate-500">
+                Loading ward map...
+              </div>
+            </div>
+          )}
 
-                  <span className="text-[11px] text-slate-500">
-                    Loading collection points...
-                  </span>
+          {/* ========================================================
+              NO WARD
+          ======================================================== */}
+
+          {!loading && !errorMessage && !wardId && (
+            <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
+              <div className="rounded-xl bg-white/90 px-5 py-3 shadow text-center">
+                <p className="text-sm font-medium text-[#16295A]">
+                  Select a ward
+                </p>
+
+                <p className="text-xs text-slate-400 mt-1">
+                  Choose City, Zone, Division and Ward from the header.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              ERROR
+          ======================================================== */}
+
+          {!loading && errorMessage && (
+            <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
+              <div className="rounded-xl bg-white/95 px-5 py-3 shadow text-center max-w-[320px]">
+                <p className="text-sm font-medium text-red-600">
+                  Map unavailable
+                </p>
+
+                <p className="text-xs text-slate-400 mt-1">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              NO BOUNDARY
+          ======================================================== */}
+
+          {!loading && !errorMessage && wardId && mapData && !boundary && (
+            <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
+              <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                Boundary unavailable for this ward
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              NO POINTS
+          ======================================================== */}
+
+          {!loading &&
+            !errorMessage &&
+            wardId &&
+            mapData &&
+            visiblePoints.length === 0 && (
+              <div className="absolute bottom-3 right-3 z-[900] pointer-events-none">
+                <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                  No mapped collection points
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ===================================================
-              ERROR
-          =================================================== */}
-
-          {!loading && error && (
-            <div
-              className="
-                absolute
-                inset-0
-                z-[900]
-                pointer-events-none
-                flex
-                items-center
-                justify-center
-              "
-            >
-              <div
-                className="
-                  bg-white/95
-                  backdrop-blur-sm
-                  rounded-xl
-                  px-5
-                  py-3
-                  shadow-[0_4px_20px_rgba(0,0,0,0.08)]
-                  border
-                  border-red-100
-                  text-center
-                "
-              >
-                <p className="text-[12px] font-medium text-red-500">
-                  Unable to load collection points
-                </p>
-
-                <p className="text-[10px] text-slate-400 mt-1">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* ===================================================
-              NO POINTS
-          =================================================== */}
-
-          {!loading && !error && selectedWard?.ward_no && pointCount === 0 && (
-            <div
-              className="
-                  absolute
-                  inset-0
-                  z-[800]
-                  pointer-events-none
-                  flex
-                  items-center
-                  justify-center
-                "
-            >
-              <div
-                className="
-                    bg-white/90
-                    backdrop-blur-sm
-                    rounded-xl
-                    px-5
-                    py-3
-                    shadow-[0_4px_20px_rgba(0,0,0,0.06)]
-                    border
-                    border-gray-100
-                    text-center
-                  "
-              >
-                <p className="text-[12px] text-slate-500">
-                  No collection points found
-                </p>
-
-                <p className="text-[10px] text-slate-400 mt-1">
-                  No GPS telemetry is available for this ward and date.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ===================================================
-              VEHICLE COUNT
-          =================================================== */}
-
-          {!loading && vehicleCount > 0 && (
-            <div
-              className="
-                absolute
-                bottom-3
-                left-3
-                z-[1000]
-                bg-white/95
-                backdrop-blur-sm
-                rounded-lg
-                px-3
-                py-1.5
-                shadow-[0_2px_8px_rgba(0,0,0,0.10)]
-                border
-                border-gray-100
-              "
-            >
-              <span className="text-[10px] text-slate-500">
-                {vehicleCount} vehicle
-                {vehicleCount !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
+            )}
         </div>
       </div>
-
-      {/* =======================================================
-          MAP STYLING
-      ======================================================= */}
-
-      <style>
-        {`
-          .sewac-grey-map-tiles {
-            filter:
-              grayscale(100%)
-              brightness(1.04)
-              contrast(0.90);
-          }
-
-          .leaflet-container {
-            font-family: Inter, Arial, sans-serif;
-            background: #f7f8fb;
-          }
-
-          .leaflet-control-attribution {
-            font-size: 8px !important;
-            background: rgba(255,255,255,0.85) !important;
-          }
-
-          .leaflet-popup-content-wrapper {
-            border-radius: 12px;
-          }
-
-          .leaflet-popup-content {
-            margin: 12px;
-          }
-
-          .leaflet-popup-tip {
-            box-shadow: none;
-          }
-
-          .leaflet-interactive {
-            cursor: pointer;
-          }
-        `}
-      </style>
     </section>
   );
 }
