@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,9 +31,8 @@ import {
 
 import { createPortal } from "react-dom";
 
-import Plants from "../plants/Plants";
-
 import "leaflet/dist/leaflet.css";
+
 
 /* ============================================================
    CONFIGURATION
@@ -44,8 +44,9 @@ const API_BASE_URL =
 
 const DEFAULT_CITY_ID = 1;
 
+
 /* ============================================================
-   ENDPOINTS
+   EXACT BACKEND ENDPOINTS
 ============================================================ */
 
 const CITY_MAP_ENDPOINT = (cityId) =>
@@ -53,18 +54,20 @@ const CITY_MAP_ENDPOINT = (cityId) =>
     cityId
   )}`;
 
-const ZONE_DIVISIONS_ENDPOINT = (zoneTableName) =>
+const ZONE_DIVISIONS_ENDPOINT = (
+  zoneTableName
+) =>
   `${API_BASE_URL}/api/master-citizen/map/zone/${encodeURIComponent(
     zoneTableName
   )}/divisions`;
 
-const DIVISION_WARDS_ENDPOINT = (divisionTableName) =>
+const DIVISION_WARDS_ENDPOINT = (
+  divisionTableName
+) =>
   `${API_BASE_URL}/api/master-citizen/map/division/${encodeURIComponent(
     divisionTableName
   )}/wards`;
 
-const PLANTS_ENDPOINT =
-  `${API_BASE_URL}/api/plants`;
 
 /* ============================================================
    COLORS
@@ -108,8 +111,9 @@ const WARD_COLORS = [
   "#2DD4BF",
 ];
 
+
 /* ============================================================
-   HELPERS
+   GEOJSON HELPERS
 ============================================================ */
 
 function parseGeoJSON(value) {
@@ -139,160 +143,248 @@ function parseGeoJSON(value) {
   return null;
 }
 
-function extractArray(result, key) {
-  if (Array.isArray(result)) {
-    return result;
+
+function isCoordinatePair(value) {
+  return (
+    Array.isArray(value) &&
+    value.length >= 2 &&
+    typeof value[0] === "number" &&
+    typeof value[1] === "number"
+  );
+}
+
+
+function normalizeCoordinatePair(pair) {
+  if (!isCoordinatePair(pair)) {
+    return pair;
+  }
+
+  const first = Number(pair[0]);
+  const second = Number(pair[1]);
+
+  /*
+   * Bengaluru:
+   *
+   * latitude  ≈ 13
+   * longitude ≈ 77
+   *
+   * If backend gives [lat, lng],
+   * convert to GeoJSON [lng, lat].
+   */
+
+  if (
+    Math.abs(first) <= 30 &&
+    Math.abs(second) >= 60
+  ) {
+    return [
+      second,
+      first,
+      ...pair.slice(2),
+    ];
+  }
+
+  return pair;
+}
+
+
+function normalizeCoordinates(value) {
+  if (
+    isCoordinatePair(value)
+  ) {
+    return normalizeCoordinatePair(
+      value
+    );
   }
 
   if (
-    result &&
-    Array.isArray(result[key])
+    Array.isArray(value)
   ) {
-    return result[key];
+    return value.map(
+      normalizeCoordinates
+    );
   }
+
+  return value;
+}
+
+
+function normalizeGeoJSON(value) {
+  const parsed =
+    parseGeoJSON(value);
+
+  if (!parsed) {
+    return null;
+  }
+
+  /*
+   * FeatureCollection
+   */
 
   if (
-    result?.data &&
-    Array.isArray(result.data)
+    parsed.type ===
+    "FeatureCollection"
   ) {
-    return result.data;
+    return {
+      ...parsed,
+      features:
+        Array.isArray(
+          parsed.features
+        )
+          ? parsed.features
+              .map(
+                (feature) =>
+                  normalizeGeoJSON(
+                    feature
+                  )
+              )
+              .filter(Boolean)
+          : [],
+    };
   }
+
+  /*
+   * Feature
+   */
 
   if (
-    result?.data &&
-    Array.isArray(result.data[key])
+    parsed.type ===
+    "Feature"
   ) {
-    return result.data[key];
+    if (
+      !parsed.geometry
+    ) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+      geometry:
+        normalizeGeoJSON(
+          parsed.geometry
+        ),
+    };
   }
 
-  return [];
-}
-
-function getZoneId(zone) {
-  return (
-    zone?.id ??
-    zone?.zoneId ??
-    zone?.zone_id ??
-    null
-  );
-}
-
-function getZoneName(zone) {
-  return (
-    zone?.zoneName ??
-    zone?.zone_name ??
-    zone?.name ??
-    zone?.zone ??
-    "Unnamed Zone"
-  );
-}
-
-function getZoneTableName(zone) {
-  return (
-    zone?.zoneTableName ??
-    zone?.zone_table_name ??
-    zone?.tableName ??
-    zone?.table_name ??
-    zone?.zoneTable ??
-    null
-  );
-}
-
-function getDivisionId(division) {
-  return (
-    division?.id ??
-    division?.divisionId ??
-    division?.division_id ??
-    null
-  );
-}
-
-function getDivisionName(division) {
-  return (
-    division?.divisionName ??
-    division?.division_name ??
-    division?.name ??
-    division?.division ??
-    "Unnamed Division"
-  );
-}
-
-function getDivisionTableName(division) {
-  return (
-    division?.divisionTableName ??
-    division?.division_table_name ??
-    division?.tableName ??
-    division?.table_name ??
-    division?.divisionTable ??
-    null
-  );
-}
-
-function getWardId(ward) {
-  return (
-    ward?.id ??
-    ward?.wardId ??
-    ward?.ward_id ??
-    null
-  );
-}
-
-function getWardName(ward) {
-  return (
-    ward?.wardName ??
-    ward?.ward_name ??
-    ward?.name ??
-    ward?.ward ??
-    "Unnamed Ward"
-  );
-}
-
-function getGeometry(entity) {
-  return parseGeoJSON(
-    entity?.geoBoundary ??
-      entity?.geo_boundary ??
-      entity?.geometry ??
-      entity?.geoJson ??
-      entity?.geo_json ??
-      entity?.boundary ??
-      null
-  );
-}
-
-function sameEntity(
-  first,
-  second,
-  getId,
-  getName
-) {
-  if (!first || !second) {
-    return false;
-  }
-
-  const firstId = getId(first);
-  const secondId = getId(second);
+  /*
+   * GeometryCollection
+   */
 
   if (
-    firstId !== null &&
-    secondId !== null
+    parsed.type ===
+    "GeometryCollection"
   ) {
-    return String(firstId) === String(secondId);
+    return {
+      ...parsed,
+      geometries:
+        Array.isArray(
+          parsed.geometries
+        )
+          ? parsed.geometries
+              .map(
+                normalizeGeoJSON
+              )
+              .filter(Boolean)
+          : [],
+    };
   }
 
-  return (
-    getName(first) ===
-    getName(second)
-  );
+  /*
+   * Geometry object
+   */
+
+  if (
+    parsed.type &&
+    parsed.coordinates
+  ) {
+    return {
+      ...parsed,
+      coordinates:
+        normalizeCoordinates(
+          parsed.coordinates
+        ),
+    };
+  }
+
+  /*
+   * Raw coordinates
+   */
+
+  if (
+    Array.isArray(parsed)
+  ) {
+    return {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates:
+          normalizeCoordinates(
+            parsed
+          ),
+      },
+    };
+  }
+
+  /*
+   * Object containing geometry
+   */
+
+  if (
+    parsed.geometry &&
+    typeof parsed.geometry ===
+      "object"
+  ) {
+    return normalizeGeoJSON({
+      type: "Feature",
+      properties:
+        parsed.properties ||
+        {},
+      geometry:
+        parsed.geometry,
+    });
+  }
+
+  /*
+   * Object containing coordinates
+   */
+
+  if (
+    parsed.coordinates
+  ) {
+    return {
+      type: "Feature",
+      properties:
+        parsed.properties ||
+        {},
+      geometry: {
+        type:
+          parsed.type ||
+          "Polygon",
+        coordinates:
+          normalizeCoordinates(
+            parsed.coordinates
+          ),
+      },
+    };
+  }
+
+  return null;
 }
 
-function getGeoJSONBounds(data) {
-  if (!data) {
+
+function getGeoJSONBounds(value) {
+  const normalized =
+    normalizeGeoJSON(value);
+
+  if (!normalized) {
     return null;
   }
 
   try {
     const layer =
-      L.geoJSON(data);
+      L.geoJSON(
+        normalized
+      );
 
     const bounds =
       layer.getBounds();
@@ -303,35 +395,292 @@ function getGeoJSONBounds(data) {
     ) {
       return bounds;
     }
-  } catch (error) {
+
+    return null;
+  } catch (
+    error
+  ) {
     console.warn(
       "Unable to calculate GeoJSON bounds:",
       error
     );
+
+    return null;
+  }
+}
+
+
+/* ============================================================
+   ENTITY HELPERS
+============================================================ */
+
+function getEntityId(entity) {
+  return (
+    entity?.id ??
+    entity?.zoneId ??
+    entity?.zone_id ??
+    entity?.divisionId ??
+    entity?.division_id ??
+    entity?.wardId ??
+    entity?.ward_id ??
+    null
+  );
+}
+
+
+function getZoneName(zone) {
+  return (
+    zone?.zoneName ||
+    zone?.zone_name ||
+    zone?.name ||
+    "Unnamed Zone"
+  );
+}
+
+
+function getZoneId(zone) {
+  return (
+    zone?.id ??
+    zone?.zoneId ??
+    zone?.zone_id ??
+    null
+  );
+}
+
+
+function getZoneTableName(zone) {
+  return (
+    zone?.zoneTableName ||
+    zone?.zone_table_name ||
+    null
+  );
+}
+
+
+function getZoneBoundary(zone) {
+  return normalizeGeoJSON(
+    zone?.geoBoundary ??
+      zone?.geo_boundary ??
+      zone?.geometry ??
+      zone?.boundary
+  );
+}
+
+
+function getDivisionName(
+  division
+) {
+  return (
+    division?.divisionName ||
+    division?.division_name ||
+    division?.name ||
+    "Unnamed Division"
+  );
+}
+
+
+function getDivisionId(
+  division
+) {
+  return (
+    division?.id ??
+    division?.divisionId ??
+    division?.division_id ??
+    null
+  );
+}
+
+
+function getDivisionTableName(
+  division
+) {
+  return (
+    division?.divisionTableName ||
+    division?.division_table_name ||
+    null
+  );
+}
+
+
+function getDivisionBoundary(
+  division
+) {
+  return normalizeGeoJSON(
+    division?.geoBoundary ??
+      division?.geo_boundary ??
+      division?.geometry ??
+      division?.boundary
+  );
+}
+
+
+function getWardName(ward) {
+  return (
+    ward?.wardName ||
+    ward?.ward_name ||
+    ward?.name ||
+    (
+      ward?.wardNo !==
+      undefined
+        ? `Ward ${ward.wardNo}`
+        : "Unnamed Ward"
+    )
+  );
+}
+
+
+function getWardId(ward) {
+  return (
+    ward?.id ??
+    ward?.wardId ??
+    ward?.ward_id ??
+    ward?.wardNo ??
+    null
+  );
+}
+
+
+function getWardBoundary(ward) {
+  return normalizeGeoJSON(
+    ward?.geoBoundary ??
+      ward?.geo_boundary ??
+      ward?.geometry ??
+      ward?.boundary
+  );
+}
+
+
+function sameEntity(
+  first,
+  second,
+  getId,
+  getName
+) {
+  if (
+    !first ||
+    !second
+  ) {
+    return false;
   }
 
-  return null;
+  const firstId =
+    getId(first);
+
+  const secondId =
+    getId(second);
+
+  if (
+    firstId !== null &&
+    firstId !== undefined &&
+    secondId !== null &&
+    secondId !== undefined
+  ) {
+    return (
+      String(firstId) ===
+      String(secondId)
+    );
+  }
+
+  return (
+    getName(first) ===
+    getName(second)
+  );
 }
+
+
+/* ============================================================
+   RESPONSE HELPERS
+============================================================ */
+
+function extractArray(
+  result,
+  key
+) {
+  if (
+    Array.isArray(
+      result?.[key]
+    )
+  ) {
+    return result[key];
+  }
+
+  if (
+    Array.isArray(
+      result?.data?.[key]
+    )
+  ) {
+    return result.data[key];
+  }
+
+  if (
+    Array.isArray(
+      result?.data
+    )
+  ) {
+    return result.data;
+  }
+
+  if (
+    Array.isArray(result)
+  ) {
+    return result;
+  }
+
+  return [];
+}
+
 
 /* ============================================================
    MAP SIZE CONTROLLER
 ============================================================ */
 
 function MapSizeController() {
-  const map = useMap();
+  const map =
+    useMap();
 
   useEffect(() => {
-    const timer =
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
+    const timers = [
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        100
+      ),
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        500
+      ),
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        1000
+      ),
+    ];
 
-    return () =>
-      clearTimeout(timer);
+    const resizeHandler =
+      () =>
+        map.invalidateSize();
+
+    window.addEventListener(
+      "resize",
+      resizeHandler
+    );
+
+    return () => {
+      timers.forEach(
+        clearTimeout
+      );
+
+      window.removeEventListener(
+        "resize",
+        resizeHandler
+      );
+    };
   }, [map]);
 
   return null;
 }
+
 
 /* ============================================================
    INITIAL CITY FIT
@@ -341,101 +690,246 @@ function InitialCityFit({
   cityBoundary,
   zones,
 }) {
-  const map = useMap();
-  const hasFitted =
+  const map =
+    useMap();
+
+  const fitted =
     useRef(false);
 
   useEffect(() => {
     if (
-      hasFitted.current
+      fitted.current
     ) {
       return;
     }
 
-    if (
-      cityBoundary
-    ) {
-      const bounds =
-        getGeoJSONBounds(
-          cityBoundary
-        );
-
-      if (
-        bounds &&
-        bounds.isValid()
-      ) {
-        map.fitBounds(
-          bounds,
-          {
-            padding: [
-              40,
-              40,
-            ],
-            maxZoom: 11,
-          }
-        );
-
-        hasFitted.current =
-          true;
-
-        return;
-      }
-    }
+    const bounds =
+      getGeoJSONBounds(
+        cityBoundary
+      );
 
     if (
-      zones &&
-      zones.length > 0
+      bounds &&
+      bounds.isValid()
     ) {
-      const bounds =
-        L.latLngBounds([]);
+      fitted.current =
+        true;
 
-      zones.forEach(
-        (zone) => {
-          const geometry =
-            getGeometry(zone);
-
-          const zoneBounds =
-            getGeoJSONBounds(
-              geometry
-            );
-
-          if (
-            zoneBounds &&
-            zoneBounds.isValid()
-          ) {
-            bounds.extend(
-              zoneBounds
-            );
-          }
+      map.fitBounds(
+        bounds,
+        {
+          padding: [
+            60,
+            60,
+          ],
+          maxZoom: 10,
+          animate: false,
         }
       );
 
-      if (
-        bounds.isValid()
-      ) {
-        map.fitBounds(
-          bounds,
-          {
-            padding: [
-              40,
-              40,
-            ],
-            maxZoom: 11,
-          }
-        );
+      return;
+    }
 
-        hasFitted.current =
-          true;
-      }
+    const zoneBounds =
+      zones
+        .map(
+          (zone) =>
+            getGeoJSONBounds(
+              getZoneBoundary(
+                zone
+              )
+            )
+        )
+        .filter(Boolean);
+
+    if (
+      !zoneBounds.length
+    ) {
+      return;
+    }
+
+    const combined =
+      L.latLngBounds(
+        zoneBounds[0]
+      );
+
+    for (
+      let index = 1;
+      index <
+        zoneBounds.length;
+      index += 1
+    ) {
+      combined.extend(
+        zoneBounds[index]
+      );
+    }
+
+    if (
+      combined.isValid()
+    ) {
+      fitted.current =
+        true;
+
+      map.fitBounds(
+        combined,
+        {
+          padding: [
+            60,
+            60,
+          ],
+          maxZoom: 10,
+          animate: false,
+        }
+      );
     }
   }, [
+    map,
     cityBoundary,
     zones,
-    map,
   ]);
 
   return null;
 }
+
+
+/* ============================================================
+   SELECTION FOCUS
+============================================================ */
+
+function SelectionFocusController({
+  selectedZone,
+  selectedDivision,
+  selectedWard,
+}) {
+  const map =
+    useMap();
+
+  const previous =
+    useRef("");
+
+  useEffect(() => {
+    let target = null;
+    let key = "";
+
+    if (
+      selectedWard
+    ) {
+      target =
+        getWardBoundary(
+          selectedWard
+        );
+
+      key =
+        `ward:${getWardId(
+          selectedWard
+        ) || getWardName(
+          selectedWard
+        )}`;
+    } else if (
+      selectedDivision
+    ) {
+      target =
+        getDivisionBoundary(
+          selectedDivision
+        );
+
+      key =
+        `division:${getDivisionId(
+          selectedDivision
+        ) || getDivisionName(
+          selectedDivision
+        )}`;
+    } else if (
+      selectedZone
+    ) {
+      target =
+        getZoneBoundary(
+          selectedZone
+        );
+
+      key =
+        `zone:${getZoneId(
+          selectedZone
+        ) || getZoneName(
+          selectedZone
+        )}`;
+    } else {
+      previous.current =
+        "";
+
+      return;
+    }
+
+    if (
+      previous.current ===
+      key
+    ) {
+      return;
+    }
+
+    previous.current =
+      key;
+
+    const bounds =
+      getGeoJSONBounds(
+        target
+      );
+
+    if (
+      !bounds ||
+      !bounds.isValid()
+    ) {
+      return;
+    }
+
+    let padding = [
+      90,
+      90,
+    ];
+
+    let maxZoom = 13;
+
+    if (
+      selectedDivision
+    ) {
+      padding = [
+        100,
+        100,
+      ];
+
+      maxZoom = 15;
+    }
+
+    if (
+      selectedWard
+    ) {
+      padding = [
+        120,
+        120,
+      ];
+
+      maxZoom = 17;
+    }
+
+    map.flyToBounds(
+      bounds,
+      {
+        padding,
+        maxZoom,
+        duration: 0.9,
+        easeLinearity: 0.25,
+      }
+    );
+  }, [
+    map,
+    selectedZone,
+    selectedDivision,
+    selectedWard,
+  ]);
+
+  return null;
+}
+
 
 /* ============================================================
    ZONE LAYER
@@ -447,10 +941,12 @@ function ZoneLayer({
   selected,
   onSelect,
 }) {
-  const geometry =
-    getGeometry(zone);
+  const boundary =
+    getZoneBoundary(
+      zone
+    );
 
-  if (!geometry) {
+  if (!boundary) {
     return null;
   }
 
@@ -462,31 +958,67 @@ function ZoneLayer({
 
   return (
     <GeoJSON
-      data={geometry}
+      key={
+        `zone-${
+          getZoneTableName(
+            zone
+          ) ||
+          getZoneName(
+            zone
+          )
+        }-${index}`
+      }
+      data={boundary}
       style={() => ({
         color:
           selected
-            ? "#20364C"
-            : "#6B86A0",
+            ? "#1F354A"
+            : "#40556B",
+
         weight:
           selected
-            ? 3
-            : 1.5,
+            ? 4.2
+            : 2.4,
+
         opacity: 1,
+
         fillColor:
-          color,
+          selected
+            ? "transparent"
+            : color,
+
         fillOpacity:
           selected
-            ? 0.45
-            : 0.22,
+            ? 0
+            : 0.38,
+
+        lineJoin:
+          "round",
+
+        lineCap:
+          "round",
       })}
       eventHandlers={{
-        click: () =>
-          onSelect(zone),
+        click: (
+          event
+        ) => {
+          if (
+            event?.originalEvent
+          ) {
+            L.DomEvent.stopPropagation(
+              event.originalEvent
+            );
+          }
+
+          onSelect?.(
+            zone
+          );
+        },
       }}
     />
   );
 }
+
 
 /* ============================================================
    DIVISION LAYER
@@ -498,10 +1030,12 @@ function DivisionLayer({
   selected,
   onSelect,
 }) {
-  const geometry =
-    getGeometry(division);
+  const boundary =
+    getDivisionBoundary(
+      division
+    );
 
-  if (!geometry) {
+  if (!boundary) {
     return null;
   }
 
@@ -513,31 +1047,68 @@ function DivisionLayer({
 
   return (
     <GeoJSON
-      data={geometry}
+      key={
+        `division-${
+          getDivisionTableName(
+            division
+          ) ||
+          getDivisionId(
+            division
+          ) ||
+          getDivisionName(
+            division
+          )
+        }-${index}`
+      }
+      data={boundary}
       style={() => ({
         color:
           selected
-            ? "#20364C"
-            : color,
+            ? "#172B3F"
+            : "#52677C",
+
         weight:
           selected
-            ? 3
-            : 1.5,
+            ? 3.5
+            : 1.8,
+
         opacity: 1,
+
         fillColor:
           color,
+
         fillOpacity:
           selected
-            ? 0.42
-            : 0.16,
+            ? 0.64
+            : 0.30,
+
+        lineJoin:
+          "round",
+
+        lineCap:
+          "round",
       })}
       eventHandlers={{
-        click: () =>
-          onSelect(division),
+        click: (
+          event
+        ) => {
+          if (
+            event?.originalEvent
+          ) {
+            L.DomEvent.stopPropagation(
+              event.originalEvent
+            );
+          }
+
+          onSelect?.(
+            division
+          );
+        },
       }}
     />
   );
 }
+
 
 /* ============================================================
    WARD LAYER
@@ -549,10 +1120,12 @@ function WardLayer({
   selected,
   onSelect,
 }) {
-  const geometry =
-    getGeometry(ward);
+  const boundary =
+    getWardBoundary(
+      ward
+    );
 
-  if (!geometry) {
+  if (!boundary) {
     return null;
   }
 
@@ -564,34 +1137,68 @@ function WardLayer({
 
   return (
     <GeoJSON
-      data={geometry}
+      key={
+        `ward-${
+          getWardId(
+            ward
+          ) ||
+          getWardName(
+            ward
+          )
+        }-${index}`
+      }
+      data={boundary}
       style={() => ({
         color:
           selected
-            ? "#20364C"
-            : color,
+            ? "#142536"
+            : "#536A7E",
+
         weight:
           selected
-            ? 3
-            : 1.2,
+            ? 3.2
+            : 1.5,
+
         opacity: 1,
+
         fillColor:
           color,
+
         fillOpacity:
           selected
-            ? 0.48
-            : 0.18,
+            ? 0.68
+            : 0.34,
+
+        lineJoin:
+          "round",
+
+        lineCap:
+          "round",
       })}
       eventHandlers={{
-        click: () =>
-          onSelect(ward),
+        click: (
+          event
+        ) => {
+          if (
+            event?.originalEvent
+          ) {
+            L.DomEvent.stopPropagation(
+              event.originalEvent
+            );
+          }
+
+          onSelect?.(
+            ward
+          );
+        },
       }}
     />
   );
 }
 
+
 /* ============================================================
-   CITY BOUNDARY
+   CITY OUTLINE
 ============================================================ */
 
 function CityBoundaryLayer({
@@ -606,21 +1213,24 @@ function CityBoundaryLayer({
       data={boundary}
       style={() => ({
         color: "#263B52",
-        weight: 3.6,
+        weight: 3.8,
         opacity: 1,
         fillColor:
           "transparent",
         fillOpacity: 0,
-        lineJoin: "round",
-        lineCap: "round",
+        lineJoin:
+          "round",
+        lineCap:
+          "round",
       })}
       interactive={false}
     />
   );
 }
 
+
 /* ============================================================
-   FILTER DROPDOWN
+   PORTAL FILTER DROPDOWN
 ============================================================ */
 
 function FilterDropdown({
@@ -649,73 +1259,102 @@ function FilterDropdown({
     width: 0,
   });
 
-  useEffect(() => {
+
+  const updatePosition =
+    useCallback(() => {
+      if (
+        !buttonRef.current
+      ) {
+        return;
+      }
+
+      const rect =
+        buttonRef.current.getBoundingClientRect();
+
+      setPosition({
+        top:
+          rect.bottom + 6,
+        left:
+          rect.left,
+        width:
+          rect.width,
+      });
+    }, []);
+
+
+  useLayoutEffect(() => {
     if (
-      !open ||
-      disabled ||
-      !buttonRef.current
+      !open
     ) {
       return;
     }
 
-    const updatePosition =
-      () => {
-        const rect =
-          buttonRef.current.getBoundingClientRect();
+    updatePosition();
 
-        setPosition({
-          top:
-            rect.bottom + 5,
-          left:
-            rect.left,
-          width:
-            rect.width,
-        });
+    const handleResize =
+      () => {
+        updatePosition();
       };
 
-    updatePosition();
+    const handleScroll =
+      () => {
+        updatePosition();
+      };
 
     window.addEventListener(
       "resize",
-      updatePosition
+      handleResize
     );
 
     window.addEventListener(
       "scroll",
-      updatePosition,
+      handleScroll,
       true
     );
 
     return () => {
       window.removeEventListener(
         "resize",
-        updatePosition
+        handleResize
       );
 
       window.removeEventListener(
         "scroll",
-        updatePosition,
+        handleScroll,
         true
       );
     };
   }, [
     open,
-    disabled,
+    updatePosition,
   ]);
 
+
   useEffect(() => {
-    if (!open) {
+    if (
+      !open
+    ) {
       return;
     }
 
-    const handleOutside =
+    const handlePointerDown =
       (event) => {
+        const target =
+          event.target;
+
         if (
-          buttonRef.current?.contains(
-            event.target
-          ) ||
-          menuRef.current?.contains(
-            event.target
+          buttonRef.current &&
+          buttonRef.current.contains(
+            target
+          )
+        ) {
+          return;
+        }
+
+        if (
+          menuRef.current &&
+          menuRef.current.contains(
+            target
           )
         ) {
           return;
@@ -726,19 +1365,35 @@ function FilterDropdown({
 
     document.addEventListener(
       "mousedown",
-      handleOutside
+      handlePointerDown
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleOutside
+        handlePointerDown
       );
     };
   }, [
     open,
     setOpen,
   ]);
+
+
+  const handleOptionClick =
+    (option) => {
+      /*
+       * IMPORTANT:
+       * Selection happens FIRST.
+       * Then dropdown closes.
+       */
+      onChange?.(
+        option
+      );
+
+      setOpen(null);
+    };
+
 
   const menu =
     open &&
@@ -789,25 +1444,23 @@ function FilterDropdown({
                     <button
                       type="button"
                       key={`${optionValue}-${index}`}
-                      className={`cm-dropdown-option ${
-                        selectedOption
-                          ? "cm-dropdown-option-active"
-                          : ""
-                      }`}
+                      className={
+                        `cm-dropdown-option ${
+                          selectedOption
+                            ? "cm-dropdown-option-active"
+                            : ""
+                        }`
+                      }
                       onMouseDown={(
                         event
                       ) => {
                         event.stopPropagation();
                       }}
-                      onClick={() => {
-                        onChange?.(
+                      onClick={() =>
+                        handleOptionClick(
                           option
-                        );
-
-                        setOpen(
-                          null
-                        );
-                      }}
+                        )
+                      }
                     >
                       {renderOption
                         ? renderOption(
@@ -831,6 +1484,7 @@ function FilterDropdown({
         )
       : null;
 
+
   return (
     <div className="cm-filter-group">
 
@@ -841,13 +1495,17 @@ function FilterDropdown({
       <button
         ref={buttonRef}
         type="button"
-        className={`cm-select ${
-          disabled
-            ? "cm-select-disabled"
-            : ""
-        }`}
+        className={
+          `cm-select ${
+            disabled
+              ? "cm-select-disabled"
+              : ""
+          }`
+        }
         onClick={() => {
-          if (disabled) {
+          if (
+            disabled
+          ) {
             return;
           }
 
@@ -871,11 +1529,11 @@ function FilterDropdown({
 
         {open ? (
           <ChevronUp
-            size={15}
+            size={14}
           />
         ) : (
           <ChevronDown
-            size={15}
+            size={14}
           />
         )}
       </button>
@@ -885,38 +1543,6 @@ function FilterDropdown({
   );
 }
 
-/* ============================================================
-   PLACEHOLDER
-============================================================ */
-
-function PlaceholderView({
-  icon: Icon,
-  title,
-  description,
-}) {
-  return (
-    <div className="cm-placeholder-view">
-      <div className="cm-placeholder-card">
-
-        <div className="cm-placeholder-icon">
-          <Icon
-            size={32}
-            strokeWidth={1.8}
-          />
-        </div>
-
-        <div className="cm-placeholder-title">
-          {title}
-        </div>
-
-        <div className="cm-placeholder-description">
-          {description}
-        </div>
-
-      </div>
-    </div>
-  );
-}
 
 /* ============================================================
    MAIN COMPONENT
@@ -926,9 +1552,6 @@ export default function CityMapOverview({
   cityId = DEFAULT_CITY_ID,
   onViewChange,
 }) {
-  /* ==========================================================
-     CITY STATE
-  ========================================================== */
 
   const [
     loading,
@@ -949,10 +1572,6 @@ export default function CityMapOverview({
     zones,
     setZones,
   ] = useState([]);
-
-  /* ==========================================================
-     FILTER STATE
-  ========================================================== */
 
   const [
     selectedZone,
@@ -999,10 +1618,6 @@ export default function CityMapOverview({
     setWardError,
   ] = useState("");
 
-  /* ==========================================================
-     DROPDOWN STATE
-  ========================================================== */
-
   const [
     openDropdown,
     setOpenDropdown,
@@ -1013,43 +1628,8 @@ export default function CityMapOverview({
     setShowViewMenu,
   ] = useState(false);
 
-  /* ==========================================================
-     IMPORTANT:
-     MAP VIEW IS NOW ACTUALLY CONTROLLED HERE
-  ========================================================== */
-
-  const [
-    mapView,
-    setMapView,
-  ] = useState("overview");
-
-  /* ==========================================================
-     PLANT STATE
-  ========================================================== */
-
-  const [
-    plants,
-    setPlants,
-  ] = useState([]);
-
-  const [
-    plantsLoading,
-    setPlantsLoading,
-  ] = useState(false);
-
-  const [
-    plantsError,
-    setPlantsError,
-  ] = useState("");
-
-  /* ==========================================================
-     REFS
-  ========================================================== */
 
   const mapRef =
-    useRef(null);
-
-  const plantsAbortRef =
     useRef(null);
 
   const divisionAbortRef =
@@ -1058,24 +1638,54 @@ export default function CityMapOverview({
   const wardAbortRef =
     useRef(null);
 
+
   /* ==========================================================
-     CITY MAP
+     LOAD CITY
   ========================================================== */
 
   const fetchCityMapData =
     useCallback(
       async () => {
+
         try {
+
           setLoading(true);
           setError("");
 
+          const endpoint =
+            CITY_MAP_ENDPOINT(
+              cityId
+            );
+
+          console.log(
+            "============================================================"
+          );
+
+          console.log(
+            "🗺️ CITY MAP REQUEST"
+          );
+
+          console.log(
+            "CITY ID:",
+            cityId
+          );
+
+          console.log(
+            "ENDPOINT:",
+            endpoint
+          );
+
+          console.log(
+            "============================================================"
+          );
+
           const response =
             await fetch(
-              CITY_MAP_ENDPOINT(
-                cityId
-              ),
+              endpoint,
               {
-                method: "GET",
+                method:
+                  "GET",
+
                 headers: {
                   Accept:
                     "application/json",
@@ -1127,20 +1737,20 @@ export default function CityMapOverview({
             null
           );
 
-          setSelectedDivision(
-            null
-          );
-
-          setSelectedWard(
-            null
-          );
-
           setDivisions(
             []
           );
 
+          setSelectedDivision(
+            null
+          );
+
           setWards(
             []
+          );
+
+          setSelectedWard(
+            null
           );
 
           setDivisionError(
@@ -1150,11 +1760,45 @@ export default function CityMapOverview({
           setWardError(
             ""
           );
+
+          setOpenDropdown(
+            null
+          );
+
+          console.log(
+            "✅ CITY MAP LOADED"
+          );
+
+          console.log(
+            "City:",
+            loadedCity?.cityName
+          );
+
+          console.log(
+            "Zones:",
+            loadedZones.length
+          );
+
+          console.log(
+            "Central zone:",
+            loadedZones.some(
+              (zone) =>
+                getZoneName(
+                  zone
+                )
+                  .toLowerCase()
+                  .includes(
+                    "central"
+                  )
+            )
+          );
+
         } catch (
           requestError
         ) {
+
           console.error(
-            "CITY MAP ERROR:",
+            "❌ CITY MAP ERROR:",
             requestError
           );
 
@@ -1162,191 +1806,102 @@ export default function CityMapOverview({
             requestError?.message ||
               "Unable to load city map."
           );
+
         } finally {
-          setLoading(false);
+
+          setLoading(
+            false
+          );
+
         }
+
       },
-      [cityId]
+      [
+        cityId,
+      ]
     );
 
+
   useEffect(() => {
+
     fetchCityMapData();
 
     return () => {
+
       divisionAbortRef.current?.abort();
+
       wardAbortRef.current?.abort();
-      plantsAbortRef.current?.abort();
+
     };
+
   }, [
     fetchCityMapData,
   ]);
 
-  /* ==========================================================
-     PLANTS
-  ========================================================== */
-
-  const fetchPlants =
-    useCallback(
-      async () => {
-        plantsAbortRef.current?.abort();
-
-        const controller =
-          new AbortController();
-
-        plantsAbortRef.current =
-          controller;
-
-        try {
-          setPlantsLoading(
-            true
-          );
-
-          setPlantsError("");
-
-          const response =
-            await fetch(
-              PLANTS_ENDPOINT,
-              {
-                method: "GET",
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-                signal:
-                  controller.signal,
-              }
-            );
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              `Plants request failed with status ${response.status}`
-            );
-          }
-
-          const result =
-            await response.json();
-
-          if (
-            result?.success ===
-            false
-          ) {
-            throw new Error(
-              result.message ||
-                "Unable to fetch plants."
-            );
-          }
-
-          const loadedPlants =
-            extractArray(
-              result,
-              "plants"
-            );
-
-          setPlants(
-            loadedPlants
-          );
-
-          console.log(
-            "PLANTS LOADED:",
-            loadedPlants.length
-          );
-        } catch (
-          requestError
-        ) {
-          if (
-            requestError?.name ===
-            "AbortError"
-          ) {
-            return;
-          }
-
-          console.error(
-            "PLANTS ERROR:",
-            requestError
-          );
-
-          setPlantsError(
-            requestError?.message ||
-              "Unable to load plants."
-          );
-
-          setPlants([]);
-        } finally {
-          if (
-            !controller.signal
-              .aborted
-          ) {
-            setPlantsLoading(
-              false
-            );
-          }
-        }
-      },
-      []
-    );
 
   /* ==========================================================
-     LOAD PLANTS ONLY WHEN PLANTS VIEW IS SELECTED
-  ========================================================== */
-
-  useEffect(() => {
-    if (
-      mapView !==
-      "plants"
-    ) {
-      return;
-    }
-
-    if (
-      plants.length > 0
-    ) {
-      return;
-    }
-
-    fetchPlants();
-  }, [
-    mapView,
-    plants.length,
-    fetchPlants,
-  ]);
-
-  /* ==========================================================
-     FETCH DIVISIONS
+     FETCH ZONE DIVISIONS
   ========================================================== */
 
   const fetchZoneDivisions =
     useCallback(
-      async (zone) => {
+      async (
+        zone
+      ) => {
+
         divisionAbortRef.current?.abort();
+
         wardAbortRef.current?.abort();
 
         if (!zone) {
+
           setDivisions([]);
-          setSelectedDivision(null);
+
+          setSelectedDivision(
+            null
+          );
+
           setWards([]);
-          setSelectedWard(null);
+
+          setSelectedWard(
+            null
+          );
+
+          setDivisionError(
+            ""
+          );
+
+          setWardError(
+            ""
+          );
+
           return;
+
         }
+
 
         const zoneTableName =
           getZoneTableName(
             zone
           );
 
-        if (
-          !zoneTableName
-        ) {
+
+        if (!zoneTableName) {
+
           setDivisions([]);
-          setSelectedDivision(null);
+
+          setSelectedDivision(
+            null
+          );
 
           setDivisionError(
-            "Selected zone does not contain a valid zone table name."
+            "Selected zone does not contain a valid zoneTableName."
           );
 
           return;
+
         }
+
 
         const controller =
           new AbortController();
@@ -1354,36 +1909,76 @@ export default function CityMapOverview({
         divisionAbortRef.current =
           controller;
 
+
         setDivisionsLoading(
           true
         );
 
-        setDivisionError("");
+        setDivisionError(
+          ""
+        );
 
-        setDivisions([]);
-        setSelectedDivision(null);
+        setDivisions(
+          []
+        );
 
-        setWards([]);
-        setSelectedWard(null);
+        setSelectedDivision(
+          null
+        );
 
-        setWardError("");
+        setWards(
+          []
+        );
+
+        setSelectedWard(
+          null
+        );
+
+        setWardError(
+          ""
+        );
+
+
+        const endpoint =
+          ZONE_DIVISIONS_ENDPOINT(
+            zoneTableName
+          );
+
+
+        console.log(
+          "🏢 ZONE → DIVISIONS",
+          {
+            zone:
+              getZoneName(
+                zone
+              ),
+
+            zoneTableName,
+
+            endpoint,
+          }
+        );
+
 
         try {
+
           const response =
             await fetch(
-              ZONE_DIVISIONS_ENDPOINT(
-                zoneTableName
-              ),
+              endpoint,
               {
-                method: "GET",
+                method:
+                  "GET",
+
                 headers: {
                   Accept:
                     "application/json",
                 },
+
                 signal:
                   controller.signal,
               }
             );
+
 
           if (
             !response.ok
@@ -1393,8 +1988,10 @@ export default function CityMapOverview({
             );
           }
 
+
           const result =
             await response.json();
+
 
           if (
             result?.success ===
@@ -1406,18 +2003,30 @@ export default function CityMapOverview({
             );
           }
 
+
           const loadedDivisions =
             extractArray(
               result,
               "divisions"
+            ).filter(
+              Boolean
             );
+
 
           setDivisions(
             loadedDivisions
           );
+
+
+          console.log(
+            "✅ DIVISIONS LOADED:",
+            loadedDivisions.length
+          );
+
         } catch (
           requestError
         ) {
+
           if (
             requestError?.name ===
             "AbortError"
@@ -1425,9 +2034,15 @@ export default function CityMapOverview({
             return;
           }
 
+
           console.error(
-            "DIVISIONS ERROR:",
+            "❌ ZONE DIVISIONS ERROR:",
             requestError
+          );
+
+
+          setDivisions(
+            []
           );
 
           setDivisionError(
@@ -1435,8 +2050,8 @@ export default function CityMapOverview({
               "Unable to load divisions."
           );
 
-          setDivisions([]);
         } finally {
+
           if (
             !controller.signal
               .aborted
@@ -1445,42 +2060,68 @@ export default function CityMapOverview({
               false
             );
           }
+
         }
+
       },
       []
     );
 
+
   /* ==========================================================
-     FETCH WARDS
+     FETCH DIVISION WARDS
   ========================================================== */
 
   const fetchDivisionWards =
     useCallback(
-      async (division) => {
+      async (
+        division
+      ) => {
+
         wardAbortRef.current?.abort();
 
+
         if (!division) {
+
           setWards([]);
-          setSelectedWard(null);
+
+          setSelectedWard(
+            null
+          );
+
+          setWardError(
+            ""
+          );
+
           return;
+
         }
+
 
         const divisionTableName =
           getDivisionTableName(
             division
           );
 
+
         if (
           !divisionTableName
         ) {
+
           setWards([]);
 
+          setSelectedWard(
+            null
+          );
+
           setWardError(
-            "Selected division does not contain a valid division table name."
+            "Selected division does not contain a valid divisionTableName."
           );
 
           return;
+
         }
+
 
         const controller =
           new AbortController();
@@ -1488,30 +2129,64 @@ export default function CityMapOverview({
         wardAbortRef.current =
           controller;
 
+
         setWardsLoading(
           true
         );
 
-        setWardError("");
-        setWards([]);
-        setSelectedWard(null);
+        setWardError(
+          ""
+        );
+
+        setWards(
+          []
+        );
+
+        setSelectedWard(
+          null
+        );
+
+
+        const endpoint =
+          DIVISION_WARDS_ENDPOINT(
+            divisionTableName
+          );
+
+
+        console.log(
+          "📍 DIVISION → WARDS",
+          {
+            division:
+              getDivisionName(
+                division
+              ),
+
+            divisionTableName,
+
+            endpoint,
+          }
+        );
+
 
         try {
+
           const response =
             await fetch(
-              DIVISION_WARDS_ENDPOINT(
-                divisionTableName
-              ),
+              endpoint,
               {
-                method: "GET",
+                method:
+                  "GET",
+
                 headers: {
                   Accept:
                     "application/json",
                 },
+
                 signal:
                   controller.signal,
               }
             );
+
 
           if (
             !response.ok
@@ -1521,8 +2196,10 @@ export default function CityMapOverview({
             );
           }
 
+
           const result =
             await response.json();
+
 
           if (
             result?.success ===
@@ -1534,18 +2211,30 @@ export default function CityMapOverview({
             );
           }
 
+
           const loadedWards =
             extractArray(
               result,
               "wards"
+            ).filter(
+              Boolean
             );
+
 
           setWards(
             loadedWards
           );
+
+
+          console.log(
+            "✅ WARDS LOADED:",
+            loadedWards.length
+          );
+
         } catch (
           requestError
         ) {
+
           if (
             requestError?.name ===
             "AbortError"
@@ -1553,9 +2242,15 @@ export default function CityMapOverview({
             return;
           }
 
+
           console.error(
-            "WARDS ERROR:",
+            "❌ DIVISION WARDS ERROR:",
             requestError
+          );
+
+
+          setWards(
+            []
           );
 
           setWardError(
@@ -1563,8 +2258,8 @@ export default function CityMapOverview({
               "Unable to load wards."
           );
 
-          setWards([]);
         } finally {
+
           if (
             !controller.signal
               .aborted
@@ -1573,18 +2268,29 @@ export default function CityMapOverview({
               false
             );
           }
+
         }
+
       },
       []
     );
 
+
   /* ==========================================================
-     SELECT ZONE
+     SELECTION HANDLERS
   ========================================================== */
 
   const handleZoneSelect =
     useCallback(
-      (zone) => {
+      (
+        zone
+      ) => {
+
+        if (!zone) {
+          return;
+        }
+
+
         setSelectedZone(
           zone
         );
@@ -1597,33 +2303,72 @@ export default function CityMapOverview({
           null
         );
 
-        setWards([]);
+        setDivisions(
+          []
+        );
 
-        setWardError("");
+        setWards(
+          []
+        );
+
+        setDivisionError(
+          ""
+        );
+
+        setWardError(
+          ""
+        );
 
         setOpenDropdown(
           null
         );
 
+
         fetchZoneDivisions(
           zone
         );
+
       },
       [
         fetchZoneDivisions,
       ]
     );
 
-  /* ==========================================================
-     SELECT DIVISION
-  ========================================================== */
 
   const handleDivisionSelect =
     useCallback(
-      (option) => {
+      (
+        option
+      ) => {
+
+        if (
+          !option?.value
+        ) {
+
+          setSelectedDivision(
+            null
+          );
+
+          setSelectedWard(
+            null
+          );
+
+          setWards(
+            []
+          );
+
+          setOpenDropdown(
+            null
+          );
+
+          return;
+
+        }
+
+
         const division =
-          option?.division ||
-          option;
+          option.division;
+
 
         setSelectedDivision(
           division
@@ -1633,135 +2378,458 @@ export default function CityMapOverview({
           null
         );
 
-        setWards([]);
+        setWards(
+          []
+        );
 
-        setWardError("");
+        setWardError(
+          ""
+        );
 
         setOpenDropdown(
           null
         );
 
+
         fetchDivisionWards(
           division
         );
+
       },
       [
         fetchDivisionWards,
       ]
     );
 
-  /* ==========================================================
-     RESET MAP
-  ========================================================== */
 
-  const resetMap =
-    useCallback(() => {
-      setMapView(
-        "overview"
-      );
-
-      setSelectedZone(
-        null
-      );
-
-      setSelectedDivision(
-        null
-      );
-
-      setSelectedWard(
-        null
-      );
-
-      setDivisions([]);
-
-      setWards([]);
-
-      setDivisionError("");
-
-      setWardError("");
-
-      setOpenDropdown(
-        null
-      );
-
-      setShowViewMenu(
-        false
-      );
-
-      setTimeout(() => {
-        const map =
-          mapRef.current;
-
-        if (!map) {
-          return;
-        }
-
-        const boundary =
-          getGeometry(
-            city
-          );
-
-        const bounds =
-          getGeoJSONBounds(
-            boundary
-          );
+  const handleWardSelect =
+    useCallback(
+      (
+        option
+      ) => {
 
         if (
-          bounds &&
-          bounds.isValid()
+          !option?.value
         ) {
-          map.fitBounds(
-            bounds,
-            {
-              padding: [
-                60,
-                60,
-              ],
-              maxZoom: 10,
-              animate: true,
-            }
+
+          setSelectedWard(
+            null
           );
+
+          setOpenDropdown(
+            null
+          );
+
+          return;
+
         }
-      }, 50);
-    }, [city]);
 
-  /* ==========================================================
-     ⭐ MAP VIEW CHANGE
-     THIS IS THE IMPORTANT FIX
-  ========================================================== */
 
-  const handleMapViewChange =
-    useCallback(
-      (view) => {
-        console.log(
-          "MAP VIEW CHANGED:",
-          view
-        );
-
-        setShowViewMenu(
-          false
+        setSelectedWard(
+          option.ward
         );
 
         setOpenDropdown(
           null
         );
 
-        /*
-         * ALWAYS update local state.
-         *
-         * This is what makes:
-         *
-         * City Overview Map
-         * Route Maps
-         * GVP Points
-         * Plants
-         * Customer Grievances
-         *
-         * dynamically change.
-         */
-        setMapView(
-          view
+      },
+      []
+    );
+
+
+  /* ==========================================================
+     CITY BOUNDARY
+  ========================================================== */
+
+  const cityBoundary =
+    useMemo(
+      () =>
+        normalizeGeoJSON(
+          city?.geoBoundary ??
+            city?.geo_boundary
+        ),
+      [
+        city,
+      ]
+    );
+
+
+  /* ==========================================================
+     SELECTED NAMES
+  ========================================================== */
+
+  const selectedZoneName =
+    selectedZone
+      ? getZoneName(
+          selectedZone
+        )
+      : "";
+
+
+  const selectedDivisionName =
+    selectedDivision
+      ? getDivisionName(
+          selectedDivision
+        )
+      : "";
+
+
+  const selectedWardName =
+    selectedWard
+      ? getWardName(
+          selectedWard
+        )
+      : "";
+
+
+  /* ==========================================================
+     FILTER OPTIONS
+  ========================================================== */
+
+  const zoneOptions =
+    useMemo(
+      () => [
+        {
+          value: "",
+          label: "All Zones",
+        },
+
+        ...zones.map(
+          (
+            zone
+          ) => ({
+            value:
+              getZoneTableName(
+                zone
+              ) ||
+              getZoneName(
+                zone
+              ),
+
+            label:
+              getZoneName(
+                zone
+              ),
+
+            zone,
+          })
+        ),
+      ],
+      [
+        zones,
+      ]
+    );
+
+
+  const divisionOptions =
+    useMemo(
+      () => [
+        {
+          value: "",
+          label:
+            "All Divisions",
+        },
+
+        ...divisions.map(
+          (
+            division
+          ) => ({
+            value:
+              getDivisionTableName(
+                division
+              ) ||
+              String(
+                getDivisionId(
+                  division
+                ) ??
+                  getDivisionName(
+                    division
+                  )
+              ),
+
+            label:
+              getDivisionName(
+                division
+              ),
+
+            division,
+          })
+        ),
+      ],
+      [
+        divisions,
+      ]
+    );
+
+
+  const wardOptions =
+    useMemo(
+      () => [
+        {
+          value: "",
+          label: "All Wards",
+        },
+
+        ...wards.map(
+          (
+            ward
+          ) => ({
+            value:
+              String(
+                getWardId(
+                  ward
+                ) ??
+                  getWardName(
+                    ward
+                  )
+              ),
+
+            label:
+              getWardName(
+                ward
+              ),
+
+            ward,
+          })
+        ),
+      ],
+      [
+        wards,
+      ]
+    );
+
+
+  /* ==========================================================
+     VISIBLE ZONES
+  ========================================================== */
+
+  const visibleZones =
+    useMemo(
+      () => {
+
+        if (
+          !selectedZone
+        ) {
+          return zones;
+        }
+
+        return zones.filter(
+          (
+            zone
+          ) =>
+            sameEntity(
+              zone,
+              selectedZone,
+              getZoneId,
+              getZoneName
+            )
         );
+
+      },
+      [
+        zones,
+        selectedZone,
+      ]
+    );
+
+
+  /* ==========================================================
+     VISIBLE DIVISIONS
+  ========================================================== */
+
+  const visibleDivisions =
+    useMemo(
+      () => {
+
+        if (
+          !selectedZone
+        ) {
+          return [];
+        }
+
+        if (
+          !selectedDivision
+        ) {
+          return divisions;
+        }
+
+        return divisions.filter(
+          (
+            division
+          ) =>
+            sameEntity(
+              division,
+              selectedDivision,
+              getDivisionId,
+              getDivisionName
+            )
+        );
+
+      },
+      [
+        selectedZone,
+        selectedDivision,
+        divisions,
+      ]
+    );
+
+
+  /* ==========================================================
+     VISIBLE WARDS
+  ========================================================== */
+
+  const visibleWards =
+    useMemo(
+      () => {
+
+        if (
+          !selectedDivision
+        ) {
+          return [];
+        }
+
+        if (
+          !selectedWard
+        ) {
+          return wards;
+        }
+
+        return wards.filter(
+          (
+            ward
+          ) =>
+            sameEntity(
+              ward,
+              selectedWard,
+              getWardId,
+              getWardName
+            )
+        );
+
+      },
+      [
+        selectedDivision,
+        selectedWard,
+        wards,
+      ]
+    );
+
+
+  /* ==========================================================
+     RESET MAP
+  ========================================================== */
+
+  const resetMap =
+    useCallback(
+      () => {
+
+        setSelectedZone(
+          null
+        );
+
+        setSelectedDivision(
+          null
+        );
+
+        setSelectedWard(
+          null
+        );
+
+        setDivisions(
+          []
+        );
+
+        setWards(
+          []
+        );
+
+        setDivisionError(
+          ""
+        );
+
+        setWardError(
+          ""
+        );
+
+        setOpenDropdown(
+          null
+        );
+
+        setShowViewMenu(
+          false
+        );
+
+
+        setTimeout(
+          () => {
+
+            const map =
+              mapRef.current;
+
+            if (!map) {
+              return;
+            }
+
+
+            const bounds =
+              getGeoJSONBounds(
+                cityBoundary
+              );
+
+
+            if (
+              bounds &&
+              bounds.isValid()
+            ) {
+
+              map.fitBounds(
+                bounds,
+                {
+                  padding: [
+                    60,
+                    60,
+                  ],
+
+                  maxZoom:
+                    10,
+
+                  animate:
+                    true,
+                }
+              );
+
+            }
+
+          },
+          50
+        );
+
+      },
+      [
+        cityBoundary,
+      ]
+    );
+
+
+  /* ==========================================================
+     MAP VIEW CHANGE
+========================================================== */
+
+  const handleMapViewChange =
+    useCallback(
+      (
+        view
+      ) => {
+
+        setShowViewMenu(
+          false
+        );
+
+
+        /*
+         * Preserve existing parent callback.
+         */
 
         if (
           typeof onViewChange ===
@@ -1772,271 +2840,88 @@ export default function CityMapOverview({
           );
         }
 
-        /*
-         * When going back to overview,
-         * clear the city-specific selections.
-         */
-        if (
-          view ===
-          "overview"
-        ) {
-          setSelectedZone(
-            null
-          );
-
-          setSelectedDivision(
-            null
-          );
-
-          setSelectedWard(
-            null
-          );
-
-          setDivisions([]);
-
-          setWards([]);
-
-          setDivisionError("");
-
-          setWardError("");
-        }
 
         /*
-         * IMPORTANT:
-         *
-         * We DO NOT use window.location.href
-         * for Plants.
-         *
-         * Plants is rendered directly
-         * inside this component.
+         * Existing Route Map behaviour.
          */
 
         if (
           view ===
-          "plants"
+          "route"
         ) {
-          console.log(
-            "🌱 PLANTS VIEW SELECTED"
-          );
+          window.location.href =
+            "/admin/route-map";
         }
 
-        if (
-          view ===
-          "gvp"
-        ) {
-          console.log(
-            "📍 GVP VIEW SELECTED"
-          );
-        }
-
-        if (
-          view ===
-          "grievances"
-        ) {
-          console.log(
-            "⚠️ GRIEVANCES VIEW SELECTED"
-          );
-        }
       },
       [
         onViewChange,
       ]
     );
 
+
   /* ==========================================================
-     OPTIONS
+     VIEW MENU OPTIONS
   ========================================================== */
 
   const mapViewOptions =
-    useMemo(
-      () => [
-        {
-          id:
-            "overview",
-          label:
-            "City Overview Map",
-          icon:
-            MapIcon,
-        },
-        {
-          id:
-            "route",
-          label:
-            "Route Maps",
-          icon:
-            Route,
-        },
-        {
-          id:
-            "gvp",
-          label:
-            "GVP Points",
-          icon:
-            MapPinned,
-        },
-        {
-          id:
-            "plants",
-          label:
-            "Plants",
-          icon:
-            Factory,
-        },
-        {
-          id:
-            "grievances",
-          label:
-            "Customer Grievances",
-          icon:
-            MessageSquareWarning,
-        },
-      ],
-      []
-    );
+    [
+      {
+        id:
+          "overview",
 
-  const currentView =
-    mapViewOptions.find(
-      (item) =>
-        item.id ===
-        mapView
-    ) ||
-    mapViewOptions[0];
+        label:
+          "City Overview Map",
 
-  const CurrentViewIcon =
-    currentView.icon;
+        icon:
+          MapIcon,
+      },
 
-  /* ==========================================================
-     NORMALIZED DATA
-  ========================================================== */
+      {
+        id:
+          "route",
 
-  const cityBoundary =
-    useMemo(
-      () =>
-        getGeometry(
-          city
-        ),
-      [city]
-    );
+        label:
+          "Route Maps",
 
-  const selectedZoneName =
-    selectedZone
-      ? getZoneName(
-          selectedZone
-        )
-      : "";
+        icon:
+          Route,
+      },
 
-  const selectedDivisionName =
-    selectedDivision
-      ? getDivisionName(
-          selectedDivision
-        )
-      : "";
+      {
+        id:
+          "gvp",
 
-  const selectedWardName =
-    selectedWard
-      ? getWardName(
-          selectedWard
-        )
-      : "";
+        label:
+          "GVP Points",
 
-  const zoneOptions =
-    useMemo(
-      () => [
-        {
-          value: "",
-          label:
-            "All Zones",
-        },
-        ...zones.map(
-          (
-            zone
-          ) => ({
-            value:
-              getZoneName(
-                zone
-              ),
-            label:
-              getZoneName(
-                zone
-              ),
-            zone,
-          })
-        ),
-      ],
-      [zones]
-    );
+        icon:
+          MapPinned,
+      },
 
-  const divisionOptions =
-    useMemo(
-      () => [
-        {
-          value: "",
-          label:
-            "All Divisions",
-          division:
-            null,
-        },
-        ...divisions.map(
-          (
-            division
-          ) => ({
-            value:
-              getDivisionName(
-                division
-              ),
-            label:
-              getDivisionName(
-                division
-              ),
-            division,
-          })
-        ),
-      ],
-      [divisions]
-    );
+      {
+        id:
+          "plants",
 
-  const wardOptions =
-    useMemo(
-      () => [
-        {
-          value: "",
-          label:
-            "All Wards",
-          ward:
-            null,
-        },
-        ...wards.map(
-          (
-            ward
-          ) => ({
-            value:
-              getWardName(
-                ward
-              ),
-            label:
-              getWardName(
-                ward
-              ),
-            ward,
-          })
-        ),
-      ],
-      [wards]
-    );
+        label:
+          "Plants",
 
-  /* ==========================================================
-     VISIBLE DATA
-  ========================================================== */
+        icon:
+          Factory,
+      },
 
-  const visibleDivisions =
-    selectedZone
-      ? divisions
-      : [];
+      {
+        id:
+          "grievances",
 
-  const visibleWards =
-    selectedDivision
-      ? wards
-      : [];
+        label:
+          "Customer Grievances",
+
+        icon:
+          MessageSquareWarning,
+      },
+    ];
+
 
   /* ==========================================================
      RENDER
@@ -2046,6 +2931,10 @@ export default function CityMapOverview({
     <section className="cm-wrapper">
 
       <style>{`
+
+        /* ====================================================
+           OUTER CARD
+        ==================================================== */
 
         .cm-wrapper {
           width: 100%;
@@ -2059,990 +2948,1530 @@ export default function CityMapOverview({
             rgba(31,45,61,.05);
         }
 
+
+        /* ====================================================
+           PAGE HEADING
+        ==================================================== */
+
         .cm-heading {
           margin:
             0 0 10px 2px;
+
           font-size:
             21px;
+
           line-height:
             1.15;
+
           font-weight:
             700;
+
           letter-spacing:
             -.3px;
+
           color:
             #07111f;
         }
 
+
+        /* ====================================================
+           MAP
+        ==================================================== */
+
         .cm-map-shell {
-          position:
-            relative;
-          width:
-            100%;
+          position: relative;
+
+          width: 100%;
+
+          height: 600px;
+
           min-height:
             600px;
-          height:
-            600px;
+
           overflow:
             hidden;
+
           border:
-            1px solid #dce4ec;
+            1px solid
+            #dce4ec;
+
           border-radius:
             18px;
+
           background:
             #eef1f3;
         }
 
+
         .cm-map,
-        .cm-map .leaflet-container {
+        .cm-map
+        .leaflet-container {
           width:
             100%;
+
           height:
             100%;
         }
 
-        .cm-map .leaflet-tile-pane {
+
+        .cm-map
+        .leaflet-tile-pane {
           filter:
             saturate(.42)
             brightness(1.05);
         }
 
-        .cm-map .leaflet-control-zoom {
+
+        /* ====================================================
+           ZOOM
+        ==================================================== */
+
+        .cm-map
+        .leaflet-control-zoom {
           margin-top:
             12px;
+
           margin-left:
             12px;
+
           border:
-            1px solid #d8e1ea;
+            1px solid
+            #d8e1ea;
+
           border-radius:
             8px;
+
           overflow:
             hidden;
+
           box-shadow:
             0 3px 12px
             rgba(36,53,72,.08);
         }
 
-        .cm-map .leaflet-control-zoom a {
+
+        .cm-map
+        .leaflet-control-zoom a {
           width:
-            32px;
+            30px;
+
           height:
-            32px;
+            30px;
+
           line-height:
-            32px;
+            30px;
+
           font-size:
-            18px;
+            17px;
+
           color:
             #34475b;
+
           background:
             #ffffff;
         }
 
-        .cm-map .leaflet-control-attribution {
+
+        .cm-map
+        .leaflet-control-attribution {
           font-size:
-            10px;
+            9px;
+
           background:
-            rgba(255,255,255,.82);
+            rgba(
+              255,
+              255,
+              255,
+              .82
+            );
         }
 
-        /* HEADER */
+
+        /* ====================================================
+           CITY OVERVIEW HEADER
+           SMALLER
+        ==================================================== */
 
         .cm-map-header {
           position:
             absolute;
+
           z-index:
             2000;
+
           top:
             18px;
+
           left:
             18px;
+
           width:
-            min(52%, 520px);
+            min(
+              50%,
+              540px
+            );
+
           min-height:
-            76px;
+            70px;
+
           padding:
-            14px 18px;
+            13px 18px;
+
           box-sizing:
             border-box;
+
           display:
             flex;
+
           align-items:
             center;
+
           justify-content:
             space-between;
+
           background:
-            rgba(255,255,255,.97);
+            rgba(
+              255,
+              255,
+              255,
+              .97
+            );
+
           backdrop-filter:
             blur(12px);
+
           border:
             1px solid
-            rgba(216,225,235,.9);
+            rgba(
+              216,
+              225,
+              235,
+              .9
+            );
+
           border-radius:
             16px;
+
           box-shadow:
             0 12px 30px
-            rgba(30,45,60,.08);
+            rgba(
+              30,
+              45,
+              60,
+              .07
+            );
         }
+
 
         .cm-header-left {
           display:
             flex;
+
           align-items:
             center;
+
           gap:
             12px;
+
           min-width:
             0;
         }
 
+
         .cm-header-icon {
           width:
             29px;
+
           height:
             29px;
+
           color:
             #617b98;
+
           flex-shrink:
             0;
         }
+
 
         .cm-header-title {
           font-size:
             19px;
+
           font-weight:
             700;
+
           line-height:
             1.1;
+
           color:
             #34475b;
+
           white-space:
             nowrap;
+
           overflow:
             hidden;
+
           text-overflow:
             ellipsis;
         }
 
+
         .cm-header-city {
           margin-top:
-            4px;
+            3px;
+
           font-size:
             11px;
+
           font-weight:
             600;
+
           color:
             #8aa1bb;
         }
 
+
         .cm-header-button {
           width:
-            32px;
+            30px;
+
           height:
-            32px;
+            30px;
+
           display:
             flex;
+
           align-items:
             center;
+
           justify-content:
             center;
+
           border:
             0;
+
           border-radius:
-            9px;
+            8px;
+
           background:
             transparent;
+
           color:
             #34475b;
+
           cursor:
             pointer;
+
           flex-shrink:
             0;
         }
+
 
         .cm-header-button:hover {
           background:
             #f3f7fa;
         }
 
-        /* VIEW MENU */
+
+        .cm-header-chevron {
+          transition:
+            transform .2s ease;
+        }
+
+
+        .cm-map-header-open
+        .cm-header-chevron {
+          transform:
+            rotate(180deg);
+        }
+
+
+        /* ====================================================
+           VIEW MENU
+        ==================================================== */
 
         .cm-view-menu {
           position:
             absolute;
+
           z-index:
             3000;
+
           top:
-            calc(100% + 8px);
-          left:
-            0;
+            calc(
+              100% + 7px
+            );
+
+          right:
+            10px;
+
           width:
-            280px;
+            225px;
+
           padding:
-            7px;
+            6px;
+
+          box-sizing:
+            border-box;
+
           background:
-            rgba(255,255,255,.98);
+            rgba(
+              255,
+              255,
+              255,
+              .99
+            );
+
+          backdrop-filter:
+            blur(14px);
+
           border:
-            1px solid #dce4ec;
+            1px solid
+            #dce5ee;
+
           border-radius:
-            14px;
+            13px;
+
           box-shadow:
-            0 16px 38px
-            rgba(30,45,60,.14);
+            0 16px 35px
+            rgba(
+              30,
+              45,
+              60,
+              .14
+            );
         }
+
 
         .cm-view-option {
           width:
             100%;
+
           min-height:
             42px;
+
           display:
             flex;
+
           align-items:
             center;
+
           gap:
-            10px;
+            9px;
+
           padding:
-            9px 11px;
+            8px 10px;
+
           border:
             0;
+
           border-radius:
-            10px;
+            9px;
+
           background:
             transparent;
+
           color:
-            #47617b;
+            #40556b;
+
           font-size:
             12.5px;
+
           font-weight:
             600;
+
           text-align:
             left;
+
           cursor:
             pointer;
+
           transition:
             .15s ease;
         }
 
+
         .cm-view-option:hover {
           background:
-            #f5f8fb;
+            #f4f7fa;
         }
+
 
         .cm-view-option-active {
           background:
             #edf3f8;
+
           color:
             #20364c;
         }
 
-        /* FILTER CARD */
+
+        .cm-view-option svg {
+          width:
+            16px;
+
+          height:
+            16px;
+
+          flex-shrink:
+            0;
+        }
+
+
+        /* ====================================================
+           FILTER CARD
+           SMALLER
+        ==================================================== */
 
         .cm-filter-card {
           position:
             absolute;
+
           z-index:
             2000;
+
           top:
             18px;
+
           right:
             18px;
+
           width:
-            300px;
+            330px;
+
           padding:
-            15px;
+            18px;
+
           box-sizing:
             border-box;
+
           background:
-            rgba(255,255,255,.97);
+            rgba(
+              255,
+              255,
+              255,
+              .97
+            );
+
           backdrop-filter:
             blur(12px);
+
           border:
-            1px solid #dce4ec;
+            1px solid
+            #dce4ec;
+
           border-radius:
             16px;
+
           box-shadow:
             0 12px 30px
-            rgba(30,45,60,.09);
+            rgba(
+              30,
+              45,
+              60,
+              .08
+            );
         }
+
 
         .cm-filter-title {
           margin-bottom:
-            13px;
-          font-size:
             14px;
+
+          font-size:
+            15px;
+
           font-weight:
             700;
+
           color:
             #34475b;
         }
 
+
         .cm-filter-group {
           position:
             relative;
+
           margin-bottom:
-            11px;
+            13px;
         }
+
 
         .cm-filter-label {
           margin-bottom:
-            5px;
+            6px;
+
           font-size:
-            10px;
+            11px;
+
           font-weight:
             700;
+
           color:
             #8ba4bf;
+
           letter-spacing:
-            .2px;
+            .15px;
         }
+
 
         .cm-select {
           width:
             100%;
+
           height:
-            40px;
+            48px;
+
           display:
             flex;
+
           align-items:
             center;
+
           justify-content:
             space-between;
+
           padding:
-            0 11px;
+            0 14px;
+
           box-sizing:
             border-box;
+
           border:
-            1px solid #cfddea;
+            1px solid
+            #cfddea;
+
           border-radius:
-            10px;
+            13px;
+
           background:
-            #ffffff;
+            #fff;
+
           color:
             #4b6179;
+
           font-size:
-            12px;
+            13px;
+
           font-weight:
             600;
+
           text-align:
             left;
+
+          transition:
+            .2s ease;
+
           cursor:
             pointer;
         }
+
 
         .cm-select:hover {
           border-color:
             #91afd0;
         }
 
+
         .cm-select-disabled {
           cursor:
             not-allowed;
+
           background:
             #f8fafc;
+
           color:
             #a4b2c0;
+
           border-color:
             #dce5ee;
+
           opacity:
             .68;
         }
+
 
         .cm-select-value,
         .cm-select-placeholder {
           overflow:
             hidden;
+
           text-overflow:
             ellipsis;
+
           white-space:
             nowrap;
         }
+
 
         .cm-select-value {
           color:
             #435b73;
         }
 
+
         .cm-select-placeholder {
           color:
             #93a4b5;
         }
 
-        /* PORTAL */
+
+        /* ====================================================
+           PORTAL DROPDOWN
+        ==================================================== */
 
         .cm-dropdown-portal {
           position:
             fixed;
+
           z-index:
             2147483647;
+
           max-height:
             300px;
+
           overflow-y:
             auto;
+
           padding:
             5px;
+
           box-sizing:
             border-box;
+
           background:
             #ffffff;
+
           border:
-            1px solid #dce5ee;
+            1px solid
+            #dce5ee;
+
           border-radius:
             13px;
+
           box-shadow:
             0 16px 38px
-            rgba(30,45,60,.16);
+            rgba(
+              30,
+              45,
+              60,
+              .16
+            );
         }
+
 
         .cm-dropdown-option {
           width:
             100%;
+
           min-height:
             40px;
+
           display:
             flex;
+
           align-items:
             center;
+
           gap:
             8px;
+
           padding:
             8px 10px;
+
           box-sizing:
             border-box;
+
           border:
             0;
+
           border-radius:
             9px;
+
           background:
             transparent;
+
           color:
             #47617b;
+
           font-size:
             12.5px;
+
           font-weight:
             600;
+
           text-align:
             left;
+
           cursor:
             pointer;
+
+          transition:
+            .15s ease;
         }
+
 
         .cm-dropdown-option:hover {
           background:
             #f5f8fb;
         }
 
+
+        .cm-dropdown-option:active {
+          background:
+            #eaf1f7;
+        }
+
+
         .cm-dropdown-option-active {
           background:
             #edf3f8;
+
           color:
             #20364c;
         }
 
+
         .cm-dropdown-empty {
           padding:
             12px;
+
           color:
             #94a3b8;
+
           font-size:
             12px;
+
           font-weight:
             600;
+
           text-align:
             center;
         }
+
 
         .cm-zone-dot {
           width:
             10px;
+
           height:
             10px;
+
           border-radius:
             50%;
+
           flex-shrink:
             0;
+
           border:
             1px solid
-            rgba(49,73,96,.35);
+            rgba(
+              49,
+              73,
+              96,
+              .35
+            );
         }
 
-        /* STATUS */
 
-        .cm-status {
-          margin:
-            3px 0 8px;
-          padding:
-            7px 9px;
-          border-radius:
-            9px;
-          background:
-            #f4f8fb;
-          color:
-            #6f89a4;
-          font-size:
-            10.5px;
-          font-weight:
-            600;
-        }
-
-        .cm-error {
-          margin:
-            3px 0 8px;
-          padding:
-            7px 9px;
-          border-radius:
-            9px;
-          background:
-            #fff1f2;
-          color:
-            #dc2626;
-          font-size:
-            10.5px;
-          line-height:
-            1.4;
-          font-weight:
-            600;
-        }
-
-        /* RESET */
-
-        .cm-reset-button {
-          width:
-            100%;
-          height:
-            40px;
-          display:
-            flex;
-          align-items:
-            center;
-          justify-content:
-            center;
-          gap:
-            8px;
-          margin-top:
-            4px;
-          border:
-            1px solid #d4e0ea;
-          border-radius:
-            10px;
-          background:
-            #ffffff;
-          color:
-            #4e6a84;
-          font-size:
-            12px;
-          font-weight:
-            700;
-          cursor:
-            pointer;
-        }
-
-        .cm-reset-button:hover {
-          background:
-            #f7fafc;
-        }
-
-        /* SPECIAL VIEWS */
-
-        .cm-special-view {
-          position:
-            absolute;
-          inset:
-            0;
-          z-index:
-            1500;
-          overflow:
-            auto;
-          background:
-            #ffffff;
-        }
-
-        .cm-special-loading {
-          height:
-            100%;
-          display:
-            flex;
-          align-items:
-            center;
-          justify-content:
-            center;
-          font-size:
-            13px;
-          font-weight:
-            600;
-          color:
-            #607891;
-        }
-
-        .cm-placeholder-view {
-          width:
-            100%;
-          height:
-            100%;
-          display:
-            flex;
-          align-items:
-            center;
-          justify-content:
-            center;
-          background:
-            #f8fafc;
-        }
-
-        .cm-placeholder-card {
-          width:
-            320px;
-          padding:
-            30px;
-          text-align:
-            center;
-          background:
-            #ffffff;
-          border:
-            1px solid #e2e8f0;
-          border-radius:
-            18px;
-          box-shadow:
-            0 10px 30px
-            rgba(30,45,60,.06);
-        }
-
-        .cm-placeholder-icon {
-          width:
-            62px;
-          height:
-            62px;
-          margin:
-            0 auto 15px;
-          display:
-            flex;
-          align-items:
-            center;
-          justify-content:
-            center;
-          border-radius:
-            16px;
-          background:
-            #edf3f8;
-          color:
-            #607b98;
-        }
-
-        .cm-placeholder-title {
-          font-size:
-            17px;
-          font-weight:
-            700;
-          color:
-            #34475b;
-        }
-
-        .cm-placeholder-description {
-          margin-top:
-            7px;
-          font-size:
-            12px;
-          line-height:
-            1.5;
-          color:
-            #8ba0b4;
-        }
-
-        /* SELECTED CARD */
-
-        .cm-selected-card {
-          position:
-            absolute;
-          z-index:
-            2000;
-          left:
-            18px;
-          bottom:
-            18px;
-          width:
-            300px;
-          padding:
-            14px 16px;
-          box-sizing:
-            border-box;
-          background:
-            rgba(255,255,255,.97);
-          backdrop-filter:
-            blur(12px);
-          border:
-            1px solid #dce4ec;
-          border-radius:
-            15px;
-          box-shadow:
-            0 12px 30px
-            rgba(30,45,60,.08);
-        }
-
-        .cm-selected-label {
-          display:
-            flex;
-          align-items:
-            center;
-          gap:
-            8px;
-          font-size:
-            10px;
-          font-weight:
-            700;
-          color:
-            #8aa1bb;
-        }
-
-        .cm-selected-dot {
-          width:
-            10px;
-          height:
-            10px;
-          border-radius:
-            50%;
-          border:
-            1px solid
-            rgba(49,73,96,.3);
-        }
-
-        .cm-selected-name {
-          margin-top:
-            7px;
-          font-size:
-            16px;
-          font-weight:
-            700;
-          color:
-            #34475b;
-        }
-
-        .cm-selected-table {
-          margin-top:
-            5px;
-          padding-bottom:
-            9px;
-          border-bottom:
-            1px solid #e7edf3;
-          font-size:
-            10px;
-          color:
-            #8ba4bf;
+        .cm-zone-option-name {
           overflow:
             hidden;
+
           text-overflow:
             ellipsis;
+
           white-space:
             nowrap;
         }
 
+
+        /* ====================================================
+           STATUS / ERROR
+        ==================================================== */
+
+        .cm-status {
+          margin:
+            3px 0 8px;
+
+          padding:
+            7px 9px;
+
+          border-radius:
+            9px;
+
+          background:
+            #f4f8fb;
+
+          color:
+            #6f89a4;
+
+          font-size:
+            10.5px;
+
+          font-weight:
+            600;
+        }
+
+
+        .cm-error {
+          margin:
+            3px 0 8px;
+
+          padding:
+            7px 9px;
+
+          border-radius:
+            9px;
+
+          background:
+            #fff1f2;
+
+          color:
+            #dc2626;
+
+          font-size:
+            10.5px;
+
+          line-height:
+            1.4;
+
+          font-weight:
+            600;
+        }
+
+
+        /* ====================================================
+           RESET
+        ==================================================== */
+
+        .cm-reset-button {
+          width:
+            100%;
+
+          height:
+            44px;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
+
+          gap:
+            7px;
+
+          margin-top:
+            2px;
+
+          border:
+            1px solid
+            #d4e0ea;
+
+          border-radius:
+            11px;
+
+          background:
+            #fff;
+
+          color:
+            #4e6a84;
+
+          font-size:
+            12px;
+
+          font-weight:
+            700;
+
+          cursor:
+            pointer;
+
+          transition:
+            .2s ease;
+        }
+
+
+        .cm-reset-button:hover {
+          background:
+            #f7fafc;
+
+          border-color:
+            #9db5cc;
+        }
+
+
+        /* ====================================================
+           SELECTED CARD
+        ==================================================== */
+
+        .cm-selected-card {
+          position:
+            absolute;
+
+          z-index:
+            2000;
+
+          left:
+            18px;
+
+          bottom:
+            18px;
+
+          width:
+            340px;
+
+          padding:
+            15px 18px;
+
+          box-sizing:
+            border-box;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              .97
+            );
+
+          backdrop-filter:
+            blur(12px);
+
+          border:
+            1px solid
+            #dce4ec;
+
+          border-radius:
+            15px;
+
+          box-shadow:
+            0 12px 30px
+            rgba(
+              30,
+              45,
+              60,
+              .08
+            );
+        }
+
+
+        .cm-selected-label {
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            8px;
+
+          font-size:
+            10px;
+
+          font-weight:
+            700;
+
+          color:
+            #8aa1bb;
+        }
+
+
+        .cm-selected-dot {
+          width:
+            10px;
+
+          height:
+            10px;
+
+          border-radius:
+            50%;
+
+          border:
+            1px solid
+            rgba(
+              49,
+              73,
+              96,
+              .3
+            );
+        }
+
+
+        .cm-selected-name {
+          margin-top:
+            7px;
+
+          font-size:
+            16px;
+
+          font-weight:
+            700;
+
+          color:
+            #34475b;
+        }
+
+
+        .cm-selected-table {
+          margin-top:
+            5px;
+
+          padding-bottom:
+            9px;
+
+          border-bottom:
+            1px solid
+            #e7edf3;
+
+          font-size:
+            10px;
+
+          color:
+            #8ba4bf;
+
+          overflow:
+            hidden;
+
+          text-overflow:
+            ellipsis;
+
+          white-space:
+            nowrap;
+        }
+
+
         .cm-selected-info {
           display:
             grid;
+
           grid-template-columns:
-            repeat(3,minmax(0,1fr));
+            repeat(
+              3,
+              minmax(
+                0,
+                1fr
+              )
+            );
+
           gap:
             8px;
+
           margin-top:
             10px;
         }
 
+
         .cm-info-label {
           font-size:
             9px;
+
           font-weight:
             700;
+
           color:
             #91a7bc;
+
           text-transform:
             uppercase;
         }
 
+
         .cm-info-value {
           margin-top:
             3px;
+
           font-size:
             11px;
+
           font-weight:
             700;
+
           color:
             #49627c;
         }
 
-        /* RESPONSIVE */
+
+        /* ====================================================
+           LOADING / ERROR
+        ==================================================== */
+
+        .cm-state {
+          position:
+            absolute;
+
+          z-index:
+            4000;
+
+          inset:
+            0;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
+
+          pointer-events:
+            none;
+        }
+
+
+        .cm-state-card {
+          padding:
+            10px 15px;
+
+          border-radius:
+            10px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              .96
+            );
+
+          border:
+            1px solid
+            #dfe7ef;
+
+          box-shadow:
+            0 12px 30px
+            rgba(
+              0,
+              0,
+              0,
+              .08
+            );
+
+          color:
+            #536a84;
+
+          font-size:
+            12px;
+
+          font-weight:
+            600;
+        }
+
+
+        .cm-state-error {
+          color:
+            #dc2626;
+        }
+
+
+        /* ====================================================
+           RESPONSIVE
+        ==================================================== */
+
+        @media (
+          max-width: 1100px
+        ) {
+
+          .cm-filter-card {
+            width:
+              300px;
+          }
+
+          .cm-map-header {
+            width:
+              46%;
+          }
+
+        }
+
 
         @media (
           max-width: 800px
         ) {
+
+          .cm-wrapper {
+            padding:
+              10px;
+          }
+
+
+          .cm-heading {
+            font-size:
+              19px;
+          }
+
+
           .cm-map-shell {
-            min-height:
-              680px;
             height:
               680px;
           }
 
+
           .cm-map-header {
             left:
               12px;
+
             top:
               12px;
+
             width:
-              calc(100% - 24px);
+              calc(
+                100% - 24px
+              );
+
+            min-height:
+              64px;
+
+            padding:
+              10px 13px;
           }
+
+
+          .cm-header-title {
+            font-size:
+              17px;
+          }
+
+
+          .cm-header-city {
+            font-size:
+              10px;
+          }
+
 
           .cm-filter-card {
             top:
               auto;
+
             right:
               12px;
+
             left:
               12px;
+
             bottom:
               12px;
+
             width:
               auto;
+
             max-height:
               300px;
+
             overflow-y:
               auto;
           }
+
 
           .cm-selected-card {
             display:
               none;
           }
+
+
+          .cm-view-menu {
+            right:
+              4px;
+
+            width:
+              210px;
+          }
+
         }
 
       `}</style>
 
-      {/* ======================================================
-          HEADING
-      ====================================================== */}
+
+      {/* ====================================================
+          PAGE HEADING
+      ==================================================== */}
 
       <h2 className="cm-heading">
         CITY OVERVIEW MAP
       </h2>
 
-      {/* ======================================================
-          MAP SHELL
-      ====================================================== */}
+
+      {/* ====================================================
+          MAP
+      ==================================================== */}
 
       <div className="cm-map-shell">
 
-        {/* ====================================================
-            ACTUAL CITY MAP
-        ==================================================== */}
+        <MapContainer
+          ref={mapRef}
+          center={[
+            12.9716,
+            77.5946,
+          ]}
+          zoom={10}
+          zoomControl={false}
+          className="cm-map"
+          preferCanvas={false}
+        >
 
-        {mapView ===
-          "overview" && (
-          <MapContainer
-            ref={mapRef}
-            center={[
-              12.9716,
-              77.5946,
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+            subdomains={[
+              "a",
+              "b",
+              "c",
+              "d",
             ]}
-            zoom={10}
-            zoomControl={false}
-            className="cm-map"
-            preferCanvas={false}
+            maxZoom={20}
+          />
+
+
+          <MapSizeController />
+
+
+          <ZoomControl
+            position="topleft"
+          />
+
+
+          <InitialCityFit
+            cityBoundary={
+              cityBoundary
+            }
+            zones={
+              zones
+            }
+          />
+
+
+          <SelectionFocusController
+            selectedZone={
+              selectedZone
+            }
+            selectedDivision={
+              selectedDivision
+            }
+            selectedWard={
+              selectedWard
+            }
+          />
+
+
+          {/* ==================================================
+              ZONES
+          ================================================== */}
+
+          <Pane
+            name="zonePane"
+            style={{
+              zIndex: 410,
+            }}
           >
 
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-              subdomains={[
-                "a",
-                "b",
-                "c",
-                "d",
-              ]}
-              maxZoom={20}
-            />
+            {visibleZones.map(
+              (
+                zone,
+                index
+              ) => {
 
-            <MapSizeController />
+                const actualIndex =
+                  zones.findIndex(
+                    (
+                      item
+                    ) =>
+                      sameEntity(
+                        item,
+                        zone,
+                        getZoneId,
+                        getZoneName
+                      )
+                  );
 
-            <ZoomControl
-              position="topleft"
-            />
-
-            <InitialCityFit
-              cityBoundary={
-                cityBoundary
-              }
-              zones={
-                zones
-              }
-            />
-
-            {/* ZONES */}
-
-            {zones.length >
-              0 && (
-              <Pane
-                name="zonePane"
-                style={{
-                  zIndex:
-                    410,
-                }}
-              >
-                {zones.map(
-                  (
-                    zone,
-                    index
-                  ) => (
-                    <ZoneLayer
-                      key={
-                        `zone-${
-                          getZoneId(
-                            zone
-                          ) ||
-                          getZoneName(
-                            zone
-                          )
-                        }-${index}`
-                      }
-                      zone={
-                        zone
-                      }
-                      index={
-                        index
-                      }
-                      selected={
-                        !!selectedZone &&
-                        sameEntity(
-                          zone,
-                          selectedZone,
-                          getZoneId,
-                          getZoneName
+                return (
+                  <ZoneLayer
+                    key={
+                      `zone-${
+                        getZoneName(
+                          zone
                         )
-                      }
-                      onSelect={
-                        handleZoneSelect
-                      }
-                    />
-                  )
-                )}
-              </Pane>
+                      }-${index}`
+                    }
+
+                    zone={
+                      zone
+                    }
+
+                    index={
+                      actualIndex >=
+                      0
+                        ? actualIndex
+                        : index
+                    }
+
+                    selected={
+                      !!selectedZone &&
+                      sameEntity(
+                        zone,
+                        selectedZone,
+                        getZoneId,
+                        getZoneName
+                      )
+                    }
+
+                    onSelect={
+                      handleZoneSelect
+                    }
+                  />
+                );
+
+              }
             )}
 
-            {/* DIVISIONS */}
+          </Pane>
 
-            {selectedZone &&
-              visibleDivisions.length >
-                0 && (
-              <Pane
-                name="divisionPane"
-                style={{
-                  zIndex:
-                    415,
-                }}
-              >
-                {visibleDivisions.map(
-                  (
-                    division,
-                    index
-                  ) => (
+
+          {/* ==================================================
+              DIVISIONS
+          ================================================== */}
+
+          {selectedZone &&
+            visibleDivisions.length >
+              0 && (
+
+            <Pane
+              name="divisionPane"
+              style={{
+                zIndex: 415,
+              }}
+            >
+
+              {visibleDivisions.map(
+                (
+                  division,
+                  index
+                ) => {
+
+                  const actualIndex =
+                    divisions.findIndex(
+                      (
+                        item
+                      ) =>
+                        sameEntity(
+                          item,
+                          division,
+                          getDivisionId,
+                          getDivisionName
+                        )
+                    );
+
+                  return (
                     <DivisionLayer
                       key={
                         `division-${
+                          getDivisionTableName(
+                            division
+                          ) ||
                           getDivisionId(
                             division
                           ) ||
@@ -3051,12 +4480,18 @@ export default function CityMapOverview({
                           )
                         }-${index}`
                       }
+
                       division={
                         division
                       }
+
                       index={
-                        index
+                        actualIndex >=
+                        0
+                          ? actualIndex
+                          : index
                       }
+
                       selected={
                         !!selectedDivision &&
                         sameEntity(
@@ -3066,79 +4501,105 @@ export default function CityMapOverview({
                           getDivisionName
                         )
                       }
-                      onSelect={(
-                        divisionValue
-                      ) => {
-                        setSelectedDivision(
+
+                      onSelect={
+                        (
                           divisionValue
-                        );
+                        ) => {
 
-                        setSelectedWard(
-                          null
-                        );
+                          setSelectedDivision(
+                            divisionValue
+                          );
 
-                        setWards([]);
+                          setSelectedWard(
+                            null
+                          );
 
-                        fetchDivisionWards(
-                          divisionValue
-                        );
+                          setWards(
+                            []
+                          );
 
-                        setOpenDropdown(
-                          null
-                        );
-                      }}
+                          setWardError(
+                            ""
+                          );
+
+                          setOpenDropdown(
+                            null
+                          );
+
+                          fetchDivisionWards(
+                            divisionValue
+                          );
+
+                        }
+                      }
                     />
-                  )
-                )}
-              </Pane>
-            )}
+                  );
 
-            {/* WARDS */}
+                }
+              )}
 
-            {selectedDivision &&
-              visibleWards.length >
-                0 && (
-              <Pane
-                name="wardPane"
-                style={{
-                  zIndex:
-                    418,
-                }}
-              >
-                {visibleWards.map(
-                  (
-                    ward,
-                    index
-                  ) => (
-                    <WardLayer
-                      key={
-                        `ward-${
-                          getWardId(
-                            ward
-                          ) ||
-                          getWardName(
-                            ward
-                          )
-                        }-${index}`
-                      }
-                      ward={
-                        ward
-                      }
-                      index={
-                        index
-                      }
-                      selected={
-                        !!selectedWard &&
-                        sameEntity(
-                          ward,
-                          selectedWard,
-                          getWardId,
-                          getWardName
+            </Pane>
+
+          )}
+
+
+          {/* ==================================================
+              WARDS
+          ================================================== */}
+
+          {selectedDivision &&
+            visibleWards.length >
+              0 && (
+
+            <Pane
+              name="wardPane"
+              style={{
+                zIndex: 418,
+              }}
+            >
+
+              {visibleWards.map(
+                (
+                  ward,
+                  index
+                ) => (
+
+                  <WardLayer
+                    key={
+                      `ward-${
+                        getWardId(
+                          ward
+                        ) ||
+                        getWardName(
+                          ward
                         )
-                      }
-                      onSelect={(
+                      }-${index}`
+                    }
+
+                    ward={
+                      ward
+                    }
+
+                    index={
+                      index
+                    }
+
+                    selected={
+                      !!selectedWard &&
+                      sameEntity(
+                        ward,
+                        selectedWard,
+                        getWardId,
+                        getWardName
+                      )
+                    }
+
+                    onSelect={
+                      (
                         wardValue
                       ) => {
+
                         setSelectedWard(
                           wardValue
                         );
@@ -3146,142 +4607,58 @@ export default function CityMapOverview({
                         setOpenDropdown(
                           null
                         );
-                      }}
-                    />
-                  )
-                )}
-              </Pane>
-            )}
 
-            {/* CITY OUTLINE */}
+                      }
+                    }
+                  />
 
-            <Pane
-              name="cityBoundaryPane"
-              style={{
-                zIndex:
-                  425,
-              }}
-            >
-              <CityBoundaryLayer
-                boundary={
-                  cityBoundary
-                }
-              />
+                )
+              )}
+
             </Pane>
 
-          </MapContainer>
-        )}
+          )}
 
-        {/* ====================================================
-            PLANTS
-        ==================================================== */}
 
-        {mapView ===
-          "plants" && (
-          <div className="cm-special-view">
+          {/* ==================================================
+              CITY OUTLINE
+          ================================================== */}
 
-            {plantsLoading ? (
-              <div className="cm-special-loading">
-                Loading plant locations...
-              </div>
-            ) : plantsError ? (
-              <div className="cm-placeholder-view">
-                <div className="cm-placeholder-card">
+          <Pane
+            name="cityBoundaryPane"
+            style={{
+              zIndex: 425,
+            }}
+          >
 
-                  <div className="cm-placeholder-icon">
-                    <Factory
-                      size={32}
-                    />
-                  </div>
-
-                  <div className="cm-placeholder-title">
-                    Unable to Load Plants
-                  </div>
-
-                  <div className="cm-placeholder-description">
-                    {plantsError}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="cm-reset-button"
-                    style={{
-                      marginTop:
-                        "18px",
-                    }}
-                    onClick={
-                      fetchPlants
-                    }
-                  >
-                    Retry
-                  </button>
-
-                </div>
-              </div>
-            ) : (
-              <Plants
-                plants={
-                  plants
-                }
-              />
-            )}
-
-          </div>
-        )}
-
-        {/* ====================================================
-            GVP
-        ==================================================== */}
-
-        {mapView ===
-          "gvp" && (
-          <div className="cm-special-view">
-
-            <PlaceholderView
-              icon={
-                MapPinned
+            <CityBoundaryLayer
+              boundary={
+                cityBoundary
               }
-              title="Garbage Vulnerable Points"
-              description="GVP locations will be displayed here."
             />
 
-          </div>
-        )}
+          </Pane>
+
+        </MapContainer>
+
 
         {/* ====================================================
-            GRIEVANCES
-        ==================================================== */}
-
-        {mapView ===
-          "grievances" && (
-          <div className="cm-special-view">
-
-            <PlaceholderView
-              icon={
-                MessageSquareWarning
-              }
-              title="Customer Grievances"
-              description="Customer grievance locations will be displayed here."
-            />
-
-          </div>
-        )}
-
-        {/* ====================================================
-            MAP HEADER / DROPDOWN
+            CITY OVERVIEW DROPDOWN HEADER
         ==================================================== */}
 
         <div
-          className={`cm-map-header ${
-            showViewMenu
-              ? "cm-map-header-open"
-              : ""
-          }`}
+          className={
+            `cm-map-header ${
+              showViewMenu
+                ? "cm-map-header-open"
+                : ""
+            }`
+          }
         >
 
           <div className="cm-header-left">
 
-            <CurrentViewIcon
+            <MapIcon
               className="cm-header-icon"
               strokeWidth={
                 1.8
@@ -3291,77 +4668,113 @@ export default function CityMapOverview({
             <div>
 
               <div className="cm-header-title">
-                {
-                  currentView.label
-                }
+                City Overview Map
               </div>
 
-              <div className="cm-header-city">
-                {
-                  city?.cityName ||
-                  "Bangalore"
-                }
-              </div>
+              {city?.cityName && (
+                <div className="cm-header-city">
+                  {
+                    city.cityName
+                  }
+                </div>
+              )}
 
             </div>
 
           </div>
+
 
           <button
             type="button"
             className="cm-header-button"
             onClick={() =>
               setShowViewMenu(
-                (current) =>
+                (
+                  current
+                ) =>
                   !current
               )
             }
           >
+
             {showViewMenu ? (
               <ChevronUp
-                size={18}
+                className="cm-header-chevron"
+                size={16}
               />
             ) : (
               <ChevronDown
-                size={18}
+                className="cm-header-chevron"
+                size={16}
               />
             )}
+
           </button>
 
+
           {/* ==================================================
-              DYNAMIC VIEW DROPDOWN
+              VIEW OPTIONS
           ================================================== */}
 
           {showViewMenu && (
+
             <div className="cm-view-menu">
 
               {mapViewOptions.map(
                 (
                   option
                 ) => {
-                  const Icon =
+
+                  const OptionIcon =
                     option.icon;
 
+                  const isActive =
+                    option.id ===
+                    "overview";
+
                   return (
+
                     <button
                       key={
                         option.id
                       }
+
                       type="button"
-                      className={`cm-view-option ${
-                        mapView ===
-                        option.id
-                          ? "cm-view-option-active"
-                          : ""
-                      }`}
-                      onClick={() =>
+
+                      className={
+                        `cm-view-option ${
+                          isActive
+                            ? "cm-view-option-active"
+                            : ""
+                        }`
+                      }
+
+                      onClick={() => {
+
+                        if (
+                          option.id ===
+                          "overview"
+                        ) {
+
+                          setShowViewMenu(
+                            false
+                          );
+
+                          return;
+
+                        }
+
                         handleMapViewChange(
                           option.id
-                        )
-                      }
+                        );
+
+                      }}
                     >
-                      <Icon
-                        size={18}
+
+                      <OptionIcon
+                        strokeWidth={
+                          1.9
+                        }
                       />
 
                       <span>
@@ -3371,254 +4784,336 @@ export default function CityMapOverview({
                       </span>
 
                     </button>
+
                   );
+
                 }
               )}
 
             </div>
+
           )}
 
         </div>
 
+
         {/* ====================================================
-            FILTER CARD
-            ONLY SHOW CITY FILTERS ON OVERVIEW
+            MAP FILTERS
         ==================================================== */}
 
-        {mapView ===
-          "overview" && (
-          <div className="cm-filter-card">
+        <div className="cm-filter-card">
 
-            <div className="cm-filter-title">
-              MAP FILTERS
-            </div>
+          <div className="cm-filter-title">
+            MAP FILTERS
+          </div>
 
-            {/* ZONE */}
 
-            <FilterDropdown
-              label="ZONE"
-              value={
-                selectedZoneName
+          {/* ==================================================
+              ZONE
+          ================================================== */}
+
+          <FilterDropdown
+
+            label="ZONE"
+
+            value={
+              selectedZoneName
+            }
+
+            placeholder="All Zones"
+
+            options={
+              zoneOptions
+            }
+
+            open={
+              openDropdown ===
+              "ZONE"
+            }
+
+            setOpen={
+              setOpenDropdown
+            }
+
+            onChange={(
+              option
+            ) => {
+
+              if (
+                !option?.value
+              ) {
+
+                resetMap();
+
+                return;
+
               }
-              placeholder="All Zones"
-              options={
-                zoneOptions
-              }
-              open={
-                openDropdown ===
-                "ZONE"
-              }
-              setOpen={
-                setOpenDropdown
-              }
-              onChange={(
-                option
-              ) => {
-                if (
-                  !option?.value
-                ) {
-                  resetMap();
-                  return;
-                }
 
-                handleZoneSelect(
-                  option.zone
-                );
-              }}
-              renderOption={(
-                option,
-                index
-              ) => {
-                if (
-                  !option.value
-                ) {
-                  return (
-                    <span>
-                      All Zones
-                    </span>
-                  );
-                }
+              handleZoneSelect(
+                option.zone
+              );
 
-                const zoneIndex =
-                  zones.findIndex(
-                    (
-                      zone
-                    ) =>
-                      sameEntity(
-                        zone,
-                        option.zone,
-                        getZoneId,
-                        getZoneName
-                      )
-                  );
+            }}
 
-                const color =
-                  ZONE_COLORS[
-                    (
-                      zoneIndex >=
-                      0
-                        ? zoneIndex
-                        : index
-                    ) %
-                      ZONE_COLORS.length
-                  ];
+            renderOption={(
+              option,
+              index
+            ) => {
+
+              if (
+                !option.value
+              ) {
 
                 return (
-                  <>
-                    <span
-                      className="cm-zone-dot"
-                      style={{
-                        backgroundColor:
-                          color,
-                      }}
-                    />
-
-                    <span>
-                      {
-                        option.label
-                      }
-                    </span>
-                  </>
+                  <span>
+                    All Zones
+                  </span>
                 );
-              }}
-            />
 
-            {/* DIVISION */}
+              }
 
-            <FilterDropdown
-              label="DIVISION"
-              value={
+              const zoneIndex =
+                zones.findIndex(
+                  (
+                    zone
+                  ) =>
+                    sameEntity(
+                      zone,
+                      option.zone,
+                      getZoneId,
+                      getZoneName
+                    )
+                );
+
+
+              const color =
+                ZONE_COLORS[
+                  (
+                    zoneIndex >=
+                    0
+                      ? zoneIndex
+                      : index
+                  ) %
+                    ZONE_COLORS.length
+                ];
+
+
+              return (
+                <>
+                  <span
+                    className="cm-zone-dot"
+                    style={{
+                      backgroundColor:
+                        color,
+                    }}
+                  />
+
+                  <span className="cm-zone-option-name">
+                    {
+                      option.label
+                    }
+                  </span>
+                </>
+              );
+
+            }}
+
+          />
+
+
+          {/* ==================================================
+              DIVISION
+          ================================================== */}
+
+          <FilterDropdown
+
+            label="DIVISION"
+
+            value={
+              selectedDivisionName
+            }
+
+            placeholder={
+              !selectedZone
+                ? "Select a Zone First"
+                : divisionsLoading
+                  ? "Loading Divisions..."
+                  : divisions.length
+                    ? "All Divisions"
+                    : "No Divisions"
+            }
+
+            options={
+              divisionOptions
+            }
+
+            open={
+              openDropdown ===
+              "DIVISION"
+            }
+
+            setOpen={
+              setOpenDropdown
+            }
+
+            disabled={
+              !selectedZone ||
+              divisionsLoading ||
+              divisions.length ===
+                0
+            }
+
+            onChange={
+              handleDivisionSelect
+            }
+
+            renderOption={(
+              option
+            ) => (
+              <span
+                style={{
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {
+                  option.label
+                }
+              </span>
+            )}
+
+          />
+
+
+          {/* ==================================================
+              WARD
+          ================================================== */}
+
+          <FilterDropdown
+
+            label="WARD"
+
+            value={
+              selectedWardName
+            }
+
+            placeholder={
+              !selectedDivision
+                ? "Select a Division First"
+                : wardsLoading
+                  ? "Loading Wards..."
+                  : wards.length
+                    ? "All Wards"
+                    : "No Wards"
+            }
+
+            options={
+              wardOptions
+            }
+
+            open={
+              openDropdown ===
+              "WARD"
+            }
+
+            setOpen={
+              setOpenDropdown
+            }
+
+            disabled={
+              !selectedDivision ||
+              wardsLoading ||
+              wards.length ===
+                0
+            }
+
+            onChange={
+              handleWardSelect
+            }
+
+            renderOption={(
+              option
+            ) => (
+              <span
+                style={{
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {
+                  option.label
+                }
+              </span>
+            )}
+
+          />
+
+
+          {/* ==================================================
+              STATUS
+          ================================================== */}
+
+          {divisionsLoading && (
+            <div className="cm-status">
+              Loading divisions for{" "}
+              {
+                selectedZoneName
+              }
+              ...
+            </div>
+          )}
+
+
+          {wardsLoading && (
+            <div className="cm-status">
+              Loading wards for{" "}
+              {
                 selectedDivisionName
               }
-              placeholder={
-                !selectedZone
-                  ? "Select a Zone First"
-                  : divisionsLoading
-                    ? "Loading Divisions..."
-                    : divisions.length
-                      ? "All Divisions"
-                      : "No Divisions"
-              }
-              options={
-                divisionOptions
-              }
-              open={
-                openDropdown ===
-                "DIVISION"
-              }
-              setOpen={
-                setOpenDropdown
-              }
-              disabled={
-                !selectedZone ||
-                divisionsLoading ||
-                divisions.length ===
-                  0
-              }
-              onChange={
-                handleDivisionSelect
-              }
-            />
+              ...
+            </div>
+          )}
 
-            {/* WARD */}
 
-            <FilterDropdown
-              label="WARD"
-              value={
-                selectedWardName
+          {divisionError && (
+            <div className="cm-error">
+              {
+                divisionError
               }
-              placeholder={
-                !selectedDivision
-                  ? "Select a Division First"
-                  : wardsLoading
-                    ? "Loading Wards..."
-                    : wards.length
-                      ? "All Wards"
-                      : "No Wards"
+            </div>
+          )}
+
+
+          {wardError && (
+            <div className="cm-error">
+              {
+                wardError
               }
-              options={
-                wardOptions
-              }
-              open={
-                openDropdown ===
-                "WARD"
-              }
-              setOpen={
-                setOpenDropdown
-              }
-              disabled={
-                !selectedDivision ||
-                wardsLoading ||
-                wards.length ===
-                  0
-              }
-              onChange={(
-                option
-              ) => {
-                if (
-                  !option?.ward
-                ) {
-                  setSelectedWard(
-                    null
-                  );
-                  setOpenDropdown(
-                    null
-                  );
-                  return;
-                }
+            </div>
+          )}
 
-                setSelectedWard(
-                  option.ward
-                );
 
-                setOpenDropdown(
-                  null
-                );
-              }}
-            />
+          {/* ==================================================
+              RESET
+          ================================================== */}
 
-            {/* STATUS */}
-
-            {loading && (
-              <div className="cm-status">
-                Loading city map...
-              </div>
-            )}
-
-            {!loading &&
-              error && (
-              <div className="cm-error">
-                {error}
-              </div>
-            )}
-
-            {divisionsLoading && (
-              <div className="cm-status">
-                Loading divisions...
-              </div>
-            )}
-
-            {divisionError && (
-              <div className="cm-error">
-                {
-                  divisionError
-                }
-              </div>
-            )}
-
-            {wardsLoading && (
-              <div className="cm-status">
-                Loading wards...
-              </div>
-            )}
-
-            {wardError && (
-              <div className="cm-error">
-                {wardError}
-              </div>
-            )}
-
-            {/* RESET */}
+          {(
+            selectedZone ||
+            selectedDivision ||
+            selectedWard
+          ) && (
 
             <button
               type="button"
@@ -3627,23 +5122,26 @@ export default function CityMapOverview({
                 resetMap
               }
             >
+
               <RotateCcw
                 size={14}
               />
 
               Reset Map
+
             </button>
 
-          </div>
-        )}
+          )}
+
+        </div>
+
 
         {/* ====================================================
-            SELECTED WARD CARD
+            SELECTION CARD
         ==================================================== */}
 
-        {mapView ===
-          "overview" &&
-          selectedWard && (
+        {selectedWard ? (
+
           <div className="cm-selected-card">
 
             <div className="cm-selected-label">
@@ -3653,8 +5151,7 @@ export default function CityMapOverview({
                 style={{
                   backgroundColor:
                     WARD_COLORS[
-                      Math.max(
-                        0,
+                      (
                         wards.findIndex(
                           (
                             ward
@@ -3665,7 +5162,20 @@ export default function CityMapOverview({
                               getWardId,
                               getWardName
                             )
-                        )
+                        ) >=
+                        0
+                          ? wards.findIndex(
+                              (
+                                ward
+                              ) =>
+                                sameEntity(
+                                  ward,
+                                  selectedWard,
+                                  getWardId,
+                                  getWardName
+                                )
+                            )
+                          : 0
                       ) %
                         WARD_COLORS.length
                     ],
@@ -3676,6 +5186,7 @@ export default function CityMapOverview({
 
             </div>
 
+
             <div className="cm-selected-name">
               {
                 getWardName(
@@ -3683,6 +5194,7 @@ export default function CityMapOverview({
                 )
               }
             </div>
+
 
             <div className="cm-selected-table">
               Ward ID:{" "}
@@ -3693,6 +5205,7 @@ export default function CityMapOverview({
               }
             </div>
 
+
             <div className="cm-selected-info">
 
               <div>
@@ -3708,6 +5221,7 @@ export default function CityMapOverview({
                 </div>
               </div>
 
+
               <div>
                 <div className="cm-info-label">
                   Division
@@ -3715,14 +5229,13 @@ export default function CityMapOverview({
 
                 <div className="cm-info-value">
                   {
-                    selectedDivision
-                      ? getDivisionName(
-                          selectedDivision
-                        )
-                      : "—"
+                    getDivisionName(
+                      selectedDivision
+                    )
                   }
                 </div>
               </div>
+
 
               <div>
                 <div className="cm-info-label">
@@ -3739,16 +5252,9 @@ export default function CityMapOverview({
             </div>
 
           </div>
-        )}
 
-        {/* ====================================================
-            SELECTED DIVISION CARD
-        ==================================================== */}
+        ) : selectedDivision ? (
 
-        {mapView ===
-          "overview" &&
-          !selectedWard &&
-          selectedDivision && (
           <div className="cm-selected-card">
 
             <div className="cm-selected-label">
@@ -3758,8 +5264,7 @@ export default function CityMapOverview({
                 style={{
                   backgroundColor:
                     DIVISION_COLORS[
-                      Math.max(
-                        0,
+                      (
                         divisions.findIndex(
                           (
                             division
@@ -3770,7 +5275,20 @@ export default function CityMapOverview({
                               getDivisionId,
                               getDivisionName
                             )
-                        )
+                        ) >=
+                        0
+                          ? divisions.findIndex(
+                              (
+                                division
+                              ) =>
+                                sameEntity(
+                                  division,
+                                  selectedDivision,
+                                  getDivisionId,
+                                  getDivisionName
+                                )
+                            )
+                          : 0
                       ) %
                         DIVISION_COLORS.length
                     ],
@@ -3781,6 +5299,7 @@ export default function CityMapOverview({
 
             </div>
 
+
             <div className="cm-selected-name">
               {
                 getDivisionName(
@@ -3789,16 +5308,16 @@ export default function CityMapOverview({
               }
             </div>
 
+
             <div className="cm-selected-table">
               {
                 getDivisionTableName(
                   selectedDivision
                 ) ||
-                getDivisionName(
-                  selectedDivision
-                )
+                "Division"
               }
             </div>
+
 
             <div className="cm-selected-info">
 
@@ -3815,6 +5334,20 @@ export default function CityMapOverview({
                 </div>
               </div>
 
+
+              <div>
+                <div className="cm-info-label">
+                  Divisions
+                </div>
+
+                <div className="cm-info-value">
+                  {
+                    divisions.length
+                  }
+                </div>
+              </div>
+
+
               <div>
                 <div className="cm-info-label">
                   Wards
@@ -3827,36 +5360,12 @@ export default function CityMapOverview({
                 </div>
               </div>
 
-              <div>
-                <div className="cm-info-label">
-                  Zone
-                </div>
-
-                <div className="cm-info-value">
-                  {
-                    selectedZone
-                      ? getZoneName(
-                          selectedZone
-                        )
-                      : "—"
-                  }
-                </div>
-              </div>
-
             </div>
 
           </div>
-        )}
 
-        {/* ====================================================
-            SELECTED ZONE CARD
-        ==================================================== */}
+        ) : selectedZone ? (
 
-        {mapView ===
-          "overview" &&
-          !selectedWard &&
-          !selectedDivision &&
-          selectedZone && (
           <div className="cm-selected-card">
 
             <div className="cm-selected-label">
@@ -3889,6 +5398,7 @@ export default function CityMapOverview({
 
             </div>
 
+
             <div className="cm-selected-name">
               {
                 getZoneName(
@@ -3896,6 +5406,7 @@ export default function CityMapOverview({
                 )
               }
             </div>
+
 
             <div className="cm-selected-table">
               {
@@ -3907,6 +5418,7 @@ export default function CityMapOverview({
                 )
               }
             </div>
+
 
             <div className="cm-selected-info">
 
@@ -3923,6 +5435,7 @@ export default function CityMapOverview({
                 </div>
               </div>
 
+
               <div>
                 <div className="cm-info-label">
                   Divisions
@@ -3935,6 +5448,7 @@ export default function CityMapOverview({
                 </div>
               </div>
 
+
               <div>
                 <div className="cm-info-label">
                   Wards
@@ -3942,7 +5456,21 @@ export default function CityMapOverview({
 
                 <div className="cm-info-value">
                   {
-                    wards.length
+                    divisions.reduce(
+                      (
+                        total,
+                        division
+                      ) =>
+                        total +
+                        (
+                          Array.isArray(
+                            division?.wards
+                          )
+                            ? division.wards.length
+                            : 0
+                        ),
+                      0
+                    )
                   }
                 </div>
               </div>
@@ -3950,7 +5478,45 @@ export default function CityMapOverview({
             </div>
 
           </div>
+
+        ) : null}
+
+
+        {/* ====================================================
+            LOADING / ERROR
+        ==================================================== */}
+
+        {loading && (
+
+          <div className="cm-state">
+
+            <div className="cm-state-card">
+              Loading city map...
+            </div>
+
+          </div>
+
         )}
+
+
+        {!loading &&
+          error && (
+
+            <div className="cm-state">
+
+              <div
+                className={
+                  "cm-state-card cm-state-error"
+                }
+              >
+                {
+                  error
+                }
+              </div>
+
+            </div>
+
+          )}
 
       </div>
 
