@@ -5032,7 +5032,7 @@ const handleMapViewChange =
         )}
 
 {/* ====================================================
-    GVP POINTS
+    GVP POINTS / COLLECTION POINT MONITORING
 ==================================================== */}
 
 {mapView === "gvp" && (
@@ -5044,36 +5044,13 @@ const handleMapViewChange =
       w-full
       h-full
       min-h-0
+      overflow-hidden
     "
   >
 
     <WasteGenMap
-
-      /* DATE FROM HEADER */
-      selectedDate={
-        headerSelectedDate
-      }
-
-      /* CITY FROM HEADER */
-      selectedCity={
-        headerSelectedCity
-      }
-
-      /* ZONE FROM HEADER */
-      selectedZone={
-        headerSelectedZone
-      }
-
-      /* DIVISION FROM HEADER */
-      selectedDivision={
-        headerSelectedDivision
-      }
-
-      /* WARD FROM HEADER */
-      selectedWard={
-        headerSelectedWard
-      }
-
+      selectedDate={headerSelectedDate}
+      selectedWard={headerSelectedWard}
     />
 
   </div>
