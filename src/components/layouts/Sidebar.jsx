@@ -3,7 +3,6 @@ import {
   Users,
   Truck,
   Factory,
-  FileText,
   MessageCircle,
   Settings,
   LogOut,
@@ -101,11 +100,7 @@ export default function Sidebar() {
       path: "/dashboard/admin/plants",
       icon: Factory,
     },
-    {
-      name: "Logs",
-      path: "/dashboard/admin/logs",
-      icon: FileText,
-    },
+
     {
       name: "Complaints",
       path: "/dashboard/admin/complaints",

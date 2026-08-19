@@ -8,7 +8,6 @@ import Overview from "./pages/Overview";
 import WasteGenerators from "./pages/WasteGenerators";
 import Vehicles from "./pages/Vehicles";
 import Plants from "./pages/Plants";
-import Logs from "./pages/Logs";
 import AI from "./pages/AI";
 import Users from "./pages/Users";
 import Users2 from "./pages/Users2";
@@ -70,10 +69,6 @@ export default function App() {
           element={<Plants />}
         />
 
-        <Route
-          path="admin/logs"
-          element={<Logs />}
-        />
 
         <Route
           path="admin/ai"
