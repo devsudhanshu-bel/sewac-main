@@ -1,56 +1,8 @@
-const mainDb = require("../../config/mainDb");
+const mainDb =
+  require("../../config/mainDb");
+
 const masterCitizenPrisma =
   require("../../config/masterCitizenPrisma");
-
-/**
- * ============================================================
- * COMPLAINTS GRIEVANCE MAP SERVICE
- * ============================================================
- *
- * Fetches citizen complaints and returns ONLY complaints
- * whose latitude/longitude falls inside the Bengaluru
- * city boundary.
- *
- * Bengaluru city boundary is fetched from:
- *
- * master-citizen DB
- *       ↓
- * city table
- *       ↓
- * city_id = 1
- *       ↓
- * geo_boundary
- *
- * Complaint data comes from:
- *
- * SEWAC DB
- *       ↓
- * citizen_complaints
- *
- * ============================================================
- *
- * RESPONSE FORMAT
- *
- * [
- *   {
- *     lat: 12.9716,
- *     long: 77.5946,
- *     data: {
- *       id: 1,
- *       ticket_number: "...",
- *       phone_number: "...",
- *       title: "...",
- *       description: "...",
- *       category: "...",
- *       image_url: "...",
- *       address: "...",
- *       status: "PENDING"
- *     }
- *   }
- * ]
- *
- * ============================================================
- */
 
 
 /* =========================================================
@@ -58,9 +10,10 @@ const masterCitizenPrisma =
 ========================================================= */
 
 /*
-   From the existing master-citizen city map:
+   Existing Master Citizen city table:
 
-   Bengaluru / Bangalore = city_id 1
+   Bengaluru / Bangalore
+   city_id = 1
 */
 
 const BENGALURU_CITY_ID = 1;
@@ -70,30 +23,48 @@ const BENGALURU_CITY_ID = 1;
    NORMALIZE GEO BOUNDARY
 ========================================================= */
 
-function normalizeGeoBoundary(value) {
+function normalizeGeoBoundary(
+  value
+) {
+
   if (
     value === null ||
     value === undefined
   ) {
+
     return null;
+
   }
+
 
   if (
     typeof value === "string"
   ) {
+
     try {
-      return JSON.parse(value);
-    } catch (error) {
+
+      return JSON.parse(
+        value
+      );
+
+    } catch (
+      error
+    ) {
+
       console.error(
-        "❌ Failed to parse city geo_boundary JSON:",
+        "❌ Failed to parse city geo_boundary:",
         error
       );
 
       return null;
+
     }
+
   }
 
+
   return value;
+
 }
 
 
@@ -104,17 +75,9 @@ function normalizeGeoBoundary(value) {
 /*
    Ray-casting algorithm.
 
-   point:
-     [longitude, latitude]
+   Coordinates are expected as:
 
-   ring:
-     [
-       [longitude, latitude],
-       [longitude, latitude],
-       ...
-     ]
-
-   Returns true when the point lies inside the ring.
+   [longitude, latitude]
 */
 
 function pointInRing(
@@ -122,69 +85,127 @@ function pointInRing(
   latitude,
   ring
 ) {
+
   if (
-    !Array.isArray(ring) ||
+    !Array.isArray(
+      ring
+    ) ||
     ring.length < 3
   ) {
+
     return false;
+
   }
 
+
   let inside = false;
+
 
   for (
     let i = 0,
         j = ring.length - 1;
+
     i < ring.length;
+
     j = i++
   ) {
-    const pointI = ring[i];
-    const pointJ = ring[j];
+
+    const pointI =
+      ring[i];
+
+    const pointJ =
+      ring[j];
+
 
     if (
-      !Array.isArray(pointI) ||
-      !Array.isArray(pointJ) ||
+      !Array.isArray(
+        pointI
+      ) ||
+      !Array.isArray(
+        pointJ
+      ) ||
       pointI.length < 2 ||
       pointJ.length < 2
     ) {
+
       continue;
+
     }
 
-    const xi = Number(pointI[0]);
-    const yi = Number(pointI[1]);
 
-    const xj = Number(pointJ[0]);
-    const yj = Number(pointJ[1]);
+    const xi =
+      Number(
+        pointI[0]
+      );
+
+    const yi =
+      Number(
+        pointI[1]
+      );
+
+    const xj =
+      Number(
+        pointJ[0]
+      );
+
+    const yj =
+      Number(
+        pointJ[1]
+      );
+
 
     if (
-      !Number.isFinite(xi) ||
-      !Number.isFinite(yi) ||
-      !Number.isFinite(xj) ||
-      !Number.isFinite(yj)
+      !Number.isFinite(
+        xi
+      ) ||
+      !Number.isFinite(
+        yi
+      ) ||
+      !Number.isFinite(
+        xj
+      ) ||
+      !Number.isFinite(
+        yj
+      )
     ) {
+
       continue;
+
     }
+
 
     const intersects =
       (
-        yi > latitude
-      ) !==
-      (
-        yj > latitude
+        (yi > latitude) !==
+        (yj > latitude)
       ) &&
-      longitude <
+      (
+        longitude <
         (
           (xj - xi) *
-            (latitude - yi) /
-            (yj - yi)
+          (latitude - yi) /
+          (
+            yj - yi
+          )
         ) +
-          xi;
+        xi
+      );
 
-    if (intersects) {
-      inside = !inside;
+
+    if (
+      intersects
+    ) {
+
+      inside =
+        !inside;
+
     }
+
   }
 
+
   return inside;
+
 }
 
 
@@ -193,39 +214,39 @@ function pointInRing(
 ========================================================= */
 
 /*
-   Polygon structure:
+   Polygon coordinates:
 
-   coordinates = [
+   [
      outerRing,
      holeRing,
-     holeRing,
-     ...
+     holeRing
    ]
 
-   First ring = outer boundary.
-   Remaining rings = holes.
-
-   A point must:
-     1. Be inside outer ring
-     2. NOT be inside any hole
+   The point must be inside the outer ring
+   and NOT inside any hole.
 */
 
 function pointInPolygon(
   longitude,
   latitude,
-  polygonCoordinates
+  coordinates
 ) {
+
   if (
     !Array.isArray(
-      polygonCoordinates
+      coordinates
     ) ||
-    polygonCoordinates.length === 0
+    coordinates.length === 0
   ) {
+
     return false;
+
   }
 
+
   const outerRing =
-    polygonCoordinates[0];
+    coordinates[0];
+
 
   if (
     !pointInRing(
@@ -234,8 +255,11 @@ function pointInPolygon(
       outerRing
     )
   ) {
+
     return false;
+
   }
+
 
   /*
      Check holes.
@@ -243,24 +267,29 @@ function pointInPolygon(
 
   for (
     let i = 1;
-    i < polygonCoordinates.length;
+
+    i < coordinates.length;
+
     i++
   ) {
-    const hole =
-      polygonCoordinates[i];
 
     if (
       pointInRing(
         longitude,
         latitude,
-        hole
+        coordinates[i]
       )
     ) {
+
       return false;
+
     }
+
   }
 
+
   return true;
+
 }
 
 
@@ -271,37 +300,36 @@ function pointInPolygon(
 function pointInMultiPolygon(
   longitude,
   latitude,
-  multiPolygonCoordinates
+  coordinates
 ) {
+
   if (
     !Array.isArray(
-      multiPolygonCoordinates
+      coordinates
     )
   ) {
+
     return false;
+
   }
 
-  for (
-    const polygonCoordinates
-    of multiPolygonCoordinates
-  ) {
-    if (
+
+  return coordinates.some(
+    (
+      polygon
+    ) =>
       pointInPolygon(
         longitude,
         latitude,
-        polygonCoordinates
+        polygon
       )
-    ) {
-      return true;
-    }
-  }
+  );
 
-  return false;
 }
 
 
 /* =========================================================
-   POINT IN GEOJSON
+   POINT INSIDE GEO BOUNDARY
 ========================================================= */
 
 /*
@@ -311,6 +339,8 @@ function pointInMultiPolygon(
    2. FeatureCollection
    3. Polygon
    4. MultiPolygon
+   5. GeometryCollection
+   6. Raw coordinate arrays
 */
 
 function pointInsideGeoBoundary(
@@ -318,42 +348,53 @@ function pointInsideGeoBoundary(
   latitude,
   geoBoundary
 ) {
+
   if (
     !geoBoundary
   ) {
+
     return false;
+
   }
 
 
-  /* -------------------------------------------------------
-     GEOJSON FEATURE
-  ------------------------------------------------------- */
+  /* =======================================================
+     FEATURE
+  ======================================================= */
 
   if (
-    geoBoundary.type === "Feature"
+    geoBoundary.type ===
+    "Feature"
   ) {
+
     return pointInsideGeoBoundary(
       longitude,
       latitude,
       geoBoundary.geometry
     );
+
   }
 
 
-  /* -------------------------------------------------------
-     GEOJSON FEATURE COLLECTION
-  ------------------------------------------------------- */
+  /* =======================================================
+     FEATURE COLLECTION
+  ======================================================= */
 
   if (
-    geoBoundary.type === "FeatureCollection"
+    geoBoundary.type ===
+    "FeatureCollection"
   ) {
+
     if (
       !Array.isArray(
         geoBoundary.features
       )
     ) {
+
       return false;
+
     }
+
 
     return geoBoundary.features.some(
       (
@@ -365,53 +406,92 @@ function pointInsideGeoBoundary(
           feature
         )
     );
+
   }
 
 
-  /* -------------------------------------------------------
-     GEOJSON POLYGON
-  ------------------------------------------------------- */
+  /* =======================================================
+     GEOMETRY COLLECTION
+  ======================================================= */
 
   if (
-    geoBoundary.type === "Polygon"
+    geoBoundary.type ===
+    "GeometryCollection"
   ) {
+
+    if (
+      !Array.isArray(
+        geoBoundary.geometries
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    return geoBoundary.geometries.some(
+      (
+        geometry
+      ) =>
+        pointInsideGeoBoundary(
+          longitude,
+          latitude,
+          geometry
+        )
+    );
+
+  }
+
+
+  /* =======================================================
+     POLYGON
+  ======================================================= */
+
+  if (
+    geoBoundary.type ===
+    "Polygon"
+  ) {
+
     return pointInPolygon(
       longitude,
       latitude,
       geoBoundary.coordinates
     );
+
   }
 
 
-  /* -------------------------------------------------------
-     GEOJSON MULTI POLYGON
-  ------------------------------------------------------- */
+  /* =======================================================
+     MULTI POLYGON
+  ======================================================= */
 
   if (
-    geoBoundary.type === "MultiPolygon"
+    geoBoundary.type ===
+    "MultiPolygon"
   ) {
+
     return pointInMultiPolygon(
       longitude,
       latitude,
       geoBoundary.coordinates
     );
+
   }
 
 
-  /*
-     Some databases may store only the
-     coordinates array instead of a complete
-     GeoJSON object.
-
-     Try to detect that format.
-  */
+  /* =======================================================
+     RAW COORDINATES
+  ======================================================= */
 
   if (
-    Array.isArray(geoBoundary)
+    Array.isArray(
+      geoBoundary
+    )
   ) {
 
     /*
-       Polygon-like:
+       Polygon:
 
        [
          [
@@ -432,16 +512,18 @@ function pointInsideGeoBoundary(
       typeof geoBoundary[0][0][0] ===
         "number"
     ) {
+
       return pointInPolygon(
         longitude,
         latitude,
         geoBoundary
       );
+
     }
 
 
     /*
-       MultiPolygon-like:
+       MultiPolygon:
 
        [
          [
@@ -465,16 +547,20 @@ function pointInsideGeoBoundary(
         geoBoundary[0][0][0]
       )
     ) {
+
       return pointInMultiPolygon(
         longitude,
         latitude,
         geoBoundary
       );
+
     }
+
   }
 
 
   return false;
+
 }
 
 
@@ -486,15 +572,19 @@ const getBengaluruCityBoundary =
   async () => {
 
     console.log("");
+
     console.log(
       "============================================================"
     );
+
     console.log(
       "🏙️ FETCHING BENGALURU CITY BOUNDARY"
     );
+
     console.log(
       "============================================================"
     );
+
 
     const cityRows =
       await masterCitizenPrisma.$queryRawUnsafe(
@@ -516,9 +606,11 @@ const getBengaluruCityBoundary =
       !cityRows ||
       cityRows.length === 0
     ) {
+
       throw new Error(
         `Bengaluru city with id ${BENGALURU_CITY_ID} not found.`
       );
+
     }
 
 
@@ -535,9 +627,11 @@ const getBengaluruCityBoundary =
     if (
       !geoBoundary
     ) {
+
       throw new Error(
         "Bengaluru city geo_boundary is empty."
       );
+
     }
 
 
@@ -568,6 +662,7 @@ const getBengaluruCityBoundary =
 
 
     return geoBoundary;
+
   };
 
 
@@ -580,17 +675,17 @@ const getComplaintLocations =
 
     try {
 
-      /* -----------------------------------------------------
-         FETCH BENGALURU BOUNDARY FIRST
-      ----------------------------------------------------- */
+      /* =====================================================
+         FETCH BENGALURU BOUNDARY
+      ===================================================== */
 
       const bengaluruBoundary =
         await getBengaluruCityBoundary();
 
 
-      /* -----------------------------------------------------
+      /* =====================================================
          FETCH COMPLAINTS
-      ----------------------------------------------------- */
+      ===================================================== */
 
       const query = `
         SELECT
@@ -619,12 +714,15 @@ const getComplaintLocations =
 
 
       console.log("");
+
       console.log(
         "============================================================"
       );
+
       console.log(
         "📍 COMPLAINT GREVANCE MAP"
       );
+
       console.log(
         "============================================================"
       );
@@ -635,16 +733,18 @@ const getComplaintLocations =
       );
 
 
-      /* -----------------------------------------------------
+      /* =====================================================
          FILTER + FORMAT
-      ----------------------------------------------------- */
+      ===================================================== */
 
       const locations = [];
 
 
-      let outsideBengaluruCount = 0;
+      let outsideBengaluruCount =
+        0;
 
-      let invalidCoordinatesCount = 0;
+      let invalidCoordinatesCount =
+        0;
 
 
       for (
@@ -663,9 +763,9 @@ const getComplaintLocations =
           );
 
 
-        /* ---------------------------------------------------
+        /* ===================================================
            VALIDATE COORDINATES
-        --------------------------------------------------- */
+        =================================================== */
 
         if (
           !Number.isFinite(
@@ -679,12 +779,13 @@ const getComplaintLocations =
           invalidCoordinatesCount++;
 
           continue;
+
         }
 
 
-        /* ---------------------------------------------------
-           VALIDATE LATITUDE RANGE
-        --------------------------------------------------- */
+        /* ===================================================
+           VALIDATE LATITUDE / LONGITUDE RANGE
+        =================================================== */
 
         if (
           latitude < -90 ||
@@ -696,12 +797,13 @@ const getComplaintLocations =
           invalidCoordinatesCount++;
 
           continue;
+
         }
 
 
-        /* ---------------------------------------------------
-           CHECK BENGALURU BOUNDARY
-        --------------------------------------------------- */
+        /* ===================================================
+           CHECK BENGALURU CITY BOUNDARY
+        =================================================== */
 
         const insideBengaluru =
           pointInsideGeoBoundary(
@@ -716,6 +818,7 @@ const getComplaintLocations =
         ) {
 
           outsideBengaluruCount++;
+
 
           console.log(
             "🚫 OUTSIDE BENGALURU:",
@@ -737,13 +840,15 @@ const getComplaintLocations =
             }
           );
 
+
           continue;
+
         }
 
 
-        /* ---------------------------------------------------
+        /* ===================================================
            ADD VALID BENGALURU COMPLAINT
-        --------------------------------------------------- */
+        =================================================== */
 
         locations.push({
 
@@ -785,12 +890,13 @@ const getComplaintLocations =
           },
 
         });
+
       }
 
 
-      /* -----------------------------------------------------
+      /* =====================================================
          FINAL LOGS
-      ----------------------------------------------------- */
+      ===================================================== */
 
       console.log(
         "------------------------------------------------------------"
@@ -836,10 +942,34 @@ const getComplaintLocations =
       console.log(
         "============================================================"
       );
+
       console.log("");
 
 
-      return locations;
+      /* =====================================================
+         IMPORTANT RESPONSE
+      ===================================================== */
+
+      return {
+
+        boundary:
+          bengaluruBoundary,
+
+        locations,
+
+        totalDatabaseComplaints:
+          result.rows.length,
+
+        validBengaluruComplaints:
+          locations.length,
+
+        outsideBengaluru:
+          outsideBengaluruCount,
+
+        invalidCoordinates:
+          invalidCoordinatesCount,
+
+      };
 
     } catch (
       error
@@ -858,7 +988,9 @@ const getComplaintLocations =
       console.error("");
 
       throw error;
+
     }
+
   };
 
 
@@ -867,5 +999,7 @@ const getComplaintLocations =
 ========================================================= */
 
 module.exports = {
+
   getComplaintLocations,
+
 };

@@ -1,22 +1,62 @@
-const express = require("express");
+const express =
+  require("express");
+
 
 const {
   getComplaintLocations,
-} = require("../controller/complaintsGrev.controller");
+} =
+  require(
+    "../controller/complaintsGrev.controller"
+  );
 
-const router = express.Router();
+
+const router =
+  express.Router();
+
 
 /* =========================================================
-   GET ALL BENGALURU COMPLAINT LOCATIONS
+   GET ALL COMPLAINT LOCATIONS
 ========================================================= */
 
 /*
-   GET
 
-   /api/complaints-grev/locations
+GET:
 
-   Returns only complaints whose coordinates
-   fall inside the Bengaluru city boundary.
+/api/complaints-grev/locations
+
+
+RETURNS:
+
+{
+  success: true,
+
+  count: 6,
+
+  boundary: {
+    type: "Polygon",
+    coordinates: [...]
+  },
+
+  data: [
+    {
+      lat: 12.9715987,
+      long: 77.5945627,
+
+      data: {
+        id: 7,
+        ticket_number: "...",
+        phone_number: "...",
+        title: "...",
+        description: "...",
+        category: "...",
+        image_url: "...",
+        address: "...",
+        status: "CLOSED"
+      }
+    }
+  ]
+}
+
 */
 
 router.get(
@@ -24,4 +64,10 @@ router.get(
   getComplaintLocations
 );
 
-module.exports = router;
+
+/* =========================================================
+   EXPORT
+========================================================= */
+
+module.exports =
+  router;
