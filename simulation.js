@@ -1,37 +1,7 @@
-const { randomInt } = require("crypto");
-
-// ============================================================
-// SEWAC VEHICLE SIMULATION
-// ============================================================
-//
-// TEST:
-//   Ward 216 - Ibbaluru
-//
-// VEHICLES:
-//   KA05AB1237
-//   KA05AB1238
-//
-// DURATION:
-//   5 minutes
-//
-// IMPORTANT
-//   Same telemetry contract and request architecture as
-//   vehicleStressSimulation.js.
-//
-//   GET /api/iot/telemetry/record
-//   Telemetry is sent through query parameters.
-//   NO Socket.IO.
-//
-// ============================================================
-
-// ============================================================
-// API
-// ============================================================
-
 const API_URL = "https://sewac-main.onrender.com/api/iot/telemetry/record";
 
 // ============================================================
-// SIMULATION CONFIGURATION
+// CONFIGURATION
 // ============================================================
 
 const SIMULATION_DURATION_MS = 5 * 60 * 1000;
@@ -39,37 +9,22 @@ const SIMULATION_DURATION_MS = 5 * 60 * 1000;
 const MIN_DELAY_SECONDS = 0.1;
 const MAX_DELAY_SECONDS = 0.3;
 
-// ============================================================
-// WARD INFORMATION
-// ============================================================
-
 const WARD_NO = 216;
-
-const WARD_NAME = "Ibbaluru";
-
-// ============================================================
-// WARD 216 BOUNDARY
-// ============================================================
-
-const WARD_BOUNDARY = [
-  [12.902313, 77.6548554],
-  [12.901759, 77.6547961],
-  [12.9008, 77.6545],
-  [12.8995, 77.6538],
-  [12.8985, 77.653],
-  [12.8978, 77.6518],
-  [12.8982, 77.6505],
-  [12.8995, 77.6498],
-  [12.901, 77.6495],
-  [12.9025, 77.65],
-  [12.9035, 77.6515],
-  [12.904, 77.653],
-  [12.9035, 77.6542],
-  [12.902313, 77.6548554],
-];
+const WARD_NAME = "Ibbalur";
 
 // ============================================================
 // VEHICLES
+// ============================================================
+//
+// VEHICLE 1
+// Normal citizen/manual collection
+//
+// Backend classification:
+//
+// remarks === ""
+// RFID starts with E
+// unitNumber === SEWAC_01_UHF
+//
 // ============================================================
 
 const vehicles = [
@@ -78,88 +33,154 @@ const vehicles = [
 
     vehicleName: "KA05AB1237",
 
-    wardNo: 216,
+    wardNo: WARD_NO,
 
-    wardName: "Ibbaluru",
-
-    routeIndex: 0,
-
-    wasteCollected: 0,
-
-    status: "COLLECTING",
-
-    speed: 18,
+    wardName: WARD_NAME,
 
     driverName: "Ramesh",
 
-    unitNumber: "SEWAC_01_UHF",
-
     firmwareVersion: "v0.1.0",
 
-    // Replace with a real registered RFID if RFID
-    // validation is enabled in the backend.
+    unitNumber: "SEWAC_01_UHF",
+
     rfidNumber: "E20047059AE0602601E8010D",
 
+    remarks: "",
+
+    errCode: "R0L0G0D0C1",
+
+    type: "COLLECTION",
+
+    routeIndex: 0,
+
     route: [
-      [12.902313, 77.654855],
-      [12.901759, 77.654796],
-      [12.9008, 77.6545],
-      [12.8999, 77.6539],
-      [12.8992, 77.6532],
-      [12.8985, 77.6525],
-      [12.8982, 77.6517],
-      [12.8988, 77.6508],
-      [12.8997, 77.6502],
-      [12.9008, 77.65],
-      [12.9018, 77.6504],
-      [12.9025, 77.6512],
-      [12.903, 77.6523],
-      [12.9035, 77.6534],
-      [12.902313, 77.654855],
+      [12.92169, 77.663022],
+      [12.922351, 77.661328],
+      [12.923043, 77.661601],
+      [12.923853, 77.661829],
+      [12.9245, 77.6622],
+      [12.926142, 77.662472],
+      [12.926729, 77.662758],
+      [12.927172, 77.662066],
+      [12.927936, 77.662209],
+      [12.928537, 77.662631],
+      [12.928229, 77.663286],
+      [12.928038, 77.663883],
+      [12.928052, 77.664594],
+      [12.928355, 77.665115],
+      [12.9295, 77.6655],
+      [12.930351, 77.665855],
+      [12.930723, 77.666152],
+      [12.931006, 77.666402],
+      [12.931199, 77.666921],
+      [12.931281, 77.667529],
+      [12.931243, 77.668035],
+      [12.930741, 77.668015],
+      [12.929495, 77.667865],
+      [12.9285, 77.6669],
+      [12.9275, 77.666],
+      [12.9265, 77.665],
+      [12.9255, 77.664],
+      [12.9245, 77.6635],
+      [12.9235, 77.663],
+      [12.9225, 77.6625],
+      [12.92169, 77.663022],
     ],
   },
+
+  // ==========================================================
+  // VEHICLE 2
+  // GVP / AUTO COLLECTION
+  //
+  // THIS MUST MATCH THE REAL BACKEND CONTRACT:
+  //
+  // remarks       = "O"
+  // RFID          = DOES NOT start with E
+  // unitNumber    = "SEWAC_01_HF"
+  //
+  // The backend then maps:
+  //
+  // weight
+  //   ↓
+  // otherWeightKg
+  //   ↓
+  // currentWeight
+  //   ↓
+  // vehicle cumulative weight
+  //
+  // ==========================================================
 
   {
     vehicleId: "KA05AB1238",
 
     vehicleName: "KA05AB1238",
 
-    wardNo: 216,
+    wardNo: WARD_NO,
 
-    wardName: "Ibbaluru",
-
-    routeIndex: 0,
-
-    wasteCollected: 0,
-
-    status: "COLLECTING",
-
-    speed: 15,
+    wardName: WARD_NAME,
 
     driverName: "Suresh",
 
-    unitNumber: "SEWAC_01_UHF",
-
     firmwareVersion: "v0.1.0",
 
-    // Replace with a real registered RFID if RFID
-    // validation is enabled in the backend.
-    rfidNumber: "E20047058C20602600FC010F",
+    unitNumber: "SEWAC_01_HF",
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT
+    |--------------------------------------------------------------------------
+    |
+    | MUST NOT start with "E".
+    |
+    | Otherwise backend classifies it as manual/UHF.
+    |
+    */
+
+    rfidNumber: "GVP200600106026083B0113",
+
+    remarks: "O",
+
+    errCode: "R0L0G0D0C1",
+
+    type: "GVP",
+
+    routeIndex: 0,
 
     route: [
-      [12.901, 77.6498],
-      [12.9002, 77.6505],
-      [12.8996, 77.6513],
-      [12.899, 77.6522],
-      [12.8995, 77.6531],
-      [12.9003, 77.6537],
-      [12.9012, 77.6541],
-      [12.902, 77.6538],
-      [12.9028, 77.6532],
-      [12.9032, 77.6524],
-      [12.9027, 77.6515],
-      [12.9019, 77.6507],
-      [12.901, 77.6498],
+      [12.923137, 77.664139],
+      [12.9227, 77.6635],
+      [12.9222, 77.6628],
+      [12.9217, 77.6623],
+      [12.9213, 77.662],
+      [12.9216, 77.6612],
+      [12.92235, 77.661328],
+      [12.923043, 77.661601],
+      [12.923853, 77.661829],
+      [12.9243, 77.662],
+      [12.925, 77.6622],
+      [12.926142, 77.662472],
+      [12.926729, 77.662758],
+      [12.927172, 77.662066],
+      [12.927936, 77.662209],
+      [12.928537, 77.662631],
+      [12.928229, 77.663286],
+      [12.928039, 77.663883],
+      [12.928053, 77.664594],
+      [12.928355, 77.665115],
+      [12.9292, 77.6655],
+      [12.930351, 77.665855],
+      [12.930723, 77.666152],
+      [12.9309, 77.6665],
+      [12.9307, 77.6672],
+      [12.930364, 77.667975],
+      [12.929495, 77.667865],
+      [12.9286, 77.6673],
+      [12.9275, 77.6665],
+      [12.9265, 77.6655],
+      [12.9255, 77.6648],
+      [12.9245, 77.6643],
+      [12.9235, 77.664],
+      [12.923137, 77.664139],
     ],
   },
 ];
@@ -170,22 +191,42 @@ const vehicles = [
 
 const statistics = {
   startedAt: null,
+
   finishedAt: null,
+
   totalPackets: 0,
+
   successfulPackets: 0,
+
   failedPackets: 0,
+
+  collectionPackets: 0,
+
+  gvpPackets: 0,
+
   vehicles: {},
 };
 
 for (const vehicle of vehicles) {
   statistics.vehicles[vehicle.vehicleId] = {
     packetsSent: 0,
+
     packetsSuccessful: 0,
+
     packetsFailed: 0,
-    lastRFID: null,
+
+    collectionPackets: 0,
+
+    gvpPackets: 0,
+
     lastLatitude: null,
+
     lastLongitude: null,
+
+    lastWeight: null,
+
     firstPacketAt: null,
+
     lastPacketAt: null,
   };
 }
@@ -203,19 +244,19 @@ function randomDelay(minSeconds, maxSeconds) {
 }
 
 // ============================================================
-// INTERPOLATE GPS
+// GPS INTERPOLATION
 // ============================================================
 
 function interpolate(start, end, progress) {
-  const latitude = start[0] + (end[0] - start[0]) * progress;
+  return [
+    start[0] + (end[0] - start[0]) * progress,
 
-  const longitude = start[1] + (end[1] - start[1]) * progress;
-
-  return [latitude, longitude];
+    start[1] + (end[1] - start[1]) * progress,
+  ];
 }
 
 // ============================================================
-// VEHICLE POSITION
+// CURRENT VEHICLE POSITION
 // ============================================================
 
 function getVehiclePosition(vehicle) {
@@ -236,34 +277,54 @@ function getVehiclePosition(vehicle) {
 // CREATE TELEMETRY PACKET
 // ============================================================
 //
-// EXACT TELEMETRY CONTRACT:
+// IMPORTANT:
 //
-// rfidNumber
-// iotTimestamp
-// driverName
-// vehicleId
-// latitude
-// longitude
-// weight
-// firmwareVersion
-// unitNumber
-// remarks
-// errCode
+// NO cumulativeWeight
+//
+// The backend calculates cumulative weight.
 //
 // ============================================================
 
 function createPacket(vehicle) {
   const position = getVehiclePosition(vehicle);
 
-  const latitudeNoise = randomFloat(-0.000005, 0.000005);
+  // Small GPS variation so points do not
+  // all land exactly on the same coordinate.
 
-  const longitudeNoise = randomFloat(-0.000005, 0.000005);
+  const latitude = Number(
+    (position[0] + randomFloat(-0.000005, 0.000005)).toFixed(7),
+  );
 
-  const latitude = Number((position[0] + latitudeNoise).toFixed(7));
+  const longitude = Number(
+    (position[1] + randomFloat(-0.000005, 0.000005)).toFixed(7),
+  );
 
-  const longitude = Number((position[1] + longitudeNoise).toFixed(7));
+  /*
+  |--------------------------------------------------------------------------
+  | WEIGHT
+  |--------------------------------------------------------------------------
+  |
+  | This is the ONLY weight value sent.
+  |
+  | Backend:
+  |
+  | weight
+  |   ↓
+  | otherWeightKg for AUTO
+  |   ↓
+  | currentWeight
+  |   ↓
+  | cumulativeWeight
+  |--------------------------------------------------------------------------
+  */
 
   const weight = Number(randomFloat(0.5, 12).toFixed(2));
+
+  /*
+  |--------------------------------------------------------------------------
+  | REAL IOT PAYLOAD
+  |--------------------------------------------------------------------------
+  */
 
   return {
     rfidNumber: vehicle.rfidNumber,
@@ -284,15 +345,14 @@ function createPacket(vehicle) {
 
     unitNumber: vehicle.unitNumber,
 
-    // Manual/UHF packet contract.
-    remarks: "",
+    remarks: vehicle.remarks,
 
-    errCode: "R0L0G0D0C1",
+    errCode: vehicle.errCode,
   };
 }
 
 // ============================================================
-// BUILD GET REQUEST URL
+// BUILD API URL
 // ============================================================
 
 function buildRequestURL(packet) {
@@ -322,6 +382,16 @@ function buildRequestURL(packet) {
 
   params.set("errCode", packet.errCode);
 
+  /*
+  |--------------------------------------------------------------------------
+  | DO NOT SEND:
+  |
+  | cumulativeWeight
+  | citizenContact
+  |
+  |--------------------------------------------------------------------------
+  */
+
   url.search = params.toString();
 
   return url;
@@ -346,6 +416,16 @@ async function sendPacket(vehicle, packet) {
 
   stats.lastPacketAt = new Date();
 
+  if (vehicle.type === "GVP") {
+    stats.gvpPackets++;
+
+    statistics.gvpPackets++;
+  } else {
+    stats.collectionPackets++;
+
+    statistics.collectionPackets++;
+  }
+
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -364,25 +444,29 @@ async function sendPacket(vehicle, packet) {
 
       statistics.successfulPackets++;
 
-      stats.lastRFID = packet.rfidNumber;
-
       stats.lastLatitude = packet.latitude;
 
       stats.lastLongitude = packet.longitude;
 
+      stats.lastWeight = packet.weight;
+
       console.log(
-        `🚛 ${vehicle.vehicleId} | ` +
+        `${vehicle.type === "GVP" ? "🔴 GVP" : "🟢 COLLECTION"} | ` +
+          `${vehicle.vehicleId} | ` +
           `Ward ${vehicle.wardNo} | ` +
-          `RFID ${packet.rfidNumber} | ` +
           `Lat ${packet.latitude.toFixed(6)} | ` +
           `Lng ${packet.longitude.toFixed(6)} | ` +
           `Weight ${packet.weight} kg | ` +
-          `HTTP ${response.status}`,
+          `RFID ${packet.rfidNumber} | ` +
+          `Unit ${packet.unitNumber} | ` +
+          `Remarks ${packet.remarks || "-"}`,
       );
 
       return {
         success: true,
+
         status: response.status,
+
         body: responseText,
       };
     }
@@ -393,13 +477,15 @@ async function sendPacket(vehicle, packet) {
 
     console.error("");
 
-    console.error("===============================================");
+    console.error("=================================================");
 
-    console.error("TELEMETRY PACKET FAILED");
+    console.error("❌ TELEMETRY PACKET FAILED");
 
-    console.error("===============================================");
+    console.error("=================================================");
 
     console.error(`Vehicle    : ${vehicle.vehicleId}`);
+
+    console.error(`Type       : ${vehicle.type}`);
 
     console.error(`Ward       : ${vehicle.wardNo}`);
 
@@ -407,19 +493,25 @@ async function sendPacket(vehicle, packet) {
 
     console.error(`Unit       : ${packet.unitNumber}`);
 
+    console.error(`Remarks    : ${packet.remarks || "-"}`);
+
+    console.error(`Weight     : ${packet.weight}`);
+
     console.error(`Status     : ${response.status}`);
 
     console.error(`Response   : ${responseText}`);
 
     console.error(`URL        : ${url.toString()}`);
 
-    console.error("===============================================");
+    console.error("=================================================");
 
     console.error("");
 
     return {
       success: false,
+
       status: response.status,
+
       body: responseText,
     };
   } catch (error) {
@@ -427,12 +519,11 @@ async function sendPacket(vehicle, packet) {
 
     statistics.failedPackets++;
 
-    console.error(`❌ ${vehicle.vehicleId} telemetry failed:`, error.message);
-
-    console.error(`URL: ${url.toString()}`);
+    console.error(`❌ ${vehicle.vehicleId} request failed:`, error.message);
 
     return {
       success: false,
+
       error: error.message,
     };
   }
@@ -443,12 +534,24 @@ async function sendPacket(vehicle, packet) {
 // ============================================================
 
 async function runVehicle(vehicle, stopTime) {
-  console.log(`${vehicle.vehicleId} simulation started`);
+  console.log("");
+
+  console.log(`🚛 ${vehicle.vehicleId} simulation started`);
+
+  console.log(`Type       : ${vehicle.type}`);
+
+  console.log(`Ward       : ${vehicle.wardNo} - ${vehicle.wardName}`);
+
+  console.log(`Unit       : ${vehicle.unitNumber}`);
+
+  console.log(`RFID       : ${vehicle.rfidNumber}`);
+
+  console.log(`Remarks    : ${vehicle.remarks || "(empty)"}`);
 
   while (Date.now() < stopTime) {
-    const delay = randomDelay(MIN_DELAY_SECONDS, MAX_DELAY_SECONDS);
-
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    await new Promise((resolve) =>
+      setTimeout(resolve, randomDelay(MIN_DELAY_SECONDS, MAX_DELAY_SECONDS)),
+    );
 
     if (Date.now() >= stopTime) {
       break;
@@ -465,7 +568,7 @@ async function runVehicle(vehicle, stopTime) {
     }
   }
 
-  console.log(`${vehicle.vehicleId} simulation stopped`);
+  console.log(`🛑 ${vehicle.vehicleId} simulation stopped`);
 }
 
 // ============================================================
@@ -481,14 +584,10 @@ function printSummary() {
 
   console.log("=================================================");
 
-  console.log("");
-
-  console.log("Duration         : 5 minutes");
+  console.log(`Duration         : 5 minutes`);
 
   console.log(
-    `Random Delay     : ` +
-      `${MIN_DELAY_SECONDS}s - ` +
-      `${MAX_DELAY_SECONDS}s`,
+    `Random Delay     : ${MIN_DELAY_SECONDS}s - ${MAX_DELAY_SECONDS}s`,
   );
 
   console.log(`Total Packets    : ${statistics.totalPackets}`);
@@ -497,16 +596,22 @@ function printSummary() {
 
   console.log(`Failed           : ${statistics.failedPackets}`);
 
-  console.log("");
+  console.log(`Collection       : ${statistics.collectionPackets}`);
+
+  console.log(`GVP              : ${statistics.gvpPackets}`);
 
   for (const vehicle of vehicles) {
     const stats = statistics.vehicles[vehicle.vehicleId];
+
+    console.log("");
 
     console.log("-------------------------------------------------");
 
     console.log(`Vehicle : ${vehicle.vehicleId}`);
 
     console.log(`Ward    : ${vehicle.wardNo}`);
+
+    console.log(`Type    : ${vehicle.type}`);
 
     console.log(`Unit    : ${vehicle.unitNumber}`);
 
@@ -516,12 +621,12 @@ function printSummary() {
 
     console.log(`Failed  : ${stats.packetsFailed}`);
 
-    console.log(`Last RFID : ${stats.lastRFID || "N/A"}`);
+    console.log(`Last Weight : ${stats.lastWeight ?? "N/A"}`);
 
     console.log(
-      `Last Position : ` +
-        `${stats.lastLatitude ?? "N/A"}, ` +
-        `${stats.lastLongitude ?? "N/A"}`,
+      `Last Position : ${stats.lastLatitude ?? "N/A"}, ${
+        stats.lastLongitude ?? "N/A"
+      }`,
     );
   }
 
@@ -535,13 +640,7 @@ function printSummary() {
 // ============================================================
 
 function stopSimulation() {
-  console.log("");
-
-  console.log("=================================================");
-
-  console.log("🛑 5-MINUTE SIMULATION COMPLETED");
-
-  console.log("=================================================");
+  statistics.finishedAt = new Date();
 
   printSummary();
 
@@ -549,13 +648,15 @@ function stopSimulation() {
 }
 
 // ============================================================
-// MAIN
+// START
 // ============================================================
 
 async function startSimulation() {
-  const simulationStartedAt = Date.now();
+  const startedAt = Date.now();
 
-  const stopTime = simulationStartedAt + SIMULATION_DURATION_MS;
+  const stopTime = startedAt + SIMULATION_DURATION_MS;
+
+  statistics.startedAt = new Date();
 
   console.log("");
 
@@ -569,27 +670,17 @@ async function startSimulation() {
 
   console.log(`Vehicles   : ${vehicles.length}`);
 
-  console.log("Vehicles   : KA05AB1237, KA05AB1238");
+  console.log("Collection : KA05AB1237");
 
-  console.log("Duration   : 5 minutes");
+  console.log("GVP        : KA05AB1238");
 
-  console.log(
-    `Random Delay : ` + `${MIN_DELAY_SECONDS}s - ` + `${MAX_DELAY_SECONDS}s`,
-  );
+  console.log(`Duration   : 5 minutes`);
+
+  console.log(`Random Delay : ${MIN_DELAY_SECONDS}s - ${MAX_DELAY_SECONDS}s`);
 
   console.log(`HTTP API   : ${API_URL}`);
 
-  console.log("Method     : GET");
-
-  console.log("Socket.IO  : DISABLED");
-
-  console.log("Telemetry  : MANUAL / UHF");
-
   console.log("============================================================");
-
-  console.log("");
-
-  console.log("🚛 Starting vehicle simulation...");
 
   console.log("");
 
@@ -603,7 +694,7 @@ async function startSimulation() {
 }
 
 // ============================================================
-// 5-MINUTE TIMER
+// TIMER
 // ============================================================
 
 setTimeout(() => {
@@ -611,29 +702,29 @@ setTimeout(() => {
 }, SIMULATION_DURATION_MS);
 
 // ============================================================
-// CTRL + C
+// CTRL+C
 // ============================================================
 
 process.on("SIGINT", () => {
-  console.log("⚠️ Simulation manually stopped.");
+  console.log("\n⚠️ Simulation manually stopped.");
 
   stopSimulation();
 });
 
 // ============================================================
-// ERROR HANDLERS
+// ERRORS
 // ============================================================
 
 process.on("uncaughtException", (error) => {
-  console.error("❌ Simulation error:", error);
+  console.error("❌ Uncaught simulation error:", error);
 });
 
 process.on("unhandledRejection", (error) => {
-  console.error("❌ Unhandled simulation error:", error);
+  console.error("❌ Unhandled simulation rejection:", error);
 });
 
 // ============================================================
-// START
+// RUN
 // ============================================================
 
 startSimulation();

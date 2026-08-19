@@ -1977,6 +1977,15 @@ const getWasteGeneratorMap = async ({
   |--------------------------------------------------------------------------
   */
 
+  const uniqueCollectionPointKeys = new Set(
+    points.map(
+      (point) =>
+        `${Number(point.latitude).toFixed(7)},${Number(point.longitude).toFixed(7)}`,
+    ),
+  );
+
+  const totalCollectionPoints = uniqueCollectionPointKeys.size;
+
   return {
     date: selectedDate,
 
@@ -2024,7 +2033,7 @@ const getWasteGeneratorMap = async ({
 
     points,
 
-    totalPoints: points.length,
+    totalPoints: totalCollectionPoints,
 
     /*
     |--------------------------------------------------------------------------
