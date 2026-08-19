@@ -1735,7 +1735,7 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
           AND longitude IS NOT NULL
         ORDER BY
           "vehicleNumber" ASC,
-          receivedtimestamp ASC,
+          iottimestamp ASC,
           id ASC
       `,
       selectedDate,
@@ -1977,13 +1977,7 @@ const getWasteGeneratorMap = async ({
     })
     .filter(
       (point) =>
-        Number.isFinite(point.latitude) &&
-        Number.isFinite(point.longitude) &&
-        pointInBoundary(
-          point.latitude,
-          point.longitude,
-          boundaryRow.geo_boundary,
-        ),
+        Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
     );
 
   /*
