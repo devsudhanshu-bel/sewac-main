@@ -70,6 +70,7 @@ const DIVISION_WARDS_ENDPOINT = (
     divisionTableName
   )}/wards`;
 
+
 /* ============================================================
    PLANTS ENDPOINT
 ============================================================ */
@@ -1886,134 +1887,6 @@ export default function CityMapOverview({
 
 
   /* ==========================================================
-     FETCH PLANTS
-  ========================================================== */
-
-  const fetchPlants =
-    useCallback(
-      async () => {
-
-        plantsAbortRef.current?.abort();
-
-        const controller =
-          new AbortController();
-
-        plantsAbortRef.current =
-          controller;
-
-        try {
-
-          setPlantsLoading(true);
-          setPlantsError("");
-
-          const response =
-            await fetch(
-              PLANTS_ENDPOINT,
-              {
-                method: "GET",
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-                signal:
-                  controller.signal,
-              }
-            );
-
-          if (!response.ok) {
-            throw new Error(
-              `Plants request failed with status ${response.status}`
-            );
-          }
-
-          const result =
-            await response.json();
-
-          if (
-            result?.success ===
-            false
-          ) {
-            throw new Error(
-              result.message ||
-                "Unable to fetch plants."
-            );
-          }
-
-          const loadedPlants =
-            extractArray(
-              result,
-              "plants"
-            );
-
-          setPlants(
-            loadedPlants
-          );
-
-        } catch (requestError) {
-
-          if (
-            requestError?.name ===
-            "AbortError"
-          ) {
-            return;
-          }
-
-          console.error(
-            "PLANTS ERROR:",
-            requestError
-          );
-
-          setPlantsError(
-            requestError?.message ||
-              "Unable to load plants."
-          );
-
-          setPlants([]);
-
-        } finally {
-
-          if (
-            !controller.signal.aborted
-          ) {
-            setPlantsLoading(false);
-          }
-
-        }
-
-      },
-      []
-    );
-
-
-  /* ==========================================================
-     LOAD PLANTS ONLY WHEN PLANT VIEW IS SELECTED
-  ========================================================== */
-
-  useEffect(() => {
-
-    if (
-      mapView !==
-      "plants"
-    ) {
-      return;
-    }
-
-    if (
-      plants.length > 0
-    ) {
-      return;
-    }
-
-    fetchPlants();
-
-  }, [
-    mapView,
-    plants.length,
-    fetchPlants,
-  ]);
-
-
-  /* ==========================================================
      FETCH ZONE DIVISIONS
   ========================================================== */
 
@@ -2658,6 +2531,114 @@ export default function CityMapOverview({
 
 
   /* ==========================================================
+     FETCH PLANTS
+  ========================================================== */
+
+  const fetchPlants =
+    useCallback(
+      async () => {
+
+        plantsAbortRef.current?.abort();
+
+        const controller =
+          new AbortController();
+
+        plantsAbortRef.current =
+          controller;
+
+        try {
+
+          setPlantsLoading(true);
+          setPlantsError("");
+
+          const response =
+            await fetch(
+              PLANTS_ENDPOINT,
+              {
+                method: "GET",
+                headers: {
+                  Accept: "application/json",
+                },
+                signal: controller.signal,
+              }
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              `Plants request failed with status ${response.status}`
+            );
+          }
+
+          const result =
+            await response.json();
+
+          if (result?.success === false) {
+            throw new Error(
+              result.message ||
+                "Unable to fetch plants."
+            );
+          }
+
+          const loadedPlants =
+            Array.isArray(result?.plants)
+              ? result.plants
+              : Array.isArray(result?.data)
+                ? result.data
+                : Array.isArray(result)
+                  ? result
+                  : [];
+
+          setPlants(loadedPlants);
+
+        } catch (requestError) {
+
+          if (requestError?.name === "AbortError") {
+            return;
+          }
+
+          console.error(
+            "❌ PLANTS ERROR:",
+            requestError
+          );
+
+          setPlantsError(
+            requestError?.message ||
+              "Unable to load plants."
+          );
+
+        } finally {
+
+          if (!controller.signal.aborted) {
+            setPlantsLoading(false);
+          }
+
+        }
+
+      },
+      []
+    );
+
+
+  useEffect(() => {
+
+    if (mapView !== "plants") {
+      return;
+    }
+
+    if (plants.length > 0) {
+      return;
+    }
+
+    fetchPlants();
+
+  }, [
+    mapView,
+    plants.length,
+    fetchPlants,
+  ]);
+
+
+  /* ==========================================================
      FILTER OPTIONS
   ========================================================== */
 
@@ -2897,10 +2878,6 @@ export default function CityMapOverview({
   const resetMap =
     useCallback(
       () => {
-
-        setMapView(
-          "overview"
-        );
 
         setSelectedZone(
           null
@@ -3184,11 +3161,8 @@ const handleMapViewChange =
   const currentView =
     mapViewOptions.find(
       (option) =>
-        option.id ===
-        mapView
-    ) ||
-    mapViewOptions[0];
-
+        option.id === mapView
+    ) || mapViewOptions[0];
 
   const CurrentViewIcon =
     currentView.icon;
@@ -4441,62 +4415,59 @@ const handleMapViewChange =
 
 
         /* ====================================================
-           SPECIAL MAP VIEWS
+           PLANTS MAP EMBED
         ==================================================== */
 
         .cm-special-view {
+          position: absolute;
+          inset: 0;
           width: 100%;
-          min-height: 100%;
           height: 100%;
-          overflow: auto;
+          min-height: 100%;
+          overflow: hidden;
           box-sizing: border-box;
           background: #eef1f3;
+        }
+
+        .cm-plants-view > .mt-8 {
+          width: 100% !important;
+          height: 100% !important;
+          min-height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          background: transparent !important;
+        }
+
+        .cm-plants-view > .mt-8 > .flex.items-center.justify-between {
+          display: none !important;
+        }
+
+        .cm-plants-view > .mt-8 > .overflow-hidden {
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          border-radius: 0 !important;
+        }
+
+        .cm-plants-view .leaflet-container {
+          width: 100% !important;
+          height: 100% !important;
+          min-height: 100% !important;
         }
 
         .cm-special-loading,
         .cm-placeholder-view {
           width: 100%;
+          height: 100%;
           min-height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           box-sizing: border-box;
           padding: 30px;
-        }
-
-        .cm-placeholder-card {
-          width: min(420px, 90%);
-          padding: 28px;
-          border-radius: 16px;
-          background: rgba(255,255,255,.97);
-          border: 1px solid #dce4ec;
-          box-shadow: 0 12px 30px rgba(30,45,60,.08);
-          text-align: center;
-        }
-
-        .cm-placeholder-icon {
-          width: 58px;
-          height: 58px;
-          margin: 0 auto 14px;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #ede9fe;
-          color: #7c3aed;
-        }
-
-        .cm-placeholder-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #34475b;
-        }
-
-        .cm-placeholder-description {
-          margin-top: 8px;
-          font-size: 12px;
-          line-height: 1.5;
-          color: #8aa1bb;
         }
 
 
@@ -4633,8 +4604,7 @@ const handleMapViewChange =
 
       <div className="cm-map-shell">
 
-        {mapView ===
-          "overview" && (
+        {mapView === "overview" && (
 
         <MapContainer
           ref={mapRef}
@@ -4978,14 +4948,13 @@ const handleMapViewChange =
         )}
 
 
-        {/* ==================================================
-            PLANTS
-        ================================================== */}
+        {/* ====================================================
+            PLANTS MAP
+        ==================================================== */}
 
-        {mapView ===
-          "plants" && (
+        {mapView === "plants" && (
 
-          <div className="cm-special-view">
+          <div className="cm-special-view cm-plants-view">
 
             {plantsLoading ? (
 
@@ -5000,11 +4969,7 @@ const handleMapViewChange =
                 <div className="cm-placeholder-card">
 
                   <div className="cm-placeholder-icon">
-
-                    <Factory
-                      size={32}
-                    />
-
+                    <Factory size={32} />
                   </div>
 
                   <div className="cm-placeholder-title">
@@ -5021,9 +4986,7 @@ const handleMapViewChange =
 
             ) : (
 
-              <Plants
-                plants={plants}
-              />
+              <Plants plants={plants} />
 
             )}
 
@@ -5061,25 +5024,20 @@ const handleMapViewChange =
 
               {mapView === "overview" &&
                 city?.cityName && (
-
                 <div className="cm-header-city">
                   {city.cityName}
                 </div>
-
               )}
 
               {mapView === "plants" && (
-
                 <div className="cm-header-city">
                   Plant Locations
                 </div>
-
               )}
 
             </div>
 
           </div>
-
 
           <button
             type="button"
@@ -5149,8 +5107,7 @@ const handleMapViewChange =
                       onClick={() =>
                         handleMapViewChange(
                           option.id
-                        )
-                      }
+                        )}
                     >
 
                       <OptionIcon
@@ -5184,6 +5141,8 @@ const handleMapViewChange =
         {/* ====================================================
             MAP FILTERS
         ==================================================== */}
+
+        {mapView === "overview" && (
 
         <div className="cm-filter-card">
 
@@ -5519,12 +5478,16 @@ const handleMapViewChange =
 
         </div>
 
+        )}
+
 
         {/* ====================================================
             SELECTION CARD
         ==================================================== */}
 
-        {selectedWard ? (
+        {mapView === "overview" && (
+
+        selectedWard ? (
 
           <div className="cm-selected-card">
 
@@ -5863,7 +5826,9 @@ const handleMapViewChange =
 
           </div>
 
-        ) : null}
+        ) : null
+
+        )}
 
 
         {/* ====================================================
