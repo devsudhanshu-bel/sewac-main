@@ -2,6 +2,11 @@ const { PrismaClient } = require("../generated/sewac");
 
 const prisma = new PrismaClient();
 
+/**
+ * =========================================================
+ * GET COMPLAINTS
+ * =========================================================
+ */
 async function getComplaints({
   page = 1,
   limit = 10,
@@ -71,6 +76,11 @@ async function getComplaints({
   };
 }
 
+/**
+ * =========================================================
+ * GET SINGLE COMPLAINT
+ * =========================================================
+ */
 async function getComplaintByTicket(ticketNumber) {
   return prisma.citizen_complaints.findUnique({
     where: {
@@ -79,6 +89,55 @@ async function getComplaintByTicket(ticketNumber) {
   });
 }
 
+/**
+ * =========================================================
+ * UPDATE COMPLAINT
+ * =========================================================
+ *
+ * Only these fields are allowed to be changed:
+ *
+ * - status
+ * - assigned_to
+ * - remarks
+ *
+ * Security/internal fields are NEVER accepted here.
+ */
+async function updateComplaint(
+  ticketNumber,
+  { status, assigned_to, remarks, closed_at },
+) {
+  return prisma.citizen_complaints.update({
+    where: {
+      ticket_number: ticketNumber,
+    },
+
+    data: {
+      ...(status !== undefined && {
+        status,
+      }),
+
+      ...(assigned_to !== undefined && {
+        assigned_to,
+      }),
+
+      ...(remarks !== undefined && {
+        remarks,
+      }),
+
+      ...(closed_at !== undefined && {
+        closed_at,
+      }),
+
+      updated_at: new Date(),
+    },
+  });
+}
+
+/**
+ * =========================================================
+ * KPI DATA
+ * =========================================================
+ */
 async function getComplaintKPIs() {
   const [
     total,
@@ -142,5 +201,6 @@ async function getComplaintKPIs() {
 module.exports = {
   getComplaints,
   getComplaintByTicket,
+  updateComplaint,
   getComplaintKPIs,
 };

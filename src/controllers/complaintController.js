@@ -1,9 +1,16 @@
 const complaintService = require("../services/complaintService");
 
+/**
+ * =========================================================
+ * REQUEST VERIFICATION OTP
+ * =========================================================
+ */
 exports.requestVerification = async (req, res) => {
   try {
     console.log("AUTH USER:", req.user);
+
     const { ticketNumber } = req.params;
+
     const adminId = req.user.adminId;
 
     if (!ticketNumber) {
@@ -33,9 +40,15 @@ exports.requestVerification = async (req, res) => {
   }
 };
 
+/**
+ * =========================================================
+ * VERIFY OTP
+ * =========================================================
+ */
 exports.verifyOTP = async (req, res) => {
   try {
     const { ticketNumber } = req.params;
+
     const { otp } = req.body;
 
     if (!ticketNumber) {
@@ -73,6 +86,11 @@ exports.verifyOTP = async (req, res) => {
   }
 };
 
+/**
+ * =========================================================
+ * GET ALL COMPLAINTS
+ * =========================================================
+ */
 exports.getComplaints = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "", status, category } = req.query;
@@ -100,6 +118,11 @@ exports.getComplaints = async (req, res) => {
   }
 };
 
+/**
+ * =========================================================
+ * GET SINGLE COMPLAINT
+ * =========================================================
+ */
 exports.getComplaintByTicket = async (req, res) => {
   try {
     const { ticketNumber } = req.params;
@@ -128,6 +151,75 @@ exports.getComplaintByTicket = async (req, res) => {
   }
 };
 
+/**
+ * =========================================================
+ * UPDATE COMPLAINT
+ * =========================================================
+ */
+exports.updateComplaint = async (req, res) => {
+  try {
+    const { ticketNumber } = req.params;
+
+    if (!ticketNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Ticket number is required.",
+      });
+    }
+
+    const { status, assigned_to, remarks } = req.body;
+
+    /**
+     * Explicitly whitelist fields.
+     *
+     * This prevents fields such as:
+     *
+     * otp_hash
+     * verification_code
+     * phone_number
+     * ticket_number
+     *
+     * from reaching the service.
+     */
+    const updates = {};
+
+    if (status !== undefined) {
+      updates.status = status;
+    }
+
+    if (assigned_to !== undefined) {
+      updates.assigned_to = assigned_to;
+    }
+
+    if (remarks !== undefined) {
+      updates.remarks = remarks;
+    }
+
+    const result = await complaintService.updateComplaint(
+      ticketNumber,
+      updates,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Complaint updated successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Update complaint error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Unable to update complaint.",
+    });
+  }
+};
+
+/**
+ * =========================================================
+ * KPI
+ * =========================================================
+ */
 exports.getComplaintKPIs = async (req, res) => {
   try {
     const kpis = await complaintService.getComplaintKPIs();
