@@ -23,10 +23,39 @@ const API_ENDPOINT =
 
 
 /* ============================================================
+   BENGALURU CITY BOUNDARY
+============================================================ */
+
+/*
+ * Bengaluru geographic boundary used to:
+ *
+ * 1. Remove complaints outside Bengaluru
+ * 2. Keep the map focused around Bengaluru
+ * 3. Prevent the map from being dragged far outside
+ *
+ * Approximate Bengaluru city limits:
+ *
+ * South-West : 12.83, 77.40
+ * North-East : 13.15, 77.80
+ *
+ * This is intentionally slightly larger than the dense
+ * central Bengaluru area so valid outskirts are not removed.
+ */
+
+const BENGALURU_BOUNDS = L.latLngBounds(
+  [12.83, 77.40],
+  [13.15, 77.80]
+);
+
+
+/* ============================================================
    DEFAULT MAP POSITION
 ============================================================ */
 
-const DEFAULT_CENTER = [12.9715987, 77.5945627];
+const DEFAULT_CENTER = [
+  12.9715987,
+  77.5945627,
+];
 
 
 /* ============================================================
@@ -73,7 +102,9 @@ const STATUS_STYLES = {
 ============================================================ */
 
 const formatCategory = (category) => {
-  if (!category) return "N/A";
+  if (!category) {
+    return "N/A";
+  }
 
   if (CATEGORY_LABELS[category]) {
     return CATEGORY_LABELS[category];
@@ -92,7 +123,9 @@ const formatCategory = (category) => {
 
 
 const formatStatus = (status) => {
-  if (!status) return "N/A";
+  if (!status) {
+    return "N/A";
+  }
 
   return status
     .toLowerCase()
@@ -107,12 +140,32 @@ const formatStatus = (status) => {
 
 
 /* ============================================================
+   CHECK IF POINT IS INSIDE BENGALURU
+============================================================ */
+
+const isInsideBengaluru = (lat, lng) => {
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return false;
+  }
+
+  return BENGALURU_BOUNDS.contains(
+    L.latLng(lat, lng)
+  );
+};
+
+
+/* ============================================================
    PERSON MAP ICON
 ============================================================ */
 
 const createPersonIcon = (selected = false) => {
   return L.divIcon({
+
     className: "",
+
     html: `
       <div
         style="
@@ -127,6 +180,7 @@ const createPersonIcon = (selected = false) => {
           justify-content: center;
         "
       >
+
         <svg
           width="20"
           height="20"
@@ -137,14 +191,37 @@ const createPersonIcon = (selected = false) => {
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <circle cx="12" cy="8" r="3.5"></circle>
-          <path d="M5.5 20c.7-3.4 2.9-5.5 6.5-5.5s5.8 2.1 6.5 5.5"></path>
+
+          <circle
+            cx="12"
+            cy="8"
+            r="3.5"
+          ></circle>
+
+          <path
+            d="M5.5 20c.7-3.4 2.9-5.5 6.5-5.5s5.8 2.1 6.5 5.5"
+          ></path>
+
         </svg>
+
       </div>
     `,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -20],
+
+    iconSize: [
+      38,
+      38,
+    ],
+
+    iconAnchor: [
+      19,
+      19,
+    ],
+
+    popupAnchor: [
+      0,
+      -20,
+    ],
+
   });
 };
 
@@ -153,41 +230,32 @@ const createPersonIcon = (selected = false) => {
    MAP AUTO CENTER
 ============================================================ */
 
-function MapAutoCenter({ complaints }) {
+function MapAutoCenter() {
+
   const map = useMap();
 
+
   useEffect(() => {
-    if (!complaints || complaints.length === 0) {
-      return;
-    }
 
-    const validPoints = complaints
-      .map((item) => [
-        Number(item.lat),
-        Number(item.long),
-      ])
-      .filter(
-        ([lat, lng]) =>
-          Number.isFinite(lat) &&
-          Number.isFinite(lng)
-      );
+    /*
+     * Initial focus is always Bengaluru.
+     */
 
-    if (validPoints.length === 0) {
-      return;
-    }
+    map.fitBounds(
+      BENGALURU_BOUNDS,
+      {
+        padding: [
+          25,
+          25,
+        ],
 
-    if (validPoints.length === 1) {
-      map.setView(validPoints[0], 14);
-      return;
-    }
+        maxZoom: 13,
+      }
+    );
 
-    const bounds = L.latLngBounds(validPoints);
 
-    map.fitBounds(bounds, {
-      padding: [50, 50],
-      maxZoom: 14,
-    });
-  }, [complaints, map]);
+  }, [map]);
+
 
   return null;
 }
@@ -197,12 +265,18 @@ function MapAutoCenter({ complaints }) {
    COMPLAINT POPUP
 ============================================================ */
 
-function ComplaintPopup({ complaint }) {
+function ComplaintPopup({
+  complaint,
+}) {
+
   if (!complaint) {
     return null;
   }
 
-  const data = complaint.data || {};
+
+  const data =
+    complaint.data || {};
+
 
   const statusClass =
     STATUS_STYLES[data.status] ||
@@ -210,9 +284,14 @@ function ComplaintPopup({ complaint }) {
 
 
   return (
+
     <div className="w-[320px] max-w-[80vw] overflow-hidden rounded-xl bg-white">
 
-      {/* HEADER */}
+
+      {/* ======================================================
+         HEADER
+      ====================================================== */}
+
       <div className="border-b border-slate-100 px-4 py-3">
 
         <div className="flex items-start justify-between gap-3">
@@ -229,6 +308,7 @@ function ComplaintPopup({ complaint }) {
 
           </div>
 
+
           <span
             className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-bold ${statusClass}`}
           >
@@ -240,10 +320,15 @@ function ComplaintPopup({ complaint }) {
       </div>
 
 
-      {/* BODY */}
+      {/* ======================================================
+         BODY
+      ====================================================== */}
+
       <div className="max-h-[400px] overflow-y-auto px-4 py-3">
 
+
         {/* TITLE */}
+
         <div className="mb-3">
 
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -258,6 +343,7 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* DESCRIPTION */}
+
         <div className="mb-3">
 
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -272,6 +358,7 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* CATEGORY + ID */}
+
         <div className="mb-3 grid grid-cols-2 gap-3">
 
           <div>
@@ -303,6 +390,7 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* PHONE */}
+
         <div className="mb-3">
 
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -317,6 +405,7 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* ADDRESS */}
+
         <div className="mb-3">
 
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -331,6 +420,7 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* COORDINATES */}
+
         <div className="mb-3 grid grid-cols-2 gap-3">
 
           <div>
@@ -362,7 +452,9 @@ function ComplaintPopup({ complaint }) {
 
 
         {/* IMAGE */}
+
         {data.image_url && (
+
           <div>
 
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -374,16 +466,19 @@ function ComplaintPopup({ complaint }) {
               alt="Complaint"
               className="h-32 w-full rounded-lg border border-slate-200 object-cover"
               onError={(event) => {
-                event.currentTarget.style.display = "none";
+                event.currentTarget.style.display =
+                  "none";
               }}
             />
 
           </div>
+
         )}
 
       </div>
 
     </div>
+
   );
 }
 
@@ -394,13 +489,28 @@ function ComplaintPopup({ complaint }) {
 
 export default function CustomerGrev() {
 
-  const [complaints, setComplaints] = useState([]);
+  const [
+    complaints,
+    setComplaints,
+  ] = useState([]);
 
-  const [loading, setLoading] = useState(true);
 
-  const [error, setError] = useState(null);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [selectedId, setSelectedId] = useState(null);
+
+  const [
+    error,
+    setError,
+  ] = useState(null);
+
+
+  const [
+    selectedId,
+    setSelectedId,
+  ] = useState(null);
 
 
   /* ==========================================================
@@ -417,8 +527,17 @@ export default function CustomerGrev() {
       try {
 
         setLoading(true);
+
         setError(null);
 
+
+        console.log(
+          ""
+        );
+
+        console.log(
+          "=================================================="
+        );
 
         console.log(
           "📍 CUSTOMER GRIEVANCES MAP REQUEST"
@@ -429,9 +548,20 @@ export default function CustomerGrev() {
           API_ENDPOINT
         );
 
+        console.log(
+          "📍 CITY:",
+          "Bengaluru"
+        );
+
+        console.log(
+          "=================================================="
+        );
+
 
         const response =
-          await fetch(API_ENDPOINT);
+          await fetch(
+            API_ENDPOINT
+          );
 
 
         if (!response.ok) {
@@ -459,47 +589,111 @@ export default function CustomerGrev() {
 
 
         const locations =
-          Array.isArray(result?.data)
+          Array.isArray(
+            result?.data
+          )
             ? result.data
             : [];
 
 
-        const validLocations =
-          locations.filter((item) => {
+        /* ====================================================
+           VALIDATE + BENGALURU FILTER
+        ==================================================== */
 
-            const lat =
-              Number(item?.lat);
+        const bengaluruLocations =
+          locations.filter(
+            (item) => {
 
-            const lng =
-              Number(item?.long);
+              const lat =
+                Number(
+                  item?.lat
+                );
+
+              const lng =
+                Number(
+                  item?.long
+                );
 
 
-            return (
-              Number.isFinite(lat) &&
-              Number.isFinite(lng) &&
-              lat >= -90 &&
-              lat <= 90 &&
-              lng >= -180 &&
-              lng <= 180
-            );
+              /*
+               * First make sure coordinates are valid.
+               */
 
-          });
+              if (
+                !Number.isFinite(lat) ||
+                !Number.isFinite(lng)
+              ) {
+
+                return false;
+
+              }
+
+
+              if (
+                lat < -90 ||
+                lat > 90 ||
+                lng < -180 ||
+                lng > 180
+              ) {
+
+                return false;
+
+              }
+
+
+              /*
+               * Only Bengaluru points survive.
+               */
+
+              return isInsideBengaluru(
+                lat,
+                lng
+              );
+
+            }
+          );
 
 
         console.log(
-          "📍 VALID CUSTOMER GRIEVANCE LOCATIONS:",
-          validLocations.length
+          "📍 TOTAL COMPLAINTS:",
+          locations.length
         );
+
+
+        console.log(
+          "📍 BENGALURU COMPLAINTS:",
+          bengaluruLocations.length
+        );
+
+
+        console.log(
+          "📍 REMOVED OUTSIDE-CITY POINTS:",
+          locations.length -
+            bengaluruLocations.length
+        );
+
+
+        if (
+          locations.length !==
+          bengaluruLocations.length
+        ) {
+
+          console.log(
+            "🛑 Outside Bengaluru complaints were filtered."
+          );
+
+        }
 
 
         setComplaints(
-          validLocations
+          bengaluruLocations
         );
+
 
       } catch (err) {
 
         console.error(
-          "CUSTOMER GRIEVANCES ERROR:",
+          "❌ CUSTOMER GRIEVANCES ERROR:",
           err
         );
 
@@ -515,12 +709,19 @@ export default function CustomerGrev() {
         );
 
 
-        setComplaints([]);
+        setComplaints(
+          []
+        );
+
 
       } finally {
 
         if (mounted) {
-          setLoading(false);
+
+          setLoading(
+            false
+          );
+
         }
 
       }
@@ -532,7 +733,9 @@ export default function CustomerGrev() {
 
 
     return () => {
+
       mounted = false;
+
     };
 
   }, []);
@@ -546,8 +749,9 @@ export default function CustomerGrev() {
 
     <section className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
+
       {/* ======================================================
-          HEADER
+         HEADER
       ====================================================== */}
 
       <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -559,7 +763,7 @@ export default function CustomerGrev() {
           </h2>
 
           <p className="mt-0.5 text-xs font-medium text-slate-400">
-            Citizen complaint locations
+            Bengaluru citizen complaint locations
           </p>
 
         </div>
@@ -577,50 +781,60 @@ export default function CustomerGrev() {
 
 
       {/* ======================================================
-          MAP
+         MAP
       ====================================================== */}
 
       <div className="relative h-[520px] w-full">
+
 
         <MapContainer
           center={DEFAULT_CENTER}
           zoom={11}
           scrollWheelZoom={true}
           zoomControl={true}
+          maxBounds={BENGALURU_BOUNDS}
+          maxBoundsViscosity={1.0}
+          minZoom={10}
           className="h-full w-full"
         >
 
-          {/* --------------------------------------------------
-              WHITE / LIGHT MAP
-          -------------------------------------------------- */}
+
+          {/* ==================================================
+             LIGHT / WHITE MAP
+          ================================================== */}
 
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; OpenStreetMap &copy; CARTO'
+            attribution="&copy; OpenStreetMap &copy; CARTO"
           />
 
 
-          {/* --------------------------------------------------
-              AUTO CENTER
-          -------------------------------------------------- */}
+          {/* ==================================================
+             AUTO CENTER ON BENGALURU
+          ================================================== */}
 
-          <MapAutoCenter
-            complaints={complaints}
-          />
+          <MapAutoCenter />
 
 
-          {/* --------------------------------------------------
-              COMPLAINT MARKERS
-          -------------------------------------------------- */}
+          {/* ==================================================
+             COMPLAINT MARKERS
+          ================================================== */}
 
           {complaints.map(
-            (complaint, index) => {
+            (
+              complaint,
+              index
+            ) => {
 
               const lat =
-                Number(complaint.lat);
+                Number(
+                  complaint.lat
+                );
 
               const lng =
-                Number(complaint.long);
+                Number(
+                  complaint.long
+                );
 
 
               const complaintId =
@@ -629,42 +843,57 @@ export default function CustomerGrev() {
 
 
               const isSelected =
-                selectedId === complaintId;
+                selectedId ===
+                complaintId;
 
 
               return (
 
                 <Marker
-                  key={complaintId}
-                  position={[lat, lng]}
+                  key={
+                    complaintId
+                  }
+
+                  position={[
+                    lat,
+                    lng,
+                  ]}
+
                   icon={createPersonIcon(
                     isSelected
                   )}
 
                   eventHandlers={{
 
-                    mouseover: () => {
-                      setSelectedId(
-                        complaintId
-                      );
-                    },
+                    mouseover:
+                      () => {
 
-                    mouseout: () => {
-                      setSelectedId(null);
-                    },
+                        setSelectedId(
+                          complaintId
+                        );
 
-                    click: () => {
-                      setSelectedId(
-                        complaintId
-                      );
-                    },
+                      },
+
+                    mouseout:
+                      () => {
+
+                        setSelectedId(
+                          null
+                        );
+
+                      },
+
+                    click:
+                      () => {
+
+                        setSelectedId(
+                          complaintId
+                        );
+
+                      },
 
                   }}
                 >
-
-                  {/* ------------------------------------------
-                      HOVER / CLICK POPUP
-                  ------------------------------------------ */}
 
                   <Popup
                     closeButton={true}
@@ -674,7 +903,9 @@ export default function CustomerGrev() {
                   >
 
                     <ComplaintPopup
-                      complaint={complaint}
+                      complaint={
+                        complaint
+                      }
                     />
 
                   </Popup>
@@ -690,7 +921,7 @@ export default function CustomerGrev() {
 
 
         {/* ====================================================
-            LOADING
+           LOADING
         ==================================================== */}
 
         {loading && (
@@ -709,32 +940,33 @@ export default function CustomerGrev() {
 
 
         {/* ====================================================
-            ERROR
+           ERROR
         ==================================================== */}
 
-        {!loading && error && (
+        {!loading &&
+          error && (
 
-          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60">
+            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/60">
 
-            <div className="mx-4 max-w-md rounded-2xl border border-red-200 bg-white px-6 py-5 text-center shadow-xl">
+              <div className="mx-4 max-w-md rounded-2xl border border-red-200 bg-white px-6 py-5 text-center shadow-xl">
 
-              <p className="text-sm font-bold text-red-600">
-                Unable to load grievances
-              </p>
+                <p className="text-sm font-bold text-red-600">
+                  Unable to load grievances
+                </p>
 
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                {error}
-              </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  {error}
+                </p>
+
+              </div>
 
             </div>
 
-          </div>
-
-        )}
+          )}
 
 
         {/* ====================================================
-            EMPTY STATE
+           EMPTY STATE
         ==================================================== */}
 
         {!loading &&
@@ -746,11 +978,11 @@ export default function CustomerGrev() {
               <div className="rounded-2xl border border-slate-200 bg-white/95 px-6 py-4 text-center shadow-lg">
 
                 <p className="text-sm font-bold text-slate-600">
-                  No customer grievances available
+                  No Bengaluru grievances available
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  No valid complaint locations were returned.
+                  No valid complaint locations were found inside Bengaluru.
                 </p>
 
               </div>
