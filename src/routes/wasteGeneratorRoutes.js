@@ -2,11 +2,11 @@ const express = require("express");
 
 const router = express.Router();
 
-const wasteGeneratorController = require("./controllers/wasteGeneratorController");
+const wasteGeneratorController = require("../controllers/wasteGeneratorController");
 
-const authMiddleware = require("./middlewares/authMiddleware");
-const checkPermission = require("./middlewares/checkPermission");
-const checkTemporaryPermission = require("./middlewares/checkTemporaryPermission");
+const authMiddleware = require("../middlewares/authMiddleware");
+const checkPermission = require("../middlewares/checkPermission");
+const checkTemporaryPermission = require("../middlewares/checkTemporaryPermission");
 
 /*
 ============================================================
