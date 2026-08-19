@@ -8,7 +8,7 @@ const wasteGeneratorService = require("../services/wasteGeneratorService");
 
 /*
 ===========================================
-1. SUMMARY CARDS
+1. SUMMARY CARDS / ALL WASTE GENERATORS
 ===========================================
 */
 exports.getAllWasteGenerators = async (req, res) => {
@@ -28,7 +28,7 @@ exports.getAllWasteGenerators = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get All Waste Generators Error:", error);
 
     res.status(500).json({
       success: false,
@@ -53,6 +53,8 @@ exports.getWasteGeneratorByPhone = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Get Waste Generator Error:", error);
+
     res.status(404).json({
       success: false,
       message: error.message,
@@ -149,6 +151,8 @@ exports.createWasteGenerator = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Create Waste Generator Error:", error);
+
     res.status(400).json({
       success: false,
       message: error.message,
@@ -174,6 +178,8 @@ exports.updateWasteGenerator = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Update Waste Generator Error:", error);
+
     res.status(400).json({
       success: false,
       message: error.message,
@@ -198,6 +204,8 @@ exports.deleteWasteGenerator = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.error("Delete Waste Generator Error:", error);
+
     res.status(400).json({
       success: false,
       message: error.message,
@@ -255,16 +263,22 @@ Date
  ↓
 day_DDMMYYYY
  ↓
-vehicles assigned to selected ward
+ALL vehicles assigned to selected ward
  ↓
-vehicle_DDMMYYYY tables
+ALL vehicle_DDMMYYYY tables
  ↓
-latitude / longitude
+ALL telemetry latitude / longitude
 ===========================================
 */
 exports.getMap = async (req, res) => {
   try {
     const { date, cityId, zoneId, divisionId, wardId } = req.query;
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED PARAMETERS
+    |--------------------------------------------------------------------------
+    */
 
     if (!date || !cityId || !zoneId || !divisionId || !wardId) {
       return res.status(400).json({
@@ -272,6 +286,12 @@ exports.getMap = async (req, res) => {
         message: "date, cityId, zoneId, divisionId and wardId are required",
       });
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET MAP DATA
+    |--------------------------------------------------------------------------
+    */
 
     const data = await wasteGeneratorService.getWasteGeneratorMap({
       date,
@@ -281,11 +301,23 @@ exports.getMap = async (req, res) => {
       wardId,
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | SUCCESS RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
     return res.status(200).json({
       success: true,
       data,
     });
   } catch (error) {
+    /*
+    |--------------------------------------------------------------------------
+    | ERROR
+    |--------------------------------------------------------------------------
+    */
+
     console.error("Waste Generator Map Error:", error);
 
     return res.status(500).json({

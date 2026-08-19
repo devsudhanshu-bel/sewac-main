@@ -23,10 +23,8 @@ MAP
 IMPORTANT:
 This MUST remain before /:phoneNumber.
 
-Request:
-
 GET /api/waste-generators/map
-    ?date=2026-08-19
+    ?date=2026-08-17
     &cityId=1
     &zoneId=4
     &divisionId=5
@@ -82,14 +80,6 @@ GET ONE WASTE GENERATOR
 ============================================================
 
 Keep this AFTER /map.
-Otherwise:
-
-/map
-
-could be interpreted as:
-
-/:phoneNumber
-
 ============================================================
 */
 router.get("/:phoneNumber", wasteGeneratorController.getWasteGeneratorByPhone);

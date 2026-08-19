@@ -222,12 +222,6 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
   const selectedWardId = parseId(wardId, "wardId");
 
-  /*
-  |--------------------------------------------------------------------------
-  | HIERARCHY VALIDATION
-  |--------------------------------------------------------------------------
-  */
-
   if (selectedZoneId && !selectedCityId) {
     throw new Error("zoneId requires cityId");
   }
@@ -240,25 +234,12 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
     throw new Error("wardId requires divisionId");
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | NO FILTER
-  |--------------------------------------------------------------------------
-  */
-
   if (!selectedCityId) {
     return {
       filtered: false,
-
       wards: await getAllWardScope(),
     };
   }
-
-  /*
-  |--------------------------------------------------------------------------
-  | CITY
-  |--------------------------------------------------------------------------
-  */
 
   const city = await masterCitizenPrisma.city_table.findUnique({
     where: {
@@ -275,12 +256,6 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   }
 
   const cityTable = quoteIdentifier(city.city_table_name);
-
-  /*
-  |--------------------------------------------------------------------------
-  | CITY → ZONES
-  |--------------------------------------------------------------------------
-  */
 
   const zones = await masterCitizenPrisma.$queryRawUnsafe(
     selectedZoneId
@@ -309,12 +284,6 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   }
 
   const wards = [];
-
-  /*
-  |--------------------------------------------------------------------------
-  | ZONE → DIVISION
-  |--------------------------------------------------------------------------
-  */
 
   for (const zone of zones) {
     if (!zone.zone_table_name) {
@@ -348,12 +317,6 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
     if (selectedDivisionId && divisions.length === 0) {
       throw new Error("Division not found in selected zone");
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | DIVISION → WARD
-    |--------------------------------------------------------------------------
-    */
 
     for (const division of divisions) {
       if (!division.division_table_name) {
@@ -417,12 +380,6 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
       }
     }
   }
-
-  /*
-  |--------------------------------------------------------------------------
-  | FINAL WARD VALIDATION
-  |--------------------------------------------------------------------------
-  */
 
   if (selectedWardId && wards.length === 0) {
     throw new Error("Ward not found");
@@ -563,11 +520,8 @@ const getAllWasteGenerators = async (query = {}) => {
 
   const wardScope = await getSelectedWardScope({
     cityId: query.cityId,
-
     zoneId: query.zoneId,
-
     divisionId: query.divisionId,
-
     wardId: query.wardId,
   });
 
@@ -612,11 +566,8 @@ const getAllWasteGenerators = async (query = {}) => {
 
     pagination: {
       page: safePage,
-
       limit: safeLimit,
-
       total,
-
       totalPages,
     },
 
@@ -645,11 +596,8 @@ const getWasteGeneratorByPhone = async (phoneNumber, query = {}) => {
 
   const wardScope = await getSelectedWardScope({
     cityId: query.cityId,
-
     zoneId: query.zoneId,
-
     divisionId: query.divisionId,
-
     wardId: query.wardId,
   });
 
@@ -768,7 +716,6 @@ const updateWasteGenerator = async (phoneNumber, body, req) => {
   }
 
   const setParts = [];
-
   const values = [];
 
   let parameterIndex = 1;
@@ -806,15 +753,10 @@ const updateWasteGenerator = async (phoneNumber, body, req) => {
 
   await logEdit({
     user: req.user,
-
     req,
-
     module: "Waste Generators",
-
     action: "UPDATE",
-
     recordId: updated.phoneNumber,
-
     description: `Updated Waste Generator ${updated.personName}`,
   });
 
@@ -945,9 +887,12 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
 | TELEMETRY UNION
 |--------------------------------------------------------------------------
 |
-| wardNo comes from the day table mapping.
-| It is attached to every vehicle telemetry
-| table before the UNION.
+| IMPORTANT:
+|
+| Every vehicle table keeps its own local ID sequence.
+|
+| Therefore the source vehicle table is explicitly attached
+| to every row.
 |--------------------------------------------------------------------------
 */
 
@@ -1003,7 +948,10 @@ const buildTelemetryUnion = (vehicleTables) => {
               ${
                 safeWardNo === null ? "NULL::integer" : `${safeWardNo}::integer`
               }
-                AS "wardNo"
+                AS "wardNo",
+
+              '${vehicleTableName.replace(/'/g, "''")}'::text
+                AS "sourceVehicleTable"
 
             FROM ${table}
           `;
@@ -1067,7 +1015,9 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
               citizencontact
                 AS "citizenContact",
 
-              "wardNo"
+              "wardNo",
+
+              "sourceVehicleTable"
 
             FROM (
               ${unionSql}
@@ -1107,7 +1057,7 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
 
 /*
 |--------------------------------------------------------------------------
-| CITIZEN COUNT FOR SELECTED WARDS
+| CITIZEN COUNT
 |--------------------------------------------------------------------------
 */
 
@@ -1154,7 +1104,7 @@ const getCitizenCountForWards = async (wards) => {
 
 /*
 |--------------------------------------------------------------------------
-| SUMMARY KPIs
+| SUMMARY
 |--------------------------------------------------------------------------
 */
 
@@ -1179,17 +1129,11 @@ const getSummary = async ({
   if (wards.length === 0) {
     return {
       totalWasteGenerators: 0,
-
       activeWasteGenerators: 0,
-
       inactiveWasteGenerators: 0,
-
       totalWasteGenerated: 0,
-
       averageWaste: 0,
-
       aboveAverage: 0,
-
       belowAverage: 0,
     };
   }
@@ -1204,7 +1148,7 @@ const getSummary = async ({
 
       activeWasteGenerators: 0,
 
-      inactiveWasteGenerators: 0,
+      inactiveWasteGenerators: await getCitizenCountForWards(wards),
 
       totalWasteGenerated: 0,
 
@@ -1316,13 +1260,6 @@ const getSummary = async ({
 /*
 |--------------------------------------------------------------------------
 | GVP TREND
-|--------------------------------------------------------------------------
-|
-| GVP CONDITIONS — ALL REQUIRED:
-|
-| 1. unitNumber must NOT contain "UHF"
-| 2. remarks must be exactly "O"
-| 3. citizenContact must be empty/null
 |--------------------------------------------------------------------------
 */
 
@@ -1467,220 +1404,6 @@ const getGVPTrend = async ({
 
 /*
 |--------------------------------------------------------------------------
-| MAP GEOMETRY HELPERS
-|--------------------------------------------------------------------------
-*/
-
-const parseBoundaryGeometry = (value) => {
-  if (!value) {
-    return null;
-  }
-
-  let geometry = value;
-
-  if (typeof geometry === "string") {
-    try {
-      geometry = JSON.parse(geometry);
-    } catch {
-      return null;
-    }
-  }
-
-  if (!geometry || typeof geometry !== "object") {
-    return null;
-  }
-
-  if (geometry.type === "FeatureCollection") {
-    const geometries = Array.isArray(geometry.features)
-      ? geometry.features
-          .map((feature) => parseBoundaryGeometry(feature?.geometry))
-          .filter(Boolean)
-      : [];
-
-    if (geometries.length === 0) {
-      return null;
-    }
-
-    if (geometries.length === 1) {
-      return geometries[0];
-    }
-
-    const polygons = [];
-
-    for (const item of geometries) {
-      if (item.type === "Polygon") {
-        polygons.push(item.coordinates);
-      }
-
-      if (item.type === "MultiPolygon") {
-        polygons.push(...item.coordinates);
-      }
-    }
-
-    return {
-      type: "MultiPolygon",
-
-      coordinates: polygons,
-    };
-  }
-
-  if (geometry.type === "Feature") {
-    return parseBoundaryGeometry(geometry.geometry);
-  }
-
-  if (geometry.geometry) {
-    return parseBoundaryGeometry(geometry.geometry);
-  }
-
-  if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
-    return geometry;
-  }
-
-  /*
-   * Also accept a raw Polygon coordinate array.
-   */
-  if (Array.isArray(geometry)) {
-    if (
-      geometry.length > 0 &&
-      Array.isArray(geometry[0]) &&
-      Array.isArray(geometry[0][0]) &&
-      Array.isArray(geometry[0][0][0])
-    ) {
-      return {
-        type: "MultiPolygon",
-
-        coordinates: geometry,
-      };
-    }
-
-    if (
-      geometry.length > 0 &&
-      Array.isArray(geometry[0]) &&
-      Array.isArray(geometry[0][0])
-    ) {
-      return {
-        type: "Polygon",
-
-        coordinates: geometry,
-      };
-    }
-  }
-
-  return null;
-};
-
-const pointInRing = (latitude, longitude, ring) => {
-  if (!Array.isArray(ring) || ring.length < 3) {
-    return false;
-  }
-
-  /*
-   * Boundary coordinates:
-   *
-   * [latitude, longitude]
-   *
-   * Ray casting:
-   *
-   * x = longitude
-   * y = latitude
-   */
-
-  const x = longitude;
-
-  const y = latitude;
-
-  let inside = false;
-
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const current = ring[i];
-
-    const previous = ring[j];
-
-    if (
-      !Array.isArray(current) ||
-      current.length < 2 ||
-      !Array.isArray(previous) ||
-      previous.length < 2
-    ) {
-      continue;
-    }
-
-    const yi = Number(current[0]);
-
-    const xi = Number(current[1]);
-
-    const yj = Number(previous[0]);
-
-    const xj = Number(previous[1]);
-
-    if (
-      !Number.isFinite(xi) ||
-      !Number.isFinite(yi) ||
-      !Number.isFinite(xj) ||
-      !Number.isFinite(yj)
-    ) {
-      continue;
-    }
-
-    const intersects =
-      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-
-    if (intersects) {
-      inside = !inside;
-    }
-  }
-
-  return inside;
-};
-
-const pointInPolygon = (latitude, longitude, polygon) => {
-  if (!Array.isArray(polygon) || polygon.length === 0) {
-    return false;
-  }
-
-  /*
-   * First ring:
-   * outer shell.
-   *
-   * Remaining rings:
-   * holes.
-   */
-
-  if (!pointInRing(latitude, longitude, polygon[0])) {
-    return false;
-  }
-
-  for (let i = 1; i < polygon.length; i += 1) {
-    if (pointInRing(latitude, longitude, polygon[i])) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const pointInBoundary = (latitude, longitude, boundary) => {
-  const geometry = parseBoundaryGeometry(boundary);
-
-  if (!geometry) {
-    return false;
-  }
-
-  if (geometry.type === "Polygon") {
-    return pointInPolygon(latitude, longitude, geometry.coordinates);
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.some((polygon) =>
-      pointInPolygon(latitude, longitude, polygon),
-    );
-  }
-
-  return false;
-};
-
-/*
-|--------------------------------------------------------------------------
 | MAP TELEMETRY ROWS
 |--------------------------------------------------------------------------
 |
@@ -1688,11 +1411,15 @@ const pointInBoundary = (latitude, longitude, boundary) => {
 |   ↓
 | day_DDMMYYYY
 |   ↓
-| vehicle_table_name
+| ALL vehicle_table_name rows for selected ward
 |   ↓
-| vehicle_DDMMYYYY
+| ALL vehicle_DDMMYYYY tables
+|   ↓
+| iottimestamp selected date
+|   ↓
+| latitude / longitude
 |
-| The map uses receivedTimestamp as the day filter.
+| NO boundary filtering happens here.
 |--------------------------------------------------------------------------
 */
 
@@ -1706,38 +1433,71 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
   try {
     const result = await telemetryDb.$queryRawUnsafe(
       `
-        SELECT
-          id,
-          iottimestamp AS "iotTimestamp",
-          receivedtimestamp AS "receivedTimestamp",
-          citizenid AS "citizenId",
-          latitude,
-          longitude,
-          wetweight AS "wetWeight",
-          dryweight AS "dryWeight",
-          otherweight AS "otherWeight",
-          cumulativeweight AS "cumulativeWeight",
-          vehiclenumber AS "vehicleNumber",
-          unitnumber AS "unitNumber",
-          remarks,
-          citizencontact AS "citizenContact",
-          "wardNo"
-        FROM (
-          ${unionSql}
-        ) telemetry
-        WHERE iottimestamp >= $1::date
-          AND iottimestamp <
-              (
-                $1::date +
-                INTERVAL '1 day'
-              )
-          AND latitude IS NOT NULL
-          AND longitude IS NOT NULL
-        ORDER BY
-          "vehicleNumber" ASC,
-          iottimestamp ASC,
-          id ASC
-      `,
+            SELECT
+              id,
+
+              iottimestamp
+                AS "iotTimestamp",
+
+              receivedtimestamp
+                AS "receivedTimestamp",
+
+              citizenid
+                AS "citizenId",
+
+              latitude,
+
+              longitude,
+
+              wetweight
+                AS "wetWeight",
+
+              dryweight
+                AS "dryWeight",
+
+              otherweight
+                AS "otherWeight",
+
+              cumulativeweight
+                AS "cumulativeWeight",
+
+              vehiclenumber
+                AS "vehicleNumber",
+
+              unitnumber
+                AS "unitNumber",
+
+              remarks,
+
+              citizencontact
+                AS "citizenContact",
+
+              "wardNo",
+
+              "sourceVehicleTable"
+
+            FROM (
+              ${unionSql}
+            ) telemetry
+
+            WHERE iottimestamp >=
+                  $1::date
+
+              AND iottimestamp <
+                  (
+                    $1::date +
+                    INTERVAL '1 day'
+                  )
+
+              AND latitude IS NOT NULL
+
+              AND longitude IS NOT NULL
+
+            ORDER BY
+              "vehicleNumber" ASC,
+              iottimestamp ASC,
+              id ASC
+          `,
       selectedDate,
     );
 
@@ -1760,21 +1520,26 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
 | MAP
 |--------------------------------------------------------------------------
 |
-| Final map source:
+| FINAL FLOW:
 |
 | selected date
 |   ↓
 | day_DDMMYYYY
 |   ↓
-| vehicles registered to selected ward
+| ward_no = selected ward
 |   ↓
-| vehicle_DDMMYYYY tables
+| ALL vehicle tables
 |   ↓
-| telemetry latitude / longitude
+| UNION ALL
 |   ↓
-| selected ward boundary filter
+| iottimestamp selected date
+|   ↓
+| ALL valid coordinates
 |
-| The master-citizen physical ward table is NOT used for map points.
+| IMPORTANT:
+|
+| The ward boundary is returned for visualization only.
+| Telemetry points are NOT removed using point-in-polygon.
 |--------------------------------------------------------------------------
 */
 
@@ -1802,12 +1567,6 @@ const getWasteGeneratorMap = async ({
 
   const ward = wards[0];
 
-  /*
-    |--------------------------------------------------------------------------
-    | GET SELECTED WARD BOUNDARY
-    |--------------------------------------------------------------------------
-    */
-
   if (!ward.divisionTableName) {
     throw new Error("Selected ward has no division table name");
   }
@@ -1830,56 +1589,6 @@ const getWasteGeneratorMap = async ({
 
   const boundaryRow = boundaryRows[0];
 
-  /*
-    |--------------------------------------------------------------------------
-    | NO BOUNDARY
-    |--------------------------------------------------------------------------
-    |
-    | Some wards do not have geometry.
-    | Do not invent a boundary.
-    |--------------------------------------------------------------------------
-    */
-
-  if (!boundaryRow?.geo_boundary) {
-    return {
-      date: selectedDate,
-
-      dayTable: getDayTableName(dateObject),
-
-      ward: {
-        wardId: Number(ward.wardId),
-
-        wardNo: Number(ward.wardNo),
-
-        wardName: ward.wardName,
-
-        divisionId: Number(ward.divisionId),
-
-        divisionName: ward.divisionName,
-
-        zoneId: Number(ward.zoneId),
-
-        zoneName: ward.zoneName,
-      },
-
-      boundary: null,
-
-      boundaryAvailable: false,
-
-      vehicles: [],
-
-      points: [],
-
-      totalPoints: 0,
-    };
-  }
-
-  /*
-    |--------------------------------------------------------------------------
-    | SELECTED WARD NUMBER
-    |--------------------------------------------------------------------------
-    */
-
   const wardNo = Number(ward.wardNo);
 
   if (!Number.isInteger(wardNo)) {
@@ -1888,10 +1597,7 @@ const getWasteGeneratorMap = async ({
 
   /*
     |--------------------------------------------------------------------------
-    | DAY TABLE → VEHICLES
-    |--------------------------------------------------------------------------
-    |
-    | The day table is authoritative for the vehicle/ward mapping.
+    | DAY TABLE → ALL VEHICLES FOR WARD
     |--------------------------------------------------------------------------
     */
 
@@ -1899,7 +1605,7 @@ const getWasteGeneratorMap = async ({
 
   /*
     |--------------------------------------------------------------------------
-    | VEHICLE DAILY TABLES → TELEMETRY
+    | ALL VEHICLE TABLES → ALL TELEMETRY
     |--------------------------------------------------------------------------
     */
 
@@ -1907,13 +1613,7 @@ const getWasteGeneratorMap = async ({
 
   /*
     |--------------------------------------------------------------------------
-    | POINTS
-    |--------------------------------------------------------------------------
-    |
-    | A vehicle can belong to Ward 216 for the day while physically
-    | travelling outside Ward 216.
-    |
-    | Therefore the final map performs a point-in-boundary check.
+    | NORMALIZE EVERY POINT
     |--------------------------------------------------------------------------
     */
 
@@ -1923,16 +1623,45 @@ const getWasteGeneratorMap = async ({
 
       const longitude = Number(row.longitude);
 
+      const sourceVehicleTable = row.sourceVehicleTable
+        ? String(row.sourceVehicleTable)
+        : null;
+
+      const vehicleNumber = row.vehicleNumber
+        ? String(row.vehicleNumber).trim()
+        : null;
+
+      const rawId = Number(row.id);
+
+      /*
+       * GLOBAL POINT KEY
+       *
+       * Vehicle table + row id are required because
+       * different vehicle tables can all have id = 1.
+       */
+      const pointKey = [
+        sourceVehicleTable || "UNKNOWN_TABLE",
+        vehicleNumber || "UNKNOWN_VEHICLE",
+        Number.isFinite(rawId) ? rawId : "NO_ID",
+        row.iotTimestamp
+          ? new Date(row.iotTimestamp).toISOString()
+          : "NO_TIMESTAMP",
+        latitude.toFixed(7),
+        longitude.toFixed(7),
+      ].join("|");
+
       return {
-        id: Number(row.id),
+        id: Number.isFinite(rawId) ? rawId : null,
+
+        pointKey,
+
+        sourceVehicleTable,
 
         latitude,
 
         longitude,
 
-        vehicleNumber: row.vehicleNumber
-          ? String(row.vehicleNumber).trim()
-          : null,
+        vehicleNumber,
 
         citizenId:
           row.citizenId === null || row.citizenId === undefined
@@ -1989,9 +1718,11 @@ const getWasteGeneratorMap = async ({
   const vehiclePointCounts = new Map();
 
   for (const point of points) {
-    const key = point.vehicleNumber || "UNKNOWN";
+    const tableKey = point.sourceVehicleTable || "UNKNOWN_TABLE";
 
-    vehiclePointCounts.set(key, (vehiclePointCounts.get(key) || 0) + 1);
+    const existing = vehiclePointCounts.get(tableKey) || 0;
+
+    vehiclePointCounts.set(tableKey, existing + 1);
   }
 
   /*
@@ -2007,12 +1738,28 @@ const getWasteGeneratorMap = async ({
 
     wardNo: vehicle.wardNo,
 
-    points: vehiclePointCounts.get(vehicle.vehicleNumber) || 0,
+    points: vehiclePointCounts.get(vehicle.vehicleTableName) || 0,
   }));
 
   /*
     |--------------------------------------------------------------------------
-    | FINAL MAP RESPONSE
+    | SERVER DIAGNOSTIC
+    |--------------------------------------------------------------------------
+    */
+
+  console.log("Waste Generator Map:", {
+    selectedDate,
+    dayTable: getDayTableName(dateObject),
+    wardNo,
+    vehicleTables: vehicleTables.length,
+    telemetryRows: telemetryRows.length,
+    validCoordinatePoints: points.length,
+    vehicles,
+  });
+
+  /*
+    |--------------------------------------------------------------------------
+    | FINAL RESPONSE
     |--------------------------------------------------------------------------
     */
 
@@ -2037,9 +1784,9 @@ const getWasteGeneratorMap = async ({
       zoneName: ward.zoneName,
     },
 
-    boundary: boundaryRow.geo_boundary,
+    boundary: boundaryRow?.geo_boundary || null,
 
-    boundaryAvailable: true,
+    boundaryAvailable: Boolean(boundaryRow?.geo_boundary),
 
     vehicles,
 
