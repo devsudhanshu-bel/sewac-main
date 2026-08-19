@@ -33,7 +33,7 @@ import { createPortal } from "react-dom";
 
 import Plants from "../plants/Plants";
 import CustomerGrev from "./CustomerGrev";
-import GVPGen from "../waste-generators/GVPGen";
+import WasteGenMap from "../waste-generators/WasteGenMap";
 
 import { useFilters } from "../../contexts/FilterContext";
 
@@ -5047,26 +5047,11 @@ const handleMapViewChange =
     "
   >
 
-    <GVPGen
+    <WasteGenMap
 
       /* DATE FROM HEADER */
       selectedDate={
         headerSelectedDate
-      }
-
-      /* CITY FROM HEADER */
-      selectedCity={
-        headerSelectedCity
-      }
-
-      /* ZONE FROM HEADER */
-      selectedZone={
-        headerSelectedZone
-      }
-
-      /* DIVISION FROM HEADER */
-      selectedDivision={
-        headerSelectedDivision
       }
 
     />
