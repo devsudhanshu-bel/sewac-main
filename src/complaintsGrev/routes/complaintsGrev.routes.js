@@ -7,8 +7,17 @@ const {
 const router = express.Router();
 
 /* =========================================================
-   GET ALL COMPLAINT LOCATIONS
+   GET ALL BENGALURU COMPLAINT LOCATIONS
 ========================================================= */
+
+/*
+   GET
+
+   /api/complaints-grev/locations
+
+   Returns only complaints whose coordinates
+   fall inside the Bengaluru city boundary.
+*/
 
 router.get(
   "/locations",

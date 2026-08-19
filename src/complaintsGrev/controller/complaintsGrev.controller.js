@@ -7,15 +7,15 @@ const complaintsGrevService = require("../service/complaintsGrev.service");
 const getComplaintLocations = async (req, res) => {
   try {
     console.log("");
-    console.log("==============================================");
+    console.log("============================================================");
     console.log("📍 COMPLAINT GREVANCE MAP REQUEST");
-    console.log("==============================================");
+    console.log("============================================================");
 
     const locations =
       await complaintsGrevService.getComplaintLocations();
 
     console.log(
-      "📍 COMPLAINT LOCATIONS LOADED:",
+      "📍 BENGALURU COMPLAINT LOCATIONS LOADED:",
       locations.length
     );
 
@@ -26,7 +26,7 @@ const getComplaintLocations = async (req, res) => {
       );
     }
 
-    console.log("==============================================");
+    console.log("============================================================");
     console.log("");
 
     return res.status(200).json({
