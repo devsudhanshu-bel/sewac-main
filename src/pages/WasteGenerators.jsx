@@ -568,7 +568,7 @@ export default function WasteGenerators() {
           {/* ========================================================== */}
 
           <div className="min-w-0 h-full">
-            <WasteGenMap />
+            <WasteGenMap selectedDate={selectedDate} />
           </div>
 
           {/* ========================================================== */}
