@@ -1578,13 +1578,12 @@ export default function CityMapOverview({
   filters for GVP.
   */
 
-  const {
-    selectedCity: headerSelectedCity,
-    selectedZone: headerSelectedZone,
-    selectedDivision: headerSelectedDivision,
-    selectedWard: headerSelectedWard,
-    selectedDate: headerSelectedDate,
-  } = useFilters();
+const {
+  selectedCity,
+  selectedZone,
+  selectedDivision,
+  selectedWard,
+} = useFilters();
 
   const [
     loading,
@@ -5036,18 +5035,9 @@ const handleMapViewChange =
 ==================================================== */}
 
 {mapView === "gvp" && (
-  <div
-    className="
-      cm-special-view
-      cm-gvp-view
-      w-full
-      h-full
-      min-h-0
-    "
-  >
+  <div className="cm-special-view cm-gvp-view w-full h-full min-h-0">
     <WasteGenMap
       selectedDate={headerSelectedDate}
-      selectedWard={headerSelectedWard}
     />
   </div>
 )}
