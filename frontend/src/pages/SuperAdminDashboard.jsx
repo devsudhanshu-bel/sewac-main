@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import API_BASE_URL from "./services/api";
+import API_BASE_URL from "../services/api";
 
 export default function CreateAdminModal({
   onClose,
