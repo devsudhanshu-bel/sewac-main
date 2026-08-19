@@ -1579,12 +1579,12 @@ export default function CityMapOverview({
   */
 
 const {
-  selectedCity,
-  selectedZone,
-  selectedDivision,
-  selectedWard,
+  selectedCity: headerSelectedCity,
+  selectedZone: headerSelectedZone,
+  selectedDivision: headerSelectedDivision,
+  selectedWard: headerSelectedWard,
+  selectedDate: headerSelectedDate,
 } = useFilters();
-
   const [
     loading,
     setLoading,
@@ -5035,11 +5035,25 @@ const handleMapViewChange =
 ==================================================== */}
 
 {mapView === "gvp" && (
-  <div className="cm-special-view cm-gvp-view w-full h-full min-h-0">
+
+  <div
+    className="
+      cm-special-view
+      cm-gvp-view
+      w-full
+      h-full
+      min-h-0
+    "
+  >
+
     <WasteGenMap
-      selectedDate={headerSelectedDate}
+      selectedDate={
+        headerSelectedDate
+      }
     />
+
   </div>
+
 )}
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
