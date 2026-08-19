@@ -1725,8 +1725,8 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
         FROM (
           ${unionSql}
         ) telemetry
-        WHERE receivedtimestamp >= $1::date
-          AND receivedtimestamp <
+        WHERE iottimestamp >= $1::date
+          AND iottimestamp <
               (
                 $1::date +
                 INTERVAL '1 day'
