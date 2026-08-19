@@ -5032,11 +5032,10 @@ const handleMapViewChange =
         )}
 
 {/* ====================================================
-    GVP POINTS / COLLECTION POINT MONITORING
+    COLLECTION POINT / GVP MAP
 ==================================================== */}
 
 {mapView === "gvp" && (
-
   <div
     className="
       cm-special-view
@@ -5047,14 +5046,19 @@ const handleMapViewChange =
       overflow-hidden
     "
   >
-
     <WasteGenMap
       selectedDate={headerSelectedDate}
       selectedWard={headerSelectedWard}
+      wardNo={
+        headerSelectedWard?.ward_no ??
+        headerSelectedWard?.wardNo ??
+        headerSelectedWard?.ward_number ??
+        headerSelectedWard?.wardNumber ??
+        headerSelectedWard?.id ??
+        null
+      }
     />
-
   </div>
-
 )}
 
         {/* ====================================================
