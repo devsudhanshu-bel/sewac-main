@@ -1,1551 +1,961 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   Polygon,
-  GeoJSON,
   useMap,
 } from "react-leaflet";
-
 import L from "leaflet";
-
-import {
-  UserRound,
-  MapPin,
-  Ticket,
-  Phone,
-  FileText,
-  Tag,
-  Image as ImageIcon,
-  Activity,
-  Maximize2,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
-
 import "leaflet/dist/leaflet.css";
 
+/* ============================================================
+   BACKEND
+============================================================ */
 
-// ============================================================
-// LEAFLET DEFAULT MARKER
-// ============================================================
+const API_BASE_URL = "https://sewac-main.onrender.com";
 
-import markerIcon2x from
-  "leaflet/dist/images/marker-icon-2x.png";
+const COMPLAINTS_ENDPOINT =
+  `${API_BASE_URL}/api/complaints-grev/locations`;
 
-import markerIcon from
-  "leaflet/dist/images/marker-icon.png";
+/* ============================================================
+   BENGALURU DEFAULT VIEW
+============================================================ */
 
-import markerShadow from
-  "leaflet/dist/images/marker-shadow.png";
+const BENGALURU_CENTER = [12.9716, 77.5946];
 
+const DEFAULT_ZOOM = 11;
 
-delete L.Icon.Default.prototype._getIconUrl;
+/* ============================================================
+   PERSON MARKER
+============================================================ */
 
-L.Icon.Default.mergeOptions({
-
-  iconRetinaUrl:
-    markerIcon2x,
-
-  iconUrl:
-    markerIcon,
-
-  shadowUrl:
-    markerShadow,
-
+const complaintIcon = L.divIcon({
+  className: "custom-complaint-marker",
+  html: `
+    <div
+      style="
+        width: 42px;
+        height: 42px;
+        border-radius: 9999px;
+        background: #2563eb;
+        border: 3px solid white;
+        box-shadow:
+          0 4px 12px rgba(0,0,0,0.25),
+          0 0 0 3px rgba(37,99,235,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <svg
+        width="21"
+        height="21"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="8" r="4"></circle>
+        <path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8"></path>
+      </svg>
+    </div>
+  `,
+  iconSize: [42, 42],
+  iconAnchor: [21, 21],
+  popupAnchor: [0, -22],
 });
 
+/* ============================================================
+   FIT MAP TO BENGALURU BOUNDARY
+============================================================ */
 
-// ============================================================
-// API
-// ============================================================
-
-const API_URL =
-  "/api/complaints-grev/locations";
-
-
-// ============================================================
-// MAP BOUNDARY FITTER
-// ============================================================
-
-function FitBoundary({
-  boundary,
-}) {
-
-  const map =
-    useMap();
-
+function BengaluruMapFocus({ boundary }) {
+  const map = useMap();
 
   useEffect(() => {
-
-    if (
-      !boundary
-    ) {
-
+    if (!boundary || boundary.length === 0) {
+      map.setView(BENGALURU_CENTER, DEFAULT_ZOOM);
       return;
-
     }
 
-
     try {
+      const bounds = L.latLngBounds(boundary);
 
-      const geoJsonLayer =
-        L.geoJSON(
-          boundary
-        );
-
-
-      const bounds =
-        geoJsonLayer.getBounds();
-
-
-      if (
-        bounds.isValid()
-      ) {
-
-        map.fitBounds(
-          bounds,
-          {
-            padding: [
-              35,
-              35,
-            ],
-
-            maxZoom:
-              13,
-
-          }
-        );
-
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [30, 30],
+          maxZoom: 12,
+          animate: false,
+        });
       }
-
-    } catch (
-      error
-    ) {
-
+    } catch (error) {
       console.error(
-        "❌ Failed to fit Bengaluru boundary:",
+        "❌ Failed to focus Bengaluru boundary:",
         error
       );
 
+      map.setView(
+        BENGALURU_CENTER,
+        DEFAULT_ZOOM
+      );
+    }
+  }, [boundary, map]);
+
+  return null;
+}
+
+/* ============================================================
+   EXTRACT BOUNDARY FROM BACKEND RESPONSE
+============================================================ */
+
+function extractBoundary(payload) {
+  /*
+   Supported backend formats:
+
+   1.
+   {
+     success: true,
+     data: [...],
+     boundary: [...]
+   }
+
+   2.
+   {
+     success: true,
+     data: {
+       complaints: [...],
+       boundary: [...]
+     }
+   }
+
+   3.
+   {
+     success: true,
+     data: [...],
+     city: {
+       boundary: [...]
+     }
+   }
+
+   4. GeoJSON:
+   {
+     boundary: {
+       type: "Feature",
+       geometry: {
+         type: "Polygon",
+         coordinates: [...]
+       }
+     }
+  */
+
+  let boundary =
+    payload?.boundary ||
+    payload?.city?.boundary ||
+    payload?.data?.boundary ||
+    payload?.cityBoundary ||
+    null;
+
+  if (!boundary) {
+    return [];
+  }
+
+  /* ----------------------------------------------------------
+     GeoJSON Feature
+  ---------------------------------------------------------- */
+
+  if (
+    boundary.type === "Feature" &&
+    boundary.geometry
+  ) {
+    boundary = boundary.geometry;
+  }
+
+  /* ----------------------------------------------------------
+     GeoJSON FeatureCollection
+  ---------------------------------------------------------- */
+
+  if (
+    boundary.type === "FeatureCollection" &&
+    Array.isArray(boundary.features)
+  ) {
+    const firstFeature =
+      boundary.features[0];
+
+    if (
+      firstFeature?.geometry
+    ) {
+      boundary =
+        firstFeature.geometry;
+    }
+  }
+
+  /* ----------------------------------------------------------
+     GeoJSON Geometry
+  ---------------------------------------------------------- */
+
+  if (
+    boundary.type === "Polygon" &&
+    Array.isArray(boundary.coordinates)
+  ) {
+    const ring =
+      boundary.coordinates[0];
+
+    return ring
+      .map((point) => {
+        if (
+          Array.isArray(point) &&
+          point.length >= 2
+        ) {
+          return [
+            Number(point[1]),
+            Number(point[0]),
+          ];
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  /* ----------------------------------------------------------
+     GeoJSON MultiPolygon
+  ---------------------------------------------------------- */
+
+  if (
+    boundary.type === "MultiPolygon" &&
+    Array.isArray(boundary.coordinates)
+  ) {
+    const polygon =
+      boundary.coordinates[0];
+
+    const ring =
+      polygon?.[0];
+
+    if (!Array.isArray(ring)) {
+      return [];
     }
 
-  }, [
-    boundary,
-    map,
-  ]);
+    return ring
+      .map((point) => {
+        if (
+          Array.isArray(point) &&
+          point.length >= 2
+        ) {
+          return [
+            Number(point[1]),
+            Number(point[0]),
+          ];
+        }
 
+        return null;
+      })
+      .filter(Boolean);
+  }
 
-  return null;
+  /* ----------------------------------------------------------
+     Simple [lat, long] array
+  ---------------------------------------------------------- */
 
+  if (Array.isArray(boundary)) {
+    return boundary
+      .map((point) => {
+        if (
+          Array.isArray(point) &&
+          point.length >= 2
+        ) {
+          return [
+            Number(point[0]),
+            Number(point[1]),
+          ];
+        }
+
+        /*
+         Support object format:
+         { lat: ..., long: ... }
+        */
+
+        if (
+          point &&
+          typeof point === "object" &&
+          point.lat !== undefined &&
+          point.long !== undefined
+        ) {
+          return [
+            Number(point.lat),
+            Number(point.long),
+          ];
+        }
+
+        /*
+         Support:
+         { latitude: ..., longitude: ... }
+        */
+
+        if (
+          point &&
+          typeof point === "object" &&
+          point.latitude !== undefined &&
+          point.longitude !== undefined
+        ) {
+          return [
+            Number(point.latitude),
+            Number(point.longitude),
+          ];
+        }
+
+        return null;
+      })
+      .filter(
+        (point) =>
+          point &&
+          Number.isFinite(point[0]) &&
+          Number.isFinite(point[1])
+      );
+  }
+
+  return [];
 }
 
+/* ============================================================
+   POINT INSIDE POLYGON
+============================================================ */
 
-// ============================================================
-// NORMALIZE BOUNDARY
-// ============================================================
-
-function normalizeBoundary(
-  boundary
+function isPointInsidePolygon(
+  lat,
+  lng,
+  polygon
 ) {
-
   if (
-    !boundary
+    !polygon ||
+    polygon.length < 3
   ) {
-
-    return null;
-
+    return true;
   }
 
+  let inside = false;
 
-  /*
-   * GeoJSON Feature
-   */
-
-  if (
-    boundary.type ===
-    "Feature"
+  for (
+    let i = 0,
+      j = polygon.length - 1;
+    i < polygon.length;
+    j = i++
   ) {
+    const yi = polygon[i][0];
+    const xi = polygon[i][1];
 
-    return boundary;
+    const yj = polygon[j][0];
+    const xj = polygon[j][1];
 
+    const intersect =
+      yi > lat !== yj > lat &&
+      lng <
+        ((xj - xi) *
+          (lat - yi)) /
+          (yj - yi) +
+          xi;
+
+    if (intersect) {
+      inside = !inside;
+    }
   }
 
-
-  /*
-   * GeoJSON FeatureCollection
-   */
-
-  if (
-    boundary.type ===
-    "FeatureCollection"
-  ) {
-
-    return boundary;
-
-  }
-
-
-  /*
-   * GeoJSON Polygon / MultiPolygon
-   */
-
-  if (
-    boundary.type ===
-      "Polygon" ||
-    boundary.type ===
-      "MultiPolygon"
-  ) {
-
-    return {
-
-      type:
-        "Feature",
-
-      properties:
-        {},
-
-      geometry:
-        boundary,
-
-    };
-
-  }
-
-
-  /*
-   * Raw Polygon coordinates
-   */
-
-  if (
-    Array.isArray(
-      boundary
-    )
-  ) {
-
-    return {
-
-      type:
-        "Feature",
-
-      properties:
-        {},
-
-      geometry: {
-
-        type:
-          "Polygon",
-
-        coordinates:
-          boundary,
-
-      },
-
-    };
-
-  }
-
-
-  return null;
-
+  return inside;
 }
 
-
-// ============================================================
-// STATUS STYLE
-// ============================================================
-
-function getStatusStyle(
-  status
-) {
-
-  switch (
-    status
-  ) {
-
-    case "CLOSED":
-
-      return {
-        badge:
-          "bg-green-100 text-green-700",
-      };
-
-
-    case "ASSIGNED":
-
-      return {
-        badge:
-          "bg-blue-100 text-blue-700",
-      };
-
-
-    case "IN_PROGRESS":
-
-      return {
-        badge:
-          "bg-yellow-100 text-yellow-700",
-      };
-
-
-    case "READY_FOR_VERIFICATION":
-
-      return {
-        badge:
-          "bg-purple-100 text-purple-700",
-      };
-
-
-    case "OTP_SENT":
-
-      return {
-        badge:
-          "bg-indigo-100 text-indigo-700",
-      };
-
-
-    default:
-
-      return {
-        badge:
-          "bg-red-100 text-red-700",
-      };
-
-  }
-
-}
-
-
-// ============================================================
-// COMPONENT
-// ============================================================
+/* ============================================================
+   MAIN COMPONENT
+============================================================ */
 
 export default function CustomerGrev() {
-
-  const [
-    complaints,
-    setComplaints,
-  ] =
+  const [complaints, setComplaints] =
     useState([]);
 
+  const [boundary, setBoundary] =
+    useState([]);
 
-  const [
-    boundary,
-    setBoundary,
-  ] =
-    useState(null);
-
-
-  const [
-    loading,
-    setLoading,
-  ] =
+  const [loading, setLoading] =
     useState(true);
 
+  const [error, setError] =
+    useState("");
 
-  const [
-    error,
-    setError,
-  ] =
-    useState(null);
-
-
-  const [
-    selectedComplaint,
-    setSelectedComplaint,
-  ] =
-    useState(null);
-
-
-  // ==========================================================
-  // FETCH DATA
-  // ==========================================================
+  /* ==========================================================
+     FETCH DATA
+  ========================================================== */
 
   useEffect(() => {
-
-    let mounted =
-      true;
-
+    let cancelled = false;
 
     const fetchComplaints =
       async () => {
-
         try {
-
-          setLoading(
-            true
-          );
-
-          setError(
-            null
-          );
-
+          setLoading(true);
+          setError("");
 
           console.log(
-            "📍 Fetching complaint grievance locations..."
+            "=============================================="
           );
 
+          console.log(
+            "📍 CUSTOMER GRIEVANCES MAP"
+          );
+
+          console.log(
+            "📡 ENDPOINT:",
+            COMPLAINTS_ENDPOINT
+          );
+
+          console.log(
+            "=============================================="
+          );
 
           const response =
             await fetch(
-              API_URL
+              COMPLAINTS_ENDPOINT,
+              {
+                method: "GET",
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+              }
             );
-
-
-          if (
-            !response.ok
-          ) {
-
-            throw new Error(
-              `Request failed with status ${response.status}`
-            );
-
-          }
-
-
-          const result =
-            await response.json();
-
-
-          console.log(
-            "📍 Complaint grievance response:",
-            result
-          );
-
-
-          if (
-            !result.success
-          ) {
-
-            throw new Error(
-              result.message ||
-              "Failed to fetch complaint locations."
-            );
-
-          }
-
-
-          if (
-            !mounted
-          ) {
-
-            return;
-
-          }
-
 
           /*
-           * Bengaluru boundary
-           */
+           IMPORTANT:
+           Do not immediately call response.json().
+           First check whether backend actually
+           returned JSON.
+          */
 
-          const normalizedBoundary =
-            normalizeBoundary(
-              result.boundary
+          const contentType =
+            response.headers.get(
+              "content-type"
+            ) || "";
+
+          const responseText =
+            await response.text();
+
+          if (
+            !contentType.includes(
+              "application/json"
+            )
+          ) {
+            console.error(
+              "❌ Backend returned non-JSON response:"
             );
 
+            console.error(
+              responseText.substring(
+                0,
+                500
+              )
+            );
+
+            throw new Error(
+              `Backend returned ${response.status} ${response.statusText} instead of JSON. Check the API URL.`
+            );
+          }
+
+          let payload;
+
+          try {
+            payload =
+              JSON.parse(
+                responseText
+              );
+          } catch (jsonError) {
+            console.error(
+              "❌ Invalid JSON response:",
+              responseText
+            );
+
+            throw new Error(
+              "Backend returned invalid JSON."
+            );
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              payload?.message ||
+                `Request failed with status ${response.status}`
+            );
+          }
+
+          if (
+            cancelled
+          ) {
+            return;
+          }
+
+          console.log(
+            "✅ CUSTOMER GRIEVANCES RESPONSE:",
+            payload
+          );
+
+          /* --------------------------------------------------
+             COMPLAINT DATA
+          -------------------------------------------------- */
+
+          let complaintData =
+            [];
+
+          if (
+            Array.isArray(
+              payload?.data
+            )
+          ) {
+            complaintData =
+              payload.data;
+          } else if (
+            Array.isArray(
+              payload?.complaints
+            )
+          ) {
+            complaintData =
+              payload.complaints;
+          } else if (
+            Array.isArray(
+              payload?.data?.complaints
+            )
+          ) {
+            complaintData =
+              payload.data.complaints;
+          }
+
+          /* --------------------------------------------------
+             BOUNDARY
+          -------------------------------------------------- */
+
+          const parsedBoundary =
+            extractBoundary(
+              payload
+            );
+
+          console.log(
+            "🟢 BENGALURU BOUNDARY POINTS:",
+            parsedBoundary.length
+          );
 
           setBoundary(
-            normalizedBoundary
+            parsedBoundary
           );
 
+          /* --------------------------------------------------
+             CLEAN COMPLAINT DATA
+          -------------------------------------------------- */
 
-          /*
-           * Complaint points
-           */
+          const cleanedComplaints =
+            complaintData
+              .map(
+                (item) => ({
+                  ...item,
 
-          const validComplaints =
-            Array.isArray(
-              result.data
-            )
-              ? result.data.filter(
-                  (
-                    item
-                  ) => {
+                  lat: Number(
+                    item?.lat ??
+                      item?.latitude
+                  ),
 
-                    const lat =
-                      Number(
-                        item?.lat
-                      );
-
-                    const long =
-                      Number(
-                        item?.long
-                      );
-
-
-                    return (
-                      Number.isFinite(
-                        lat
-                      ) &&
-                      Number.isFinite(
-                        long
-                      )
-                    );
-
-                  }
-                )
-              : [];
-
+                  long: Number(
+                    item?.long ??
+                      item?.longitude
+                  ),
+                })
+              )
+              .filter(
+                (item) =>
+                  Number.isFinite(
+                    item.lat
+                  ) &&
+                  Number.isFinite(
+                    item.long
+                  )
+              );
 
           setComplaints(
-            validComplaints
+            cleanedComplaints
           );
-
-
-          console.log(
-            "📍 Bengaluru boundary:",
-            normalizedBoundary
-          );
-
-
-          console.log(
-            "📍 Bengaluru complaints:",
-            validComplaints.length
-          );
-
-        } catch (
-          fetchError
-        ) {
-
+        } catch (fetchError) {
           console.error(
-            "❌ Complaint grievance frontend error:",
+            "❌ CUSTOMER GRIEVANCES ERROR:",
             fetchError
           );
 
-
           if (
-            mounted
+            !cancelled
           ) {
-
             setError(
               fetchError.message ||
-              "Unable to load complaint locations."
+                "Failed to load customer grievances."
             );
-
           }
-
         } finally {
-
           if (
-            mounted
+            !cancelled
           ) {
-
-            setLoading(
-              false
-            );
-
+            setLoading(false);
           }
-
         }
-
       };
-
 
     fetchComplaints();
 
-
     return () => {
-
-      mounted =
-        false;
-
+      cancelled = true;
     };
-
   }, []);
 
+  /* ==========================================================
+     ONLY KEEP COMPLAINTS INSIDE BENGALURU
+  ========================================================== */
 
-  // ==========================================================
-  // MAP CENTER
-  // ==========================================================
-
-  const mapCenter =
-    useMemo(
-      () => {
-
+  const visibleComplaints =
+    useMemo(() => {
+      if (
+        boundary.length < 3
+      ) {
         /*
-         * Bengaluru fallback only.
-         *
-         * Actual view is fitted to
-         * the returned boundary.
-         */
+         If boundary has not arrived,
+         don't accidentally hide all
+         complaints.
+        */
 
-        return [
-          12.9716,
-          77.5946,
-        ];
+        return complaints;
+      }
 
-      },
-      []
+      return complaints.filter(
+        (complaint) =>
+          isPointInsidePolygon(
+            complaint.lat,
+            complaint.long,
+            boundary
+          )
+      );
+    }, [
+      complaints,
+      boundary,
+    ]);
+
+  /* ==========================================================
+     LOADING
+  ========================================================== */
+
+  if (loading) {
+    return (
+      <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">
+            CUSTOMER GRIEVANCES
+          </h2>
+
+          <div className="h-8 w-24 animate-pulse rounded-full bg-slate-100" />
+        </div>
+
+        <div className="h-[650px] w-full animate-pulse rounded-2xl bg-slate-100" />
+      </div>
     );
+  }
 
+  /* ==========================================================
+     ERROR
+  ========================================================== */
 
-  // ==========================================================
-  // MAXIMIZE
-  // ==========================================================
+  if (error) {
+    return (
+      <div className="w-full rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+            !
+          </div>
 
-  const handleMaximize =
-    () => {
-
-      const element =
-        document.querySelector(
-          ".customer-grev-map"
-        );
-
-
-      if (
-        !element
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        !document.fullscreenElement
-      ) {
-
-        element
-          .requestFullscreen?.();
-
-      } else {
-
-        document
-          .exitFullscreen?.();
-
-      }
-
-    };
-
-
-  // ==========================================================
-  // RENDER
-  // ==========================================================
-
-  return (
-
-    <div
-      className="
-        customer-grev-map
-        mt-8
-        rounded-2xl
-        border
-        border-gray-200
-        bg-white
-        p-5
-        shadow-sm
-      "
-    >
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
-      <div
-        className="
-          mb-5
-          flex
-          items-center
-          justify-between
-        "
-      >
-
-        <div>
-
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <UserRound
-              size={20}
-              className="text-violet-600"
-            />
-
-            <h2
-              className="
-                text-lg
-                font-bold
-                uppercase
-                tracking-wide
-                text-gray-900
-              "
-            >
-              Citizen Grievances
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Customer Grievances
             </h2>
 
+            <p className="mt-1 text-sm text-red-600">
+              {error}
+            </p>
+
+            <p className="mt-2 break-all text-xs text-slate-500">
+              Endpoint:{" "}
+              {COMPLAINTS_ENDPOINT}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ==========================================================
+     RENDER
+  ========================================================== */
+
+  return (
+    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
+
+      <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+            <svg
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 12V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6" />
+              <path d="M16 16l2 2 4-4" />
+            </svg>
           </div>
 
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">
+              Customer Grievances
+            </h2>
 
-          <p
-            className="
-              mt-1
-              text-xs
-              text-gray-500
-            "
-          >
-            Complaint locations within Bengaluru
-          </p>
-
-        </div>
-
-
-        <div
-          className="
-            flex
-            items-center
-            gap-3
-          "
-        >
-
-          {/* =================================================
-              COUNT
-          ================================================= */}
-
-          <div
-            className="
-              rounded-xl
-              border
-              border-gray-200
-              bg-gray-50
-              px-3
-              py-2
-              text-xs
-              font-semibold
-              text-gray-700
-            "
-          >
-
-            {loading
-              ? "Loading..."
-              : `${complaints.length} Complaints`
-            }
-
+            <p className="text-xs text-slate-500">
+              Bengaluru complaint locations
+            </p>
           </div>
-
-
-          {/* =================================================
-              MAXIMIZE
-          ================================================= */}
-
-          <button
-            type="button"
-            onClick={
-              handleMaximize
-            }
-            className="
-              flex
-              h-10
-              w-10
-              items-center
-              justify-center
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              text-gray-600
-              transition
-              hover:bg-gray-50
-              hover:text-gray-900
-            "
-            title="Maximize map"
-          >
-
-            <Maximize2
-              size={18}
-            />
-
-          </button>
-
         </div>
 
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
+          <span className="text-sm font-semibold text-slate-700">
+            {visibleComplaints.length}{" "}
+            Complaints
+          </span>
+        </div>
       </div>
 
-
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
-
-      {error && (
-
-        <div
-          className="
-            mb-4
-            flex
-            items-center
-            gap-3
-            rounded-xl
-            border
-            border-red-200
-            bg-red-50
-            px-4
-            py-3
-            text-sm
-            text-red-700
-          "
-        >
-
-          <AlertCircle
-            size={18}
-          />
-
-          <span>
-            {error}
-          </span>
-
-        </div>
-
-      )}
-
-
-      {/* =====================================================
+      {/* ======================================================
           MAP
-      ===================================================== */}
+      ====================================================== */}
 
-      <div
-        className="
-          overflow-hidden
-          rounded-2xl
-          border
-          border-gray-200
-        "
-      >
-
+      <div className="h-[650px] w-full">
         <MapContainer
-
-          center={
-            mapCenter
-          }
-
-          zoom={12}
-
-          zoomControl={
-            true
-          }
-
-          scrollWheelZoom={
-            true
-          }
-
-          className="
-            h-[560px]
-            w-full
-          "
-
+          center={BENGALURU_CENTER}
+          zoom={DEFAULT_ZOOM}
+          scrollWheelZoom={true}
+          zoomControl={true}
+          className="h-full w-full"
         >
-
-          {/* =================================================
-              TILE LAYER
-          ================================================= */}
+          {/* --------------------------------------------------
+              MAP TILES
+          -------------------------------------------------- */}
 
           <TileLayer
-
-            attribution="
-              &copy; OpenStreetMap contributors
-              &copy; CARTO
-            "
-
-            url="
-              https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png
-            "
-
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {/* --------------------------------------------------
+              AUTOMATIC BENGALURU FOCUS
+          -------------------------------------------------- */}
 
-          {/* =================================================
-              FIT TO BENGALURU
-          ================================================= */}
-
-          <FitBoundary
-            boundary={
-              boundary
-            }
+          <BengaluruMapFocus
+            boundary={boundary}
           />
 
-
-          {/* =================================================
+          {/* --------------------------------------------------
               BENGALURU BOUNDARY
-          ================================================= */}
+          -------------------------------------------------- */}
 
-          {boundary && (
-
-            <GeoJSON
-
-              key={
-                JSON.stringify(
-                  boundary
-                )
-              }
-
-              data={
-                boundary
-              }
-
-              style={{
-                color:
-                  "#7c3aed",
-
-                weight:
-                  2.5,
-
-                opacity:
-                  0.9,
-
-                fillColor:
-                  "#8b5cf6",
-
-                fillOpacity:
-                  0.06,
-
+          {boundary.length >= 3 && (
+            <Polygon
+              positions={boundary}
+              pathOptions={{
+                color: "#2563eb",
+                weight: 3,
+                opacity: 0.9,
+                fillColor: "#2563eb",
+                fillOpacity: 0.06,
               }}
-
             />
-
           )}
 
-
-          {/* =================================================
+          {/* --------------------------------------------------
               COMPLAINT MARKERS
-          ================================================= */}
+          -------------------------------------------------- */}
 
-          {complaints.map(
-            (
-              complaint,
-              index
-            ) => {
-
-              const latitude =
-                Number(
-                  complaint.lat
-                );
-
-              const longitude =
-                Number(
-                  complaint.long
-                );
-
-
-              const data =
-                complaint.data ||
-                {};
-
-
-              const statusStyle =
-                getStatusStyle(
-                  data.status
-                );
-
-
-              return (
-
-                <Marker
-
-                  key={
-                    data.id ??
-                    index
-                  }
-
-                  position={[
-                    latitude,
-                    longitude,
-                  ]}
-
-                  eventHandlers={{
-                    mouseover:
-                      () => {
-
-                        setSelectedComplaint(
-                          data.id
-                        );
-
-                      },
-
-                    mouseout:
-                      () => {
-
-                        setSelectedComplaint(
-                          null
-                        );
-
-                      },
-                  }}
-
+          {visibleComplaints.map(
+            (complaint, index) => (
+              <Marker
+                key={
+                  complaint?.data?.id ??
+                  index
+                }
+                position={[
+                  complaint.lat,
+                  complaint.long,
+                ]}
+                icon={complaintIcon}
+              >
+                <Popup
+                  closeButton={true}
+                  maxWidth={350}
                 >
+                  <div className="w-[300px]">
+                    {/* TITLE */}
 
-                  <Popup
-                    maxWidth={
-                      340
-                    }
-
-                    minWidth={
-                      300
-                    }
-
-                  >
-
-                    <div
-                      className="
-                        w-[300px]
-                        p-1
-                      "
-                    >
-
-                      {/* =====================================
-                          HEADER
-                      ===================================== */}
-
-                      <div
-                        className="
-                          mb-4
-                          flex
-                          items-start
-                          justify-between
-                          gap-3
-                        "
-                      >
-
-                        <div
-                          className="
-                            flex
-                            items-center
-                            gap-3
-                          "
-                        >
-
-                          <div
-                            className="
-                              flex
-                              h-11
-                              w-11
-                              shrink-0
-                              items-center
-                              justify-center
-                              rounded-xl
-                              bg-violet-100
-                            "
-                          >
-
-                            <UserRound
-                              size={22}
-                              className="
-                                text-violet-600
-                              "
-                            />
-
-                          </div>
-
-
-                          <div>
-
-                            <h3
-                              className="
-                                max-w-[190px]
-                                text-sm
-                                font-bold
-                                leading-tight
-                                text-gray-900
-                              "
-                            >
-                              {data.title ||
-                                "Citizen Complaint"
-                              }
-                            </h3>
-
-
-                            <span
-                              className={`
-                                mt-1
-                                inline-flex
-                                rounded-full
-                                px-2
-                                py-0.5
-                                text-[10px]
-                                font-bold
-                                ${statusStyle.badge}
-                              `}
-                            >
-                              {data.status ||
-                                "UNKNOWN"
-                              }
-                            </span>
-
-                          </div>
-
-                        </div>
-
+                    <div className="mb-3 border-b border-slate-200 pb-3">
+                      <div className="text-base font-bold text-slate-900">
+                        {complaint
+                          ?.data
+                          ?.title ||
+                          "Customer Complaint"}
                       </div>
 
-
-                      {/* =====================================
-                          DATA
-                      ===================================== */}
-
-                      <div
-                        className="
-                          space-y-3
-                          text-xs
-                        "
-                      >
-
-                        {/* ===================================
-                            TICKET
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <Ticket
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Ticket
-                            </div>
-
-                            <div
-                              className="
-                                font-semibold
-                                text-gray-800
-                              "
-                            >
-                              {data.ticket_number ||
-                                "N/A"
-                              }
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            PHONE
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <Phone
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Phone
-                            </div>
-
-                            <div
-                              className="
-                                font-semibold
-                                text-gray-800
-                              "
-                            >
-                              {data.phone_number ||
-                                "N/A"
-                              }
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            CATEGORY
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <Tag
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Category
-                            </div>
-
-                            <div
-                              className="
-                                font-semibold
-                                text-gray-800
-                              "
-                            >
-                              {data.category ||
-                                "N/A"
-                              }
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            ADDRESS
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <MapPin
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Address
-                            </div>
-
-                            <div
-                              className="
-                                leading-relaxed
-                                text-gray-700
-                              "
-                            >
-                              {data.address ||
-                                "N/A"
-                              }
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            DESCRIPTION
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <FileText
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Description
-                            </div>
-
-                            <div
-                              className="
-                                leading-relaxed
-                                text-gray-700
-                              "
-                            >
-                              {data.description ||
-                                "N/A"
-                              }
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            COORDINATES
-                        =================================== */}
-
-                        <div
-                          className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                        >
-
-                          <Activity
-                            size={15}
-                            className="
-                              mt-0.5
-                              shrink-0
-                              text-violet-600
-                            "
-                          />
-
-                          <div>
-
-                            <div
-                              className="
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-                              Coordinates
-                            </div>
-
-                            <div
-                              className="
-                                font-mono
-                                text-[11px]
-                                text-gray-700
-                              "
-                            >
-                              {latitude.toFixed(
-                                7
-                              )}
-
-                              {" , "}
-
-                              {longitude.toFixed(
-                                7
-                              )}
-                            </div>
-
-                          </div>
-
-                        </div>
-
-
-                        {/* ===================================
-                            IMAGE
-                        =================================== */}
-
-                        {data.image_url && (
-
-                          <div
-                            className="
-                              pt-1
-                            "
-                          >
-
-                            <div
-                              className="
-                                mb-2
-                                flex
-                                items-center
-                                gap-2
-                                text-[10px]
-                                font-semibold
-                                uppercase
-                                text-gray-400
-                              "
-                            >
-
-                              <ImageIcon
-                                size={14}
-                              />
-
-                              Complaint Image
-
-                            </div>
-
-
-                            <img
-                              src={
-                                data.image_url
-                              }
-                              alt={
-                                data.title ||
-                                "Complaint"
-                              }
-                              className="
-                                max-h-40
-                                w-full
-                                rounded-xl
-                                border
-                                border-gray-200
-                                object-cover
-                              "
-                            />
-
-                          </div>
-
-                        )}
-
+                      <div className="mt-1 text-xs font-medium text-slate-500">
+                        Ticket:{" "}
+                        {complaint
+                          ?.data
+                          ?.ticket_number ||
+                          "N/A"}
                       </div>
-
                     </div>
 
-                  </Popup>
+                    {/* STATUS */}
 
-                </Marker>
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-500">
+                        Status
+                      </span>
 
-              );
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                        {complaint
+                          ?.data
+                          ?.status ||
+                          "N/A"}
+                      </span>
+                    </div>
 
-            }
+                    {/* CATEGORY */}
+
+                    <div className="mb-3 flex items-start justify-between gap-4">
+                      <span className="text-xs font-medium text-slate-500">
+                        Category
+                      </span>
+
+                      <span className="text-right text-xs font-semibold text-slate-800">
+                        {complaint
+                          ?.data
+                          ?.category ||
+                          "N/A"}
+                      </span>
+                    </div>
+
+                    {/* PHONE */}
+
+                    <div className="mb-3 flex items-start justify-between gap-4">
+                      <span className="text-xs font-medium text-slate-500">
+                        Phone
+                      </span>
+
+                      <span className="text-right text-xs font-semibold text-slate-800">
+                        {complaint
+                          ?.data
+                          ?.phone_number ||
+                          "N/A"}
+                      </span>
+                    </div>
+
+                    {/* DESCRIPTION */}
+
+                    <div className="mb-3">
+                      <div className="mb-1 text-xs font-medium text-slate-500">
+                        Description
+                      </div>
+
+                      <div className="rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-700">
+                        {complaint
+                          ?.data
+                          ?.description ||
+                          "No description available."}
+                      </div>
+                    </div>
+
+                    {/* ADDRESS */}
+
+                    <div className="mb-3">
+                      <div className="mb-1 text-xs font-medium text-slate-500">
+                        Address
+                      </div>
+
+                      <div className="text-xs leading-5 text-slate-700">
+                        {complaint
+                          ?.data
+                          ?.address ||
+                          "N/A"}
+                      </div>
+                    </div>
+
+                    {/* COORDINATES */}
+
+                    <div className="border-t border-slate-200 pt-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-slate-50 p-2">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                            Latitude
+                          </div>
+
+                          <div className="mt-1 text-xs font-semibold text-slate-700">
+                            {complaint.lat}
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg bg-slate-50 p-2">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                            Longitude
+                          </div>
+
+                          <div className="mt-1 text-xs font-semibold text-slate-700">
+                            {complaint.long}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* IMAGE */}
+
+                    {complaint
+                      ?.data
+                      ?.image_url && (
+                      <div className="mt-3">
+                        <img
+                          src={
+                            complaint
+                              .data
+                              .image_url
+                          }
+                          alt="Complaint"
+                          className="h-36 w-full rounded-lg object-cover"
+                          onError={(
+                            event
+                          ) => {
+                            event.currentTarget.style.display =
+                              "none";
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            )
           )}
-
         </MapContainer>
-
       </div>
-
-
-      {/* =====================================================
-          LOADING OVERLAY
-      ===================================================== */}
-
-      {loading && (
-
-        <div
-          className="
-            mt-3
-            flex
-            items-center
-            justify-center
-            gap-2
-            text-xs
-            font-medium
-            text-gray-500
-          "
-        >
-
-          <Loader2
-            size={15}
-            className="
-              animate-spin
-            "
-          />
-
-          Loading Bengaluru complaint locations...
-
-        </div>
-
-      )}
-
-
-      {/* =====================================================
-          MAP STATUS
-      ===================================================== */}
-
-      {!loading &&
-        !error && (
-
-          <div
-            className="
-              mt-3
-              flex
-              items-center
-              justify-between
-              text-[11px]
-              text-gray-400
-            "
-          >
-
-            <span>
-              Bengaluru city boundary
-            </span>
-
-            <span>
-              {complaints.length} complaint
-              {complaints.length !== 1
-                ? "s"
-                : ""
-              }
-            </span>
-
-          </div>
-
-        )}
-
     </div>
-
   );
-
 }
