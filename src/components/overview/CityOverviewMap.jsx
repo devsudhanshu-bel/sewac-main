@@ -35,8 +35,9 @@ import Plants from "../plants/Plants";
 import CustomerGrev from "./CustomerGrev";
 import GVPGen from "../waste-generators/GVPGen";
 
-import "leaflet/dist/leaflet.css";
+import { useFilters } from "../../contexts/FilterContext";
 
+import "leaflet/dist/leaflet.css";
 
 /* ============================================================
    CONFIGURATION
@@ -1564,6 +1565,26 @@ export default function CityMapOverview({
   cityId = DEFAULT_CITY_ID,
   onViewChange,
 }) {
+
+  /*
+  ============================================================
+  GLOBAL HEADER FILTERS
+  ============================================================
+
+  IMPORTANT:
+  These values come directly from the Header/FilterContext.
+
+  CityOverviewMap must NOT maintain another copy of these
+  filters for GVP.
+  */
+
+  const {
+    selectedCity: headerSelectedCity,
+    selectedZone: headerSelectedZone,
+    selectedDivision: headerSelectedDivision,
+    selectedWard: headerSelectedWard,
+    selectedDate: headerSelectedDate,
+  } = useFilters();
 
   const [
     loading,
@@ -5010,24 +5031,49 @@ const handleMapViewChange =
 
         )}
 
-        {/* ====================================================
-            GVP POINTS
-        ==================================================== */}
+{/* ====================================================
+    GVP POINTS
+==================================================== */}
 
-        {mapView === "gvp" && (
+{mapView === "gvp" && (
 
-          <div className="cm-special-view cm-gvp-view">
+  <div
+    className="
+      cm-special-view
+      cm-gvp-view
+      w-full
+      h-full
+      min-h-0
+    "
+  >
 
-            <GVPGen
-              selectedDate={selectedDate}
-              selectedCity={gvpCity}
-              selectedZone={gvpZone}
-              selectedDivision={gvpDivision}
-            />
+    <GVPGen
 
-          </div>
+      /* DATE FROM HEADER */
+      selectedDate={
+        headerSelectedDate
+      }
 
-        )}
+      /* CITY FROM HEADER */
+      selectedCity={
+        headerSelectedCity
+      }
+
+      /* ZONE FROM HEADER */
+      selectedZone={
+        headerSelectedZone
+      }
+
+      /* DIVISION FROM HEADER */
+      selectedDivision={
+        headerSelectedDivision
+      }
+
+    />
+
+  </div>
+
+)}
 
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
