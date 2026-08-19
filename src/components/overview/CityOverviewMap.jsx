@@ -5019,16 +5019,15 @@ const handleMapViewChange =
           <div className="cm-special-view cm-gvp-view">
 
             <GVPGen
-              selectedDate={null}
-              selectedCity={city}
-              selectedZone={selectedZone}
-              selectedDivision={selectedDivision}
+              selectedDate={selectedDate}
+              selectedCity={gvpCity}
+              selectedZone={gvpZone}
+              selectedDivision={gvpDivision}
             />
 
           </div>
 
         )}
-
 
         {/* ====================================================
             CITY OVERVIEW DROPDOWN HEADER
