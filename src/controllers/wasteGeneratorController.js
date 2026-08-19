@@ -238,3 +238,35 @@ exports.getGVPTrend = async (req, res) => {
     });
   }
 };
+
+exports.getMap = async (req, res) => {
+  try {
+    const { cityId, zoneId, divisionId, wardId } = req.query;
+
+    if (!cityId || !zoneId || !divisionId || !wardId) {
+      return res.status(400).json({
+        success: false,
+        message: "cityId, zoneId, divisionId and wardId are required",
+      });
+    }
+
+    const data = await wasteGeneratorService.getWasteGeneratorMap({
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Waste Generator Map Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

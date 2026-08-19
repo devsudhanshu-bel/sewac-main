@@ -189,6 +189,8 @@ const getAllWardScope = async () => {
 
             divisionName: division.division_name,
 
+            divisionTableName: division.division_table_name,
+
             wardId: Number(ward.ward_id),
 
             wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
@@ -401,6 +403,8 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
           divisionId: Number(division.division_id),
 
           divisionName: division.division_name,
+
+          divisionTableName: division.division_table_name,
 
           wardId: Number(ward.ward_id),
 
@@ -1552,6 +1556,102 @@ const deleteWasteGenerator = async (phoneNumber, req) => {
   );
 };
 
+const getWasteGeneratorMap = async ({ cityId, zoneId, divisionId, wardId }) => {
+  const wardScope = await getSelectedWardScope({
+    cityId,
+    zoneId,
+    divisionId,
+    wardId,
+  });
+
+  const wards = wardScope.wards || [];
+
+  if (wards.length !== 1) {
+    throw new Error("Map requires exactly one selected ward");
+  }
+
+  const ward = wards[0];
+
+  if (!ward.wardTableName) {
+    throw new Error("Selected ward has no physical ward table");
+  }
+
+  const divisionTable = quoteIdentifier(ward.divisionTableName);
+
+  const boundaryRows = await masterCitizenPrisma.$queryRawUnsafe(
+    `
+        SELECT
+          ward_id,
+          ward_no,
+          ward_name,
+          geo_boundary
+        FROM ${divisionTable}
+        WHERE ward_id = $1
+        LIMIT 1
+      `,
+    ward.wardId,
+  );
+
+  const boundaryRow = boundaryRows[0];
+
+  const wardTable = quoteIdentifier(ward.wardTableName);
+
+  const points = await masterCitizenPrisma.$queryRawUnsafe(
+    `
+        SELECT
+          id,
+          "personName",
+          "phoneNumber",
+          area,
+          lat,
+          lng
+        FROM ${wardTable}
+        WHERE lat IS NOT NULL
+          AND lng IS NOT NULL
+        ORDER BY id ASC
+      `,
+  );
+
+  return {
+    ward: {
+      wardId: Number(ward.wardId),
+      wardNo: Number(ward.wardNo),
+      wardName: ward.wardName,
+      divisionId: Number(ward.divisionId),
+      divisionName: ward.divisionName,
+      zoneId: Number(ward.zoneId),
+      zoneName: ward.zoneName,
+    },
+
+    boundary: boundaryRow?.geo_boundary || null,
+
+    points: points
+      .map((point) => ({
+        id: Number(point.id),
+
+        personName: point.personName || null,
+
+        phoneNumber: point.phoneNumber || null,
+
+        area: point.area || null,
+
+        latitude: Number(point.lat),
+
+        longitude: Number(point.lng),
+      }))
+      .filter(
+        (point) =>
+          Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
+      ),
+
+    totalPoints: points.filter(
+      (point) =>
+        Number.isFinite(Number(point.lat)) &&
+        Number.isFinite(Number(point.lng)),
+    ).length,
+  };
+};
+
 /*
 |--------------------------------------------------------------------------
 | EXPORTS
@@ -1567,4 +1667,5 @@ module.exports = {
   updateWasteGenerator,
   deleteWasteGenerator,
   getSelectedWardScope,
+  getWasteGeneratorMap,
 };

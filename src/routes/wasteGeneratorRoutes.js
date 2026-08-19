@@ -6,17 +6,12 @@ const wasteGeneratorController = require("../controllers/wasteGeneratorControlle
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
 
-
 // =====================================================
 // WASTE GENERATORS
 // =====================================================
 
 // Current Waste Generators
-router.get(
-  "/",
-  wasteGeneratorController.getAllWasteGenerators
-);
-
+router.get("/", wasteGeneratorController.getAllWasteGenerators);
 
 // =====================================================
 // SUMMARY
@@ -26,9 +21,8 @@ router.get(
   "/summary",
   authMiddleware,
   checkPermission("waste_generators"),
-  wasteGeneratorController.getSummary
+  wasteGeneratorController.getSummary,
 );
-
 
 // =====================================================
 // DIRECTORY
@@ -38,9 +32,8 @@ router.get(
   "/directory",
   authMiddleware,
   checkPermission("waste_generators"),
-  wasteGeneratorController.getDirectory
+  wasteGeneratorController.getDirectory,
 );
-
 
 // =====================================================
 // GVP TREND
@@ -50,30 +43,27 @@ router.get(
   "/gvp-trend",
   authMiddleware,
   checkPermission("waste_generators"),
-  wasteGeneratorController.getGVPTrend
+  wasteGeneratorController.getGVPTrend,
 );
-
 
 // =====================================================
 // SINGLE WASTE GENERATOR
 // =====================================================
 
 router.get(
-  "/:phoneNumber",
-  wasteGeneratorController.getWasteGeneratorByPhone
+  "/map",
+  authMiddleware,
+  checkPermission("waste_generators"),
+  wasteGeneratorController.getMap,
 );
 
+router.get("/:phoneNumber", wasteGeneratorController.getWasteGeneratorByPhone);
 
 // =====================================================
 // CREATE
 // =====================================================
 
-router.post(
-  "/",
-  authMiddleware,
-  wasteGeneratorController.createWasteGenerator
-);
-
+router.post("/", authMiddleware, wasteGeneratorController.createWasteGenerator);
 
 // =====================================================
 // UPDATE
@@ -82,9 +72,8 @@ router.post(
 router.put(
   "/:phoneNumber",
   authMiddleware,
-  wasteGeneratorController.updateWasteGenerator
+  wasteGeneratorController.updateWasteGenerator,
 );
-
 
 // =====================================================
 // DELETE
@@ -93,8 +82,7 @@ router.put(
 router.delete(
   "/:phoneNumber",
   authMiddleware,
-  wasteGeneratorController.deleteWasteGenerator
+  wasteGeneratorController.deleteWasteGenerator,
 );
-
 
 module.exports = router;
