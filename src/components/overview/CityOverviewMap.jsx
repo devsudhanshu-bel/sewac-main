@@ -32,6 +32,7 @@ import {
 import { createPortal } from "react-dom";
 
 import Plants from "../plants/Plants";
+import CustomerGrev from "./CustomerGrev";
 
 import "leaflet/dist/leaflet.css";
 
@@ -4989,6 +4990,20 @@ const handleMapViewChange =
               <Plants plants={plants} />
 
             )}
+
+          </div>
+
+        )}
+
+        {/* ====================================================
+            CUSTOMER GRIEVANCES
+        ==================================================== */}
+
+        {mapView === "grievances" && (
+
+          <div className="cm-special-view cm-grievances-view">
+
+            <CustomerGrev />
 
           </div>
 
