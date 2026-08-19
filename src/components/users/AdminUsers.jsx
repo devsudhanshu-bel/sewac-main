@@ -1,6 +1,7 @@
 import React from "react";
 import { ShieldCheck, Plus, Search, Pencil, Trash2 } from "lucide-react";
-
+import { useState } from "react";
+import AddUserModal from "./AddUserModal";
 const adminUsers = [
   {
     id: 1,
@@ -37,6 +38,7 @@ const adminUsers = [
 ];
 
 const AdminUsers = () => {
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
       {/* Header */}
@@ -74,8 +76,10 @@ const AdminUsers = () => {
             />
           </div>
 
-          <button className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+<button
+  onClick={() => setShowAddAdminModal(true)}
+  className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2">
+                <Plus className="w-4 h-4" />
             Add Admin
           </button>
         </div>
@@ -181,6 +185,11 @@ const AdminUsers = () => {
           </select>
         </div>
       </div>
+            <AddUserModal
+        open={showAddAdminModal}
+        onClose={() => setShowAddAdminModal(false)}
+        title="Add Admin"
+      />
     </div>
   );
 };
