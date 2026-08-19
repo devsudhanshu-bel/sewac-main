@@ -1606,29 +1606,14 @@ const {
   ] = useState([]);
 
   const [
-    selectedZone,
-    setSelectedZone,
-  ] = useState(null);
-
-  const [
     divisions,
     setDivisions,
   ] = useState([]);
 
   const [
-    selectedDivision,
-    setSelectedDivision,
-  ] = useState(null);
-
-  const [
     wards,
     setWards,
   ] = useState([]);
-
-  const [
-    selectedWard,
-    setSelectedWard,
-  ] = useState(null);
 
   const [
     divisionsLoading,
