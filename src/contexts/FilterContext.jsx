@@ -120,12 +120,16 @@ export function FilterProvider({ children }) {
 
         // Default division = Bommanahalli Division
         // Default division = Bommanahalli Division
-        const defaultDivision =
-          divisionList.find(
-            (division) =>
-              division.division_name?.trim().toLowerCase() ===
-              "bommanahalli division",
-          ) || divisionList[0];
+        // Default division = Bommanahalli Division
+        const defaultDivision = divisionList.find((division) => {
+          const name = division.division_name?.trim().toLowerCase();
+
+          return (
+            name === "bommanahalli division" ||
+            name === "bommanahalli" ||
+            name.includes("bommanahalli")
+          );
+        });
 
         setSelectedDivision(defaultDivision || null);
       } catch (err) {
@@ -162,11 +166,11 @@ export function FilterProvider({ children }) {
         setWards(wardList);
 
         // Default ward = Ibbalur
-        // Default ward = Ibbalur
-        const defaultWard =
-          wardList.find(
-            (ward) => ward.ward_name?.trim().toLowerCase() === "ibbalur",
-          ) || wardList[0];
+        const defaultWard = wardList.find((ward) => {
+          const name = ward.ward_name?.trim().toLowerCase();
+
+          return name === "ibbalur" || name.includes("ibbalur");
+        });
 
         setSelectedWard(defaultWard || null);
       } catch (err) {
