@@ -305,6 +305,26 @@ vehicles: {
     averageWeight: "प्रति वाहन औसत",
     weightCollection: "कचरा संग्रहण",
   },
+
+  averageWeightChart: {
+    title: "औसत उत्पन्न वजन (लाइन ग्राफ)",
+    averageWasteGenerated: "औसत उत्पन्न कचरा:",
+    viewBy: "इसके अनुसार देखें:",
+    city: "शहर",
+    weightOfWaste: "कचरे का वजन (टन)",
+
+    zoneName: "ज़ोन का नाम",
+    wasteGenerated: "उत्पन्न कचरा",
+    vehiclesRunning: "चल रहे वाहन",
+    difference: "अंतर",
+    overThreshold: "सीमा से अधिक",
+    belowThreshold: "सीमा से कम",
+    averageWaste: "औसत कचरा",
+
+    wasteGeneratedLegend: "उत्पन्न कचरा (टन)",
+    thresholdLegend:
+      "औसत उत्पन्न कचरा (सीमा)",
+  },
 },
 };
 

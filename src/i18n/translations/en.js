@@ -293,6 +293,26 @@ vehicles: {
     averageWeight: "Per Vehicles Avg",
     weightCollection: "Weight Collection",
   },
+
+  averageWeightChart: {
+    title: "Average Weight Generated (Line Graph)",
+    averageWasteGenerated: "Average waste generated:",
+    viewBy: "View By:",
+    city: "City",
+    weightOfWaste: "Weight of Waste (Ton)",
+
+    zoneName: "Zone Name",
+    wasteGenerated: "Waste Generated",
+    vehiclesRunning: "Vehicles Running",
+    difference: "Difference",
+    overThreshold: "Over Threshold",
+    belowThreshold: "Below Threshold",
+    averageWaste: "Average Waste",
+
+    wasteGeneratedLegend: "Waste Generated (Ton)",
+    thresholdLegend:
+      "Average Waste Generated (Threshold)",
+  },
 },
 };
 

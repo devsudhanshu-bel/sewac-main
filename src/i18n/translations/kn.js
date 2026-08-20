@@ -305,6 +305,26 @@ vehicles: {
     averageWeight: "ಪ್ರತಿ ವಾಹನದ ಸರಾಸರಿ",
     weightCollection: "ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣೆ",
   },
+
+  averageWeightChart: {
+    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
+    averageWasteGenerated: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ:",
+    viewBy: "ವೀಕ್ಷಣೆ:",
+    city: "ನಗರ",
+    weightOfWaste: "ತ್ಯಾಜ್ಯದ ತೂಕ (ಟನ್)",
+
+    zoneName: "ವಲಯದ ಹೆಸರು",
+    wasteGenerated: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ",
+    vehiclesRunning: "ಚಾಲನೆಯಲ್ಲಿರುವ ವಾಹನಗಳು",
+    difference: "ವ್ಯತ್ಯಾಸ",
+    overThreshold: "ಮಿತಿಗಿಂತ ಹೆಚ್ಚು",
+    belowThreshold: "ಮಿತಿಗಿಂತ ಕಡಿಮೆ",
+    averageWaste: "ಸರಾಸರಿ ತ್ಯಾಜ್ಯ",
+
+    wasteGeneratedLegend: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಟನ್)",
+    thresholdLegend:
+      "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಮಿತಿ)",
+  },
 },
 };
 

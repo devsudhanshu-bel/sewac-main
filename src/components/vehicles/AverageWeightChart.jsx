@@ -14,6 +14,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+import { useLanguage } from "../../i18n";
+
 /* ===========================================================
    DATA
 =========================================================== */
@@ -65,13 +67,11 @@ const THRESHOLD = 70;
 function CustomTooltip({
   active,
   payload,
+  t,
 }) {
-  if (
-    !active ||
-    !payload ||
-    !payload.length
-  )
+  if (!active || !payload || !payload.length) {
     return null;
+  }
 
   const data = payload[0].payload;
 
@@ -79,54 +79,66 @@ function CustomTooltip({
     data.waste - THRESHOLD
   ).toFixed(2);
 
-  const isOver =
-    data.waste >= THRESHOLD;
+  const isOver = data.waste >= THRESHOLD;
 
   return (
     <div className="bg-white rounded-2xl border border-[#ECECF3] shadow-xl px-6 py-5 min-w-[280px]">
-
       <div className="space-y-3 text-[14px]">
 
-        <div className="flex justify-between">
+        {/* Zone Name */}
 
+        <div className="flex justify-between">
           <span className="font-semibold text-[#374151]">
-            Zone Name
+            {t(
+              "vehicles.averageWeightChart.zoneName",
+              "Zone Name"
+            )}
           </span>
 
           <span className="font-semibold">
             {data.zone.replace("\n", " ")}
           </span>
-
         </div>
 
-        <div className="flex justify-between">
+        {/* Waste Generated */}
 
+        <div className="flex justify-between">
           <span className="font-semibold text-[#374151]">
-            Waste Generated
+            {t(
+              "vehicles.averageWeightChart.wasteGenerated",
+              "Waste Generated"
+            )}
           </span>
 
           <span className="font-semibold">
-            {data.waste.toFixed(2)} Ton
+            {data.waste.toFixed(2)}{" "}
+            {t("units.ton", "Ton")}
           </span>
-
         </div>
 
-        <div className="flex justify-between">
+        {/* Vehicles Running */}
 
+        <div className="flex justify-between">
           <span className="font-semibold text-[#374151]">
-            Vehicles Running
+            {t(
+              "vehicles.averageWeightChart.vehiclesRunning",
+              "Vehicles Running"
+            )}
           </span>
 
           <span className="font-semibold">
             {data.vehicles}
           </span>
-
         </div>
 
-        <div className="flex justify-between">
+        {/* Difference */}
 
+        <div className="flex justify-between">
           <span className="font-semibold text-[#374151]">
-            Difference
+            {t(
+              "vehicles.averageWeightChart.difference",
+              "Difference"
+            )}
           </span>
 
           <span
@@ -137,13 +149,14 @@ function CustomTooltip({
             }`}
           >
             {isOver ? "+" : ""}
-            {difference} Ton
+            {difference}{" "}
+            {t("units.ton", "Ton")}
           </span>
-
         </div>
 
-        <div className="text-center">
+        {/* Threshold Status */}
 
+        <div className="text-center">
           <span
             className={`font-semibold ${
               isOver
@@ -152,26 +165,34 @@ function CustomTooltip({
             }`}
           >
             {isOver
-              ? "(Over Threshold)"
-              : "(Below Threshold)"}
+              ? `(${t(
+                  "vehicles.averageWeightChart.overThreshold",
+                  "Over Threshold"
+                )})`
+              : `(${t(
+                  "vehicles.averageWeightChart.belowThreshold",
+                  "Below Threshold"
+                )})`}
           </span>
-
         </div>
 
-        <div className="border-t pt-3 flex justify-between">
+        {/* Average Waste */}
 
+        <div className="border-t pt-3 flex justify-between">
           <span className="font-semibold text-[#374151]">
-            Average Waste
+            {t(
+              "vehicles.averageWeightChart.averageWaste",
+              "Average Waste"
+            )}
           </span>
 
           <span className="font-semibold">
-            {THRESHOLD.toFixed(2)} Ton
+            {THRESHOLD.toFixed(2)}{" "}
+            {t("units.ton", "Ton")}
           </span>
-
         </div>
 
       </div>
-
     </div>
   );
 }
@@ -181,12 +202,14 @@ function CustomTooltip({
 =========================================================== */
 
 export default function AverageWeightChart() {
-      return (
+  const { t } = useLanguage();
+
+  return (
     <section className="bg-white rounded-[30px] border border-[#ECECF3] shadow-sm overflow-hidden">
 
-      {/* ===========================================================
+      {/* =====================================================
           HEADER
-      =========================================================== */}
+      ===================================================== */}
 
       <div className="flex items-center justify-between px-8 py-6 border-b border-[#F5F6FA]">
 
@@ -200,56 +223,88 @@ export default function AverageWeightChart() {
             />
 
             <h2 className="text-[18px] font-semibold text-[#111827] uppercase">
-              Average Weight Generated (Line Graph)
+              {t(
+                "vehicles.averageWeightChart.title",
+                "Average Weight Generated (Line Graph)"
+              )}
             </h2>
 
           </div>
 
           <p className="mt-4 text-[17px] font-semibold text-[#1E3A8A]">
 
-            Average waste generated:
+            {t(
+              "vehicles.averageWeightChart.averageWasteGenerated",
+              "Average waste generated:"
+            )}
 
             <span className="ml-2 text-[#233876]">
-              {THRESHOLD.toFixed(2)} Ton
+              {THRESHOLD.toFixed(2)}{" "}
+              {t("units.ton", "Ton")}
             </span>
 
           </p>
 
         </div>
 
-        {/* View By */}
+        {/* =================================================
+            VIEW BY
+        ================================================= */}
 
         <div className="flex items-center gap-4">
 
           <span className="font-semibold text-[#233876]">
-            View By:
+            {t(
+              "vehicles.averageWeightChart.viewBy",
+              "View By:"
+            )}
           </span>
 
-          <button className="h-[48px] w-[170px] rounded-xl border border-[#E6E8F0] bg-white flex items-center justify-between px-5 hover:border-[#6C2BFF] transition">
-
+          <button
+            type="button"
+            className="
+              h-[48px]
+              w-[170px]
+              rounded-xl
+              border
+              border-[#E6E8F0]
+              bg-white
+              flex
+              items-center
+              justify-between
+              px-5
+              hover:border-[#6C2BFF]
+              transition
+            "
+          >
             <span className="font-medium text-[#111827]">
-              City
+              {t(
+                "vehicles.averageWeightChart.city",
+                "City"
+              )}
             </span>
 
             <ChevronDown
               size={18}
               className="text-[#6B7280]"
             />
-
           </button>
 
         </div>
 
       </div>
 
-      {/* ===========================================================
+      {/* =====================================================
           CHART
-      =========================================================== */}
+      ===================================================== */}
 
       <div className="px-8 py-8">
 
         <p className="font-semibold text-[#233876] mb-8">
-          Weight of Waste (Ton)
+          {t(
+            "vehicles.averageWeightChart.weightOfWaste",
+            "Weight of Waste (Ton)"
+          )}
         </p>
 
         <div className="h-[300px]">
@@ -274,19 +329,21 @@ export default function AverageWeightChart() {
                 vertical={false}
               />
 
-            <XAxis
-            dataKey="zone"
-            interval={0}
-            tickLine={false}
-            axisLine={false}
-            height={70}
-            tick={{
-                fill: "#233876",
-                fontSize: 13,
-                fontWeight: 500,
-            }}
-            tickFormatter={(value) => value.split("\n")}
-            />
+              <XAxis
+                dataKey="zone"
+                interval={0}
+                tickLine={false}
+                axisLine={false}
+                height={70}
+                tick={{
+                  fill: "#233876",
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}
+                tickFormatter={(value) =>
+                  value.split("\n")
+                }
+              />
 
               <YAxis
                 domain={[0, 100]}
@@ -307,15 +364,24 @@ export default function AverageWeightChart() {
                 axisLine={false}
               />
 
-              {/* Continue Part 3 */}
-                              <Tooltip
+              {/* =================================================
+                  TOOLTIP
+              ================================================= */}
+
+              <Tooltip
                 cursor={{
                   stroke: "#6C2BFF",
                   strokeWidth: 1.5,
                   strokeDasharray: "4 4",
                 }}
-                content={<CustomTooltip />}
+                content={
+                  <CustomTooltip t={t} />
+                }
               />
+
+              {/* =================================================
+                  THRESHOLD
+              ================================================= */}
 
               <ReferenceLine
                 y={THRESHOLD}
@@ -324,6 +390,10 @@ export default function AverageWeightChart() {
                 strokeDasharray="6 6"
                 label=""
               />
+
+              {/* =================================================
+                  WASTE LINE
+              ================================================= */}
 
               <Line
                 type="monotone"
@@ -351,27 +421,41 @@ export default function AverageWeightChart() {
 
         </div>
 
+        {/* =====================================================
+            LEGEND
+        ===================================================== */}
+
         <div className="flex justify-center items-center gap-12 mt-1">
 
-        <div className="flex items-center gap-3">
+          {/* Waste Generated */}
+
+          <div className="flex items-center gap-3">
 
             <div className="w-5 h-[3px] bg-[#6C2BFF] rounded-full" />
 
             <span className="text-[14px] font-medium text-[#233876]">
-            Waste Generated (Ton)
+              {t(
+                "vehicles.averageWeightChart.wasteGeneratedLegend",
+                "Waste Generated (Ton)"
+              )}
             </span>
 
-        </div>
+          </div>
 
-        <div className="flex items-center gap-3">
+          {/* Threshold */}
+
+          <div className="flex items-center gap-3">
 
             <div className="w-5 border-t-2 border-dashed border-[#FF5A5F]" />
 
             <span className="text-[14px] font-medium text-[#233876]">
-            Average Waste Generated (Threshold)
+              {t(
+                "vehicles.averageWeightChart.thresholdLegend",
+                "Average Waste Generated (Threshold)"
+              )}
             </span>
 
-        </div>
+          </div>
 
         </div>
 
