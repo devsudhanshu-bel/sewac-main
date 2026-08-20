@@ -177,7 +177,20 @@ export default function OverviewKPIs({ data }) {
   ========================================================= */
 
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div
+      className="
+        grid
+        grid-cols-1
+        sm:grid-cols-2
+        min-[1301px]:grid-cols-4
+
+        gap-3
+        sm:gap-3
+        min-[1301px]:gap-2
+
+        w-full
+      "
+    >
       {/* =====================================================
           KPI CARDS
       ===================================================== */}
@@ -191,27 +204,43 @@ export default function OverviewKPIs({ data }) {
             ref={(el) => (cardsRef.current[index] = el)}
             className="
               bg-white
+
               h-[110px]
+
               rounded-[22px]
+
               border
               border-[#EEF1F6]
-              px-7
+
+              px-4
+              sm:px-5
+              min-[1301px]:px-7
+
               flex
               items-center
+
               shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+
+              min-w-0
             "
           >
-            {/* ================= ICON ================= */}
+            {/* =================================================
+                ICON
+            ================================================= */}
 
             <div
               className={`
                 w-11
                 h-11
+
                 rounded-xl
+
                 ${item.bg}
+
                 flex
                 items-center
                 justify-center
+
                 flex-shrink-0
               `}
             >
@@ -222,20 +251,77 @@ export default function OverviewKPIs({ data }) {
               />
             </div>
 
-            {/* ================= CONTENT ================= */}
+            {/* =================================================
+                CONTENT
+            ================================================= */}
 
-            <div className="ml-5">
-              <p className="text-[14px] font-medium text-[#1F2937]">
+            <div
+              className="
+                ml-3
+                sm:ml-4
+                min-[1301px]:ml-5
+
+                min-w-0
+              "
+            >
+              <p
+                className="
+                  text-[13px]
+                  sm:text-[14px]
+
+                  font-medium
+
+                  text-[#1F2937]
+
+                  leading-snug
+
+                  truncate
+                "
+              >
                 {item.title}
               </p>
 
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-[20px] font-bold text-[#111827] leading-none">
+              <div
+                className="
+                  flex
+                  items-end
+
+                  gap-1.5
+                  sm:gap-2
+
+                  mt-2
+
+                  whitespace-nowrap
+                "
+              >
+                <span
+                  className="
+                    text-[19px]
+                    sm:text-[20px]
+
+                    font-bold
+
+                    text-[#111827]
+
+                    leading-none
+                  "
+                >
                   {item.value}
                 </span>
 
                 {item.unit && (
-                  <span className="text-[12px] font-semibold text-indigo-600">
+                  <span
+                    className="
+                      text-[11px]
+                      sm:text-[12px]
+
+                      font-semibold
+
+                      text-indigo-600
+
+                      leading-none
+                    "
+                  >
                     {item.unit}
                   </span>
                 )}
@@ -253,40 +339,104 @@ export default function OverviewKPIs({ data }) {
         ref={(el) => (cardsRef.current[3] = el)}
         className="
           bg-white
+
           h-[110px]
+
           rounded-[22px]
+
           border
           border-[#EEF1F6]
-          px-7
+
+          px-4
+          sm:px-5
+          min-[1301px]:px-7
+
           flex
           flex-col
           justify-center
+
           shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+
+          min-w-0
         "
       >
-        {/* ================= TITLE ================= */}
+        {/* ===================================================
+            TITLE
+        =================================================== */}
 
-        <h3 className="text-[15px] text-[#111827] mb-4">
+        <h3
+          className="
+            text-[14px]
+            sm:text-[15px]
+
+            text-[#111827]
+
+            mb-3
+            sm:mb-4
+          "
+        >
           {t(
             "overview.kpis.citizensTrend",
             "Citizens Trend"
           )}
         </h3>
 
+        {/* ===================================================
+            TREND ROWS
+        =================================================== */}
+
         <div className="space-y-3">
           {/* =================================================
               TRASH GIVEN
           ================================================= */}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+
+              gap-3
+
+              min-w-0
+            "
+          >
+            {/* ===============================================
+                LABEL
+            =============================================== */}
+
+            <div
+              className="
+                flex
+                items-center
+
+                gap-2
+                sm:gap-3
+
+                min-w-0
+              "
+            >
               <User
                 size={16}
                 strokeWidth={2.3}
-                className="text-green-500 fill-green-500"
+                className="
+                  text-green-500
+                  fill-green-500
+
+                  flex-shrink-0
+                "
               />
 
-              <span className="text-[13px] text-gray-700">
+              <span
+                className="
+                  text-[12px]
+                  sm:text-[13px]
+
+                  text-gray-700
+
+                  truncate
+                "
+              >
                 {t(
                   "overview.kpis.trashGiven",
                   "Trash Given"
@@ -294,12 +444,46 @@ export default function OverviewKPIs({ data }) {
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-[15px] font-bold text-green-500">
-                {Number(data.trashGiven).toLocaleString()}
+            {/* ===============================================
+                VALUE
+            =============================================== */}
+
+            <div
+              className="
+                flex
+                items-center
+
+                gap-2
+                sm:gap-3
+
+                shrink-0
+              "
+            >
+              <span
+                className="
+                  text-[14px]
+                  sm:text-[15px]
+
+                  font-bold
+
+                  text-green-500
+                "
+              >
+                {Number(
+                  data.trashGiven
+                ).toLocaleString()}
               </span>
 
-              <span className="text-[12px] font-semibold text-gray-500">
+              <span
+                className="
+                  text-[11px]
+                  sm:text-[12px]
+
+                  font-semibold
+
+                  text-gray-500
+                "
+              >
                 ({trashGivenPercentage}%)
               </span>
             </div>
@@ -309,15 +493,53 @@ export default function OverviewKPIs({ data }) {
               NOT GIVEN
           ================================================= */}
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+
+              gap-3
+
+              min-w-0
+            "
+          >
+            {/* ===============================================
+                LABEL
+            =============================================== */}
+
+            <div
+              className="
+                flex
+                items-center
+
+                gap-2
+                sm:gap-3
+
+                min-w-0
+              "
+            >
               <User
                 size={16}
                 strokeWidth={2.3}
-                className="text-orange-500 fill-orange-500"
+                className="
+                  text-orange-500
+                  fill-orange-500
+
+                  flex-shrink-0
+                "
               />
 
-              <span className="text-[13px] text-gray-700">
+              <span
+                className="
+                  text-[12px]
+                  sm:text-[13px]
+
+                  text-gray-700
+
+                  truncate
+                "
+              >
                 {t(
                   "overview.kpis.notGiven",
                   "Not Given"
@@ -325,12 +547,46 @@ export default function OverviewKPIs({ data }) {
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-[15px] font-bold text-orange-500">
-                {Number(data.notGiven).toLocaleString()}
+            {/* ===============================================
+                VALUE
+            =============================================== */}
+
+            <div
+              className="
+                flex
+                items-center
+
+                gap-2
+                sm:gap-3
+
+                shrink-0
+              "
+            >
+              <span
+                className="
+                  text-[14px]
+                  sm:text-[15px]
+
+                  font-bold
+
+                  text-orange-500
+                "
+              >
+                {Number(
+                  data.notGiven
+                ).toLocaleString()}
               </span>
 
-              <span className="text-[12px] font-semibold text-gray-500">
+              <span
+                className="
+                  text-[11px]
+                  sm:text-[12px]
+
+                  font-semibold
+
+                  text-gray-500
+                "
+              >
                 ({notGivenPercentage}%)
               </span>
             </div>
