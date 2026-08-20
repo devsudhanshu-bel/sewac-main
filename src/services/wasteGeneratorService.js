@@ -1272,6 +1272,12 @@ const getGVPTrend = async ({
 } = {}) => {
   const { value: selectedDate, date: dateObject } = validateDate(date);
 
+  /*
+  |--------------------------------------------------------------------------
+  | GET WARDS
+  |--------------------------------------------------------------------------
+  */
+
   const wardScope = await getSelectedWardScope({
     cityId,
     zoneId,
@@ -1285,6 +1291,12 @@ const getGVPTrend = async ({
     return [];
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | WARD NUMBERS
+  |--------------------------------------------------------------------------
+  */
+
   const wardNos = wards
     .map((ward) => Number(ward.wardNo))
     .filter((wardNo) => Number.isInteger(wardNo));
@@ -1293,31 +1305,49 @@ const getGVPTrend = async ({
     return [];
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | GET VEHICLE TABLES FOR SELECTED DATE
+  |--------------------------------------------------------------------------
+  */
+
   const vehicleTables = await getVehicleTablesForDate(dateObject, wardNos);
 
+  /*
+  |--------------------------------------------------------------------------
+  | NO TELEMETRY
+  |--------------------------------------------------------------------------
+  */
+
   if (vehicleTables.length === 0) {
-    return wards.map((ward) => ({
-      wardId: ward.wardId,
-
-      wardNo: ward.wardNo,
-
-      wardName: ward.wardName,
-
-      divisionName: ward.divisionName,
-
-      zoneName: ward.zoneName,
-
-      date: selectedDate,
-
-      value: 0,
-
-      gvp: 0,
-
-      color: "#16A34A",
-    }));
+    return wards
+      .map((ward) => ({
+        wardId: ward.wardId,
+        wardNo: ward.wardNo,
+        wardName: ward.wardName,
+        divisionName: ward.divisionName,
+        zoneName: ward.zoneName,
+        date: selectedDate,
+        value: 0,
+        gvp: 0,
+        color: "#16A34A",
+      }))
+      .sort((a, b) => Number(a.wardNo || 0) - Number(b.wardNo || 0));
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | GET TELEMETRY
+  |--------------------------------------------------------------------------
+  */
+
   const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
+
+  /*
+  |--------------------------------------------------------------------------
+  | MAP WARD NUMBER → WARD
+  |--------------------------------------------------------------------------
+  */
 
   const wardMap = new Map();
 
@@ -1325,13 +1355,54 @@ const getGVPTrend = async ({
     wardMap.set(Number(ward.wardNo), ward);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | INITIALISE GVP TOTAL FOR EVERY WARD
+  |--------------------------------------------------------------------------
+  */
+
   const wardGVP = new Map();
 
   for (const ward of wards) {
     wardGVP.set(Number(ward.wardNo), 0);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | PREVIOUS CUMULATIVE WEIGHT
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | We DO NOT assume the previous cumulative value is 0.
+  |
+  | The first telemetry packet for a vehicle is only the
+  | baseline. It must NOT itself be counted as GVP waste.
+  |
+  | Example:
+  |
+  | First packet:
+  |     cumulative = 9024.39
+  |
+  | This gives:
+  |     GVP = 0
+  |
+  | Next packet:
+  |     cumulative = 9030.10
+  |
+  | Actual GVP:
+  |     9030.10 - 9024.39
+  |     = 5.71 KG
+  |--------------------------------------------------------------------------
+  */
+
   const previousCumulative = new Map();
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROCESS TELEMETRY IN CHRONOLOGICAL ORDER
+  |--------------------------------------------------------------------------
+  */
 
   for (const row of telemetryRows) {
     const vehicleNumber = row.vehicleNumber
@@ -1342,13 +1413,59 @@ const getGVPTrend = async ({
       continue;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | USE VEHICLE TABLE + VEHICLE NUMBER AS UNIQUE STREAM
+    |--------------------------------------------------------------------------
+    |
+    | This prevents cumulative sequences from different vehicle tables
+    | from interfering with each other.
+    |--------------------------------------------------------------------------
+    */
+
+    const sourceVehicleTable = row.sourceVehicleTable
+      ? String(row.sourceVehicleTable).trim()
+      : "";
+
+    const vehicleKey = `${sourceVehicleTable}::${vehicleNumber}`;
+
+    /*
+    |--------------------------------------------------------------------------
+    | CURRENT CUMULATIVE VALUE
+    |--------------------------------------------------------------------------
+    */
+
     const current = Number(row.cumulativeWeight || 0);
 
-    const previous = previousCumulative.get(vehicleNumber) || 0;
+    /*
+    |--------------------------------------------------------------------------
+    | FIRST PACKET = BASELINE ONLY
+    |--------------------------------------------------------------------------
+    */
 
-    const actualWaste = Math.max(current - previous, 0);
+    const hasPrevious = previousCumulative.has(vehicleKey);
 
-    const unitNumber = row.unitNumber ? String(row.unitNumber) : "";
+    const previous = previousCumulative.get(vehicleKey);
+
+    const actualWaste = hasPrevious ? Math.max(current - previous, 0) : 0;
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED GVP CONDITION
+    |--------------------------------------------------------------------------
+    |
+    | DO NOT CHANGE THIS LOGIC.
+    |
+    | GVP:
+    |
+    | 1. unitNumber must exist
+    | 2. unitNumber must NOT contain UHF
+    | 3. remarks must be "O"
+    | 4. citizenContact must be null / empty
+    |--------------------------------------------------------------------------
+    */
+
+    const unitNumber = row.unitNumber ? String(row.unitNumber).trim() : "";
 
     const citizenContact = row.citizenContact;
 
@@ -1360,7 +1477,13 @@ const getGVPTrend = async ({
         citizenContact === undefined ||
         String(citizenContact).trim() === "");
 
-    if (isGVP) {
+    /*
+    |--------------------------------------------------------------------------
+    | ADD ONLY THE INCREMENTAL GVP WASTE
+    |--------------------------------------------------------------------------
+    */
+
+    if (isGVP && actualWaste > 0) {
       const wardNo = Number(row.wardNo);
 
       if (Number.isInteger(wardNo) && wardGVP.has(wardNo)) {
@@ -1370,8 +1493,20 @@ const getGVPTrend = async ({
       }
     }
 
-    previousCumulative.set(vehicleNumber, current);
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE BASELINE
+    |--------------------------------------------------------------------------
+    */
+
+    previousCumulative.set(vehicleKey, current);
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | RETURN ONE POINT PER WARD
+  |--------------------------------------------------------------------------
+  */
 
   return wards
     .map((ward) => {
@@ -1392,11 +1527,22 @@ const getGVPTrend = async ({
 
         date: selectedDate,
 
+        /*
+        | GVP in KG
+        */
         value: Number(value.toFixed(2)),
 
+        /*
+        | Same value exposed as GVP
+        */
         gvp: Number(value.toFixed(2)),
 
-        color: value >= 6500 ? "#DC2626" : "#16A34A",
+        /*
+        | No 6500 KG threshold logic.
+        | Keep the points green because the graph
+        | is now simply representing ward GVP.
+        */
+        color: "#16A34A",
       };
     })
     .sort((a, b) => Number(a.wardNo || 0) - Number(b.wardNo || 0));
