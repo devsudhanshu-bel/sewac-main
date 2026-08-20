@@ -703,6 +703,16 @@ plants: {
     },
   },
 },
+
+users: {
+  title: "Users",
+
+  description:
+    "Create and manage users in the system.",
+
+  footer:
+    "© 2025 SEWAC. All rights reserved.",
+},
 };
 
 export default en;
