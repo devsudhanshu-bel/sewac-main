@@ -307,19 +307,41 @@ vehicles: {
   },
 
   averageWeightChart: {
-    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
-    averageWasteGenerated: "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ:",
-    viewBy: "ಇದರ ಮೂಲಕ ವೀಕ್ಷಿಸಿ:",
-    city: "ನಗರ",
-    weightOfWaste: "ತ್ಯಾಜ್ಯದ ತೂಕ (ಟನ್)",
+    title:
+      "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
 
-    zoneName: "ವಲಯದ ಹೆಸರು",
-    wasteGenerated: "ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ",
-    vehiclesRunning: "ಚಾಲನೆಯಲ್ಲಿರುವ ವಾಹನಗಳು",
-    difference: "ವ್ಯತ್ಯಾಸ",
-    overThreshold: "ಮಿತಿಗಿಂತ ಹೆಚ್ಚು",
-    belowThreshold: "ಮಿತಿಗಿಂತ ಕಡಿಮೆ",
-    averageWaste: "ಸರಾಸರಿ ತ್ಯಾಜ್ಯ",
+    averageWasteGenerated:
+      "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ:",
+
+    viewBy:
+      "ಇದರ ಮೂಲಕ ವೀಕ್ಷಿಸಿ:",
+
+    city:
+      "ನಗರ",
+
+    weightOfWaste:
+      "ತ್ಯಾಜ್ಯದ ತೂಕ (ಟನ್)",
+
+    zoneName:
+      "ವಲಯದ ಹೆಸರು",
+
+    wasteGenerated:
+      "ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ",
+
+    vehiclesRunning:
+      "ಚಾಲನೆಯಲ್ಲಿರುವ ವಾಹನಗಳು",
+
+    difference:
+      "ವ್ಯತ್ಯಾಸ",
+
+    overThreshold:
+      "ಮಿತಿಗಿಂತ ಹೆಚ್ಚು",
+
+    belowThreshold:
+      "ಮಿತಿಗಿಂತ ಕಡಿಮೆ",
+
+    averageWaste:
+      "ಸರಾಸರಿ ತ್ಯಾಜ್ಯ",
 
     wasteGeneratedLegend:
       "ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ (ಟನ್)",
@@ -329,81 +351,129 @@ vehicles: {
   },
 
   telemetryDirectory: {
-    title: "ಟೆಲಿಮೆಟ್ರಿ ಡೈರೆಕ್ಟರಿ",
+    title:
+      "ಟೆಲಿಮೆಟ್ರಿ ಡೈರೆಕ್ಟರಿ",
 
     searchPlaceholder:
       "ವಾಹನ ID ಮೂಲಕ ಹುಡುಕಿ",
 
-    allStatus: "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
+    allStatus:
+      "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
 
-    active: "ಸಕ್ರಿಯ",
+    active:
+      "ಸಕ್ರಿಯ",
 
-    inactive: "ನಿಷ್ಕ್ರಿಯ",
+    inactive:
+      "ನಿಷ್ಕ್ರಿಯ",
 
-    download: "ಡೌನ್‌ಲೋಡ್",
+    download:
+      "ಡೌನ್‌ಲೋಡ್",
 
-    createVehicle: "ವಾಹನ ರಚಿಸಿ",
+    createVehicle:
+      "ವಾಹನ ರಚಿಸಿ",
 
-    vehicleId: "ವಾಹನ ID",
+    vehicleId:
+      "ವಾಹನ ID",
 
-    routeZone: "ಮಾರ್ಗ / ವಲಯ",
+    routeZone:
+      "ಮಾರ್ಗ / ವಲಯ",
 
-    lastUpdate: "ಕೊನೆಯ ನವೀಕರಣ",
+    lastUpdate:
+      "ಕೊನೆಯ ನವೀಕರಣ",
 
-    status: "ಸ್ಥಿತಿ",
+    status:
+      "ಸ್ಥಿತಿ",
 
-    actions: "ಕ್ರಿಯೆಗಳು",
+    actions:
+      "ಕ್ರಿಯೆಗಳು",
 
-    action: "ಕ್ರಿಯೆ",
+    action:
+      "ಕ್ರಿಯೆ",
 
-    update: "ನವೀಕರಿಸಿ",
+    update:
+      "ನವೀಕರಿಸಿ",
 
-    delete: "ಅಳಿಸಿ",
+    delete:
+      "ಅಳಿಸಿ",
 
-    showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+    noVehicles:
+      "ಯಾವುದೇ ವಾಹನಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
 
-    to: "ರಿಂದ",
+    showing:
+      "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
 
-    of: "ರಲ್ಲಿ",
+    to:
+      "ರಿಂದ",
 
-    vehicles: "ವಾಹನಗಳು",
+    of:
+      "ರಲ್ಲಿ",
 
-    rowsPerPage: "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು:",
+    vehicles:
+      "ವಾಹನಗಳು",
+
+    rowsPerPage:
+      "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು:",
 
     csv: {
-      vehicleId: "ವಾಹನ ID",
-      vehicleNumber: "ವಾಹನ ಸಂಖ್ಯೆ",
-      vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
-      city: "ನಗರ",
-      zone: "ವಲಯ",
-      division: "ವಿಭಾಗ",
-      ward: "ವಾರ್ಡ್",
-      status: "ಸ್ಥಿತಿ",
+      vehicleId:
+        "ವಾಹನ ID",
+
+      vehicleNumber:
+        "ವಾಹನ ಸಂಖ್ಯೆ",
+
+      vehicleType:
+        "ವಾಹನ ಪ್ರಕಾರ",
+
+      city:
+        "ನಗರ",
+
+      zone:
+        "ವಲಯ",
+
+      division:
+        "ವಿಭಾಗ",
+
+      ward:
+        "ವಾರ್ಡ್",
+
+      status:
+        "ಸ್ಥಿತಿ",
     },
   },
 
   editVehicle: {
-    title: "ವಾಹನವನ್ನು ನವೀಕರಿಸಿ",
+    title:
+      "ವಾಹನವನ್ನು ನವೀಕರಿಸಿ",
 
-    vehicleId: "ವಾಹನ ID",
+    vehicleId:
+      "ವಾಹನ ID",
 
-    vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
+    vehicleType:
+      "ವಾಹನ ಪ್ರಕಾರ",
 
-    active: "ಸಕ್ರಿಯ",
+    active:
+      "ಸಕ್ರಿಯ",
 
-    inactive: "ನಿಷ್ಕ್ರಿಯ",
+    inactive:
+      "ನಿಷ್ಕ್ರಿಯ",
 
-    selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    selectCity:
+      "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
 
-    selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    selectZone:
+      "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
 
-    selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    selectDivision:
+      "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
 
-    selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+    selectWard:
+      "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
 
-    cancel: "ರದ್ದುಮಾಡಿ",
+    cancel:
+      "ರದ್ದುಮಾಡಿ",
 
-    update: "ನವೀಕರಿಸಿ",
+    update:
+      "ನವೀಕರಿಸಿ",
 
     errors: {
       updateFailed:
@@ -412,14 +482,17 @@ vehicles: {
   },
 
   deleteVehicle: {
-    title: "ವಾಹನ ಅಳಿಸಿ",
+    title:
+      "ವಾಹನ ಅಳಿಸಿ",
 
     confirmation:
       "ಈ ವಾಹನವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ",
 
-    cancel: "ರದ್ದುಮಾಡಿ",
+    cancel:
+      "ರದ್ದುಮಾಡಿ",
 
-    delete: "ಅಳಿಸಿ",
+    delete:
+      "ಅಳಿಸಿ",
 
     errors: {
       deleteFailed:

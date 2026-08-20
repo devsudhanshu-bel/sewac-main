@@ -30,7 +30,7 @@ export default function EditVehicleModal({
   const [wards, setWards] = useState([]);
 
   /* ===========================================================
-     HANDLE CHANGE
+     FORM CHANGE
   =========================================================== */
 
   const handleChange = (e) => {
@@ -49,11 +49,18 @@ export default function EditVehicleModal({
   }, []);
 
   const loadCities = async () => {
-    const res = await api.get(
-      "/api/filters/cities"
-    );
+    try {
+      const res = await api.get(
+        "/api/filters/cities"
+      );
 
-    setCities(res.data);
+      setCities(res.data || []);
+    } catch (err) {
+      console.error(
+        "Failed to load cities:",
+        err
+      );
+    }
   };
 
   /* ===========================================================
@@ -61,11 +68,18 @@ export default function EditVehicleModal({
   =========================================================== */
 
   const loadZones = async (cityId) => {
-    const res = await api.get(
-      `/api/filters/zones/${cityId}`
-    );
+    try {
+      const res = await api.get(
+        `/api/filters/zones/${cityId}`
+      );
 
-    setZones(res.data);
+      setZones(res.data || []);
+    } catch (err) {
+      console.error(
+        "Failed to load zones:",
+        err
+      );
+    }
   };
 
   /* ===========================================================
@@ -73,11 +87,18 @@ export default function EditVehicleModal({
   =========================================================== */
 
   const loadDivisions = async (zoneId) => {
-    const res = await api.get(
-      `/api/filters/divisions/${zoneId}`
-    );
+    try {
+      const res = await api.get(
+        `/api/filters/divisions/${zoneId}`
+      );
 
-    setDivisions(res.data);
+      setDivisions(res.data || []);
+    } catch (err) {
+      console.error(
+        "Failed to load divisions:",
+        err
+      );
+    }
   };
 
   /* ===========================================================
@@ -85,11 +106,18 @@ export default function EditVehicleModal({
   =========================================================== */
 
   const loadWards = async (divisionId) => {
-    const res = await api.get(
-      `/api/filters/wards/${divisionId}`
-    );
+    try {
+      const res = await api.get(
+        `/api/filters/wards/${divisionId}`
+      );
 
-    setWards(res.data);
+      setWards(res.data || []);
+    } catch (err) {
+      console.error(
+        "Failed to load wards:",
+        err
+      );
+    }
   };
 
   /* ===========================================================
@@ -98,6 +126,10 @@ export default function EditVehicleModal({
 
   const handleSubmit = async () => {
     try {
+      if (!vehicle?.vehicle_id) {
+        return;
+      }
+
       await api.put(
         `/api/vehicles/${vehicle.vehicle_id}`,
         form
@@ -105,8 +137,12 @@ export default function EditVehicleModal({
 
       onSuccess();
       onClose();
+
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Update Vehicle Error:",
+        err
+      );
 
       alert(
         t(
@@ -134,34 +170,34 @@ export default function EditVehicleModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
 
-      <div className="bg-white rounded-2xl p-6 w-[600px]">
+      <div className="bg-white rounded-2xl p-6 w-[600px] shadow-xl">
 
-        {/* =====================================================
-            HEADER
-        ===================================================== */}
+        {/* HEADER */}
 
         <div className="flex justify-between items-center mb-5">
 
-          <h2 className="text-xl font-bold">
+          <h2 className="text-xl font-bold text-[#111827]">
             {t(
               "vehicles.editVehicle.title",
               "Update Vehicle"
             )}
           </h2>
 
-          <button onClick={onClose}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-900"
+          >
             <X />
           </button>
 
         </div>
 
-        {/* =====================================================
-            FORM
-        ===================================================== */}
+        {/* FORM */}
 
         <div className="grid grid-cols-2 gap-4">
 
-          {/* Vehicle ID */}
+          {/* VEHICLE ID */}
 
           <input
             name="vehicle_id"
@@ -169,19 +205,20 @@ export default function EditVehicleModal({
               "vehicles.editVehicle.vehicleId",
               "Vehicle ID"
             )}
-            value={form.vehicle_id}
+            value={form.vehicle_id || ""}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
           />
 
-          {/* Vehicle Type */}
+          {/* VEHICLE TYPE */}
 
           <select
             name="vehicle_type"
-            value={form.vehicle_type}
+            value={form.vehicle_type || ""}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
           >
+
             <option value="">
               {t(
                 "vehicles.editVehicle.vehicleType",
@@ -204,40 +241,45 @@ export default function EditVehicleModal({
             <option>
               Dumper
             </option>
+
           </select>
 
-          {/* Status */}
+          {/* STATUS */}
 
           <select
             name="status"
-            value={form.status}
+            value={form.status || "ACTIVE"}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
           >
+
             <option value="ACTIVE">
               {t(
                 "vehicles.editVehicle.active",
-                "ACTIVE"
+                "Active"
               )}
             </option>
 
             <option value="INACTIVE">
               {t(
                 "vehicles.editVehicle.inactive",
-                "INACTIVE"
+                "Inactive"
               )}
             </option>
+
           </select>
 
-          {/* City */}
+          {/* CITY */}
 
           <select
-            className="border rounded-lg p-3"
             value=""
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
             onChange={(e) => {
 
               const cityId =
                 e.target.value;
+
+              if (!cityId) return;
 
               setForm({
                 ...form,
@@ -250,15 +292,20 @@ export default function EditVehicleModal({
                 ward: "",
               });
 
+              setZones([]);
+              setDivisions([]);
+              setWards([]);
+
               loadZones(cityId);
             }}
           >
 
             <option value="">
-              {t(
-                "vehicles.editVehicle.selectCity",
-                "Select City"
-              )}
+              {form.city ||
+                t(
+                  "vehicles.editVehicle.selectCity",
+                  "Select City"
+                )}
             </option>
 
             {cities.map((city) => (
@@ -272,15 +319,17 @@ export default function EditVehicleModal({
 
           </select>
 
-          {/* Zone */}
+          {/* ZONE */}
 
           <select
-            className="border rounded-lg p-3"
             value=""
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
             onChange={(e) => {
 
               const zoneId =
                 e.target.value;
+
+              if (!zoneId) return;
 
               setForm({
                 ...form,
@@ -292,15 +341,19 @@ export default function EditVehicleModal({
                 ward: "",
               });
 
+              setDivisions([]);
+              setWards([]);
+
               loadDivisions(zoneId);
             }}
           >
 
             <option value="">
-              {t(
-                "vehicles.editVehicle.selectZone",
-                "Select Zone"
-              )}
+              {form.zone ||
+                t(
+                  "vehicles.editVehicle.selectZone",
+                  "Select Zone"
+                )}
             </option>
 
             {zones.map((zone) => (
@@ -314,15 +367,17 @@ export default function EditVehicleModal({
 
           </select>
 
-          {/* Division */}
+          {/* DIVISION */}
 
           <select
-            className="border rounded-lg p-3"
             value=""
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
             onChange={(e) => {
 
               const divisionId =
                 e.target.value;
+
+              if (!divisionId) return;
 
               setForm({
                 ...form,
@@ -333,15 +388,18 @@ export default function EditVehicleModal({
                 ward: "",
               });
 
+              setWards([]);
+
               loadWards(divisionId);
             }}
           >
 
             <option value="">
-              {t(
-                "vehicles.editVehicle.selectDivision",
-                "Select Division"
-              )}
+              {form.division ||
+                t(
+                  "vehicles.editVehicle.selectDivision",
+                  "Select Division"
+                )}
             </option>
 
             {divisions.map(
@@ -354,19 +412,26 @@ export default function EditVehicleModal({
                     division.division_id
                   }
                 >
-                  {division.division_name}
+                  {
+                    division.division_name
+                  }
                 </option>
               )
             )}
 
           </select>
 
-          {/* Ward */}
+          {/* WARD */}
 
           <select
-            className="border rounded-lg p-3"
             value=""
+            className="border rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
             onChange={(e) => {
+
+              const wardId =
+                e.target.value;
+
+              if (!wardId) return;
 
               setForm({
                 ...form,
@@ -375,15 +440,15 @@ export default function EditVehicleModal({
                     e.target.selectedIndex
                   ].text,
               });
-
             }}
           >
 
             <option value="">
-              {t(
-                "vehicles.editVehicle.selectWard",
-                "Select Ward"
-              )}
+              {form.ward ||
+                t(
+                  "vehicles.editVehicle.selectWard",
+                  "Select Ward"
+                )}
             </option>
 
             {wards.map((ward) => (
@@ -399,15 +464,14 @@ export default function EditVehicleModal({
 
         </div>
 
-        {/* =====================================================
-            ACTIONS
-        ===================================================== */}
+        {/* FOOTER */}
 
         <div className="flex justify-end gap-3 mt-6">
 
           <button
+            type="button"
             onClick={onClose}
-            className="border rounded-lg px-5 py-2"
+            className="border rounded-lg px-5 py-2 hover:bg-gray-50 transition"
           >
             {t(
               "vehicles.editVehicle.cancel",
@@ -416,8 +480,9 @@ export default function EditVehicleModal({
           </button>
 
           <button
+            type="button"
             onClick={handleSubmit}
-            className="bg-[#6C2BFF] text-white rounded-lg px-5 py-2"
+            className="bg-[#6C2BFF] text-white rounded-lg px-5 py-2 hover:bg-[#5B21E8] transition"
           >
             {t(
               "vehicles.editVehicle.update",

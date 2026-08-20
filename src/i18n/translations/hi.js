@@ -296,7 +296,7 @@ vehicles: {
   title: "वाहन",
 
   description:
-    "वाहन बेड़े की स्थिति, गतिविधि और कचरा संग्रहण प्रदर्शन की निगरानी करें।",
+    "वाहन बेड़े की स्थिति, गतिविधि और अपशिष्ट संग्रहण प्रदर्शन की निगरानी करें।",
 
   kpis: {
     totalVehicles: "कुल वाहन",
@@ -308,33 +308,33 @@ vehicles: {
 
   averageWeightChart: {
     title: "औसत उत्पन्न वजन (लाइन ग्राफ)",
-    averageWasteGenerated: "औसत उत्पन्न कचरा:",
+    averageWasteGenerated: "औसत उत्पन्न अपशिष्ट:",
     viewBy: "इसके अनुसार देखें:",
     city: "शहर",
-    weightOfWaste: "कचरे का वजन (टन)",
+    weightOfWaste: "अपशिष्ट का वजन (टन)",
 
-    zoneName: "ज़ोन का नाम",
-    wasteGenerated: "उत्पन्न कचरा",
+    zoneName: "क्षेत्र का नाम",
+    wasteGenerated: "उत्पन्न अपशिष्ट",
     vehiclesRunning: "चल रहे वाहन",
     difference: "अंतर",
     overThreshold: "सीमा से अधिक",
     belowThreshold: "सीमा से कम",
-    averageWaste: "औसत कचरा",
+    averageWaste: "औसत अपशिष्ट",
 
     wasteGeneratedLegend:
-      "उत्पन्न कचरा (टन)",
+      "उत्पन्न अपशिष्ट (टन)",
 
     thresholdLegend:
-      "औसत उत्पन्न कचरा (सीमा)",
+      "औसत उत्पन्न अपशिष्ट (सीमा)",
   },
 
   telemetryDirectory: {
-    title: "टेलीमेट्री निर्देशिका",
+    title: "टेलीमेट्री डायरेक्टरी",
 
     searchPlaceholder:
-      "वाहन ID से खोजें",
+      "वाहन ID द्वारा खोजें",
 
-    allStatus: "सभी स्थिति",
+    allStatus: "सभी स्थितियाँ",
 
     active: "सक्रिय",
 
@@ -346,21 +346,21 @@ vehicles: {
 
     vehicleId: "वाहन ID",
 
-    routeZone: "रूट / ज़ोन",
+    routeZone: "मार्ग / क्षेत्र",
 
     lastUpdate: "अंतिम अपडेट",
 
     status: "स्थिति",
 
-    actions: "क्रियाएँ",
+    actions: "कार्रवाई",
 
-    action: "क्रिया",
+    action: "कार्रवाई",
 
     update: "अपडेट करें",
 
     delete: "हटाएँ",
 
-    showing: "दिखाया जा रहा है",
+    showing: "दिखाए जा रहे हैं",
 
     to: "से",
 
@@ -375,8 +375,8 @@ vehicles: {
       vehicleNumber: "वाहन संख्या",
       vehicleType: "वाहन प्रकार",
       city: "शहर",
-      zone: "ज़ोन",
-      division: "डिवीजन",
+      zone: "क्षेत्र",
+      division: "प्रभाग",
       ward: "वार्ड",
       status: "स्थिति",
     },
@@ -395,9 +395,9 @@ vehicles: {
 
     selectCity: "शहर चुनें",
 
-    selectZone: "ज़ोन चुनें",
+    selectZone: "क्षेत्र चुनें",
 
-    selectDivision: "डिवीजन चुनें",
+    selectDivision: "प्रभाग चुनें",
 
     selectWard: "वार्ड चुनें",
 
@@ -415,7 +415,7 @@ vehicles: {
     title: "वाहन हटाएँ",
 
     confirmation:
-      "क्या आप वाकई इस वाहन को हटाना चाहते हैं",
+      "क्या आप वाकई इस वाहन को हटाना चाहते हैं?",
 
     cancel: "रद्द करें",
 

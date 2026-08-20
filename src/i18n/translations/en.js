@@ -296,18 +296,36 @@ vehicles: {
 
   averageWeightChart: {
     title: "Average Weight Generated (Line Graph)",
-    averageWasteGenerated: "Average waste generated:",
+
+    averageWasteGenerated:
+      "Average waste generated:",
+
     viewBy: "View By:",
+
     city: "City",
-    weightOfWaste: "Weight of Waste (Ton)",
+
+    weightOfWaste:
+      "Weight of Waste (Ton)",
 
     zoneName: "Zone Name",
-    wasteGenerated: "Waste Generated",
-    vehiclesRunning: "Vehicles Running",
-    difference: "Difference",
-    overThreshold: "Over Threshold",
-    belowThreshold: "Below Threshold",
-    averageWaste: "Average Waste",
+
+    wasteGenerated:
+      "Waste Generated",
+
+    vehiclesRunning:
+      "Vehicles Running",
+
+    difference:
+      "Difference",
+
+    overThreshold:
+      "Over Threshold",
+
+    belowThreshold:
+      "Below Threshold",
+
+    averageWaste:
+      "Average Waste",
 
     wasteGeneratedLegend:
       "Waste Generated (Ton)",
@@ -322,76 +340,123 @@ vehicles: {
     searchPlaceholder:
       "Search by Vehicle ID",
 
-    allStatus: "All Status",
+    allStatus:
+      "All Status",
 
-    active: "Active",
+    active:
+      "Active",
 
-    inactive: "Inactive",
+    inactive:
+      "Inactive",
 
-    download: "Download",
+    download:
+      "Download",
 
-    createVehicle: "Create Vehicle",
+    createVehicle:
+      "Create Vehicle",
 
-    vehicleId: "Vehicle ID",
+    vehicleId:
+      "Vehicle ID",
 
-    routeZone: "Route / Zone",
+    routeZone:
+      "Route / Zone",
 
-    lastUpdate: "Last Update",
+    lastUpdate:
+      "Last Update",
 
-    status: "Status",
+    status:
+      "Status",
 
-    actions: "Actions",
+    actions:
+      "Actions",
 
-    action: "Action",
+    action:
+      "Action",
 
-    update: "Update",
+    update:
+      "Update",
 
-    delete: "Delete",
+    delete:
+      "Delete",
 
-    showing: "Showing",
+    noVehicles:
+      "No vehicles found.",
 
-    to: "to",
+    showing:
+      "Showing",
 
-    of: "of",
+    to:
+      "to",
 
-    vehicles: "vehicles",
+    of:
+      "of",
 
-    rowsPerPage: "Rows per page:",
+    vehicles:
+      "vehicles",
+
+    rowsPerPage:
+      "Rows per page:",
 
     csv: {
-      vehicleId: "Vehicle ID",
-      vehicleNumber: "Vehicle Number",
-      vehicleType: "Vehicle Type",
-      city: "City",
-      zone: "Zone",
-      division: "Division",
-      ward: "Ward",
-      status: "Status",
+      vehicleId:
+        "Vehicle ID",
+
+      vehicleNumber:
+        "Vehicle Number",
+
+      vehicleType:
+        "Vehicle Type",
+
+      city:
+        "City",
+
+      zone:
+        "Zone",
+
+      division:
+        "Division",
+
+      ward:
+        "Ward",
+
+      status:
+        "Status",
     },
   },
 
   editVehicle: {
-    title: "Update Vehicle",
+    title:
+      "Update Vehicle",
 
-    vehicleId: "Vehicle ID",
+    vehicleId:
+      "Vehicle ID",
 
-    vehicleType: "Vehicle Type",
+    vehicleType:
+      "Vehicle Type",
 
-    active: "ACTIVE",
+    active:
+      "Active",
 
-    inactive: "INACTIVE",
+    inactive:
+      "Inactive",
 
-    selectCity: "Select City",
+    selectCity:
+      "Select City",
 
-    selectZone: "Select Zone",
+    selectZone:
+      "Select Zone",
 
-    selectDivision: "Select Division",
+    selectDivision:
+      "Select Division",
 
-    selectWard: "Select Ward",
+    selectWard:
+      "Select Ward",
 
-    cancel: "Cancel",
+    cancel:
+      "Cancel",
 
-    update: "Update",
+    update:
+      "Update",
 
     errors: {
       updateFailed:
@@ -400,14 +465,17 @@ vehicles: {
   },
 
   deleteVehicle: {
-    title: "Delete Vehicle",
+    title:
+      "Delete Vehicle",
 
     confirmation:
-      "Are you sure you want to delete vehicle",
+      "Are you sure you want to delete this vehicle",
 
-    cancel: "Cancel",
+    cancel:
+      "Cancel",
 
-    delete: "Delete",
+    delete:
+      "Delete",
 
     errors: {
       deleteFailed:
