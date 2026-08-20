@@ -61,29 +61,37 @@ export default function ComplaintFilters({ filters, onFilterChange, onReset }) {
         {/* ================= STATUS ================= */}
 
         <FilterSelect
-          label="Status"
-          value={filters.status}
-          onChange={(value) => onFilterChange("status", value)}
+          label="Category"
+          value={filters.category}
+          onChange={(value) => onFilterChange("category", value)}
           options={[
             {
               value: "",
               label: "All",
             },
             {
-              value: "PENDING",
-              label: "Pending",
+              value: "MISSED_COLLECTION",
+              label: "Missed Collection",
             },
             {
-              value: "READY_FOR_VERIFICATION",
-              label: "Ready for Verification",
+              value: "OVERFLOWING_BIN",
+              label: "Overflowing Bin",
             },
             {
-              value: "OTP_SENT",
-              label: "OTP Sent",
+              value: "ILLEGAL_DUMPING",
+              label: "Illegal Dumping",
             },
             {
-              value: "CLOSED",
-              label: "Closed",
+              value: "STREET_LITTER",
+              label: "Street Litter",
+            },
+            {
+              value: "DAMAGED_BIN",
+              label: "Damaged Bin",
+            },
+            {
+              value: "OTHER",
+              label: "Other",
             },
           ]}
         />
