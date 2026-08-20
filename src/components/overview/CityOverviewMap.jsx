@@ -33,7 +33,7 @@ import { createPortal } from "react-dom";
 
 import Plants from "../plants/Plants";
 import CustomerGrev from "./CustomerGrev";
-import GVPOverviewMap from "./maps/GVPOverviewMap";
+import GVPOverviewMap from "./GVPOverviewMap";
 import { useFilters } from "../../contexts/FilterContext";
 
 import "leaflet/dist/leaflet.css";

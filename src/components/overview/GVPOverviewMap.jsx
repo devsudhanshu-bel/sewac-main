@@ -14,9 +14,9 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-import api from "../../../api/axios";
+import api from "../../api/axios";
 
-import { useFilters } from "../../../contexts/FilterContext";
+import { useFilters } from "../../contexts/FilterContext";
 
 /* =========================================================
    MAP DEFAULTS
