@@ -116,10 +116,7 @@ async function getComplaintByTicket(ticketNumber) {
  *
  * Security/internal fields are NEVER accepted here.
  */
-async function updateComplaint(
-  ticketNumber,
-  { status, remarks, closed_at },
-) {
+async function updateComplaint(ticketNumber, { status, remarks, closed_at }) {
   return prisma.citizen_complaints.update({
     where: {
       ticket_number: ticketNumber,
@@ -149,59 +146,38 @@ async function updateComplaint(
  * =========================================================
  */
 async function getComplaintKPIs() {
-  const [
-    total,
-    pending,
-    assigned,
-    inProgress,
-    readyForVerification,
-    otpSent,
-    closed,
-  ] = await Promise.all([
-    prisma.citizen_complaints.count(),
+  const [total, pending, readyForVerification, otpSent, closed] =
+    await Promise.all([
+      prisma.citizen_complaints.count(),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "PENDING",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "PENDING",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "ASSIGNED",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "READY_FOR_VERIFICATION",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "IN_PROGRESS",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "OTP_SENT",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "READY_FOR_VERIFICATION",
-      },
-    }),
-
-    prisma.citizen_complaints.count({
-      where: {
-        status: "OTP_SENT",
-      },
-    }),
-
-    prisma.citizen_complaints.count({
-      where: {
-        status: "CLOSED",
-      },
-    }),
-  ]);
+      prisma.citizen_complaints.count({
+        where: {
+          status: "CLOSED",
+        },
+      }),
+    ]);
 
   return {
     total,
     pending,
-    assigned,
-    inProgress,
     readyForVerification,
     otpSent,
     closed,
