@@ -266,7 +266,7 @@ export default function OverviewKPIs({ data }) {
       >
         {/* ================= TITLE ================= */}
 
-        <h3 className="text-[15px] font-semibold text-[#111827] mb-4">
+        <h3 className="text-[15px] text-[#111827] mb-4">
           {t(
             "overview.kpis.citizensTrend",
             "Citizens Trend"

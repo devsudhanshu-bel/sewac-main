@@ -136,6 +136,14 @@ const hi = {
       status: "स्थिति",
     },
   },
+
+  generationTrend: {
+  title: "कचरा उत्पादन प्रवृत्ति",
+  wasteGenerated: "उत्पन्न कचरा (टन)",
+  wasteGeneratedLabel: "उत्पन्न कचरा",
+  wards: "वार्ड",
+  ward: "वार्ड",
+},
 };
 
 export default hi;

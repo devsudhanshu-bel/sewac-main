@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Truck } from "lucide-react";
 import { gsap } from "gsap";
 
@@ -13,100 +13,121 @@ import {
   ReferenceLine,
 } from "recharts";
 
+import { useLanguage } from "../../i18n";
+
 export default function VehicleStats({ vehicleData, trendData }) {
   const sectionRef = useRef(null);
   const leftCardRef = useRef(null);
   const rightCardRef = useRef(null);
   const statCardsRef = useRef([]);
 
-  /*
-   * =========================================================
-   * VEHICLE FLEET DATA
-   * =========================================================
-   */
+  const { t } = useLanguage();
 
-  const vehicleStats = vehicleData
-    ? [
-        {
-          title: "Total Registered Vehicles",
+  /* =========================================================
+     VEHICLE FLEET DATA
+  ========================================================= */
 
-          value: Number(vehicleData.totalVehicles).toLocaleString(),
+  const vehicleStats = useMemo(() => {
+    if (!vehicleData) return [];
 
-          color: "text-violet-600",
+    return [
+      {
+        title: t(
+          "overview.vehicleFleet.totalRegistered",
+          "Total Registered Vehicles"
+        ),
 
-          bg: "bg-violet-50",
-        },
+        value: Number(vehicleData.totalVehicles).toLocaleString(),
 
-        {
-          title: "Running Vehicles",
+        color: "text-violet-600",
 
-          value: Number(vehicleData.runningVehicles).toLocaleString(),
+        bg: "bg-violet-50",
+      },
 
-          percentage:
-            vehicleData.totalVehicles > 0
-              ? `(${(
-                  (vehicleData.runningVehicles / vehicleData.totalVehicles) *
-                  100
-                ).toFixed(1)}%)`
-              : "(0%)",
+      {
+        title: t(
+          "overview.vehicleFleet.running",
+          "Running Vehicles"
+        ),
 
-          color: "text-green-600",
+        value: Number(vehicleData.runningVehicles).toLocaleString(),
 
-          bg: "bg-green-50",
-        },
+        percentage:
+          vehicleData.totalVehicles > 0
+            ? `(${(
+                (vehicleData.runningVehicles /
+                  vehicleData.totalVehicles) *
+                100
+              ).toFixed(1)}%)`
+            : "(0%)",
 
-        {
-          title: "Not Running Vehicles",
+        color: "text-green-600",
 
-          value: Number(vehicleData.inactiveVehicles).toLocaleString(),
+        bg: "bg-green-50",
+      },
 
-          percentage:
-            vehicleData.totalVehicles > 0
-              ? `(${(
-                  (vehicleData.inactiveVehicles / vehicleData.totalVehicles) *
-                  100
-                ).toFixed(1)}%)`
-              : "(0%)",
+      {
+        title: t(
+          "overview.vehicleFleet.notRunning",
+          "Not Running Vehicles"
+        ),
 
-          color: "text-red-500",
+        value: Number(vehicleData.inactiveVehicles).toLocaleString(),
 
-          bg: "bg-red-50",
-        },
-      ]
-    : [];
+        percentage:
+          vehicleData.totalVehicles > 0
+            ? `(${(
+                (vehicleData.inactiveVehicles /
+                  vehicleData.totalVehicles) *
+                100
+              ).toFixed(1)}%)`
+            : "(0%)",
 
-  /*
-   * =========================================================
-   * WARD-WISE GENERATION DATA
-   * =========================================================
-   *
-   * Backend sends:
-   *
-   * wasteGenerated = KG
-   *
-   * Graph uses:
-   *
-   * wasteTons = KG / 1000
-   */
+        color: "text-red-500",
+
+        bg: "bg-red-50",
+      },
+    ];
+  }, [vehicleData, t]);
+
+  /* =========================================================
+     WARD-WISE GENERATION DATA
+  =========================================================
+
+     Backend sends:
+
+     wasteGenerated = KG
+
+     Graph uses:
+
+     wasteTons = KG / 1000
+  ========================================================= */
 
   const chartData =
     trendData?.map((item) => ({
-      ward: item.wardName || `Ward ${item.wardNo}`,
+      ward:
+        item.wardName ||
+        `${t("overview.generationTrend.ward", "Ward")} ${
+          item.wardNo
+        }`,
 
       wardNo: item.wardNo,
 
-      fullName: item.wardName || `Ward ${item.wardNo}`,
+      fullName:
+        item.wardName ||
+        `${t("overview.generationTrend.ward", "Ward")} ${
+          item.wardNo
+        }`,
 
       wasteKg: Number(item.wasteGenerated) || 0,
 
-      wasteTons: (Number(item.wasteGenerated) || 0) / 1000,
+      wasteTons:
+        (Number(item.wasteGenerated) || 0) / 1000,
     })) || [];
 
-  /*
-   * =========================================================
-   * GSAP ANIMATION
-   * =========================================================
-   */
+  /* =========================================================
+     GSAP ANIMATION
+  ========================================================= */
 
   useEffect(() => {
     const tl = gsap.timeline({
@@ -130,7 +151,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
           duration: 0.7,
           clearProps: "filter",
         },
-        "-=0.2",
+        "-=0.2"
       )
       .from(
         rightCardRef.current,
@@ -142,7 +163,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
           duration: 0.7,
           clearProps: "filter",
         },
-        "-=0.55",
+        "-=0.55"
       )
       .from(
         statCardsRef.current,
@@ -154,15 +175,13 @@ export default function VehicleStats({ vehicleData, trendData }) {
           duration: 0.45,
           ease: "back.out(1.4)",
         },
-        "-=0.45",
+        "-=0.45"
       );
   }, []);
 
-  /*
-   * =========================================================
-   * CUSTOM TOOLTIP
-   * =========================================================
-   */
+  /* =========================================================
+     CUSTOM TOOLTIP
+  ========================================================= */
 
   const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload || !payload.length) {
@@ -194,23 +213,33 @@ export default function VehicleStats({ vehicleData, trendData }) {
         </p>
 
         <p className="mt-2 text-[14px] font-medium text-violet-600">
-          Waste Generated:{" "}
+          {t(
+            "overview.generationTrend.wasteGeneratedLabel",
+            "Waste Generated"
+          )}
+          {": "}
           {tons.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}{" "}
-          {tons === 1 ? "ton" : "tons"}
+          {tons === 1
+            ? t("overview.kpis.ton", "ton")
+            : t("overview.kpis.tons", "tons")}
         </p>
       </div>
     );
   };
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <section ref={sectionRef} className="mt-6">
       <div className="grid grid-cols-[0.7fr_1.3fr] gap-6 items-start">
         {/* =================================================
             VEHICLE DETAILS
-            ================================================= */}
+        ================================================= */}
 
         <div
           ref={leftCardRef}
@@ -226,15 +255,33 @@ export default function VehicleStats({ vehicleData, trendData }) {
             flex-col
           "
         >
+          {/* ================= HEADER ================= */}
+
           <div className="flex items-center gap-3 mb-6">
             <Truck size={18} className="text-violet-600" />
 
-            <h2 className="text-[18px] font-semibold">VEHICLE FLEET STATUS</h2>
+            <h2 className="text-[18px] font-semibold">
+              {t(
+                "overview.vehicleFleet.title",
+                "VEHICLE FLEET STATUS"
+              )}
+            </h2>
 
             <span className="text-[13px] text-indigo-600 font-medium">
-              (All Vehicles Included)
+              (
+              {t(
+                "overview.vehicleFleet.allVehicles",
+                "All Vehicles"
+              )}{" "}
+              {t(
+                "overview.vehicleFleet.included",
+                "Included"
+              )}
+              )
             </span>
           </div>
+
+          {/* ================= VEHICLE STATS ================= */}
 
           <div className="grid grid-cols-1 gap-4">
             {vehicleStats.map((item, index) => (
@@ -242,27 +289,30 @@ export default function VehicleStats({ vehicleData, trendData }) {
                 key={item.title}
                 ref={(el) => (statCardsRef.current[index] = el)}
                 className="
-                    border
-                    border-[#EEF1F6]
-                    rounded-2xl
-                    h-[72px]
-                    px-4
-                    flex
-                    items-center
-                  "
+                  border
+                  border-[#EEF1F6]
+                  rounded-2xl
+                  h-[72px]
+                  px-4
+                  flex
+                  items-center
+                "
               >
                 <div
                   className={`
-                      w-9
-                      h-9
-                      rounded-xl
-                      ${item.bg}
-                      flex
-                      items-center
-                      justify-center
-                    `}
+                    w-9
+                    h-9
+                    rounded-xl
+                    ${item.bg}
+                    flex
+                    items-center
+                    justify-center
+                  `}
                 >
-                  <Truck size={21} className={item.color} />
+                  <Truck
+                    size={21}
+                    className={item.color}
+                  />
                 </div>
 
                 <div className="ml-4">
@@ -271,15 +321,17 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   </p>
 
                   <div className="flex items-end gap-2 mt-2">
-                    <span className="text-[16px] font-bold">{item.value}</span>
+                    <span className="text-[16px] font-bold">
+                      {item.value}
+                    </span>
 
                     {item.percentage && (
                       <span
                         className={`
-                            text-[13px]
-                            font-semibold
-                            ${item.color}
-                          `}
+                          text-[13px]
+                          font-semibold
+                          ${item.color}
+                        `}
                       >
                         {item.percentage}
                       </span>
@@ -293,7 +345,7 @@ export default function VehicleStats({ vehicleData, trendData }) {
 
         {/* =================================================
             WARD-WISE GENERATION TREND
-            ================================================= */}
+        ================================================= */}
 
         <div
           ref={rightCardRef}
@@ -309,10 +361,22 @@ export default function VehicleStats({ vehicleData, trendData }) {
             flex-col
           "
         >
-          <h2 className="text-[18px] font-semibold mb-5">GENERATION TREND</h2>
+          {/* ================= HEADER ================= */}
+
+          <h2 className="text-[18px] font-semibold mb-5">
+            {t(
+              "overview.generationTrend.title",
+              "GENERATION TREND"
+            )}
+          </h2>
+
+          {/* ================= CHART ================= */}
 
           <div className="flex-1 min-h-0 pt-2">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <LineChart
                 data={chartData}
                 margin={{
@@ -322,7 +386,12 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   bottom: 75,
                 }}
               >
-                <CartesianGrid stroke="#F1F5F9" vertical={false} />
+                <CartesianGrid
+                  stroke="#F1F5F9"
+                  vertical={false}
+                />
+
+                {/* ================= X AXIS ================= */}
 
                 <XAxis
                   dataKey="ward"
@@ -338,7 +407,10 @@ export default function VehicleStats({ vehicleData, trendData }) {
                     fill: "#475569",
                   }}
                   label={{
-                    value: "Wards",
+                    value: t(
+                      "overview.generationTrend.wards",
+                      "Wards"
+                    ),
                     position: "insideBottom",
                     offset: -8,
                     style: {
@@ -349,6 +421,8 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
+                {/* ================= Y AXIS ================= */}
+
                 <YAxis
                   allowDecimals={true}
                   tickLine={false}
@@ -358,7 +432,10 @@ export default function VehicleStats({ vehicleData, trendData }) {
                     fill: "#64748B",
                   }}
                   label={{
-                    value: "Waste Generated (tons)",
+                    value: t(
+                      "overview.generationTrend.wasteGenerated",
+                      "Waste Generated (tons)"
+                    ),
                     angle: -90,
                     position: "insideLeft",
                     style: {
@@ -370,6 +447,8 @@ export default function VehicleStats({ vehicleData, trendData }) {
                   }}
                 />
 
+                {/* ================= TOOLTIP ================= */}
+
                 <Tooltip
                   content={<CustomTooltip />}
                   cursor={{
@@ -380,9 +459,9 @@ export default function VehicleStats({ vehicleData, trendData }) {
                 />
 
                 {/* =====================================================
-      VERTICAL STEMS
-      Each stem connects the X-axis to its data point.
-      ===================================================== */}
+                    VERTICAL STEMS
+                    Each stem connects the X-axis to its data point.
+                ===================================================== */}
 
                 {chartData.map((item) => (
                   <ReferenceLine
@@ -402,6 +481,8 @@ export default function VehicleStats({ vehicleData, trendData }) {
                     strokeDasharray="4 4"
                   />
                 ))}
+
+                {/* ================= LINE ================= */}
 
                 <Line
                   type="monotone"

@@ -136,6 +136,14 @@ const kn = {
       status: "ಸ್ಥಿತಿ",
     },
   },
+
+  generationTrend: {
+  title: "ತ್ಯಾಜ್ಯ ಉತ್ಪಾದನಾ ಪ್ರವೃತ್ತಿ",
+  wasteGenerated: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಟನ್)",
+  wasteGeneratedLabel: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ",
+  wards: "ವಾರ್ಡ್‌ಗಳು",
+  ward: "ವಾರ್ಡ್",
+},
 };
 
 export default kn;

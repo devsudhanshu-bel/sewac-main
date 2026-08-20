@@ -136,6 +136,14 @@ const en = {
       status: "Status",
     },
   },
+
+  generationTrend: {
+  title: "Generation Trend",
+  wasteGenerated: "Waste Generated (tons)",
+  wasteGeneratedLabel: "Waste Generated",
+  wards: "Wards",
+  ward: "Ward",
+},
 };
 
 export default en;
