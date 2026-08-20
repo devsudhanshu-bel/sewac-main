@@ -538,539 +538,557 @@ export default function WasteGenMap({ selectedDate }) {
   ======================================================= */
 
   return (
-    <section
-      ref={sectionRef}
-      className="grid grid-cols-1 gap-5 h-full"
-    >
-      <div
-        ref={collectionCardRef}
-        className="
-          bg-white
-          rounded-3xl
-          border
-          border-gray-200
-          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
-          overflow-hidden
-          w-full
-          h-full
-        "
+    <>
+      {/* =====================================================
+          LEAFLET TOOLTIP Z-INDEX
+      ===================================================== */}
+
+      <style>{`
+        .leaflet-tooltip-pane {
+          z-index: 99999 !important;
+        }
+
+        .leaflet-tooltip {
+          z-index: 99999 !important;
+        }
+      `}</style>
+
+      <section
+        ref={sectionRef}
+        className="grid grid-cols-1 gap-5 h-full"
       >
-        {/* ==================================================
-            HEADER
-        ================================================== */}
+        <div
+          ref={collectionCardRef}
+          className="
+            bg-white
+            rounded-3xl
+            border
+            border-gray-200
+            shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+            overflow-hidden
+            w-full
+            h-full
+            flex
+            flex-col
+          "
+        >
+          {/* ==================================================
+              HEADER
+          ================================================== */}
 
-        <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-[14px] font-semibold text-[#16295A]">
-                {t(
-                  "wasteGenerators.map.title",
-                  "Collection Point Monitoring"
-                )}
-              </h3>
+          <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-4 shrink-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-[14px] font-semibold text-[#16295A]">
+                  {t(
+                    "wasteGenerators.map.title",
+                    "Collection Point Monitoring"
+                  )}
+                </h3>
 
-              <span className="text-[11px] text-slate-400">
-                {pointCount}{" "}
-                {t(
-                  "wasteGenerators.map.points",
-                  "points"
-                )}
-              </span>
-
-              {selectedDate && (
                 <span className="text-[11px] text-slate-400">
-                  · {selectedDate}
+                  {pointCount}{" "}
+                  {t(
+                    "wasteGenerators.map.points",
+                    "points"
+                  )}
                 </span>
+
+                {selectedDate && (
+                  <span className="text-[11px] text-slate-400">
+                    · {selectedDate}
+                  </span>
+                )}
+              </div>
+
+              {mapData?.ward && (
+                <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {mapData.ward.zoneName}
+                  {" · "}
+                  {mapData.ward.divisionName}
+                  {" · "}
+                  {wardName}
+
+                  {wardNo !== null
+                    ? ` · ${t(
+                        "wasteGenerators.map.ward",
+                        "Ward"
+                      )} ${wardNo}`
+                    : ""}
+                </p>
               )}
             </div>
 
-            {mapData?.ward && (
-              <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                {mapData.ward.zoneName}
-                {" · "}
-                {mapData.ward.divisionName}
-                {" · "}
-                {wardName}
+            {/* ==================================================
+                LEGEND
+            ================================================== */}
 
-                {wardNo !== null
-                  ? ` · ${t(
-                      "wasteGenerators.map.ward",
-                      "Ward"
-                    )} ${wardNo}`
-                  : ""}
-              </p>
-            )}
+            <div className="flex items-center gap-4 shrink-0">
+              {/* GREEN */}
+
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+
+                <span className="text-[11px] text-slate-500">
+                  {t(
+                    "wasteGenerators.map.legend.collectionPoint",
+                    "Collection Point"
+                  )}
+                </span>
+              </div>
+
+              {/* RED */}
+
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+
+                <span className="text-[11px] text-slate-500">
+                  {t(
+                    "wasteGenerators.map.legend.gvpPoint",
+                    "GVP Point"
+                  )}
+                </span>
+
+                <span className="text-[10px] text-slate-400">
+                  ({gvpCount})
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* ==================================================
-              LEGEND
+              MAP
           ================================================== */}
 
-          <div className="flex items-center gap-4 shrink-0">
-            {/* GREEN */}
-
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-
-              <span className="text-[11px] text-slate-500">
-                {t(
-                  "wasteGenerators.map.legend.collectionPoint",
-                  "Collection Point"
-                )}
-              </span>
-            </div>
-
-            {/* RED */}
-
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-
-              <span className="text-[11px] text-slate-500">
-                {t(
-                  "wasteGenerators.map.legend.gvpPoint",
-                  "GVP Point"
-                )}
-              </span>
-
-              <span className="text-[10px] text-slate-400">
-                ({gvpCount})
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ==================================================
-            MAP
-        ================================================== */}
-
-        <div className="relative h-[310px] bg-[#F7F8FB]">
-          <MapContainer
-            center={DEFAULT_CENTER}
-            zoom={DEFAULT_ZOOM}
-            scrollWheelZoom
-            zoomControl={false}
-            className="h-full w-full"
-          >
-            <TileLayer
-              attribution={CARTO_ATTRIBUTION}
-              url={CARTO_LIGHT_URL}
-              subdomains={["a", "b", "c", "d"]}
-              maxZoom={20}
-            />
-
-            <ZoomControl position="topleft" />
-
-            <MapSizeController />
-
-            <FitMapToData
-              boundary={boundary}
-              points={visiblePoints}
-              gvpPoints={visibleGVPPoints}
-              fitKey={filterKey}
-            />
-
-            {/* =================================================
-                SELECTED WARD BOUNDARY
-            ================================================= */}
-
-            {boundary && (
-              <GeoJSON
-                key={`ward-boundary-${filterKey}`}
-                data={boundary}
-                style={{
-                  color: "#4F46E5",
-                  weight: 3,
-                  opacity: 1,
-                  fillColor: "#6366F1",
-                  fillOpacity: 0.07,
-                }}
+          <div className="relative flex-1 min-h-[310px] bg-[#F7F8FB]">
+            <MapContainer
+              center={DEFAULT_CENTER}
+              zoom={DEFAULT_ZOOM}
+              scrollWheelZoom
+              zoomControl={false}
+              className="h-full w-full"
+            >
+              <TileLayer
+                attribution={CARTO_ATTRIBUTION}
+                url={CARTO_LIGHT_URL}
+                subdomains={["a", "b", "c", "d"]}
+                maxZoom={20}
               />
-            )}
 
-            {/* =================================================
-                ALL COLLECTION TELEMETRY — GREEN
-            ================================================= */}
+              <ZoomControl position="topleft" />
 
-            {visiblePoints.map((point, index) => {
-              const latitude = Number(point.latitude);
+              <MapSizeController />
 
-              const longitude = Number(point.longitude);
+              <FitMapToData
+                boundary={boundary}
+                points={visiblePoints}
+                gvpPoints={visibleGVPPoints}
+                fitKey={filterKey}
+              />
 
-              const pointKey =
-                point.pointKey ||
-                [
-                  point.sourceVehicleTable ||
-                    "UNKNOWN_TABLE",
+              {/* =================================================
+                  SELECTED WARD BOUNDARY
+              ================================================= */}
 
-                  point.vehicleNumber ||
-                    "UNKNOWN_VEHICLE",
-
-                  point.id ?? "NO_ID",
-
-                  point.iotTimestamp ||
-                    "NO_TIMESTAMP",
-
-                  latitude.toFixed(7),
-
-                  longitude.toFixed(7),
-
-                  index,
-                ].join("-");
-
-              return (
-                <CircleMarker
-                  key={`collection-${String(pointKey)}`}
-                  center={[latitude, longitude]}
-                  radius={4}
-                  pathOptions={{
-                    color: "#FFFFFF",
-                    weight: 1.25,
-                    fillColor: "#16A34A",
-                    fillOpacity: 0.9,
+              {boundary && (
+                <GeoJSON
+                  key={`ward-boundary-${filterKey}`}
+                  data={boundary}
+                  style={{
+                    color: "#4F46E5",
+                    weight: 3,
+                    opacity: 1,
+                    fillColor: "#6366F1",
+                    fillOpacity: 0.07,
                   }}
-                >
-                  <Tooltip direction="top">
-                    <div className="text-xs">
-                      <div className="font-semibold">
-                        {point.vehicleNumber ||
-                          t(
-                            "wasteGenerators.map.tooltip.collectionVehicle",
-                            "Collection Vehicle"
-                          )}
-                      </div>
+                />
+              )}
 
-                      {point.sourceVehicleTable && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.table",
-                            "Table"
-                          )}
-                          : {point.sourceVehicleTable}
+              {/* =================================================
+                  ALL COLLECTION TELEMETRY — GREEN
+              ================================================= */}
+
+              {visiblePoints.map((point, index) => {
+                const latitude = Number(point.latitude);
+
+                const longitude = Number(point.longitude);
+
+                const pointKey =
+                  point.pointKey ||
+                  [
+                    point.sourceVehicleTable ||
+                      "UNKNOWN_TABLE",
+
+                    point.vehicleNumber ||
+                      "UNKNOWN_VEHICLE",
+
+                    point.id ?? "NO_ID",
+
+                    point.iotTimestamp ||
+                      "NO_TIMESTAMP",
+
+                    latitude.toFixed(7),
+
+                    longitude.toFixed(7),
+
+                    index,
+                  ].join("-");
+
+                return (
+                  <CircleMarker
+                    key={`collection-${String(pointKey)}`}
+                    center={[latitude, longitude]}
+                    radius={4}
+                    pathOptions={{
+                      color: "#FFFFFF",
+                      weight: 1.25,
+                      fillColor: "#16A34A",
+                      fillOpacity: 0.9,
+                    }}
+                  >
+                    <Tooltip direction="top">
+                      <div className="text-xs">
+                        <div className="font-semibold">
+                          {point.vehicleNumber ||
+                            t(
+                              "wasteGenerators.map.tooltip.collectionVehicle",
+                              "Collection Vehicle"
+                            )}
                         </div>
-                      )}
 
-                      {point.iotTimestamp && (
+                        {point.sourceVehicleTable && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.table",
+                              "Table"
+                            )}
+                            : {point.sourceVehicleTable}
+                          </div>
+                        )}
+
+                        {point.iotTimestamp && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.iot",
+                              "IoT"
+                            )}
+                            :{" "}
+                            {new Date(
+                              point.iotTimestamp
+                            ).toLocaleString()}
+                          </div>
+                        )}
+
                         <div>
                           {t(
-                            "wasteGenerators.map.tooltip.iot",
-                            "IoT"
+                            "wasteGenerators.map.tooltip.coordinates",
+                            "Coordinates"
+                          )}
+                          : {latitude.toFixed(6)},{" "}
+                          {longitude.toFixed(6)}
+                        </div>
+
+                        {wardNo !== null && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.ward",
+                              "Ward"
+                            )}{" "}
+                            {wardNo}
+                          </div>
+                        )}
+                      </div>
+                    </Tooltip>
+                  </CircleMarker>
+                );
+              })}
+
+              {/* =================================================
+                  GVP TELEMETRY — RED
+              ================================================= */}
+
+              {visibleGVPPoints.map((point, index) => {
+                const latitude = Number(point.latitude);
+
+                const longitude = Number(point.longitude);
+
+                const gvpKey =
+                  point.pointKey ||
+                  [
+                    "GVP",
+
+                    point.sourceVehicleTable ||
+                      "UNKNOWN_TABLE",
+
+                    point.vehicleNumber ||
+                      "UNKNOWN_VEHICLE",
+
+                    point.id ?? "NO_ID",
+
+                    point.iotTimestamp ||
+                      "NO_TIMESTAMP",
+
+                    latitude.toFixed(7),
+
+                    longitude.toFixed(7),
+
+                    index,
+                  ].join("-");
+
+                return (
+                  <CircleMarker
+                    key={`gvp-${String(gvpKey)}`}
+                    center={[latitude, longitude]}
+                    radius={5.5}
+                    pathOptions={{
+                      color: "#FFFFFF",
+                      weight: 1.5,
+                      fillColor: "#EF4444",
+                      fillOpacity: 0.95,
+                    }}
+                  >
+                    <Tooltip direction="top">
+                      <div className="text-xs">
+                        <div className="font-semibold text-red-600">
+                          {t(
+                            "wasteGenerators.map.tooltip.gvpPoint",
+                            "GVP Point"
+                          )}
+                        </div>
+
+                        {point.vehicleNumber && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.vehicle",
+                              "Vehicle"
+                            )}
+                            : {point.vehicleNumber}
+                          </div>
+                        )}
+
+                        {point.sourceVehicleTable && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.table",
+                              "Table"
+                            )}
+                            : {point.sourceVehicleTable}
+                          </div>
+                        )}
+
+                        {point.iotTimestamp && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.iot",
+                              "IoT"
+                            )}
+                            :{" "}
+                            {new Date(
+                              point.iotTimestamp
+                            ).toLocaleString()}
+                          </div>
+                        )}
+
+                        {point.unitNumber && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.unit",
+                              "Unit"
+                            )}
+                            : {point.unitNumber}
+                          </div>
+                        )}
+
+                        {point.remarks && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.tooltip.remarks",
+                              "Remarks"
+                            )}
+                            : {point.remarks}
+                          </div>
+                        )}
+
+                        <div>
+                          {t(
+                            "wasteGenerators.map.tooltip.gvpWaste",
+                            "GVP waste"
                           )}
                           :{" "}
-                          {new Date(
-                            point.iotTimestamp
-                          ).toLocaleString()}
+                          {Number(
+                            point.gvpWaste ??
+                              point.weightDelta ??
+                              0
+                          ).toFixed(3)}
                         </div>
-                      )}
 
-                      <div>
-                        {t(
-                          "wasteGenerators.map.tooltip.coordinates",
-                          "Coordinates"
-                        )}
-                        : {latitude.toFixed(6)},{" "}
-                        {longitude.toFixed(6)}
-                      </div>
-
-                      {wardNo !== null && (
                         <div>
                           {t(
-                            "wasteGenerators.map.ward",
-                            "Ward"
-                          )}{" "}
-                          {wardNo}
+                            "wasteGenerators.map.tooltip.coordinates",
+                            "Coordinates"
+                          )}
+                          : {latitude.toFixed(6)},{" "}
+                          {longitude.toFixed(6)}
                         </div>
-                      )}
-                    </div>
-                  </Tooltip>
-                </CircleMarker>
-              );
-            })}
 
-            {/* =================================================
-                GVP TELEMETRY — RED
-            ================================================= */}
-
-            {visibleGVPPoints.map((point, index) => {
-              const latitude = Number(point.latitude);
-
-              const longitude = Number(point.longitude);
-
-              const gvpKey =
-                point.pointKey ||
-                [
-                  "GVP",
-
-                  point.sourceVehicleTable ||
-                    "UNKNOWN_TABLE",
-
-                  point.vehicleNumber ||
-                    "UNKNOWN_VEHICLE",
-
-                  point.id ?? "NO_ID",
-
-                  point.iotTimestamp ||
-                    "NO_TIMESTAMP",
-
-                  latitude.toFixed(7),
-
-                  longitude.toFixed(7),
-
-                  index,
-                ].join("-");
-
-              return (
-                <CircleMarker
-                  key={`gvp-${String(gvpKey)}`}
-                  center={[latitude, longitude]}
-                  radius={5.5}
-                  pathOptions={{
-                    color: "#FFFFFF",
-                    weight: 1.5,
-                    fillColor: "#EF4444",
-                    fillOpacity: 0.95,
-                  }}
-                >
-                  <Tooltip direction="top">
-                    <div className="text-xs">
-                      <div className="font-semibold text-red-600">
-                        {t(
-                          "wasteGenerators.map.tooltip.gvpPoint",
-                          "GVP Point"
+                        {wardNo !== null && (
+                          <div>
+                            {t(
+                              "wasteGenerators.map.ward",
+                              "Ward"
+                            )}{" "}
+                            {wardNo}
+                          </div>
                         )}
                       </div>
+                    </Tooltip>
+                  </CircleMarker>
+                );
+              })}
+            </MapContainer>
 
-                      {point.vehicleNumber && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.vehicle",
-                            "Vehicle"
-                          )}
-                          : {point.vehicleNumber}
-                        </div>
-                      )}
+            {/* ==================================================
+                LOADING
+            ================================================== */}
 
-                      {point.sourceVehicleTable && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.table",
-                            "Table"
-                          )}
-                          : {point.sourceVehicleTable}
-                        </div>
-                      )}
-
-                      {point.iotTimestamp && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.iot",
-                            "IoT"
-                          )}
-                          :{" "}
-                          {new Date(
-                            point.iotTimestamp
-                          ).toLocaleString()}
-                        </div>
-                      )}
-
-                      {point.unitNumber && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.unit",
-                            "Unit"
-                          )}
-                          : {point.unitNumber}
-                        </div>
-                      )}
-
-                      {point.remarks && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.tooltip.remarks",
-                            "Remarks"
-                          )}
-                          : {point.remarks}
-                        </div>
-                      )}
-
-                      <div>
-                        {t(
-                          "wasteGenerators.map.tooltip.gvpWaste",
-                          "GVP waste"
-                        )}
-                        :{" "}
-                        {Number(
-                          point.gvpWaste ??
-                            point.weightDelta ??
-                            0
-                        ).toFixed(3)}
-                      </div>
-
-                      <div>
-                        {t(
-                          "wasteGenerators.map.tooltip.coordinates",
-                          "Coordinates"
-                        )}
-                        : {latitude.toFixed(6)},{" "}
-                        {longitude.toFixed(6)}
-                      </div>
-
-                      {wardNo !== null && (
-                        <div>
-                          {t(
-                            "wasteGenerators.map.ward",
-                            "Ward"
-                          )}{" "}
-                          {wardNo}
-                        </div>
-                      )}
-                    </div>
-                  </Tooltip>
-                </CircleMarker>
-              );
-            })}
-          </MapContainer>
-
-          {/* ==================================================
-              LOADING
-          ================================================== */}
-
-          {loading && (
-            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/55 backdrop-blur-[1px] pointer-events-none">
-              <div className="rounded-xl bg-white px-4 py-2 shadow text-xs text-slate-500">
-                {t(
-                  "wasteGenerators.map.loading",
-                  "Loading daily vehicle telemetry..."
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ==================================================
-              NO WARD
-          ================================================== */}
-
-          {!loading && !errorMessage && !wardId && (
-            <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
-              <div className="rounded-xl bg-white/90 px-5 py-3 shadow text-center">
-                <p className="text-sm font-medium text-[#16295A]">
+            {loading && (
+              <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-white/55 backdrop-blur-[1px] pointer-events-none">
+                <div className="rounded-xl bg-white px-4 py-2 shadow text-xs text-slate-500">
                   {t(
-                    "wasteGenerators.map.selectWard",
-                    "Select a ward"
-                  )}
-                </p>
-
-                <p className="text-xs text-slate-400 mt-1">
-                  {t(
-                    "wasteGenerators.map.selectWardDescription",
-                    "Choose City, Zone, Division and Ward from the header."
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ==================================================
-              ERROR
-          ================================================== */}
-
-          {!loading && errorMessage && (
-            <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
-              <div className="rounded-xl bg-white/95 px-5 py-3 shadow text-center max-w-[320px]">
-                <p className="text-sm font-medium text-red-600">
-                  {t(
-                    "wasteGenerators.map.mapUnavailable",
-                    "Map unavailable"
-                  )}
-                </p>
-
-                <p className="text-xs text-slate-400 mt-1">
-                  {errorMessage}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ==================================================
-              NO BOUNDARY
-          ================================================== */}
-
-          {!loading &&
-            !errorMessage &&
-            wardId &&
-            mapData &&
-            !boundary && (
-              <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
-                <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                  {t(
-                    "wasteGenerators.map.noBoundary",
-                    "Ward boundary unavailable for this selection"
+                    "wasteGenerators.map.loading",
+                    "Loading daily vehicle telemetry..."
                   )}
                 </div>
               </div>
             )}
 
-          {/* ==================================================
-              NO POINTS
-          ================================================== */}
+            {/* ==================================================
+                NO WARD
+            ================================================== */}
 
-          {!loading &&
-            !errorMessage &&
-            wardId &&
-            mapData &&
-            visiblePoints.length === 0 && (
-              <div className="absolute bottom-3 right-3 z-[900] pointer-events-none">
-                <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                  {t(
-                    "wasteGenerators.map.noTelemetry",
-                    "No telemetry points for this date"
-                  )}
+            {!loading && !errorMessage && !wardId && (
+              <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
+                <div className="rounded-xl bg-white/90 px-5 py-3 shadow text-center">
+                  <p className="text-sm font-medium text-[#16295A]">
+                    {t(
+                      "wasteGenerators.map.selectWard",
+                      "Select a ward"
+                    )}
+                  </p>
+
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t(
+                      "wasteGenerators.map.selectWardDescription",
+                      "Choose City, Zone, Division and Ward from the header."
+                    )}
+                  </p>
                 </div>
               </div>
             )}
 
-          {/* ==================================================
-              MAP SUMMARY
-          ================================================== */}
+            {/* ==================================================
+                ERROR
+            ================================================== */}
 
-          {!loading &&
-            !errorMessage &&
-            mapData &&
-            visiblePoints.length > 0 && (
-              <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
-                <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
-                  {t(
-                    "wasteGenerators.map.summary.showing",
-                    "Showing"
-                  )}{" "}
-                  <strong>{visiblePoints.length}</strong>{" "}
-                  {t(
-                    "wasteGenerators.map.summary.telemetryCoordinates",
-                    "telemetry coordinates from"
-                  )}{" "}
-                  {Array.isArray(mapData.vehicles)
-                    ? mapData.vehicles.length
-                    : 0}{" "}
-                  {t(
-                    "wasteGenerators.map.summary.vehicleTables",
-                    "vehicle tables"
-                  )}
-                  {gvpCount > 0 && (
-                    <>
-                      {" · "}
-                      <strong className="text-red-500">
-                        {gvpCount}
-                      </strong>{" "}
-                      {t(
-                        "wasteGenerators.map.summary.gvpPoints",
-                        "GVP points"
-                      )}
-                    </>
-                  )}
+            {!loading && errorMessage && (
+              <div className="absolute inset-0 z-[900] flex items-center justify-center pointer-events-none">
+                <div className="rounded-xl bg-white/95 px-5 py-3 shadow text-center max-w-[320px]">
+                  <p className="text-sm font-medium text-red-600">
+                    {t(
+                      "wasteGenerators.map.mapUnavailable",
+                      "Map unavailable"
+                    )}
+                  </p>
+
+                  <p className="text-xs text-slate-400 mt-1">
+                    {errorMessage}
+                  </p>
                 </div>
               </div>
             )}
+
+            {/* ==================================================
+                NO BOUNDARY
+            ================================================== */}
+
+            {!loading &&
+              !errorMessage &&
+              wardId &&
+              mapData &&
+              !boundary && (
+                <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
+                  <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                    {t(
+                      "wasteGenerators.map.noBoundary",
+                      "Ward boundary unavailable for this selection"
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {/* ==================================================
+                NO POINTS
+            ================================================== */}
+
+            {!loading &&
+              !errorMessage &&
+              wardId &&
+              mapData &&
+              visiblePoints.length === 0 && (
+                <div className="absolute bottom-3 right-3 z-[900] pointer-events-none">
+                  <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                    {t(
+                      "wasteGenerators.map.noTelemetry",
+                      "No telemetry points for this date"
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {/* ==================================================
+                MAP SUMMARY
+            ================================================== */}
+
+            {!loading &&
+              !errorMessage &&
+              mapData &&
+              visiblePoints.length > 0 && (
+                <div className="absolute bottom-3 left-3 z-[900] pointer-events-none">
+                  <div className="rounded-lg bg-white/90 px-3 py-1.5 shadow text-[10px] text-slate-500">
+                    {t(
+                      "wasteGenerators.map.summary.showing",
+                      "Showing"
+                    )}{" "}
+                    <strong>{visiblePoints.length}</strong>{" "}
+                    {t(
+                      "wasteGenerators.map.summary.telemetryCoordinates",
+                      "telemetry coordinates from"
+                    )}{" "}
+                    {Array.isArray(mapData.vehicles)
+                      ? mapData.vehicles.length
+                      : 0}{" "}
+                    {t(
+                      "wasteGenerators.map.summary.vehicleTables",
+                      "vehicle tables"
+                    )}
+                    {gvpCount > 0 && (
+                      <>
+                        {" · "}
+                        <strong className="text-red-500">
+                          {gvpCount}
+                        </strong>{" "}
+                        {t(
+                          "wasteGenerators.map.summary.gvpPoints",
+                          "GVP points"
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
