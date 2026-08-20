@@ -67,10 +67,6 @@ export default function ComplaintTable({
               </th>
 
               <th className="px-3 text-left text-[10px] font-semibold text-gray-500 whitespace-nowrap">
-                Assigned To
-              </th>
-
-              <th className="px-3 text-left text-[10px] font-semibold text-gray-500 whitespace-nowrap">
                 Created At
               </th>
 
@@ -190,13 +186,6 @@ export default function ComplaintTable({
             "
                     >
                       {complaint.status || "—"}
-                    </span>
-                  </td>
-
-                  {/* Assigned */}
-                  <td className="px-3">
-                    <span className="text-[10px] text-[#16295A] whitespace-nowrap">
-                      {complaint.assigned_to || "Unassigned"}
                     </span>
                   </td>
 

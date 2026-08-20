@@ -10,7 +10,6 @@ import {
   Image as ImageIcon,
   Expand,
   FileText,
-  UserRound,
   ClipboardList,
 } from "lucide-react";
 
@@ -25,7 +24,6 @@ export default function ComplaintDetails({
   const [otp, setOtp] = useState("");
 
   const [status, setStatus] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
   const [remarks, setRemarks] = useState("");
 
   /*
@@ -37,14 +35,12 @@ export default function ComplaintDetails({
   useEffect(() => {
     if (!complaint) {
       setStatus("");
-      setAssignedTo("");
       setRemarks("");
       setOtp("");
       return;
     }
 
     setStatus(complaint.status || "PENDING");
-    setAssignedTo(complaint.assigned_to || "");
     setRemarks(complaint.remarks || "");
     setOtp("");
   }, [complaint]);
@@ -67,7 +63,7 @@ export default function ComplaintDetails({
 
   const isReadyForVerification = currentStatus === "READY_FOR_VERIFICATION";
 
-  const isOtpSent = currentStatus === "OTP_SENT" || otpSent;
+  const isOtpSent = currentStatus === "OTP_SENT";
 
   const isClosed = currentStatus === "CLOSED";
 
@@ -127,7 +123,6 @@ export default function ComplaintDetails({
 
     onSaveChanges?.({
       status: nextStatus,
-      assigned_to: assignedTo || null,
       remarks: remarks || null,
     });
   };
@@ -500,51 +495,6 @@ export default function ComplaintDetails({
         </div>
 
         {/* ===================================================
-            ASSIGNED TO
-        =================================================== */}
-
-        <div className="mb-4">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <UserRound size={14} className="text-gray-500" />
-
-            <p className="text-[10px] font-semibold text-gray-500">
-              Assigned To
-            </p>
-          </div>
-
-          <select
-            value={assignedTo}
-            onChange={(event) => setAssignedTo(event.target.value)}
-            disabled={!complaint || saving || isClosed || isOtpSent}
-            className="
-              w-full
-              h-9
-              rounded-lg
-              border
-              border-gray-200
-              bg-white
-              px-3
-              text-[11px]
-              text-gray-600
-              outline-none
-              focus:border-violet-400
-              focus:ring-2
-              focus:ring-violet-100
-              disabled:bg-gray-50
-              disabled:text-gray-400
-            "
-          >
-            <option value="">Unassigned</option>
-
-            <option value="ramesh">Ramesh K.</option>
-
-            <option value="suresh">Suresh M.</option>
-
-            <option value="mahesh">Mahesh T.</option>
-          </select>
-        </div>
-
-        {/* ===================================================
             STATUS
         =================================================== */}
 
@@ -692,8 +642,6 @@ export default function ComplaintDetails({
                 }
 
                 setStatus(complaint.status || "PENDING");
-
-                setAssignedTo(complaint.assigned_to || "");
 
                 setRemarks(complaint.remarks || "");
               }}
