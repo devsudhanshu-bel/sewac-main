@@ -93,7 +93,7 @@ exports.verifyOTP = async (req, res) => {
  */
 exports.getComplaints = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status, category } = req.query;
+    const { page = 1, limit = 10, search = "", status, category, dateFrom, dateTo, } = req.query;
 
     const result = await complaintService.getComplaints({
       page,
@@ -101,6 +101,8 @@ exports.getComplaints = async (req, res) => {
       search,
       status,
       category,
+      dateFrom,
+      dateTo,
     });
 
     return res.status(200).json({
@@ -167,7 +169,7 @@ exports.updateComplaint = async (req, res) => {
       });
     }
 
-    const { status, assigned_to, remarks } = req.body;
+    const { status, remarks } = req.body;
 
     /**
      * Explicitly whitelist fields.
@@ -186,11 +188,7 @@ exports.updateComplaint = async (req, res) => {
     if (status !== undefined) {
       updates.status = status;
     }
-
-    if (assigned_to !== undefined) {
-      updates.assigned_to = assigned_to;
-    }
-
+    
     if (remarks !== undefined) {
       updates.remarks = remarks;
     }

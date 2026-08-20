@@ -13,6 +13,8 @@ async function getComplaints({
   search = "",
   status,
   category,
+  dateFrom,
+  dateTo,
 }) {
   const skip = (page - 1) * limit;
 
@@ -24,6 +26,18 @@ async function getComplaints({
 
   if (category) {
     where.category = category;
+  }
+
+  if (dateFrom || dateTo) {
+    where.created_at = {};
+
+    if (dateFrom) {
+      where.created_at.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+    }
+
+    if (dateTo) {
+      where.created_at.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
   }
 
   if (search) {
@@ -104,7 +118,7 @@ async function getComplaintByTicket(ticketNumber) {
  */
 async function updateComplaint(
   ticketNumber,
-  { status, assigned_to, remarks, closed_at },
+  { status, remarks, closed_at },
 ) {
   return prisma.citizen_complaints.update({
     where: {
@@ -114,10 +128,6 @@ async function updateComplaint(
     data: {
       ...(status !== undefined && {
         status,
-      }),
-
-      ...(assigned_to !== undefined && {
-        assigned_to,
       }),
 
       ...(remarks !== undefined && {

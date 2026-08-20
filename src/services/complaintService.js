@@ -175,6 +175,8 @@ async function getComplaints({
   search = "",
   status,
   category,
+  dateFrom,
+  dateTo,
 }) {
   page = Math.max(Number(page) || 1, 1);
 
@@ -186,6 +188,8 @@ async function getComplaints({
     search,
     status,
     category,
+    dateFrom,
+    dateTo,
   });
 
   return {
