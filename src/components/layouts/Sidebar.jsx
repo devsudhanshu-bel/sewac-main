@@ -4,12 +4,17 @@ import {
   Truck,
   Factory,
   MessageCircle,
-  Settings,
   LogOut,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
@@ -34,7 +39,11 @@ function getAuthenticatedRole() {
     }
 
     const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+      atob(
+        payload
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
     );
 
     return decoded.role || null;
@@ -89,7 +98,7 @@ export default function Sidebar() {
       : "/dashboard/admin/users2";
 
   /* =======================================================
-     MENU
+     MENU ITEMS
   ======================================================= */
 
   const menuItems = [
@@ -99,30 +108,35 @@ export default function Sidebar() {
       icon: LayoutDashboard,
       label: t("sidebar.overview"),
     },
+
     {
       key: "wasteGenerators",
       path: "/dashboard/admin/waste-generators",
       icon: Users,
       label: t("sidebar.wasteGenerators"),
     },
+
     {
       key: "vehicles",
       path: "/dashboard/admin/vehicles",
       icon: Truck,
       label: t("sidebar.vehicles"),
     },
+
     {
       key: "plant",
       path: "/dashboard/admin/plants",
       icon: Factory,
       label: t("sidebar.plant"),
     },
+
     {
       key: "complaints",
       path: "/dashboard/admin/complaints",
       icon: MessageCircle,
       label: t("sidebar.complaints"),
     },
+
     {
       key: "users",
       path: usersPath,
@@ -180,7 +194,7 @@ export default function Sidebar() {
   }, []);
 
   /* =======================================================
-     CLOSE SIDEBAR ON ESCAPE
+     CLOSE SIDEBAR WITH ESC
   ======================================================= */
 
   useEffect(() => {
@@ -204,11 +218,14 @@ export default function Sidebar() {
   }, []);
 
   /* =======================================================
-     BODY SCROLL LOCK ON MOBILE
+     BODY SCROLL LOCK
   ======================================================= */
 
   useEffect(() => {
-    if (mobileOpen && window.innerWidth < 768) {
+    if (
+      mobileOpen &&
+      window.innerWidth < 768
+    ) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -220,7 +237,7 @@ export default function Sidebar() {
   }, [mobileOpen]);
 
   /* =======================================================
-     RESET MOBILE DRAWER WHEN RESIZING
+     RESET MOBILE DRAWER ON RESIZE
   ======================================================= */
 
   useEffect(() => {
@@ -264,12 +281,10 @@ export default function Sidebar() {
       });
 
       /*
-        IMPORTANT:
-        Do NOT animate the sidebar X position here.
+        Do not animate X position here.
 
-        The mobile drawer uses Tailwind translate-x classes.
-        Animating x through GSAP would override the drawer
-        transform.
+        Mobile drawer positioning is controlled
+        completely by Tailwind translate classes.
       */
 
       if (sidebarRef.current) {
@@ -284,6 +299,10 @@ export default function Sidebar() {
           }
         );
       }
+
+      /* ===================================================
+         LOGO
+      =================================================== */
 
       if (logoRef.current) {
         tl.fromTo(
@@ -303,6 +322,10 @@ export default function Sidebar() {
         );
       }
 
+      /* ===================================================
+         NAVIGATION
+      =================================================== */
+
       if (navItems.length > 0) {
         tl.fromTo(
           navItems,
@@ -321,6 +344,10 @@ export default function Sidebar() {
           "-=0.18"
         );
       }
+
+      /* ===================================================
+         LOGOUT
+      =================================================== */
 
       if (logoutRef.current) {
         tl.fromTo(
@@ -345,7 +372,7 @@ export default function Sidebar() {
   }, []);
 
   /* =======================================================
-     CLOSE MOBILE DRAWER
+     CLOSE MOBILE SIDEBAR
   ======================================================= */
 
   const closeMobileSidebar = () => {
@@ -372,9 +399,12 @@ export default function Sidebar() {
           z-[9998]
           bg-black/30
           backdrop-blur-[2px]
+
           transition-all
           duration-300
+
           md:hidden
+
           ${
             mobileOpen
               ? "opacity-100 visible"
@@ -392,13 +422,18 @@ export default function Sidebar() {
         className={`
           fixed
           md:relative
+
           inset-y-0
           left-0
+
           z-[10000]
+
           w-[240px]
           md:w-[76px]
           lg:w-[240px]
+
           h-screen
+
           shrink-0
           overflow-hidden
 
@@ -420,18 +455,26 @@ export default function Sidebar() {
           md:translate-x-0
         `}
       >
-        {/* ================= DECORATIVE BACKGROUND ================= */}
+
+        {/* =================================================
+            DECORATIVE BACKGROUND
+        ================================================= */}
 
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
           <div
             className="
               absolute
               -top-24
               -left-24
+
               w-64
               h-64
+
               rounded-full
+
               bg-violet-500/30
+
               blur-[120px]
             "
           />
@@ -441,20 +484,29 @@ export default function Sidebar() {
               absolute
               bottom-0
               -right-20
+
               w-72
               h-72
+
               rounded-full
+
               bg-pink-500/30
+
               blur-[140px]
             "
           />
+
         </div>
 
-        {/* ================= CONTENT ================= */}
+        {/* =================================================
+            CONTENT
+        ================================================= */}
 
         <div className="relative z-10 flex flex-col h-full">
 
-          {/* ================= LOGO ================= */}
+          {/* =================================================
+              LOGO
+          ================================================= */}
 
           <div
             ref={logoRef}
@@ -462,9 +514,12 @@ export default function Sidebar() {
               flex
               justify-center
               items-center
+
               pt-2
               pb-3
+
               px-2
+
               opacity-0
             "
           >
@@ -474,29 +529,39 @@ export default function Sidebar() {
               draggable={false}
               className="
                 w-[150px]
+
                 md:w-[48px]
                 lg:w-[150px]
+
                 object-contain
+
                 select-none
+
                 drop-shadow-[0_8px_20px_rgba(255,255,255,0.15)]
               "
             />
           </div>
 
-          {/* ================= NAVIGATION ================= */}
+          {/* =================================================
+              NAVIGATION
+          ================================================= */}
 
           <nav
             ref={navRef}
             className="
               flex-1
+
               px-4
               md:px-2
               lg:px-4
+
               flex
               flex-col
+
               gap-2
             "
           >
+
             {menuItems.map((item) => {
               const Icon = item.icon;
 
@@ -509,17 +574,38 @@ export default function Sidebar() {
                   className={({ isActive }) =>
                     `
                     opacity-0
+
                     group
+
                     flex
                     items-center
-                    justify-center
+
+                    /*
+                      MOBILE:
+                      icon + name
+
+                      TABLET:
+                      icon only
+
+                      DESKTOP:
+                      icon + name
+                    */
+
+                    justify-start
+
+                    md:justify-center
                     lg:justify-start
+
                     gap-3
+
                     px-4
                     md:px-2
                     lg:px-4
+
                     py-3
+
                     rounded-2xl
+
                     transition-all
                     duration-300
 
@@ -530,51 +616,83 @@ export default function Sidebar() {
                           from-fuchsia-500
                           via-purple-500
                           to-violet-600
+
                           text-white
+
                           shadow-xl
                           shadow-fuchsia-900/40
+
                           scale-[1.02]
                         `
                         : `
                           text-violet-100/85
+
                           hover:bg-white/10
                           hover:text-white
+
                           hover:translate-x-1
+
                           hover:shadow-lg
                         `
                     }
                   `
                   }
                 >
+
+                  {/* =================================================
+                      ICON
+                  ================================================= */}
+
                   <Icon
-                    size={18}
+                    size={19}
                     strokeWidth={2}
                     className="
                       shrink-0
+
                       transition-transform
                       duration-300
+
                       group-hover:scale-110
                     "
                   />
 
+                  {/* =================================================
+                      LABEL
+
+                      Mobile  → visible
+                      Tablet  → hidden
+                      Desktop → visible
+                  ================================================= */}
+
                   <span
                     className="
-                      hidden
+                      inline
+                      md:hidden
                       lg:inline
+
                       text-[14px]
+
                       font-medium
+
                       tracking-wide
+
                       truncate
+
+                      whitespace-nowrap
                     "
                   >
                     {item.label}
                   </span>
+
                 </NavLink>
               );
             })}
+
           </nav>
 
-          {/* ================= LOGOUT ================= */}
+          {/* =================================================
+              LOGOUT
+          ================================================= */}
 
           <div
             ref={logoutRef}
@@ -582,53 +700,105 @@ export default function Sidebar() {
               px-4
               md:px-2
               lg:px-4
+
               pb-6
+
               opacity-0
             "
           >
+
             <button
+              type="button"
               onClick={handleLogout}
               title={t("sidebar.logout")}
               className="
                 group
+
                 w-full
                 h-12
+
                 rounded-2xl
+
                 bg-white/10
+
                 border
                 border-white/10
+
                 backdrop-blur-md
+
                 flex
                 items-center
-                justify-center
+
+                justify-start
+
+                md:justify-center
                 lg:justify-center
+
                 gap-2
+
+                px-4
+                md:px-2
+                lg:px-4
+
                 text-violet-100
+
                 font-medium
+
                 transition-all
                 duration-300
+
                 hover:bg-white/20
                 hover:text-white
+
                 hover:scale-[1.02]
+
                 hover:shadow-xl
                 hover:shadow-fuchsia-900/20
               "
             >
+
+              {/* =================================================
+                  LOGOUT ICON
+              ================================================= */}
+
               <LogOut
-                size={17}
+                size={18}
                 className="
                   shrink-0
+
                   transition-transform
                   duration-300
+
                   group-hover:scale-110
                 "
               />
 
-              <span className="hidden lg:inline">
+              {/* =================================================
+                  LOGOUT TEXT
+
+                  Mobile  → visible
+                  Tablet  → hidden
+                  Desktop → visible
+              ================================================= */}
+
+              <span
+                className="
+                  inline
+                  md:hidden
+                  lg:inline
+
+                  text-[14px]
+
+                  whitespace-nowrap
+                "
+              >
                 {t("sidebar.logout")}
               </span>
+
             </button>
+
           </div>
+
         </div>
       </aside>
     </>
