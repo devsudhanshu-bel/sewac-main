@@ -25,7 +25,6 @@ export default function ComplaintKPIs({ kpis = {} }) {
         icon={<Clock3 size={20} strokeWidth={2.2} />}
         title="Pending"
         value={kpis.pending ?? 0}
-        subtitle="Awaiting resolution"
         color="yellow"
       />
 
@@ -37,7 +36,6 @@ export default function ComplaintKPIs({ kpis = {} }) {
         icon={<ShieldCheck size={20} strokeWidth={2.2} />}
         title="Ready for Verification"
         value={kpis.readyForVerification ?? 0}
-        subtitle="Awaiting citizen verification"
         color="blue"
       />
 
