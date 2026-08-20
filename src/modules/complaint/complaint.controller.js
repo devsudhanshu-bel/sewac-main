@@ -68,6 +68,52 @@ export const getComplaintDetails = async (req, res, next) => {
 };
 
 /**
+ * Get verification OTP for the logged-in citizen
+ */
+export const getComplaintVerification = async ({
+  ticketNumber,
+  phoneNumber,
+}) => {
+  if (!ticketNumber) {
+    throw new Error("Ticket number is required.");
+  }
+
+  if (!phoneNumber) {
+    throw new Error("Phone number is required.");
+  }
+
+  const complaint = await repository.getComplaintByTicket(
+    ticketNumber,
+    phoneNumber,
+  );
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  if (complaint.status !== "OTP_SENT") {
+    throw new Error("Verification OTP is not available for this complaint.");
+  }
+
+  if (!complaint.verification_code) {
+    throw new Error("No OTP has been generated for this complaint.");
+  }
+
+  if (
+    !complaint.verification_expires_at ||
+    complaint.verification_expires_at < new Date()
+  ) {
+    throw new Error("OTP has expired.");
+  }
+
+  return {
+    ticketNumber: complaint.ticket_number,
+    verificationCode: complaint.verification_code,
+    expiresAt: complaint.verification_expires_at,
+  };
+};
+
+/**
  * Generate verification OTP
  */
 export const generateVerificationOTP = async (req, res, next) => {
@@ -105,29 +151,6 @@ export const verifyOTPAndCloseComplaint = async (req, res, next) => {
     return res
       .status(200)
       .json(new ApiResponse(200, "Complaint closed successfully.", response));
-  } catch (error) {
-    next(error);
-  }
-};
-/**
- * Get verification OTP for the logged-in citizen
- */
-export const getComplaintVerification = async (req, res, next) => {
-  try {
-    const response = await complaintService.getComplaintVerification({
-      ticketNumber: req.params.ticketNumber,
-      phoneNumber: req.user.phoneNumber,
-    });
-
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          "Verification information fetched successfully.",
-          response,
-        ),
-      );
   } catch (error) {
     next(error);
   }

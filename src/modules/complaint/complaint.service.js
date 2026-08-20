@@ -149,6 +149,52 @@ export const generateVerificationOTP = async ({
 };
 
 /**
+ * Get verification OTP for the logged-in citizen
+ */
+export const getComplaintVerification = async ({
+  ticketNumber,
+  phoneNumber,
+}) => {
+  if (!ticketNumber) {
+    throw new Error("Ticket number is required.");
+  }
+
+  if (!phoneNumber) {
+    throw new Error("Phone number is required.");
+  }
+
+  const complaint = await repository.getComplaintByTicket(
+    ticketNumber,
+    phoneNumber,
+  );
+
+  if (!complaint) {
+    throw new Error("Complaint not found.");
+  }
+
+  if (complaint.status !== "OTP_SENT") {
+    throw new Error("Verification OTP is not available for this complaint.");
+  }
+
+  if (!complaint.verification_code) {
+    throw new Error("No OTP has been generated for this complaint.");
+  }
+
+  if (
+    !complaint.verification_expires_at ||
+    complaint.verification_expires_at < new Date()
+  ) {
+    throw new Error("OTP has expired.");
+  }
+
+  return {
+    ticketNumber: complaint.ticket_number,
+    verificationCode: complaint.verification_code,
+    expiresAt: complaint.verification_expires_at,
+  };
+};
+
+/**
  * Verify OTP and close complaint
  */
 export const verifyOTPAndCloseComplaint = async ({ ticketNumber, otp }) => {
@@ -326,65 +372,5 @@ export const storeInternalVerificationOTP = async ({
     ticketNumber: complaint.ticket_number,
     status: complaint.status,
     expiresAt: verificationExpiresAt,
-  };
-};
-
-/**
- * Get verification OTP for the authenticated citizen.
- *
- * IMPORTANT:
- * The complaint must belong to the authenticated citizen.
- */
-export const getComplaintVerification = async ({
-  ticketNumber,
-  phoneNumber,
-}) => {
-  if (!ticketNumber) {
-    throw new Error("Ticket number is required.");
-  }
-
-  if (!phoneNumber) {
-    throw new Error("Phone number is required.");
-  }
-
-  const complaint = await repository.getComplaintByTicketOnly(ticketNumber);
-
-  if (!complaint) {
-    throw new Error("Complaint not found.");
-  }
-
-  // SECURITY: make sure this complaint belongs
-  // to the logged-in citizen.
-  if (complaint.phone_number !== phoneNumber) {
-    throw new Error("Complaint not found.");
-  }
-
-  if (complaint.status === "CLOSED") {
-    throw new Error("This complaint has already been closed.");
-  }
-
-  if (complaint.status !== "READY_FOR_VERIFICATION") {
-    throw new Error("Complaint is not ready for verification.");
-  }
-
-  if (!complaint.verification_code) {
-    throw new Error("Verification OTP has not been generated yet.");
-  }
-
-  if (
-    !complaint.verification_expires_at ||
-    complaint.verification_expires_at < new Date()
-  ) {
-    throw new Error("Verification OTP has expired.");
-  }
-
-  return {
-    ticketNumber: complaint.ticket_number,
-
-    otp: complaint.verification_code,
-
-    expiresAt: complaint.verification_expires_at,
-
-    status: complaint.status,
   };
 };
