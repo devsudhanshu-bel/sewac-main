@@ -104,7 +104,10 @@ export default function GVPGen({
         }
 
         if (selectedDivision?.division_id) {
-          params.set("divisionId", selectedDivision.division_id);
+          params.set(
+            "divisionId",
+            selectedDivision.division_id
+          );
         }
 
         /*
@@ -132,7 +135,10 @@ export default function GVPGen({
         |--------------------------------------------------------------------------
         */
 
-        const raw = response?.data?.data ?? response?.data ?? [];
+        const raw =
+          response?.data?.data ??
+          response?.data ??
+          [];
 
         const rows = Array.isArray(raw) ? raw : [];
 
@@ -145,7 +151,9 @@ export default function GVPGen({
         const normalized = rows
           .map((row, index) => {
             const wardNo = Number(
-              row?.wardNo ?? row?.ward_no ?? 0
+              row?.wardNo ??
+                row?.ward_no ??
+                0
             );
 
             const wardName = String(
@@ -167,7 +175,9 @@ export default function GVPGen({
 
               wardName,
 
-              value: Number.isFinite(value) ? value : 0,
+              value: Number.isFinite(value)
+                ? value
+                : 0,
             };
           })
 
@@ -236,10 +246,14 @@ export default function GVPGen({
 
     const values = data
       .map((row) => Number(row.value || 0))
-      .filter((value) => Number.isFinite(value));
+      .filter((value) =>
+        Number.isFinite(value)
+      );
 
     const maxValue =
-      values.length > 0 ? Math.max(...values) : 0;
+      values.length > 0
+        ? Math.max(...values)
+        : 0;
 
     /*
     |--------------------------------------------------------------------------
@@ -265,7 +279,10 @@ export default function GVPGen({
     |--------------------------------------------------------------------------
     */
 
-    return [0, Math.max(10, Math.ceil(padded))];
+    return [
+      0,
+      Math.max(10, Math.ceil(padded)),
+    ];
   }, [data]);
 
   /*
@@ -326,9 +343,12 @@ export default function GVPGen({
             "GVP"
           )}
           :{" "}
-          {value.toLocaleString(undefined, {
-            maximumFractionDigits: 2,
-          })}{" "}
+          {value.toLocaleString(
+            undefined,
+            {
+              maximumFractionDigits: 2,
+            }
+          )}{" "}
           {t("units.kg", "KG")}
         </div>
       </div>
@@ -377,8 +397,17 @@ export default function GVPGen({
       ================================================================ */}
 
       <div className="px-4 pb-5">
+        {/* ==============================================================
+            GRAPH POSITION
+
+            The graph has intentionally been moved downward.
+            Everything else remains unchanged.
+        ============================================================== */}
+
         <div
           className="
+            relative
+            top-[40px]
             w-full
             h-[370px]
           "
@@ -463,7 +492,9 @@ export default function GVPGen({
                       return `${(
                         value / 1000
                       ).toFixed(
-                        value >= 10000 ? 0 : 1
+                        value >= 10000
+                          ? 0
+                          : 1
                       )}K`;
                     }
 
