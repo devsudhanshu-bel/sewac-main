@@ -102,7 +102,11 @@ function getUserFromToken() {
 }
 
 function getRoleLabel(role) {
-  return ROLE_LABELS[role] || role || "Admin Layer 1";
+  return (
+    ROLE_LABELS[role] ||
+    role ||
+    "Admin Layer 1"
+  );
 }
 
 /* =========================================================
@@ -121,22 +125,43 @@ function Dropdown({
   const wrapperRef = useRef(null);
   const menuRef = useRef(null);
 
+  /* =======================================================
+     CLOSE WHEN CLICKING OUTSIDE
+  ======================================================= */
+
   useEffect(() => {
     function close(e) {
-      if (!wrapperRef.current?.contains(e.target)) {
+      if (
+        !wrapperRef.current?.contains(
+          e.target
+        )
+      ) {
         setOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
+  /* =======================================================
+     DROPDOWN ANIMATION
+  ======================================================= */
+
   useEffect(() => {
-    if (open && menuRef.current) {
+    if (
+      open &&
+      menuRef.current
+    ) {
       gsap.fromTo(
         menuRef.current,
         {
@@ -158,26 +183,45 @@ function Dropdown({
   return (
     <div
       ref={wrapperRef}
-      className={`relative shrink-0 ${width}`}
+      className={`
+        relative
+        shrink-0
+        ${width}
+      `}
     >
+      {/* =================================================
+          SELECT BUTTON
+      ================================================= */}
+
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() =>
+          setOpen(!open)
+        }
         className="
           w-full
           h-9
+
           rounded-xl
+
           border
           border-gray-200
+
           bg-white
+
           px-3
+
           flex
           items-center
           justify-between
+
           text-[12px]
           font-medium
+
           text-[#16295A]
+
           hover:border-violet-400
+
           transition-all
           duration-300
         "
@@ -191,87 +235,118 @@ function Dropdown({
           className={`
             shrink-0
             ml-2
+
             transition-transform
             duration-300
-            ${open ? "rotate-180" : ""}
+
+            ${
+              open
+                ? "rotate-180"
+                : ""
+            }
           `}
         />
       </button>
+
+      {/* =================================================
+          MENU
+      ================================================= */}
 
       {open && (
         <div
           ref={menuRef}
           className="
             absolute
+
             top-11
             left-0
+
             w-full
+
             max-h-[315px]
+
             overflow-y-auto
+
             rounded-2xl
+
             bg-white
+
             border
             border-gray-100
+
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+
             z-[99999]
+
             scrollbar-thin
             scrollbar-thumb-violet-300
             scrollbar-track-transparent
           "
         >
-          {options.map((item) => {
-            const label =
-              item.city_name ||
-              item.zone_name ||
-              item.division_name ||
-              item.ward_name ||
-              item;
+          {options.map(
+            (item) => {
+              const label =
+                item.city_name ||
+                item.zone_name ||
+                item.division_name ||
+                item.ward_name ||
+                item;
 
-            const key =
-              item.city_id ||
-              item.zone_id ||
-              item.division_id ||
-              item.ward_id ||
-              label;
+              const key =
+                item.city_id ||
+                item.zone_id ||
+                item.division_id ||
+                item.ward_id ||
+                label;
 
-            return (
-              <button
-                type="button"
-                key={key}
-                onClick={() => {
-                  onChange(item);
-                  setOpen(false);
-                }}
-                className="
-                  w-full
-                  px-4
-                  py-2.5
-                  flex
-                  items-center
-                  justify-between
-                  text-[12px]
-                  hover:bg-violet-50
-                  transition
-                  text-left
-                "
-              >
-                <span className="truncate">
-                  {label}
-                </span>
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => {
+                    onChange(item);
+                    setOpen(false);
+                  }}
+                  className="
+                    w-full
 
-                {label === value && (
-                  <Check
-                    size={14}
-                    className="
-                      text-violet-600
-                      shrink-0
-                      ml-2
-                    "
-                  />
-                )}
-              </button>
-            );
-          })}
+                    px-4
+                    py-2.5
+
+                    flex
+                    items-center
+                    justify-between
+
+                    text-[12px]
+
+                    hover:bg-violet-50
+
+                    transition
+
+                    text-left
+                  "
+                >
+                  <span className="truncate">
+                    {label}
+                  </span>
+
+                  {label ===
+                    value && (
+                    <Check
+                      size={14}
+                      className="
+                        text-violet-600
+
+                        shrink-0
+
+                        ml-2
+                      "
+                    />
+                  )}
+                </button>
+              );
+            }
+          )}
         </div>
       )}
     </div>
@@ -284,7 +359,9 @@ function Dropdown({
 
 const toggleSidebar = () => {
   window.dispatchEvent(
-    new Event("sewac-toggle-sidebar")
+    new Event(
+      "sewac-toggle-sidebar"
+    )
   );
 };
 
@@ -294,9 +371,11 @@ const toggleSidebar = () => {
 
 export default function Header({
   variant = "dashboard",
+
   selectedDate = new Date()
     .toISOString()
     .split("T")[0],
+
   setSelectedDate = () => {},
 }) {
   const navigate = useNavigate();
@@ -315,11 +394,20 @@ export default function Header({
      REFS
   ======================================================= */
 
-  const headerRef = useRef(null);
-  const controlsRef = useRef(null);
-  const searchRef = useRef(null);
-  const profileRef = useRef(null);
-  const languageRef = useRef(null);
+  const headerRef =
+    useRef(null);
+
+  const controlsRef =
+    useRef(null);
+
+  const searchRef =
+    useRef(null);
+
+  const profileRef =
+    useRef(null);
+
+  const languageRef =
+    useRef(null);
 
   /* =======================================================
      FILTER CONTEXT
@@ -348,55 +436,75 @@ export default function Header({
      USER
   ======================================================= */
 
-  const [user, setUser] = useState(() =>
-    getUserFromToken()
-  );
+  const [user, setUser] =
+    useState(() =>
+      getUserFromToken()
+    );
 
-  const roleLabel = getRoleLabel(user.role);
+  const roleLabel =
+    getRoleLabel(user.role);
 
   const userInitial =
     user.name
       ?.trim()
       ?.charAt(0)
-      ?.toUpperCase() || "A";
+      ?.toUpperCase() ||
+    "A";
 
   /* =======================================================
      STATE
   ======================================================= */
 
-  const [dayType, setDayType] = useState("wet");
+  const [dayType, setDayType] =
+    useState("wet");
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [
+    profileOpen,
+    setProfileOpen,
+  ] = useState(false);
 
-  const [languageOpen, setLanguageOpen] =
-    useState(false);
+  const [
+    languageOpen,
+    setLanguageOpen,
+  ] = useState(false);
 
-  const isDashboard = variant === "dashboard";
+  const isDashboard =
+    variant === "dashboard";
 
   /* =======================================================
      DATE
   ======================================================= */
 
-  const selectedDateObj = selectedDate
-    ? new Date(`${selectedDate}T12:00:00`)
-    : new Date();
+  const selectedDateObj =
+    selectedDate
+      ? new Date(
+          `${selectedDate}T12:00:00`
+        )
+      : new Date();
 
-  const selectedDay = selectedDateObj.getDay();
+  const selectedDay =
+    selectedDateObj.getDay();
 
-  // Wednesday = 3
-  // Saturday = 6
+  /*
+    Wednesday = 3
+    Saturday  = 6
+  */
+
   const isDryDay =
-    selectedDay === 3 || selectedDay === 6;
+    selectedDay === 3 ||
+    selectedDay === 6;
 
   /* =======================================================
-     REFRESH USER FROM SESSION
+     REFRESH USER
   ======================================================= */
 
   useEffect(() => {
-    setUser(getUserFromToken());
+    setUser(
+      getUserFromToken()
+    );
   }, []);
 
   /* =======================================================
@@ -404,15 +512,19 @@ export default function Header({
   ======================================================= */
 
   useLayoutEffect(() => {
-    const tl = gsap.timeline();
+    const tl =
+      gsap.timeline();
 
     if (headerRef.current) {
-      tl.from(headerRef.current, {
-        y: -24,
-        opacity: 0,
-        duration: 0.45,
-        ease: "power4.out",
-      });
+      tl.from(
+        headerRef.current,
+        {
+          y: -24,
+          opacity: 0,
+          duration: 0.45,
+          ease: "power4.out",
+        }
+      );
     }
 
     if (controlsRef.current) {
@@ -440,16 +552,27 @@ export default function Header({
 
   useEffect(() => {
     function close(e) {
-      if (!profileRef.current?.contains(e.target)) {
+      if (
+        !profileRef.current?.contains(
+          e.target
+        )
+      ) {
         setProfileOpen(false);
       }
 
-      if (!languageRef.current?.contains(e.target)) {
+      if (
+        !languageRef.current?.contains(
+          e.target
+        )
+      ) {
         setLanguageOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
       window.removeEventListener(
@@ -504,8 +627,11 @@ export default function Header({
      DATE FORMAT
   ======================================================= */
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear();
+  const formatLocalDate = (
+    date
+  ) => {
+    const year =
+      date.getFullYear();
 
     const month = String(
       date.getMonth() + 1
@@ -526,11 +652,12 @@ export default function Header({
     languageCode
   ) => {
     setLanguage(languageCode);
+
     setLanguageOpen(false);
   };
 
   /* =======================================================
-     CURRENT LANGUAGE CODE
+     CURRENT LANGUAGE
   ======================================================= */
 
   const currentLanguageCode =
@@ -541,13 +668,17 @@ export default function Header({
         : "HI";
 
   /* =======================================================
-     SHARED LOCATION FILTERS
+     LOCATION FILTERS
 
-     Desktop:
-       Inline
+     IMPORTANT:
 
-     Tablet/Mobile:
-       Horizontal scroll row
+     xl and above:
+       These are placed in the
+       main header row.
+
+     Below xl:
+       They are placed into
+       the second horizontal row.
   ======================================================= */
 
   const locationFilters = (
@@ -560,15 +691,19 @@ export default function Header({
         width="
           w-[148px]
           sm:w-[155px]
-          lg:w-[118px]
+          xl:w-[118px]
         "
         value={
           selectedCity?.city_name ||
           t("filters.city")
         }
         options={cities}
-        onChange={setSelectedCity}
-        placeholder={t("filters.city")}
+        onChange={
+          setSelectedCity
+        }
+        placeholder={
+          t("filters.city")
+        }
       />
 
       {/* =================================================
@@ -579,15 +714,19 @@ export default function Header({
         width="
           w-[220px]
           sm:w-[235px]
-          lg:w-[200px]
+          xl:w-[200px]
         "
         value={
           selectedZone?.zone_name ||
           t("filters.zone")
         }
         options={zones}
-        onChange={setSelectedZone}
-        placeholder={t("filters.zone")}
+        onChange={
+          setSelectedZone
+        }
+        placeholder={
+          t("filters.zone")
+        }
       />
 
       {/* =================================================
@@ -598,14 +737,16 @@ export default function Header({
         width="
           w-[170px]
           sm:w-[180px]
-          lg:w-[138px]
+          xl:w-[138px]
         "
         value={
           selectedDivision?.division_name ||
           "Select Division"
         }
         options={divisions}
-        onChange={setSelectedDivision}
+        onChange={
+          setSelectedDivision
+        }
         placeholder="Select Division"
       />
 
@@ -617,7 +758,7 @@ export default function Header({
         width="
           w-[155px]
           sm:w-[165px]
-          lg:w-[122px]
+          xl:w-[122px]
         "
         value={
           selectedWard
@@ -625,7 +766,9 @@ export default function Header({
             : "Select Ward"
         }
         options={wards}
-        onChange={setSelectedWard}
+        onChange={
+          setSelectedWard
+        }
         placeholder="Select Ward"
       />
     </>
@@ -652,18 +795,25 @@ export default function Header({
 
         px-3
         sm:px-4
-        lg:px-4
+        xl:px-4
 
         pt-2
         pb-2
 
-        lg:h-16
+        xl:h-16
 
         overflow-visible
       "
     >
       {/* ===================================================
           PRIMARY HEADER ROW
+
+          >= 1280px
+          Everything is in ONE ROW.
+
+          < 1280px
+          This row contains:
+          logo + right controls.
       =================================================== */}
 
       <div
@@ -676,11 +826,11 @@ export default function Header({
 
           min-h-[44px]
 
-          lg:h-full
+          xl:h-full
         "
       >
         {/* =================================================
-            LEFT / BRAND / DESKTOP FILTERS
+            LEFT SIDE
         ================================================= */}
 
         <div
@@ -697,7 +847,12 @@ export default function Header({
           "
         >
           {/* ===============================================
-              MOBILE / TABLET BRAND AREA
+              MOBILE / TABLET BRAND
+
+              Visible below xl.
+
+              This is important because
+              1024-1279px now uses two rows.
           =============================================== */}
 
           <div
@@ -709,16 +864,20 @@ export default function Header({
 
               shrink-0
 
-              lg:hidden
+              xl:hidden
             "
           >
             {/* =============================================
                 MOBILE MENU
+
+                Only actual mobile.
             ============================================= */}
 
             <button
               type="button"
-              onClick={toggleSidebar}
+              onClick={
+                toggleSidebar
+              }
               aria-label="Open navigation menu"
               className="
                 md:hidden
@@ -748,7 +907,9 @@ export default function Header({
                 shrink-0
               "
             >
-              <Menu size={19} />
+              <Menu
+                size={19}
+              />
             </button>
 
             {/* =============================================
@@ -771,27 +932,29 @@ export default function Header({
                 select-none
 
                 shrink-0
-
-                lg:hidden
               "
             />
           </div>
 
           {/* ===============================================
               DESKTOP DASHBOARD FILTERS
+
+              ONLY >= 1280px
           =============================================== */}
 
           {isDashboard ? (
             <div
               className="
                 hidden
-                lg:flex
+                xl:flex
 
                 items-center
 
                 gap-2
 
                 min-w-0
+
+                shrink-0
               "
             >
               {locationFilters}
@@ -806,15 +969,17 @@ export default function Header({
                 relative
 
                 hidden
-                lg:block
+                xl:block
               "
             >
               <Search
                 size={16}
                 className="
                   absolute
+
                   left-3
                   top-1/2
+
                   -translate-y-1/2
 
                   text-gray-400
@@ -826,9 +991,13 @@ export default function Header({
                 type="text"
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value
+                  )
                 }
-                placeholder={t("header.search")}
+                placeholder={t(
+                  "header.search"
+                )}
                 className="
                   w-[330px]
 
@@ -852,12 +1021,14 @@ export default function Header({
                   duration-300
 
                   focus:border-violet-500
+
                   focus:ring-2
                   focus:ring-violet-100
                 "
               />
 
-              {search.length > 0 && (
+              {search.length >
+                0 && (
                 <button
                   type="button"
                   onClick={() =>
@@ -865,8 +1036,10 @@ export default function Header({
                   }
                   className="
                     absolute
+
                     right-3
                     top-1/2
+
                     -translate-y-1/2
 
                     text-gray-400
@@ -876,14 +1049,18 @@ export default function Header({
                     transition
                   "
                 >
-                  <X size={14} />
+                  <X
+                    size={14}
+                  />
                 </button>
               )}
             </div>
           )}
 
           {/* ===============================================
-              MOBILE / TABLET SEARCH
+              TABLET / MOBILE SEARCH
+
+              For non-dashboard pages.
           =============================================== */}
 
           {!isDashboard && (
@@ -894,15 +1071,17 @@ export default function Header({
                 flex-1
                 min-w-0
 
-                lg:hidden
+                xl:hidden
               "
             >
               <Search
                 size={15}
                 className="
                   absolute
+
                   left-3
                   top-1/2
+
                   -translate-y-1/2
 
                   text-gray-400
@@ -913,9 +1092,13 @@ export default function Header({
                 type="text"
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value
+                  )
                 }
-                placeholder={t("header.search")}
+                placeholder={t(
+                  "header.search"
+                )}
                 className="
                   w-full
 
@@ -941,12 +1124,14 @@ export default function Header({
                   duration-300
 
                   focus:border-violet-500
+
                   focus:ring-2
                   focus:ring-violet-100
                 "
               />
 
-              {search.length > 0 && (
+              {search.length >
+                0 && (
                 <button
                   type="button"
                   onClick={() =>
@@ -954,14 +1139,18 @@ export default function Header({
                   }
                   className="
                     absolute
+
                     right-3
                     top-1/2
+
                     -translate-y-1/2
 
                     text-gray-400
                   "
                 >
-                  <X size={14} />
+                  <X
+                    size={14}
+                  />
                 </button>
               )}
             </div>
@@ -1000,10 +1189,14 @@ export default function Header({
             "
           >
             <Calendar
-              value={selectedDateObj}
+              value={
+                selectedDateObj
+              }
               onChange={(date) => {
                 setSelectedDate(
-                  formatLocalDate(date)
+                  formatLocalDate(
+                    date
+                  )
                 );
               }}
             />
@@ -1012,7 +1205,7 @@ export default function Header({
           {/* ===============================================
               WET / DRY DAY
 
-              Hidden below sm so mobile remains clean.
+              Hidden below sm.
           =============================================== */}
 
           <div
@@ -1034,16 +1227,18 @@ export default function Header({
               <button
                 type="button"
                 onClick={() =>
-                  setDayType("dry")
+                  setDayType(
+                    "dry"
+                  )
                 }
                 className={`
                   h-9
 
                   px-3
-                  lg:px-4
+                  xl:px-4
 
                   text-[11px]
-                  lg:text-[12px]
+                  xl:text-[12px]
 
                   font-semibold
 
@@ -1051,29 +1246,34 @@ export default function Header({
                   duration-300
 
                   ${
-                    dayType === "dry"
+                    dayType ===
+                    "dry"
                       ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                       : "bg-white text-[#16295A] hover:bg-gray-50"
                   }
                 `}
               >
-                {t("header.dryDay")}
+                {t(
+                  "header.dryDay"
+                )}
               </button>
             )}
 
             <button
               type="button"
               onClick={() =>
-                setDayType("wet")
+                setDayType(
+                  "wet"
+                )
               }
               className={`
                 h-9
 
                 px-3
-                lg:px-4
+                xl:px-4
 
                 text-[11px]
-                lg:text-[12px]
+                xl:text-[12px]
 
                 font-semibold
 
@@ -1081,13 +1281,16 @@ export default function Header({
                 duration-300
 
                 ${
-                  dayType === "wet"
+                  dayType ===
+                  "wet"
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                     : "bg-white text-[#16295A] hover:bg-gray-50"
                 }
               `}
             >
-              {t("header.wetDay")}
+              {t(
+                "header.wetDay"
+              )}
             </button>
           </div>
 
@@ -1109,7 +1312,9 @@ export default function Header({
                   !languageOpen
                 )
               }
-              aria-expanded={languageOpen}
+              aria-expanded={
+                languageOpen
+              }
               className="
                 h-9
 
@@ -1153,7 +1358,9 @@ export default function Header({
                   text-[#16295A]
                 "
               >
-                {currentLanguageCode}
+                {
+                  currentLanguageCode
+                }
               </span>
 
               <ChevronDown
@@ -1202,51 +1409,55 @@ export default function Header({
                   z-[99999]
                 "
               >
-                {languages.map((item) => (
-                  <button
-                    type="button"
-                    key={item.code}
-                    onClick={() =>
-                      handleLanguageChange(
+                {languages.map(
+                  (item) => (
+                    <button
+                      type="button"
+                      key={
                         item.code
-                      )
-                    }
-                    className="
-                      w-full
+                      }
+                      onClick={() =>
+                        handleLanguageChange(
+                          item.code
+                        )
+                      }
+                      className="
+                        w-full
 
-                      px-4
-                      py-3
+                        px-4
+                        py-3
 
-                      flex
-                      items-center
-                      justify-between
+                        flex
+                        items-center
+                        justify-between
 
-                      text-[12px]
+                        text-[12px]
 
-                      hover:bg-violet-50
+                        hover:bg-violet-50
 
-                      transition
+                        transition
 
-                      text-left
-                    "
-                  >
-                    <span>
-                      {t(
-                        item.translationKey
+                        text-left
+                      "
+                    >
+                      <span>
+                        {t(
+                          item.translationKey
+                        )}
+                      </span>
+
+                      {language ===
+                        item.code && (
+                        <Check
+                          size={14}
+                          className="
+                            text-violet-600
+                          "
+                        />
                       )}
-                    </span>
-
-                    {language ===
-                      item.code && (
-                      <Check
-                        size={14}
-                        className="
-                          text-violet-600
-                        "
-                      />
-                    )}
-                  </button>
-                ))}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -1269,7 +1480,9 @@ export default function Header({
                   !profileOpen
                 )
               }
-              aria-expanded={profileOpen}
+              aria-expanded={
+                profileOpen
+              }
               className="
                 h-9
 
@@ -1279,7 +1492,7 @@ export default function Header({
                 sm:pl-2
                 sm:pr-2
 
-                lg:pr-3
+                xl:pr-3
 
                 rounded-xl
 
@@ -1332,9 +1545,9 @@ export default function Header({
               </div>
 
               {/* =========================================
-                  USER INFORMATION
+                  USER INFO
 
-                  Hidden on very small screens.
+                  Hidden below sm.
               ========================================= */}
 
               <div
@@ -1347,13 +1560,13 @@ export default function Header({
                   leading-tight
 
                   max-w-[100px]
-                  lg:max-w-none
+                  xl:max-w-none
                 "
               >
                 <h4
                   className="
                     text-[11px]
-                    lg:text-[12px]
+                    xl:text-[12px]
 
                     font-semibold
 
@@ -1368,7 +1581,7 @@ export default function Header({
                 <p
                   className="
                     text-[9px]
-                    lg:text-[10px]
+                    xl:text-[10px]
 
                     text-gray-500
 
@@ -1380,7 +1593,7 @@ export default function Header({
               </div>
 
               {/* =========================================
-                  PROFILE ARROW
+                  ARROW
               ========================================= */}
 
               <ChevronDown
@@ -1537,7 +1750,9 @@ export default function Header({
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(false);
+                    setProfileOpen(
+                      false
+                    );
 
                     navigate(
                       "/dashboard/admin/settings"
@@ -1563,9 +1778,13 @@ export default function Header({
                     transition
                   "
                 >
-                  <Settings size={16} />
+                  <Settings
+                    size={16}
+                  />
 
-                  {t("sidebar.settings")}
+                  {t(
+                    "sidebar.settings"
+                  )}
                 </button>
 
                 {/* =========================================
@@ -1575,7 +1794,9 @@ export default function Header({
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(false);
+                    setProfileOpen(
+                      false
+                    );
 
                     handleLogout();
                   }}
@@ -1599,9 +1820,13 @@ export default function Header({
                     transition
                   "
                 >
-                  <LogOut size={16} />
+                  <LogOut
+                    size={16}
+                  />
 
-                  {t("sidebar.logout")}
+                  {t(
+                    "sidebar.logout"
+                  )}
                 </button>
               </div>
             )}
@@ -1610,24 +1835,23 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          RESPONSIVE LOCATION FILTER ROW
+          SECOND ROW
 
-          Only visible below desktop.
+          IMPORTANT:
 
-          Desktop:
-            Filters remain in primary row.
+          xl = 1280px
 
-          Tablet:
-            Filters get their own row.
+          So this appears at:
+            1279px and below
 
-          Mobile:
-            Filters become horizontally scrollable.
+          This is what fixes the exact
+          screenshot you just sent.
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
-            lg:hidden
+            xl:hidden
 
             w-full
 
