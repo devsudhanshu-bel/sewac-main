@@ -69,7 +69,7 @@ export default function KPICards({ summary }) {
   return (
     <section
       ref={sectionRef}
-      className="grid grid-cols-1 xl:grid-cols-3 gap-6"
+      className="grid grid-cols-1 xl:grid-cols-3 gap-2"
     >
       {/* =====================================================
           TOTAL VEHICLES

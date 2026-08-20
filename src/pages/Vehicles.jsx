@@ -33,7 +33,7 @@ const Vehicles = () => {
       <Header />
 
       {/* Main Content */}
-      <main className="p-8 space-y-8">
+      <main className="p-8 space-y-2">
         {/* KPI Cards */}
         <KPICards summary={summary} />
 
