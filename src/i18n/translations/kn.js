@@ -367,6 +367,36 @@ vehicles: {
       status: "ಸ್ಥಿತಿ",
     },
   },
+
+  createVehicle: {
+  title: "वाहन बनाएं",
+
+  close: "बंद करें",
+
+  vehicleId: "वाहन ID",
+  vehicleType: "वाहन प्रकार",
+
+  types: {
+    miniTruck: "मिनी ट्रक",
+    autoTipper: "ऑटो टिप्पर",
+    compactor: "कॉम्पैक्टर",
+    dumper: "डम्पर",
+  },
+
+  active: "सक्रिय",
+  inactive: "निष्क्रिय",
+
+  selectCity: "शहर चुनें",
+  selectZone: "ज़ोन चुनें",
+  selectDivision: "डिवीजन चुनें",
+  selectWard: "वार्ड चुनें",
+
+  cancel: "रद्द करें",
+  create: "बनाएं",
+
+  validation: "कृपया सभी फ़ील्ड भरें।",
+  createFailed: "वाहन बनाने में विफल",
+},
 },
 };
 

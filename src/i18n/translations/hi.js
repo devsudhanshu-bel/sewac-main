@@ -367,6 +367,36 @@ vehicles: {
       status: "स्थिति",
     },
   },
+
+  createVehicle: {
+  title: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+
+  close: "ಮುಚ್ಚಿ",
+
+  vehicleId: "ವಾಹನ ID",
+  vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
+
+  types: {
+    miniTruck: "ಮಿನಿ ಟ್ರಕ್",
+    autoTipper: "ಆಟೋ ಟಿಪ್ಪರ್",
+    compactor: "ಕಾಂಪ್ಯಾಕ್ಟರ್",
+    dumper: "ಡಂಪರ್",
+  },
+
+  active: "ಸಕ್ರಿಯ",
+  inactive: "ನಿಷ್ಕ್ರಿಯ",
+
+  selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+
+  cancel: "ರದ್ದುಮಾಡಿ",
+  create: "ರಚಿಸಿ",
+
+  validation: "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
+  createFailed: "ವಾಹನವನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+},
 },
 };
 

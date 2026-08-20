@@ -355,6 +355,36 @@ vehicles: {
       status: "Status",
     },
   },
+
+  createVehicle: {
+    title: "Create Vehicle",
+
+    close: "Close",
+
+    vehicleId: "Vehicle ID",
+    vehicleType: "Vehicle Type",
+
+    types: {
+      miniTruck: "Mini Truck",
+      autoTipper: "Auto Tipper",
+      compactor: "Compactor",
+      dumper: "Dumper",
+    },
+
+    active: "ACTIVE",
+    inactive: "INACTIVE",
+
+    selectCity: "Select City",
+    selectZone: "Select Zone",
+    selectDivision: "Select Division",
+    selectWard: "Select Ward",
+
+    cancel: "Cancel",
+    create: "Create",
+
+    validation: "Please fill all fields.",
+    createFailed: "Failed to create vehicle",
+  },
 },
 };
 
