@@ -95,36 +95,6 @@ export default function ComplaintFilters({ filters, onFilterChange, onReset }) {
             },
           ]}
         />
-
-        {/* ================= CATEGORY ================= */}
-
-        <FilterSelect
-          label="Category"
-          value={filters.category}
-          onChange={(value) => onFilterChange("category", value)}
-          options={[
-            {
-              value: "",
-              label: "All",
-            },
-            {
-              value: "SOLID_WASTE",
-              label: "Solid Waste",
-            },
-            {
-              value: "DRAINAGE",
-              label: "Drainage",
-            },
-            {
-              value: "ROAD",
-              label: "Road",
-            },
-            {
-              value: "STREET_LIGHT",
-              label: "Street Light",
-            },
-          ]}
-        />
       </div>
 
       {/* =====================================================
