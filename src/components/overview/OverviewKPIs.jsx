@@ -179,16 +179,37 @@ export default function OverviewKPIs({ data }) {
   return (
     <div
       className="
+        w-full
+
         grid
+
+        /* ================================================
+           MOBILE
+           ================================================ */
+
         grid-cols-1
-        sm:grid-cols-2
-        min-[1301px]:grid-cols-4
+
+        /* ================================================
+           TABLET
+           769px - 1200px
+
+           2 CARDS PER ROW
+           ================================================ */
+
+        md:grid-cols-2
+
+        /* ================================================
+           DESKTOP
+           1201px+
+
+           4 CARDS IN ONE ROW
+           ================================================ */
+
+        min-[1201px]:grid-cols-4
 
         gap-3
-        sm:gap-3
-        min-[1301px]:gap-2
 
-        w-full
+        min-[1201px]:gap-2
       "
     >
       {/* =====================================================
@@ -214,7 +235,7 @@ export default function OverviewKPIs({ data }) {
 
               px-4
               sm:px-5
-              min-[1301px]:px-7
+              min-[1201px]:px-7
 
               flex
               items-center
@@ -222,6 +243,8 @@ export default function OverviewKPIs({ data }) {
               shadow-[0_4px_12px_rgba(15,23,42,0.04)]
 
               min-w-0
+
+              w-full
             "
           >
             {/* =================================================
@@ -259,9 +282,11 @@ export default function OverviewKPIs({ data }) {
               className="
                 ml-3
                 sm:ml-4
-                min-[1301px]:ml-5
+                min-[1201px]:ml-5
 
                 min-w-0
+
+                flex-1
               "
             >
               <p
@@ -349,7 +374,7 @@ export default function OverviewKPIs({ data }) {
 
           px-4
           sm:px-5
-          min-[1301px]:px-7
+          min-[1201px]:px-7
 
           flex
           flex-col
@@ -358,6 +383,8 @@ export default function OverviewKPIs({ data }) {
           shadow-[0_4px_12px_rgba(15,23,42,0.04)]
 
           min-w-0
+
+          w-full
         "
       >
         {/* ===================================================
@@ -373,6 +400,8 @@ export default function OverviewKPIs({ data }) {
 
             mb-3
             sm:mb-4
+
+            leading-none
           "
         >
           {t(
@@ -482,6 +511,8 @@ export default function OverviewKPIs({ data }) {
                   font-semibold
 
                   text-gray-500
+
+                  whitespace-nowrap
                 "
               >
                 ({trashGivenPercentage}%)
@@ -585,6 +616,8 @@ export default function OverviewKPIs({ data }) {
                   font-semibold
 
                   text-gray-500
+
+                  whitespace-nowrap
                 "
               >
                 ({notGivenPercentage}%)
