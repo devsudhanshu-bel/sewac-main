@@ -26,6 +26,35 @@ const quoteIdentifier = (identifier) => {
 
 /*
 |--------------------------------------------------------------------------
+| POSTGRES MISSING RELATION ERROR
+|--------------------------------------------------------------------------
+|
+| Prisma wraps PostgreSQL 42P01 errors from $queryRawUnsafe()
+| as Prisma P2010 errors.
+|
+| Therefore:
+|
+| PostgreSQL:
+|   42P01 = relation does not exist
+|
+| Prisma:
+|   P2010
+|   meta.code = 42P01
+|
+|--------------------------------------------------------------------------
+*/
+
+const isMissingRelationError = (error) => {
+  return (
+    error?.code === "42P01" ||
+    (error?.code === "P2010" && error?.meta?.code === "42P01") ||
+    String(error?.message || "").includes("42P01") ||
+    String(error?.message || "").includes("does not exist")
+  );
+};
+
+/*
+|--------------------------------------------------------------------------
 | ID PARSER
 |--------------------------------------------------------------------------
 */
@@ -870,7 +899,7 @@ const getVehicleTablesForDate = async (date, wardNos = null) => {
           : Number(row.ward_no),
     }));
   } catch (error) {
-    if (error?.code === "42P01") {
+    if (isMissingRelationError(error)) {
       console.warn(
         `Waste Generator: telemetry day table ${dayTable} does not exist. Returning no data.`,
       );
@@ -1043,7 +1072,7 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
 
     return result;
   } catch (error) {
-    if (error?.code === "42P01") {
+    if (isMissingRelationError(error)) {
       console.warn(
         "Waste Generator: one or more vehicle telemetry tables do not exist.",
       );
@@ -1649,9 +1678,9 @@ const getMapTelemetryRows = async (vehicleTables, selectedDate) => {
 
     return result;
   } catch (error) {
-    if (error?.code === "42P01") {
+    if (isMissingRelationError(error)) {
       console.warn(
-        "Waste Generator Map: one or more vehicle telemetry tables do not exist.",
+        "Waste Generator: one or more vehicle telemetry tables do not exist.",
       );
 
       return [];
