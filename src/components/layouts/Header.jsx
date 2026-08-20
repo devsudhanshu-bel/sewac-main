@@ -6,6 +6,7 @@ import {
   LogOut,
   Check,
   X,
+  Menu,
 } from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
@@ -18,6 +19,8 @@ import { gsap } from "gsap";
 import Calendar from "../Calendar/Calendar";
 
 import { useLanguage } from "../../i18n";
+
+import SewacLogo from "../../assets/sewac_logo.svg";
 
 /* =========================================================
    LANGUAGE OPTIONS
@@ -146,7 +149,7 @@ function Dropdown({
   return (
     <div
       ref={wrapperRef}
-      className={`relative ${width}`}
+      className={`relative shrink-0 ${width}`}
     >
       <button
         type="button"
@@ -178,6 +181,7 @@ function Dropdown({
           size={14}
           className={`
             shrink-0
+            ml-2
             transition-transform
             duration-300
             ${open ? "rotate-180" : ""}
@@ -200,7 +204,7 @@ function Dropdown({
             border
             border-gray-100
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-            z-[9999]
+            z-[99999]
             scrollbar-thin
             scrollbar-thumb-violet-300
             scrollbar-track-transparent
@@ -249,7 +253,7 @@ function Dropdown({
                 {label === value && (
                   <Check
                     size={14}
-                    className="text-violet-600 shrink-0"
+                    className="text-violet-600 shrink-0 ml-2"
                   />
                 )}
               </button>
@@ -260,6 +264,16 @@ function Dropdown({
     </div>
   );
 }
+
+/* =========================================================
+   SIDEBAR TOGGLE EVENT
+========================================================= */
+
+const toggleSidebar = () => {
+  window.dispatchEvent(
+    new Event("sewac-toggle-sidebar")
+  );
+};
 
 /* =========================================================
    HEADER
@@ -489,6 +503,83 @@ export default function Header({
         : "HI";
 
   /* =======================================================
+     SHARED FILTERS
+  ======================================================= */
+
+  const locationFilters = (
+    <>
+      {/* ================= CITY ================= */}
+
+      <Dropdown
+        width="
+          w-[118px]
+          sm:w-[125px]
+          lg:w-[118px]
+        "
+        value={
+          selectedCity?.city_name ||
+          t("filters.city")
+        }
+        options={cities}
+        onChange={setSelectedCity}
+        placeholder={t("filters.city")}
+      />
+
+      {/* ================= ZONE ================= */}
+
+      <Dropdown
+        width="
+          w-[190px]
+          sm:w-[210px]
+          lg:w-[200px]
+        "
+        value={
+          selectedZone?.zone_name ||
+          t("filters.zone")
+        }
+        options={zones}
+        onChange={setSelectedZone}
+        placeholder={t("filters.zone")}
+      />
+
+      {/* ================= DIVISION ================= */}
+
+      <Dropdown
+        width="
+          w-[138px]
+          sm:w-[145px]
+          lg:w-[138px]
+        "
+        value={
+          selectedDivision?.division_name ||
+          "Select Division"
+        }
+        options={divisions}
+        onChange={setSelectedDivision}
+        placeholder="Select Division"
+      />
+
+      {/* ================= WARD ================= */}
+
+      <Dropdown
+        width="
+          w-[125px]
+          sm:w-[135px]
+          lg:w-[122px]
+        "
+        value={
+          selectedWard
+            ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
+            : "Select Ward"
+        }
+        options={wards}
+        onChange={setSelectedWard}
+        placeholder="Select Ward"
+      />
+    </>
+  );
+
+  /* =======================================================
      RENDER
   ======================================================= */
 
@@ -499,539 +590,684 @@ export default function Header({
         sticky
         top-0
         z-[9999]
-        h-16
+        w-full
         bg-white
         border-b
         border-gray-100
-        px-4
-        flex
-        items-center
-        justify-between
+        px-3
+        sm:px-4
+        lg:px-4
+        py-2
+        lg:h-16
       "
     >
       {/* ===================================================
-          LEFT
+          MAIN HEADER ROW
       =================================================== */}
 
-      <div
-        ref={controlsRef}
-        className="flex items-center gap-3"
-      >
-        {isDashboard ? (
-          <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 min-h-12 lg:h-full">
 
-            {/* ================= CITY ================= */}
+        {/* =================================================
+            LEFT SIDE
+        ================================================= */}
 
-            <Dropdown
-              width="w-[118px]"
-              value={
-                selectedCity?.city_name ||
-                t("filters.city")
-              }
-              options={cities}
-              onChange={setSelectedCity}
-              placeholder={t("filters.city")}
-            />
+        <div
+          ref={controlsRef}
+          className="
+            flex
+            items-center
+            gap-2
+            min-w-0
+            flex-1
+          "
+        >
 
-            {/* ================= ZONE ================= */}
+          {/* ===============================================
+              MOBILE / TABLET BRAND
+          =============================================== */}
 
-            <Dropdown
-              width="w-[200px]"
-              value={
-                selectedZone?.zone_name ||
-                t("filters.zone")
-              }
-              options={zones}
-              onChange={setSelectedZone}
-              placeholder={t("filters.zone")}
-            />
+          <div
+            className="
+              flex
+              lg:hidden
+              items-center
+              gap-2
+              shrink-0
+            "
+          >
+            {/* MOBILE MENU */}
 
-            {/* ================= DIVISION ================= */}
-
-            <Dropdown
-              width="w-[138px]"
-              value={
-                selectedDivision?.division_name ||
-                "Select Division"
-              }
-              options={divisions}
-              onChange={setSelectedDivision}
-              placeholder="Select Division"
-            />
-
-            {/* ================= WARD ================= */}
-
-            <Dropdown
-              width="w-[122px]"
-              value={
-                selectedWard
-                  ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
-                  : "Select Ward"
-              }
-              options={wards}
-              onChange={setSelectedWard}
-              placeholder="Select Ward"
-            />
-
-          </div>
-        ) : (
-          /* ================= SEARCH ================= */
-
-          <div className="relative">
-            <Search
-              size={16}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Open navigation menu"
               className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-gray-400
-              "
-            />
-
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              placeholder={t("header.search")}
-              className="
-                w-[330px]
+                md:hidden
+                w-9
                 h-9
                 rounded-xl
                 border
                 border-gray-200
                 bg-white
-                pl-10
-                pr-9
-                text-[12px]
-                outline-none
+                flex
+                items-center
+                justify-center
+                text-[#16295A]
+                hover:border-violet-400
+                hover:text-violet-600
                 transition-all
-                duration-300
-                focus:border-violet-500
-                focus:ring-2
-                focus:ring-violet-100
+              "
+            >
+              <Menu size={19} />
+            </button>
+
+            {/* MOBILE / TABLET LOGO */}
+
+            <img
+              src={SewacLogo}
+              alt="SEWAC"
+              draggable={false}
+              className="
+                w-[72px]
+                sm:w-[82px]
+                md:w-[72px]
+                h-auto
+                object-contain
+                select-none
+                lg:hidden
               "
             />
+          </div>
 
-            {search.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
+          {/* ===============================================
+              DESKTOP DASHBOARD FILTERS
+          =============================================== */}
+
+          {isDashboard ? (
+            <div
+              className="
+                hidden
+                lg:flex
+                items-center
+                gap-2
+              "
+            >
+              {locationFilters}
+            </div>
+          ) : (
+            /* =============================================
+               DESKTOP SEARCH
+            ============================================= */
+
+            <div className="relative hidden lg:block">
+              <Search
+                size={16}
                 className="
                   absolute
-                  right-3
+                  left-3
                   top-1/2
                   -translate-y-1/2
                   text-gray-400
-                  hover:text-violet-600
-                  transition
                 "
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+              />
 
-      {/* ===================================================
-          RIGHT
-      =================================================== */}
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                placeholder={t("header.search")}
+                className="
+                  w-[330px]
+                  h-9
+                  rounded-xl
+                  border
+                  border-gray-200
+                  bg-white
+                  pl-10
+                  pr-9
+                  text-[12px]
+                  outline-none
+                  transition-all
+                  duration-300
+                  focus:border-violet-500
+                  focus:ring-2
+                  focus:ring-violet-100
+                "
+              />
 
-      <div className="flex items-center gap-2.5">
+              {search.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="
+                    absolute
+                    right-3
+                    top-1/2
+                    -translate-y-1/2
+                    text-gray-400
+                    hover:text-violet-600
+                    transition
+                  "
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
 
-        {/* =================================================
-            CALENDAR
-        ================================================= */}
+          {/* ===============================================
+              TABLET / MOBILE SEARCH
+          =============================================== */}
 
-        <div className="flex items-center justify-center">
-          <Calendar
-            value={selectedDateObj}
-            onChange={(date) => {
-              setSelectedDate(
-                formatLocalDate(date)
-              );
-            }}
-          />
+          {!isDashboard && (
+            <div className="relative flex-1 min-w-0 lg:hidden">
+              <Search
+                size={15}
+                className="
+                  absolute
+                  left-3
+                  top-1/2
+                  -translate-y-1/2
+                  text-gray-400
+                "
+              />
+
+              <input
+                type="text"
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                placeholder={t("header.search")}
+                className="
+                  w-full
+                  max-w-[360px]
+                  h-9
+                  rounded-xl
+                  border
+                  border-gray-200
+                  bg-white
+                  pl-9
+                  pr-8
+                  text-[12px]
+                  outline-none
+                  transition-all
+                  duration-300
+                  focus:border-violet-500
+                  focus:ring-2
+                  focus:ring-violet-100
+                "
+              />
+
+              {search.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="
+                    absolute
+                    right-3
+                    top-1/2
+                    -translate-y-1/2
+                    text-gray-400
+                  "
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* =================================================
-            WET / DRY DAY
+            RIGHT SIDE
         ================================================= */}
 
         <div
           className="
             flex
-            rounded-xl
-            border
-            border-gray-200
-            overflow-hidden
+            items-center
+            justify-end
+            gap-1.5
+            sm:gap-2
+            shrink-0
           "
         >
-          {isDryDay && (
+
+          {/* ===============================================
+              CALENDAR
+          =============================================== */}
+
+          <div className="flex items-center justify-center shrink-0">
+            <Calendar
+              value={selectedDateObj}
+              onChange={(date) => {
+                setSelectedDate(
+                  formatLocalDate(date)
+                );
+              }}
+            />
+          </div>
+
+          {/* ===============================================
+              WET / DRY DAY
+          =============================================== */}
+
+          <div
+            className="
+              hidden
+              sm:flex
+              rounded-xl
+              border
+              border-gray-200
+              overflow-hidden
+              shrink-0
+            "
+          >
+            {isDryDay && (
+              <button
+                type="button"
+                onClick={() => setDayType("dry")}
+                className={`
+                  h-9
+                  px-3
+                  lg:px-4
+                  text-[11px]
+                  lg:text-[12px]
+                  font-semibold
+                  transition-all
+                  duration-300
+
+                  ${
+                    dayType === "dry"
+                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                      : "bg-white text-[#16295A] hover:bg-gray-50"
+                  }
+                `}
+              >
+                {t("header.dryDay")}
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => setDayType("dry")}
+              onClick={() => setDayType("wet")}
               className={`
                 h-9
-                px-4
-                text-[12px]
+                px-3
+                lg:px-4
+                text-[11px]
+                lg:text-[12px]
                 font-semibold
                 transition-all
                 duration-300
 
                 ${
-                  dayType === "dry"
+                  dayType === "wet"
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                     : "bg-white text-[#16295A] hover:bg-gray-50"
                 }
               `}
             >
-              {t("header.dryDay")}
+              {t("header.wetDay")}
             </button>
-          )}
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setDayType("wet")}
-            className={`
-              h-9
-              px-4
-              text-[12px]
-              font-semibold
-              transition-all
-              duration-300
+          {/* ===============================================
+              LANGUAGE
+          =============================================== */}
 
-              ${
-                dayType === "wet"
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                  : "bg-white text-[#16295A] hover:bg-gray-50"
+          <div
+            ref={languageRef}
+            className="relative shrink-0"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setLanguageOpen(!languageOpen)
               }
-            `}
-          >
-            {t("header.wetDay")}
-          </button>
-        </div>
-
-        {/* =================================================
-            LANGUAGE
-        ================================================= */}
-
-        <div
-          ref={languageRef}
-          className="relative"
-        >
-          <button
-            type="button"
-            onClick={() =>
-              setLanguageOpen(!languageOpen)
-            }
-            className="
-              h-9
-              px-3
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              flex
-              items-center
-              gap-2
-              hover:border-violet-400
-              transition-all
-              duration-300
-            "
-          >
-            <Globe
-              size={15}
-              className="text-violet-600"
-            />
-
-            <span className="text-[12px] font-semibold text-[#16295A]">
-              {currentLanguageCode}
-            </span>
-
-            <ChevronDown
-              size={13}
-              className={`
-                transition-transform
-                duration-300
-                ${
-                  languageOpen
-                    ? "rotate-180"
-                    : ""
-                }
-              `}
-            />
-          </button>
-
-          {languageOpen && (
-            <div
+              aria-expanded={languageOpen}
               className="
-                absolute
-                right-0
-                top-11
-                w-44
-                rounded-2xl
-                bg-white
+                h-9
+                px-2
+                sm:px-3
+                rounded-xl
                 border
-                border-gray-100
-                shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-                overflow-hidden
-                z-[9999]
+                border-gray-200
+                bg-white
+                flex
+                items-center
+                gap-1.5
+                sm:gap-2
+                hover:border-violet-400
+                transition-all
+                duration-300
               "
             >
-              {languages.map((item) => (
+              <Globe
+                size={14}
+                className="text-violet-600"
+              />
+
+              <span className="text-[11px] sm:text-[12px] font-semibold text-[#16295A]">
+                {currentLanguageCode}
+              </span>
+
+              <ChevronDown
+                size={12}
+                className={`
+                  transition-transform
+                  duration-300
+                  ${
+                    languageOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
+
+            {languageOpen && (
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-11
+                  w-44
+                  rounded-2xl
+                  bg-white
+                  border
+                  border-gray-100
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  overflow-hidden
+                  z-[99999]
+                "
+              >
+                {languages.map((item) => (
+                  <button
+                    type="button"
+                    key={item.code}
+                    onClick={() =>
+                      handleLanguageChange(
+                        item.code
+                      )
+                    }
+                    className="
+                      w-full
+                      px-4
+                      py-3
+                      flex
+                      items-center
+                      justify-between
+                      text-[12px]
+                      hover:bg-violet-50
+                      transition
+                      text-left
+                    "
+                  >
+                    <span>
+                      {t(item.translationKey)}
+                    </span>
+
+                    {language === item.code && (
+                      <Check
+                        size={14}
+                        className="text-violet-600"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ===============================================
+              PROFILE
+          =============================================== */}
+
+          <div
+            ref={profileRef}
+            className="relative shrink-0"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setProfileOpen(!profileOpen)
+              }
+              aria-expanded={profileOpen}
+              className="
+                h-9
+                pl-1
+                pr-1
+                sm:pl-2
+                sm:pr-2
+                lg:pr-3
+                rounded-xl
+                border
+                border-gray-200
+                bg-white
+                flex
+                items-center
+                gap-1.5
+                sm:gap-2
+                hover:border-violet-400
+                transition-all
+                duration-300
+              "
+            >
+              {/* ================= AVATAR ================= */}
+
+              <div
+                className="
+                  w-8
+                  h-8
+                  rounded-full
+                  bg-gradient-to-r
+                  from-violet-600
+                  to-fuchsia-600
+                  text-white
+                  text-[13px]
+                  font-semibold
+                  flex
+                  items-center
+                  justify-center
+                  shrink-0
+                "
+              >
+                {userInitial}
+              </div>
+
+              {/* ================= USER INFO ================= */}
+
+              <div className="hidden sm:block text-left leading-tight max-w-[110px] lg:max-w-none">
+                <h4 className="text-[11px] lg:text-[12px] font-semibold text-[#16295A] truncate">
+                  {user.name}
+                </h4>
+
+                <p className="text-[9px] lg:text-[10px] text-gray-500 truncate">
+                  {roleLabel}
+                </p>
+              </div>
+
+              <ChevronDown
+                size={12}
+                className={`
+                  hidden
+                  sm:block
+                  transition-transform
+                  duration-300
+                  ${
+                    profileOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
+
+            {/* =============================================
+                PROFILE DROPDOWN
+            ============================================= */}
+
+            {profileOpen && (
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-11
+                  w-56
+                  rounded-2xl
+                  bg-white
+                  border
+                  border-gray-100
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  overflow-hidden
+                  z-[99999]
+                "
+                ref={(el) => {
+                  if (el) {
+                    gsap.fromTo(
+                      el,
+                      {
+                        opacity: 0,
+                        scale: 0.96,
+                        y: -8,
+                      },
+                      {
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                        duration: 0.22,
+                        ease: "power3.out",
+                      }
+                    );
+                  }
+                }}
+              >
+                {/* ================= USER INFORMATION ================= */}
+
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+
+                    <div
+                      className="
+                        w-9
+                        h-9
+                        rounded-full
+                        bg-gradient-to-r
+                        from-violet-600
+                        to-fuchsia-600
+                        text-white
+                        text-[14px]
+                        font-semibold
+                        flex
+                        items-center
+                        justify-center
+                      "
+                    >
+                      {userInitial}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-[13px] text-[#16295A] truncate">
+                        {user.name}
+                      </h3>
+
+                      <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+                        {roleLabel}
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* ================= SETTINGS ================= */}
+
                 <button
                   type="button"
-                  key={item.code}
-                  onClick={() =>
-                    handleLanguageChange(
-                      item.code
-                    )
-                  }
+                  onClick={() => {
+                    setProfileOpen(false);
+
+                    navigate(
+                      "/dashboard/admin/settings"
+                    );
+                  }}
                   className="
                     w-full
-                    px-4
+                    px-5
                     py-3
                     flex
                     items-center
-                    justify-between
+                    gap-3
                     text-[12px]
+                    text-[#16295A]
                     hover:bg-violet-50
                     transition
-                    text-left
                   "
                 >
-                  <span>
-                    {t(item.translationKey)}
-                  </span>
+                  <Settings size={16} />
 
-                  {language === item.code && (
-                    <Check
-                      size={14}
-                      className="text-violet-600"
-                    />
-                  )}
+                  {t("sidebar.settings")}
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* =================================================
-            PROFILE
-        ================================================= */}
+                {/* ================= LOGOUT ================= */}
 
-        <div
-          ref={profileRef}
-          className="relative"
-        >
-          <button
-            type="button"
-            onClick={() =>
-              setProfileOpen(!profileOpen)
-            }
-            className="
-              h-9
-              pl-2
-              pr-3
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              flex
-              items-center
-              gap-2
-              hover:border-violet-400
-              transition-all
-              duration-300
-            "
-          >
-            {/* ================= AVATAR ================= */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
 
-            <div
-              className="
-                w-8
-                h-8
-                rounded-full
-                bg-gradient-to-r
-                from-violet-600
-                to-fuchsia-600
-                text-white
-                text-[14px]
-                font-semibold
-                flex
-                items-center
-                justify-center
-              "
-            >
-              {userInitial}
-            </div>
+                    handleLogout();
+                  }}
+                  className="
+                    w-full
+                    px-5
+                    py-3
+                    flex
+                    items-center
+                    gap-3
+                    text-[12px]
+                    text-red-500
+                    hover:bg-red-50
+                    transition
+                  "
+                >
+                  <LogOut size={16} />
 
-            {/* ================= USER INFO ================= */}
-
-            <div className="text-left leading-tight">
-              <h4 className="text-[12px] font-semibold text-[#16295A]">
-                {user.name}
-              </h4>
-
-              <p className="text-[10px] text-gray-500">
-                {roleLabel}
-              </p>
-            </div>
-
-            <ChevronDown
-              size={13}
-              className={`
-                transition-transform
-                duration-300
-                ${
-                  profileOpen
-                    ? "rotate-180"
-                    : ""
-                }
-              `}
-            />
-          </button>
-
-          {/* =================================================
-              PROFILE DROPDOWN
-          ================================================= */}
-
-          {profileOpen && (
-            <div
-              className="
-                absolute
-                right-0
-                top-11
-                w-56
-                rounded-2xl
-                bg-white
-                border
-                border-gray-100
-                shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-                overflow-hidden
-                z-[9999]
-              "
-              ref={(el) => {
-                if (el) {
-                  gsap.fromTo(
-                    el,
-                    {
-                      opacity: 0,
-                      scale: 0.96,
-                      y: -8,
-                    },
-                    {
-                      opacity: 1,
-                      scale: 1,
-                      y: 0,
-                      duration: 0.22,
-                      ease: "power3.out",
-                    }
-                  );
-                }
-              }}
-            >
-              {/* ================= USER INFORMATION ================= */}
-
-              <div className="px-5 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-
-                  <div
-                    className="
-                      w-9
-                      h-9
-                      rounded-full
-                      bg-gradient-to-r
-                      from-violet-600
-                      to-fuchsia-600
-                      text-white
-                      text-[14px]
-                      font-semibold
-                      flex
-                      items-center
-                      justify-center
-                    "
-                  >
-                    {userInitial}
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-[13px] text-[#16295A]">
-                      {user.name}
-                    </h3>
-
-                    <p className="text-[10px] text-gray-500 mt-0.5">
-                      {roleLabel}
-                    </p>
-                  </div>
-
-                </div>
+                  {t("sidebar.logout")}
+                </button>
               </div>
-
-              {/* ================= SETTINGS ================= */}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileOpen(false);
-
-                  navigate(
-                    "/dashboard/admin/settings"
-                  );
-                }}
-                className="
-                  w-full
-                  px-5
-                  py-3
-                  flex
-                  items-center
-                  gap-3
-                  text-[12px]
-                  text-[#16295A]
-                  hover:bg-violet-50
-                  transition
-                "
-              >
-                <Settings size={16} />
-
-                {t("sidebar.settings")}
-              </button>
-
-              {/* ================= LOGOUT ================= */}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileOpen(false);
-
-                  handleLogout();
-                }}
-                className="
-                  w-full
-                  px-5
-                  py-3
-                  flex
-                  items-center
-                  gap-3
-                  text-[12px]
-                  text-red-500
-                  hover:bg-red-50
-                  transition
-                "
-              >
-                <LogOut size={16} />
-
-                {t("sidebar.logout")}
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
+
+      {/* ===================================================
+          RESPONSIVE LOCATION FILTER ROW
+
+          Tablet + Mobile only
+      =================================================== */}
+
+      {isDashboard && (
+        <div
+          className="
+            lg:hidden
+            w-full
+            overflow-x-auto
+            overflow-y-visible
+            scrollbar-none
+            pt-1
+            pb-1
+            -mx-0.5
+          "
+        >
+          <div className="flex items-center gap-2 min-w-max px-0.5">
+            {locationFilters}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

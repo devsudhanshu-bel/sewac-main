@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
@@ -63,6 +63,12 @@ export default function Sidebar() {
   ======================================================= */
 
   const { t } = useLanguage();
+
+  /* =======================================================
+     MOBILE DRAWER
+  ======================================================= */
+
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   /* =======================================================
      AUTHENTICATED ROLE
@@ -138,6 +144,106 @@ export default function Sidebar() {
   };
 
   /* =======================================================
+     SIDEBAR TOGGLE EVENTS
+  ======================================================= */
+
+  useEffect(() => {
+    const handleToggle = () => {
+      setMobileOpen((previous) => !previous);
+    };
+
+    const handleClose = () => {
+      setMobileOpen(false);
+    };
+
+    window.addEventListener(
+      "sewac-toggle-sidebar",
+      handleToggle
+    );
+
+    window.addEventListener(
+      "sewac-close-sidebar",
+      handleClose
+    );
+
+    return () => {
+      window.removeEventListener(
+        "sewac-toggle-sidebar",
+        handleToggle
+      );
+
+      window.removeEventListener(
+        "sewac-close-sidebar",
+        handleClose
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     CLOSE SIDEBAR ON ESCAPE
+  ======================================================= */
+
+  useEffect(() => {
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+      }
+    }
+
+    window.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     BODY SCROLL LOCK ON MOBILE
+  ======================================================= */
+
+  useEffect(() => {
+    if (mobileOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  /* =======================================================
+     RESET MOBILE DRAWER WHEN RESIZING
+  ======================================================= */
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth >= 768) {
+        setMobileOpen(false);
+      }
+    }
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+    };
+  }, []);
+
+  /* =======================================================
      SIDEBAR ANIMATION
   ======================================================= */
 
@@ -147,7 +253,9 @@ export default function Sidebar() {
         return;
       }
 
-      const navItems = Array.from(navRef.current.children);
+      const navItems = Array.from(
+        navRef.current.children
+      );
 
       const tl = gsap.timeline({
         defaults: {
@@ -155,16 +263,23 @@ export default function Sidebar() {
         },
       });
 
+      /*
+        IMPORTANT:
+        Do NOT animate the sidebar X position here.
+
+        The mobile drawer uses Tailwind translate-x classes.
+        Animating x through GSAP would override the drawer
+        transform.
+      */
+
       if (sidebarRef.current) {
         tl.fromTo(
           sidebarRef.current,
           {
             opacity: 0,
-            x: -16,
           },
           {
             opacity: 1,
-            x: 0,
             duration: 0.28,
           }
         );
@@ -230,189 +345,292 @@ export default function Sidebar() {
   }, []);
 
   /* =======================================================
+     CLOSE MOBILE DRAWER
+  ======================================================= */
+
+  const closeMobileSidebar = () => {
+    if (window.innerWidth < 768) {
+      setMobileOpen(false);
+    }
+  };
+
+  /* =======================================================
      RENDER
   ======================================================= */
 
   return (
-    <aside
-      ref={sidebarRef}
-      className="
-        relative
-        w-[240px]
-        h-screen
-        shrink-0
-        overflow-hidden
-        bg-gradient-to-b
-        from-violet-700
-        via-purple-600
-        to-pink-500
-      "
-    >
-      {/* ================= DECORATIVE BACKGROUND ================= */}
+    <>
+      {/* ===================================================
+          MOBILE BACKDROP
+      =================================================== */}
 
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="
-            absolute
-            -top-24
-            -left-24
-            w-64
-            h-64
-            rounded-full
-            bg-violet-500/30
-            blur-[120px]
-          "
-        />
+      <div
+        onClick={() => setMobileOpen(false)}
+        className={`
+          fixed
+          inset-0
+          z-[9998]
+          bg-black/30
+          backdrop-blur-[2px]
+          transition-all
+          duration-300
+          md:hidden
+          ${
+            mobileOpen
+              ? "opacity-100 visible"
+              : "opacity-0 invisible pointer-events-none"
+          }
+        `}
+      />
 
-        <div
-          className="
-            absolute
-            bottom-0
-            -right-20
-            w-72
-            h-72
-            rounded-full
-            bg-pink-500/30
-            blur-[140px]
-          "
-        />
-      </div>
+      {/* ===================================================
+          SIDEBAR
+      =================================================== */}
 
-      {/* ================= CONTENT ================= */}
+      <aside
+        ref={sidebarRef}
+        className={`
+          fixed
+          md:relative
+          inset-y-0
+          left-0
+          z-[10000]
+          w-[240px]
+          md:w-[76px]
+          lg:w-[240px]
+          h-screen
+          shrink-0
+          overflow-hidden
 
-      <div className="relative z-10 flex flex-col h-full">
+          bg-gradient-to-b
+          from-violet-700
+          via-purple-600
+          to-pink-500
 
-        {/* ================= LOGO ================= */}
+          transition-transform
+          duration-300
+          ease-out
 
-        <div
-          ref={logoRef}
-          className="flex justify-center pt-2 pb-3 opacity-0"
-        >
-          <img
-            src={SewacLogo}
-            alt="SEWAC"
-            draggable={false}
+          ${
+            mobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+
+          md:translate-x-0
+        `}
+      >
+        {/* ================= DECORATIVE BACKGROUND ================= */}
+
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
             className="
-              w-[150px]
-              object-contain
-              select-none
-              drop-shadow-[0_8px_20px_rgba(255,255,255,0.15)]
+              absolute
+              -top-24
+              -left-24
+              w-64
+              h-64
+              rounded-full
+              bg-violet-500/30
+              blur-[120px]
+            "
+          />
+
+          <div
+            className="
+              absolute
+              bottom-0
+              -right-20
+              w-72
+              h-72
+              rounded-full
+              bg-pink-500/30
+              blur-[140px]
             "
           />
         </div>
 
-        {/* ================= NAVIGATION ================= */}
+        {/* ================= CONTENT ================= */}
 
-        <nav
-          ref={navRef}
-          className="flex-1 px-4 flex flex-col gap-2"
-        >
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+        <div className="relative z-10 flex flex-col h-full">
 
-            return (
-              <NavLink
-                key={item.key}
-                to={item.path}
-                className={({ isActive }) =>
-                  `
-                  opacity-0
-                  group
-                  flex
-                  items-center
-                  gap-3
-                  px-4
-                  py-3
-                  rounded-2xl
-                  transition-all
-                  duration-300
+          {/* ================= LOGO ================= */}
 
-                  ${
-                    isActive
-                      ? `
-                        bg-gradient-to-r
-                        from-fuchsia-500
-                        via-purple-500
-                        to-violet-600
-                        text-white
-                        shadow-xl
-                        shadow-fuchsia-900/40
-                        scale-[1.02]
-                      `
-                      : `
-                        text-violet-100/85
-                        hover:bg-white/10
-                        hover:text-white
-                        hover:translate-x-1
-                        hover:shadow-lg
-                      `
-                  }
-                `
-                }
-              >
-                <Icon
-                  size={18}
-                  strokeWidth={2}
-                  className="
-                    transition-transform
-                    duration-300
-                    group-hover:scale-110
-                  "
-                />
-
-                <span className="text-[14px] font-medium tracking-wide">
-                  {item.label}
-                </span>
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        {/* ================= LOGOUT ================= */}
-
-        <div
-          ref={logoutRef}
-          className="px-4 pb-6 opacity-0"
-        >
-          <button
-            onClick={handleLogout}
+          <div
+            ref={logoRef}
             className="
-              group
-              w-full
-              h-12
-              rounded-2xl
-              bg-white/10
-              border
-              border-white/10
-              backdrop-blur-md
               flex
-              items-center
               justify-center
-              gap-2
-              text-violet-100
-              font-medium
-              transition-all
-              duration-300
-              hover:bg-white/20
-              hover:text-white
-              hover:scale-[1.02]
-              hover:shadow-xl
-              hover:shadow-fuchsia-900/20
+              items-center
+              pt-2
+              pb-3
+              px-2
+              opacity-0
             "
           >
-            <LogOut
-              size={17}
+            <img
+              src={SewacLogo}
+              alt="SEWAC"
+              draggable={false}
               className="
-                transition-transform
-                duration-300
-                group-hover:scale-110
+                w-[150px]
+                md:w-[48px]
+                lg:w-[150px]
+                object-contain
+                select-none
+                drop-shadow-[0_8px_20px_rgba(255,255,255,0.15)]
               "
             />
+          </div>
 
-            {t("sidebar.logout")}
-          </button>
+          {/* ================= NAVIGATION ================= */}
+
+          <nav
+            ref={navRef}
+            className="
+              flex-1
+              px-4
+              md:px-2
+              lg:px-4
+              flex
+              flex-col
+              gap-2
+            "
+          >
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <NavLink
+                  key={item.key}
+                  to={item.path}
+                  title={item.label}
+                  onClick={closeMobileSidebar}
+                  className={({ isActive }) =>
+                    `
+                    opacity-0
+                    group
+                    flex
+                    items-center
+                    justify-center
+                    lg:justify-start
+                    gap-3
+                    px-4
+                    md:px-2
+                    lg:px-4
+                    py-3
+                    rounded-2xl
+                    transition-all
+                    duration-300
+
+                    ${
+                      isActive
+                        ? `
+                          bg-gradient-to-r
+                          from-fuchsia-500
+                          via-purple-500
+                          to-violet-600
+                          text-white
+                          shadow-xl
+                          shadow-fuchsia-900/40
+                          scale-[1.02]
+                        `
+                        : `
+                          text-violet-100/85
+                          hover:bg-white/10
+                          hover:text-white
+                          hover:translate-x-1
+                          hover:shadow-lg
+                        `
+                    }
+                  `
+                  }
+                >
+                  <Icon
+                    size={18}
+                    strokeWidth={2}
+                    className="
+                      shrink-0
+                      transition-transform
+                      duration-300
+                      group-hover:scale-110
+                    "
+                  />
+
+                  <span
+                    className="
+                      hidden
+                      lg:inline
+                      text-[14px]
+                      font-medium
+                      tracking-wide
+                      truncate
+                    "
+                  >
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          {/* ================= LOGOUT ================= */}
+
+          <div
+            ref={logoutRef}
+            className="
+              px-4
+              md:px-2
+              lg:px-4
+              pb-6
+              opacity-0
+            "
+          >
+            <button
+              onClick={handleLogout}
+              title={t("sidebar.logout")}
+              className="
+                group
+                w-full
+                h-12
+                rounded-2xl
+                bg-white/10
+                border
+                border-white/10
+                backdrop-blur-md
+                flex
+                items-center
+                justify-center
+                lg:justify-center
+                gap-2
+                text-violet-100
+                font-medium
+                transition-all
+                duration-300
+                hover:bg-white/20
+                hover:text-white
+                hover:scale-[1.02]
+                hover:shadow-xl
+                hover:shadow-fuchsia-900/20
+              "
+            >
+              <LogOut
+                size={17}
+                className="
+                  shrink-0
+                  transition-transform
+                  duration-300
+                  group-hover:scale-110
+                "
+              />
+
+              <span className="hidden lg:inline">
+                {t("sidebar.logout")}
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
