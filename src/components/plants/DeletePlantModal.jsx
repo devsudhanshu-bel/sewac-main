@@ -28,10 +28,33 @@ export default function DeletePlantModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
-      <div className="w-[420px] max-w-full rounded-2xl bg-white p-6 shadow-xl">
-
+    <div
+      className="
+        fixed
+        inset-0
+        z-[9999]
+        flex
+        items-center
+        justify-center
+        bg-black/40
+        p-6
+        isolation-auto
+      "
+    >
+      <div
+        className="
+          relative
+          z-[10000]
+          w-[420px]
+          max-w-full
+          rounded-2xl
+          bg-white
+          p-6
+          shadow-2xl
+        "
+      >
         {/* Header */}
+
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold text-red-600">
             {t(
@@ -43,15 +66,33 @@ export default function DeletePlantModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+            className="
+              rounded-lg
+              p-1.5
+              text-gray-500
+              transition
+              hover:bg-gray-100
+              hover:text-gray-700
+            "
           >
             <X size={22} />
           </button>
         </div>
 
         {/* Delete Icon */}
+
         <div className="mb-5 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+          <div
+            className="
+              flex
+              h-20
+              w-20
+              items-center
+              justify-center
+              rounded-full
+              bg-red-50
+            "
+          >
             <Trash2
               size={42}
               className="text-red-500"
@@ -61,6 +102,7 @@ export default function DeletePlantModal({
         </div>
 
         {/* Confirmation */}
+
         <p className="text-center text-gray-700">
           {t(
             "plants.deletePlant.confirmation",
@@ -69,11 +111,13 @@ export default function DeletePlantModal({
         </p>
 
         {/* Plant Name */}
+
         <p className="mt-2 text-center font-semibold text-gray-900">
           {plant?.plant_name || "-"}
         </p>
 
         {/* Zone */}
+
         {plant?.zone && (
           <p className="mt-1 text-center text-sm text-gray-500">
             {plant.zone}
@@ -81,8 +125,8 @@ export default function DeletePlantModal({
         )}
 
         {/* Buttons */}
-        <div className="mt-8 flex justify-end gap-3">
 
+        <div className="mt-8 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -125,7 +169,6 @@ export default function DeletePlantModal({
               "Delete"
             )}
           </button>
-
         </div>
       </div>
     </div>
