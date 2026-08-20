@@ -2,7 +2,7 @@ const crypto = require("crypto");
 
 console.log("🔥🔥🔥 ADMIN complaintService.js LOADED 🔥🔥🔥");
 
-const CITIZEN_API = process.env.SEWAC_API;
+const CITIZEN_API = process.env.CITIZEN_API;
 
 const INTERNAL_SECRET = process.env.CITIZEN_INTERNAL_API_SECRET;
 
@@ -38,7 +38,7 @@ function generateOTP() {
  */
 async function requestVerification(ticketNumber, adminId) {
   if (!CITIZEN_API) {
-    throw new Error("SEWAC_API is not configured.");
+    throw new Error("CITIZEN_API is not configured.");
   }
 
   if (!INTERNAL_SECRET) {
@@ -128,7 +128,7 @@ async function requestVerification(ticketNumber, adminId) {
  */
 async function verifyComplaintOTP(ticketNumber, otp, adminId) {
   if (!CITIZEN_API) {
-    throw new Error("SEWAC_API is not configured.");
+    throw new Error("CITIZEN_API is not configured.");
   }
 
   if (!INTERNAL_SECRET) {
