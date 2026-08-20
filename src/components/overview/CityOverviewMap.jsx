@@ -4616,7 +4616,7 @@ const handleMapViewChange =
       ==================================================== */}
 
       <h2 className="cm-heading">
-        CITY OVERVIEW MAP
+        OVERVIEW MAPS
       </h2>
 
 

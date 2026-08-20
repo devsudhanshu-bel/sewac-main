@@ -311,7 +311,10 @@ export default function Overview() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+      <Header
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+      />
 
       {loading && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -344,7 +347,7 @@ export default function Overview() {
       )}
 
       {!loading && !error && !overviewData?.hasNoData && (
-        <main className="space-y-6 px-8 py-6">
+        <main className="space-y-2 px-8 py-6">
           <OverviewKPIs data={overviewData?.summary} />
 
           <VehicleStats
