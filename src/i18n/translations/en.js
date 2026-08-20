@@ -146,45 +146,80 @@ const en = {
 },
 
 wasteGenerators: {
+  /* =========================================================
+     PAGE
+  ========================================================= */
 
   title: "Waste Generators",
 
   description:
     "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance.",
 
-  
+  /* =========================================================
+     KPIs
+  ========================================================= */
+
   kpis: {
     generatorStatus: "Waste Generator Status",
+
     activeGenerators: "Active Waste Generators",
+
     inactiveGenerators: "Inactive Waste Generators",
+
     totalWasteGenerated: "Total Waste Generated",
+
     averageWaste: "Average Waste",
+
     perHouseDay: "Per House / Day",
+
     classification: "Waste Generator Classification",
+
     aboveAverage: "Above Average",
+
     belowAverage: "Below Average",
   },
 
+  /* =========================================================
+     GVP
+  ========================================================= */
+
   gvp: {
     title: "GVP Generation Trend",
+
     loading: "Loading GVP data...",
+
     empty:
       "No GVP data available for the selected date and division.",
+
     error: "Unable to load GVP trend",
+
     wardNo: "Ward No",
+
     gvp: "GVP",
   },
 
-    map: {
+  /* =========================================================
+     MAP
+  ========================================================= */
+
+  map: {
     title: "Collection Point Monitoring",
+
     points: "points",
+
     ward: "Ward",
+
     selectedWard: "Selected Ward",
+
+    /* ================= LEGEND ================= */
 
     legend: {
       collectionPoint: "Collection Point",
+
       gvpPoint: "GVP Point",
     },
+
+    /* ================= MAP STATES ================= */
 
     loading: "Loading daily vehicle telemetry...",
 
@@ -201,28 +236,45 @@ wasteGenerators: {
     noTelemetry:
       "No telemetry points for this date",
 
+    /* ================= MAP SUMMARY ================= */
+
     summary: {
       showing: "Showing",
+
       telemetryCoordinates:
         "telemetry coordinates from",
+
       vehicleTables: "vehicle tables",
+
       gvpPoints: "GVP points",
     },
+
+    /* ================= ERRORS ================= */
 
     errors: {
       loadWardMap:
         "Unable to load the selected ward map.",
     },
 
+    /* ================= TOOLTIP ================= */
+
     tooltip: {
       collectionVehicle: "Collection Vehicle",
+
       gvpPoint: "GVP Point",
+
       vehicle: "Vehicle",
+
       table: "Table",
+
       iot: "IoT",
+
       unit: "Unit",
+
       remarks: "Remarks",
+
       gvpWaste: "GVP waste",
+
       coordinates: "Coordinates",
     },
   },
