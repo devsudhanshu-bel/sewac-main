@@ -11,6 +11,8 @@ import {
   Tooltip,
 } from "recharts";
 
+import { useLanguage } from "../../i18n";
+
 /*
 |--------------------------------------------------------------------------
 | GVP GENERATION TREND
@@ -32,7 +34,6 @@ import {
 |
 | The graph always shows every ward belonging to the
 | selected division for the selected date.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -47,6 +48,8 @@ export default function GVPGen({
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
+
+  const { t } = useLanguage();
 
   /*
   |--------------------------------------------------------------------------
@@ -116,7 +119,7 @@ export default function GVPGen({
         }
 
         const response = await api.get(
-          `/api/waste-generators/gvp-trend?${params.toString()}`,
+          `/api/waste-generators/gvp-trend?${params.toString()}`
         );
 
         if (cancelled) {
@@ -141,14 +144,22 @@ export default function GVPGen({
 
         const normalized = rows
           .map((row, index) => {
-            const wardNo = Number(row?.wardNo ?? row?.ward_no ?? 0);
+            const wardNo = Number(
+              row?.wardNo ?? row?.ward_no ?? 0
+            );
 
             const wardName = String(
-              row?.wardName ?? row?.ward_name ?? `Ward ${wardNo || index + 1}`,
+              row?.wardName ??
+                row?.ward_name ??
+                `Ward ${wardNo || index + 1}`
             );
 
             const value = Number(
-              row?.gvp ?? row?.value ?? row?.totalGVP ?? row?.totalGvp ?? 0,
+              row?.gvp ??
+                row?.value ??
+                row?.totalGVP ??
+                row?.totalGvp ??
+                0
             );
 
             return {
@@ -159,13 +170,18 @@ export default function GVPGen({
               value: Number.isFinite(value) ? value : 0,
             };
           })
+
           /*
           |--------------------------------------------------------------------------
           | SORT BY WARD NUMBER
           |--------------------------------------------------------------------------
           */
 
-          .sort((a, b) => Number(a.wardNo || 0) - Number(b.wardNo || 0));
+          .sort(
+            (a, b) =>
+              Number(a.wardNo || 0) -
+              Number(b.wardNo || 0)
+          );
 
         setData(normalized);
       } catch (err) {
@@ -174,7 +190,13 @@ export default function GVPGen({
         if (!cancelled) {
           setData([]);
 
-          setError(err?.response?.data?.message || "Unable to load GVP trend");
+          setError(
+            err?.response?.data?.message ||
+              t(
+                "wasteGenerators.gvp.error",
+                "Unable to load GVP trend"
+              )
+          );
         }
       } finally {
         if (!cancelled) {
@@ -193,6 +215,7 @@ export default function GVPGen({
     selectedCity?.city_id,
     selectedZone?.zone_id,
     selectedDivision?.division_id,
+    t,
   ]);
 
   /*
@@ -215,7 +238,8 @@ export default function GVPGen({
       .map((row) => Number(row.value || 0))
       .filter((value) => Number.isFinite(value));
 
-    const maxValue = values.length > 0 ? Math.max(...values) : 0;
+    const maxValue =
+      values.length > 0 ? Math.max(...values) : 0;
 
     /*
     |--------------------------------------------------------------------------
@@ -250,14 +274,25 @@ export default function GVPGen({
   |--------------------------------------------------------------------------
   */
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload || payload.length === 0) {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }) => {
+    if (
+      !active ||
+      !payload ||
+      payload.length === 0
+    ) {
       return null;
     }
 
-    const value = Number(payload[0]?.value || 0);
+    const value = Number(
+      payload[0]?.value || 0
+    );
 
-    const wardNo = payload[0]?.payload?.wardNo;
+    const wardNo =
+      payload[0]?.payload?.wardNo;
 
     return (
       <div
@@ -271,20 +306,30 @@ export default function GVPGen({
           shadow-lg
         "
       >
-        <div className="text-[12px] font-semibold text-[#16295A]">{label}</div>
+        <div className="text-[12px] font-semibold text-[#16295A]">
+          {label}
+        </div>
 
         {wardNo ? (
           <div className="mt-1 text-[11px] text-slate-500">
-            Ward No: {wardNo}
+            {t(
+              "wasteGenerators.gvp.wardNo",
+              "Ward No"
+            )}
+            : {wardNo}
           </div>
         ) : null}
 
         <div className="mt-2 text-[13px] font-semibold text-green-600">
-          GVP:{" "}
+          {t(
+            "wasteGenerators.gvp.gvp",
+            "GVP"
+          )}
+          :{" "}
           {value.toLocaleString(undefined, {
             maximumFractionDigits: 2,
           })}{" "}
-          Kg
+          {t("units.kg", "KG")}
         </div>
       </div>
     );
@@ -310,21 +355,26 @@ export default function GVPGen({
         overflow-hidden
       "
     >
-      {/* ================================================================ */}
-      {/* HEADER                                                           */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          HEADER
+      ================================================================ */}
 
       <div className="flex items-center justify-between px-6 pt-5 pb-3">
         <h2 className="text-[18px] font-semibold text-[#16295A]">
-          GVP Generation Trend
+          {t(
+            "wasteGenerators.gvp.title",
+            "GVP Generation Trend"
+          )}
         </h2>
 
-        <span className="text-[12px] text-slate-500">{selectedDate || ""}</span>
+        <span className="text-[12px] text-slate-500">
+          {selectedDate || ""}
+        </span>
       </div>
 
-      {/* ================================================================ */}
-      {/* CONTENT                                                          */}
-      {/* ================================================================ */}
+      {/* ================================================================
+          CONTENT
+      ================================================================ */}
 
       <div className="px-4 pb-5">
         <div
@@ -335,7 +385,10 @@ export default function GVPGen({
         >
           {loading ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              Loading GVP data...
+              {t(
+                "wasteGenerators.gvp.loading",
+                "Loading GVP data..."
+              )}
             </div>
           ) : error ? (
             <div className="flex h-full items-center justify-center text-sm text-red-500">
@@ -343,10 +396,16 @@ export default function GVPGen({
             </div>
           ) : data.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              No GVP data available for the selected date and division.
+              {t(
+                "wasteGenerators.gvp.empty",
+                "No GVP data available for the selected date and division."
+              )}
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <LineChart
                 data={data}
                 margin={{
@@ -356,9 +415,9 @@ export default function GVPGen({
                   bottom: 70,
                 }}
               >
-                {/* ====================================================== */}
-                {/* GRID                                                     */}
-                {/* ====================================================== */}
+                {/* ======================================================
+                    GRID
+                ====================================================== */}
 
                 <CartesianGrid
                   stroke="#E9EEF5"
@@ -366,9 +425,9 @@ export default function GVPGen({
                   vertical={false}
                 />
 
-                {/* ====================================================== */}
-                {/* X AXIS — WARDS                                           */}
-                {/* ====================================================== */}
+                {/* ======================================================
+                    X AXIS — WARDS
+                ====================================================== */}
 
                 <XAxis
                   dataKey="wardName"
@@ -385,9 +444,9 @@ export default function GVPGen({
                   height={75}
                 />
 
-                {/* ====================================================== */}
-                {/* Y AXIS — GVP KG                                          */}
-                {/* ====================================================== */}
+                {/* ======================================================
+                    Y AXIS — GVP KG
+                ====================================================== */}
 
                 <YAxis
                   domain={yDomain}
@@ -401,8 +460,10 @@ export default function GVPGen({
                   width={50}
                   tickFormatter={(value) => {
                     if (value >= 1000) {
-                      return `${(value / 1000).toFixed(
-                        value >= 10000 ? 0 : 1,
+                      return `${(
+                        value / 1000
+                      ).toFixed(
+                        value >= 10000 ? 0 : 1
                       )}K`;
                     }
 
@@ -410,21 +471,24 @@ export default function GVPGen({
                   }}
                 />
 
-                {/* ====================================================== */}
-                {/* TOOLTIP                                                  */}
-                {/* ====================================================== */}
+                {/* ======================================================
+                    TOOLTIP
+                ====================================================== */}
 
                 <Tooltip
-                  content={<CustomTooltip />}
+                  content={
+                    <CustomTooltip />
+                  }
                   cursor={{
                     stroke: "#CBD5E1",
-                    strokeDasharray: "4 4",
+                    strokeDasharray:
+                      "4 4",
                   }}
                 />
 
-                {/* ====================================================== */}
-                {/* GVP LINE                                                  */}
-                {/* ====================================================== */}
+                {/* ======================================================
+                    GVP LINE
+                ====================================================== */}
 
                 <Line
                   type="monotone"

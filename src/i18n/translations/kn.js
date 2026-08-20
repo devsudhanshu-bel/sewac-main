@@ -144,6 +144,42 @@ const kn = {
   wards: "ವಾರ್ಡ್‌ಗಳು",
   ward: "ವಾರ್ಡ್",
 },
+
+units: {
+  kg: "ಕೆಜಿ",
+  ton: "ಟನ್",
+  tons: "ಟನ್‌ಗಳು",
+},
+
+units: {
+  kg: "ಕೆಜಿ",
+  ton: "ಟನ್",
+  tons: "ಟನ್‌ಗಳು",
+},
+
+wasteGenerators: {
+  kpis: {
+    generatorStatus: "ತ್ಯಾಜ್ಯ ಉತ್ಪಾದಕರ ಸ್ಥಿತಿ",
+    activeGenerators: "ಸಕ್ರಿಯ ತ್ಯಾಜ್ಯ ಉತ್ಪಾದಕರು",
+    inactiveGenerators: "ನಿಷ್ಕ್ರಿಯ ತ್ಯಾಜ್ಯ ಉತ್ಪಾದಕರು",
+    totalWasteGenerated: "ಒಟ್ಟು ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ",
+    averageWaste: "ಸರಾಸರಿ ತ್ಯಾಜ್ಯ",
+    perHouseDay: "ಪ್ರತಿ ಮನೆ / ದಿನ",
+    classification: "ತ್ಯಾಜ್ಯ ಉತ್ಪಾದಕರ ವರ್ಗೀಕರಣ",
+    aboveAverage: "ಸರಾಸರಿಗಿಂತ ಹೆಚ್ಚು",
+    belowAverage: "ಸರಾಸರಿಗಿಂತ ಕಡಿಮೆ",
+  },
+
+  gvp: {
+    title: "GVP ಉತ್ಪಾದನಾ ಪ್ರವೃತ್ತಿ",
+    loading: "GVP ಡೇಟಾ ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+    empty:
+      "ಆಯ್ಕೆ ಮಾಡಿದ ದಿನಾಂಕ ಮತ್ತು ವಿಭಾಗಕ್ಕೆ ಯಾವುದೇ GVP ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ.",
+    error: "GVP ಪ್ರವೃತ್ತಿಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    wardNo: "ವಾರ್ಡ್ ಸಂಖ್ಯೆ",
+    gvp: "GVP",
+  },
+},
 };
 
 export default kn;

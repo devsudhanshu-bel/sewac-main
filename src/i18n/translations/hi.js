@@ -144,6 +144,42 @@ const hi = {
   wards: "वार्ड",
   ward: "वार्ड",
 },
+
+units: {
+  kg: "किग्रा",
+  ton: "टन",
+  tons: "टन",
+},
+
+units: {
+  kg: "किग्रा",
+  ton: "टन",
+  tons: "टन",
+},
+
+wasteGenerators: {
+  kpis: {
+    generatorStatus: "कचरा उत्पादक स्थिति",
+    activeGenerators: "सक्रिय कचरा उत्पादक",
+    inactiveGenerators: "निष्क्रिय कचरा उत्पादक",
+    totalWasteGenerated: "कुल उत्पन्न कचरा",
+    averageWaste: "औसत कचरा",
+    perHouseDay: "प्रति घर / दिन",
+    classification: "कचरा उत्पादक वर्गीकरण",
+    aboveAverage: "औसत से अधिक",
+    belowAverage: "औसत से कम",
+  },
+
+  gvp: {
+    title: "GVP उत्पादन प्रवृत्ति",
+    loading: "GVP डेटा लोड हो रहा है...",
+    empty:
+      "चयनित दिनांक और डिवीजन के लिए कोई GVP डेटा उपलब्ध नहीं है।",
+    error: "GVP प्रवृत्ति लोड नहीं की जा सकी",
+    wardNo: "वार्ड संख्या",
+    gvp: "GVP",
+  },
+},
 };
 
 export default hi;

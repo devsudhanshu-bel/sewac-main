@@ -144,6 +144,30 @@ const en = {
   wards: "Wards",
   ward: "Ward",
 },
+
+wasteGenerators: {
+  kpis: {
+    generatorStatus: "Waste Generator Status",
+    activeGenerators: "Active Waste Generators",
+    inactiveGenerators: "Inactive Waste Generators",
+    totalWasteGenerated: "Total Waste Generated",
+    averageWaste: "Average Waste",
+    perHouseDay: "Per House / Day",
+    classification: "Waste Generator Classification",
+    aboveAverage: "Above Average",
+    belowAverage: "Below Average",
+  },
+
+  gvp: {
+    title: "GVP Generation Trend",
+    loading: "Loading GVP data...",
+    empty:
+      "No GVP data available for the selected date and division.",
+    error: "Unable to load GVP trend",
+    wardNo: "Ward No",
+    gvp: "GVP",
+  },
+},
 };
 
 export default en;
