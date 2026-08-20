@@ -58,7 +58,8 @@ const ROLE_LABELS = {
 
 function getUserFromToken() {
   try {
-    const token = sessionStorage.getItem("token");
+    const token =
+      sessionStorage.getItem("token");
 
     if (!token) {
       return {
@@ -67,7 +68,8 @@ function getUserFromToken() {
       };
     }
 
-    const payload = token.split(".")[1];
+    const payload =
+      token.split(".")[1];
 
     if (!payload) {
       return {
@@ -85,8 +87,13 @@ function getUserFromToken() {
     );
 
     return {
-      name: decoded.full_name || "Admin",
-      role: decoded.role || "ADMIN_LAYER_1",
+      name:
+        decoded.full_name ||
+        "Admin",
+
+      role:
+        decoded.role ||
+        "ADMIN_LAYER_1",
     };
   } catch (error) {
     console.error(
@@ -120,13 +127,17 @@ function Dropdown({
   onChange,
   placeholder = "Select",
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
-  const wrapperRef = useRef(null);
-  const menuRef = useRef(null);
+  const wrapperRef =
+    useRef(null);
+
+  const menuRef =
+    useRef(null);
 
   /* =======================================================
-     CLOSE WHEN CLICKING OUTSIDE
+     CLOSE OUTSIDE
   ======================================================= */
 
   useEffect(() => {
@@ -154,7 +165,7 @@ function Dropdown({
   }, []);
 
   /* =======================================================
-     DROPDOWN ANIMATION
+     ANIMATION
   ======================================================= */
 
   useEffect(() => {
@@ -190,7 +201,7 @@ function Dropdown({
       `}
     >
       {/* =================================================
-          SELECT BUTTON
+          BUTTON
       ================================================= */}
 
       <button
@@ -227,7 +238,8 @@ function Dropdown({
         "
       >
         <span className="truncate">
-          {value || placeholder}
+          {value ||
+            placeholder}
         </span>
 
         <ChevronDown
@@ -354,7 +366,7 @@ function Dropdown({
 }
 
 /* =========================================================
-   SIDEBAR TOGGLE EVENT
+   SIDEBAR TOGGLE
 ========================================================= */
 
 const toggleSidebar = () => {
@@ -372,13 +384,15 @@ const toggleSidebar = () => {
 export default function Header({
   variant = "dashboard",
 
-  selectedDate = new Date()
-    .toISOString()
-    .split("T")[0],
+  selectedDate =
+    new Date()
+      .toISOString()
+      .split("T")[0],
 
   setSelectedDate = () => {},
 }) {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   /* =======================================================
      LANGUAGE
@@ -489,9 +503,9 @@ export default function Header({
     selectedDateObj.getDay();
 
   /*
-    Wednesday = 3
-    Saturday  = 6
-  */
+   * Wednesday = 3
+   * Saturday  = 6
+   */
 
   const isDryDay =
     selectedDay === 3 ||
@@ -529,7 +543,8 @@ export default function Header({
 
     if (controlsRef.current) {
       tl.from(
-        controlsRef.current.children,
+        controlsRef.current
+          .children,
         {
           y: -14,
           opacity: 0,
@@ -645,7 +660,7 @@ export default function Header({
   };
 
   /* =======================================================
-     LANGUAGE HANDLER
+     LANGUAGE CHANGE
   ======================================================= */
 
   const handleLanguageChange = (
@@ -670,15 +685,13 @@ export default function Header({
   /* =======================================================
      LOCATION FILTERS
 
-     IMPORTANT:
+     IMPORTANT BREAKPOINT:
 
-     xl and above:
-       These are placed in the
-       main header row.
+     < 1536px
+       Filters get their own row.
 
-     Below xl:
-       They are placed into
-       the second horizontal row.
+     >= 1536px
+       Filters stay in the main header row.
   ======================================================= */
 
   const locationFilters = (
@@ -691,7 +704,7 @@ export default function Header({
         width="
           w-[148px]
           sm:w-[155px]
-          xl:w-[118px]
+          2xl:w-[118px]
         "
         value={
           selectedCity?.city_name ||
@@ -714,7 +727,7 @@ export default function Header({
         width="
           w-[220px]
           sm:w-[235px]
-          xl:w-[200px]
+          2xl:w-[200px]
         "
         value={
           selectedZone?.zone_name ||
@@ -737,7 +750,7 @@ export default function Header({
         width="
           w-[170px]
           sm:w-[180px]
-          xl:w-[138px]
+          2xl:w-[138px]
         "
         value={
           selectedDivision?.division_name ||
@@ -758,7 +771,7 @@ export default function Header({
         width="
           w-[155px]
           sm:w-[165px]
-          xl:w-[122px]
+          2xl:w-[122px]
         "
         value={
           selectedWard
@@ -795,38 +808,34 @@ export default function Header({
 
         px-3
         sm:px-4
-        xl:px-4
 
         pt-2
         pb-2
-
-        xl:h-16
 
         overflow-visible
       "
     >
       {/* ===================================================
-          PRIMARY HEADER ROW
+          MAIN HEADER ROW
 
-          >= 1280px
-          Everything is in ONE ROW.
+          >= 1536px:
+            Everything in one row.
 
-          < 1280px
-          This row contains:
-          logo + right controls.
+          < 1536px:
+            Right controls occupy this row.
       =================================================== */}
 
       <div
         className="
+          w-full
+
+          min-h-[44px]
+
           flex
           items-center
           justify-between
 
           gap-2
-
-          min-h-[44px]
-
-          xl:h-full
         "
       >
         {/* =================================================
@@ -847,12 +856,11 @@ export default function Header({
           "
         >
           {/* ===============================================
-              MOBILE / TABLET BRAND
+              MOBILE MENU + LOGO
 
-              Visible below xl.
-
-              This is important because
-              1024-1279px now uses two rows.
+              Visible below 1536 only on
+              mobile/tablet where sidebar
+              may need to be opened.
           =============================================== */}
 
           <div
@@ -864,15 +872,11 @@ export default function Header({
 
               shrink-0
 
-              xl:hidden
+              md:hidden
+
+              2xl:hidden
             "
           >
-            {/* =============================================
-                MOBILE MENU
-
-                Only actual mobile.
-            ============================================= */}
-
             <button
               type="button"
               onClick={
@@ -880,8 +884,6 @@ export default function Header({
               }
               aria-label="Open navigation menu"
               className="
-                md:hidden
-
                 w-9
                 h-9
 
@@ -903,8 +905,6 @@ export default function Header({
 
                 transition-all
                 duration-200
-
-                shrink-0
               "
             >
               <Menu
@@ -912,41 +912,34 @@ export default function Header({
               />
             </button>
 
-            {/* =============================================
-                SEWAC LOGO
-            ============================================= */}
-
             <img
               src={SewacLogo}
               alt="SEWAC"
               draggable={false}
               className="
                 w-[64px]
-                sm:w-[76px]
-                md:w-[68px]
+                sm:w-[72px]
 
                 h-auto
 
                 object-contain
 
                 select-none
-
-                shrink-0
               "
             />
           </div>
 
           {/* ===============================================
-              DESKTOP DASHBOARD FILTERS
+              DESKTOP FILTERS
 
-              ONLY >= 1280px
+              ONLY 1536px+
           =============================================== */}
 
           {isDashboard ? (
             <div
               className="
                 hidden
-                xl:flex
+                2xl:flex
 
                 items-center
 
@@ -969,7 +962,7 @@ export default function Header({
                 relative
 
                 hidden
-                xl:block
+                2xl:block
               "
             >
               <Search
@@ -1058,9 +1051,7 @@ export default function Header({
           )}
 
           {/* ===============================================
-              TABLET / MOBILE SEARCH
-
-              For non-dashboard pages.
+              NON-DASHBOARD SEARCH
           =============================================== */}
 
           {!isDashboard && (
@@ -1071,7 +1062,7 @@ export default function Header({
                 flex-1
                 min-w-0
 
-                xl:hidden
+                2xl:hidden
               "
             >
               <Search
@@ -1120,9 +1111,6 @@ export default function Header({
 
                   outline-none
 
-                  transition-all
-                  duration-300
-
                   focus:border-violet-500
 
                   focus:ring-2
@@ -1158,7 +1146,13 @@ export default function Header({
         </div>
 
         {/* =================================================
-            RIGHT SIDE CONTROLS
+            RIGHT CONTROLS
+
+            At 1285px this group is
+            completely independent from
+            the location filters.
+
+            This prevents overlap.
         ================================================= */}
 
         <div
@@ -1179,13 +1173,11 @@ export default function Header({
 
           <div
             className="
+              shrink-0
+
               flex
               items-center
               justify-center
-
-              shrink-0
-
-              [&>div]:shrink-0
             "
           >
             <Calendar
@@ -1203,9 +1195,7 @@ export default function Header({
           </div>
 
           {/* ===============================================
-              WET / DRY DAY
-
-              Hidden below sm.
+              WET / DRY
           =============================================== */}
 
           <div
@@ -1235,10 +1225,10 @@ export default function Header({
                   h-9
 
                   px-3
-                  xl:px-4
+                  2xl:px-4
 
                   text-[11px]
-                  xl:text-[12px]
+                  2xl:text-[12px]
 
                   font-semibold
 
@@ -1270,10 +1260,10 @@ export default function Header({
                 h-9
 
                 px-3
-                xl:px-4
+                2xl:px-4
 
                 text-[11px]
-                xl:text-[12px]
+                2xl:text-[12px]
 
                 font-semibold
 
@@ -1492,7 +1482,7 @@ export default function Header({
                 sm:pl-2
                 sm:pr-2
 
-                xl:pr-3
+                2xl:pr-3
 
                 rounded-xl
 
@@ -1545,9 +1535,7 @@ export default function Header({
               </div>
 
               {/* =========================================
-                  USER INFO
-
-                  Hidden below sm.
+                  USER INFORMATION
               ========================================= */}
 
               <div
@@ -1560,13 +1548,13 @@ export default function Header({
                   leading-tight
 
                   max-w-[100px]
-                  xl:max-w-none
+                  2xl:max-w-none
                 "
               >
                 <h4
                   className="
                     text-[11px]
-                    xl:text-[12px]
+                    2xl:text-[12px]
 
                     font-semibold
 
@@ -1581,7 +1569,7 @@ export default function Header({
                 <p
                   className="
                     text-[9px]
-                    xl:text-[10px]
+                    2xl:text-[10px]
 
                     text-gray-500
 
@@ -1591,10 +1579,6 @@ export default function Header({
                   {roleLabel}
                 </p>
               </div>
-
-              {/* =========================================
-                  ARROW
-              ========================================= */}
 
               <ChevronDown
                 size={12}
@@ -1665,7 +1649,7 @@ export default function Header({
                 }}
               >
                 {/* =========================================
-                    USER INFORMATION
+                    USER INFO
                 ========================================= */}
 
                 <div
@@ -1835,23 +1819,29 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          SECOND ROW
+          RESPONSIVE FILTER ROW
 
-          IMPORTANT:
+          < 1536px ONLY
 
-          xl = 1280px
+          This is the important change.
 
-          So this appears at:
-            1279px and below
+          At your:
 
-          This is what fixes the exact
-          screenshot you just sent.
+            1285 × 872
+
+          you will get:
+
+          ROW 1:
+          Calendar | Wet Day | EN | Admin
+
+          ROW 2:
+          Bangalore | Zone | Division | Ward
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
-            xl:hidden
+            2xl:hidden
 
             w-full
 
@@ -1863,7 +1853,7 @@ export default function Header({
             pt-1
             pb-1
 
-            -mx-0.5
+            mt-1
           "
         >
           <div
@@ -1874,8 +1864,6 @@ export default function Header({
               gap-2
 
               min-w-max
-
-              px-0.5
             "
           >
             {locationFilters}
