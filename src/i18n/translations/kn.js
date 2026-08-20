@@ -368,35 +368,53 @@ vehicles: {
     },
   },
 
-  createVehicle: {
-  title: "वाहन बनाएं",
 
-  close: "बंद करें",
 
-  vehicleId: "वाहन ID",
-  vehicleType: "वाहन प्रकार",
+createVehicle: {
+  title: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+
+  close: "ಮುಚ್ಚಿ",
+
+  vehicleId: "ವಾಹನ ID",
+  vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
 
   types: {
-    miniTruck: "मिनी ट्रक",
-    autoTipper: "ऑटो टिप्पर",
-    compactor: "कॉम्पैक्टर",
-    dumper: "डम्पर",
+    miniTruck: "ಮಿನಿ ಟ್ರಕ್",
+    autoTipper: "ಆಟೋ ಟಿಪ್ಪರ್",
+    compactor: "ಕಾಂಪ್ಯಾಕ್ಟರ್",
+    dumper: "ಡಂಪರ್",
   },
 
-  active: "सक्रिय",
-  inactive: "निष्क्रिय",
+  active: "ಸಕ್ರಿಯ",
+  inactive: "ನಿಷ್ಕ್ರಿಯ",
 
-  selectCity: "शहर चुनें",
-  selectZone: "ज़ोन चुनें",
-  selectDivision: "डिवीजन चुनें",
-  selectWard: "वार्ड चुनें",
+  selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
 
-  cancel: "रद्द करें",
-  create: "बनाएं",
+  cancel: "ರದ್ದುಮಾಡಿ",
+  create: "ರಚಿಸಿ",
 
-  validation: "कृपया सभी फ़ील्ड भरें।",
-  createFailed: "वाहन बनाने में विफल",
+  validation: "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
+  createFailed: "ವಾಹನವನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
 },
+},
+
+plants: {
+  title: "ಪ್ಲಾಂಟ್ ಅವಲೋಕನ",
+
+  description:
+    "ಎಲ್ಲಾ ತ್ಯಾಜ್ಯ ಸಂಸ್ಕರಣಾ ಪ್ಲಾಂಟ್‌ಗಳು ಮತ್ತು ಅವುಗಳ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
+
+  loading: "ಪ್ಲಾಂಟ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+
+  retry: "ಮರುಪ್ರಯತ್ನಿಸಿ",
+
+  errors: {
+    serverConnection:
+      "ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+  },
 },
 };
 

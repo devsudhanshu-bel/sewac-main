@@ -10,38 +10,30 @@ import PlantKPICards from "../components/plants/PlantKPICards";
 import PlantLocations from "../components/plants/PlantLocations";
 import PlantDirectory from "../components/plants/PlantDirectory";
 
+import { useLanguage } from "../i18n";
+
 export default function Plants() {
+  const { t } = useLanguage();
+
   // =====================================================
   // STATE
   // =====================================================
 
   const [dashboardData, setDashboardData] = useState(null);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
   const [plants, setPlants] = useState([]);
-
   const [plantLocations, setPlantLocations] = useState([]);
-
   const [pagination, setPagination] = useState({});
 
   // =====================================================
   // MODAL STATE
   // =====================================================
 
-  const [showCreateModal, setShowCreateModal] =
-    useState(false);
-
-  const [showEditModal, setShowEditModal] =
-    useState(false);
-
-  const [showDeleteModal, setShowDeleteModal] =
-    useState(false);
-
-  const [selectedPlant, setSelectedPlant] =
-    useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPlant, setSelectedPlant] = useState(null);
 
   // =====================================================
   // FETCH DASHBOARD DATA
@@ -67,9 +59,7 @@ export default function Plants() {
       // -------------------------------------------------
 
       if (dashboardResponse.data.success) {
-        setDashboardData(
-          dashboardResponse.data.data
-        );
+        setDashboardData(dashboardResponse.data.data);
       }
 
       // -------------------------------------------------
@@ -77,9 +67,7 @@ export default function Plants() {
       // -------------------------------------------------
 
       if (plantsResponse.data.success) {
-        setPlants(
-          plantsResponse.data.data.plants
-        );
+        setPlants(plantsResponse.data.data.plants);
 
         setPagination(
           plantsResponse.data.data.pagination
@@ -95,18 +83,16 @@ export default function Plants() {
           locationsResponse.data.data
         );
       }
-
     } catch (err) {
-      console.error(
-        "Plants Dashboard Error:",
-        err
-      );
+      console.error("Plants Dashboard Error:", err);
 
       setError(
         err.response?.data?.message ||
-          "Unable to connect to the server."
+          t(
+            "plants.errors.serverConnection",
+            "Unable to connect to the server."
+          )
       );
-
     } finally {
       setLoading(false);
     }
@@ -165,7 +151,6 @@ export default function Plants() {
     return () => {
       document.body.style.overflow = "auto";
     };
-
   }, [
     showCreateModal,
     showEditModal,
@@ -180,7 +165,10 @@ export default function Plants() {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F8F9FD]">
         <p className="text-lg font-medium text-gray-500">
-          Loading Plant Dashboard...
+          {t(
+            "plants.loading",
+            "Loading Plant Dashboard..."
+          )}
         </p>
       </div>
     );
@@ -194,7 +182,6 @@ export default function Plants() {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F8F9FD]">
         <div className="text-center">
-
           <p className="text-lg font-semibold text-red-500">
             {error}
           </p>
@@ -203,9 +190,11 @@ export default function Plants() {
             onClick={fetchDashboard}
             className="mt-5 rounded-xl bg-violet-600 px-5 py-2 text-white transition hover:bg-violet-700"
           >
-            Retry
+            {t(
+              "plants.retry",
+              "Retry"
+            )}
           </button>
-
         </div>
       </div>
     );
@@ -235,16 +224,19 @@ export default function Plants() {
         ================================================= */}
 
         <div className="mb-8">
-
           <h1 className="text-[32px] font-bold text-[#16295A]">
-            Plant Overview
+            {t(
+              "plants.title",
+              "Plant Overview"
+            )}
           </h1>
 
           <p className="mt-2 text-[15px] text-[#667085]">
-            Monitor all waste processing plants and their
-            operations
+            {t(
+              "plants.description",
+              "Monitor all waste processing plants and their operations."
+            )}
           </p>
-
         </div>
 
         {/* =================================================
@@ -262,7 +254,6 @@ export default function Plants() {
         <PlantLocations
           plants={plantLocations.map(
             (location) => {
-
               const plant =
                 plants.find(
                   (p) =>
@@ -313,7 +304,6 @@ export default function Plants() {
               onClose={() =>
                 setShowCreateModal(false)
               }
-
               onSuccess={fetchDashboard}
             />,
             document.body
@@ -328,12 +318,10 @@ export default function Plants() {
           createPortal(
             <EditPlantModal
               plant={selectedPlant}
-
               onClose={() => {
                 setShowEditModal(false);
                 setSelectedPlant(null);
               }}
-
               onSuccess={fetchDashboard}
             />,
             document.body
@@ -348,12 +336,10 @@ export default function Plants() {
           createPortal(
             <DeletePlantModal
               plant={selectedPlant}
-
               onClose={() => {
                 setShowDeleteModal(false);
                 setSelectedPlant(null);
               }}
-
               onSuccess={fetchDashboard}
             />,
             document.body

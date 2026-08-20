@@ -386,6 +386,22 @@ vehicles: {
     createFailed: "Failed to create vehicle",
   },
 },
+
+plants: {
+  title: "Plant Overview",
+
+  description:
+    "Monitor all waste processing plants and their operations.",
+
+  loading: "Loading Plant Dashboard...",
+
+  retry: "Retry",
+
+  errors: {
+    serverConnection:
+      "Unable to connect to the server.",
+  },
+},
 };
 
 export default en;

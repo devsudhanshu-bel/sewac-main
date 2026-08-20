@@ -368,36 +368,37 @@ vehicles: {
     },
   },
 
-  createVehicle: {
-  title: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+   createVehicle: {
+  title: "वाहन बनाएं",
 
-  close: "ಮುಚ್ಚಿ",
+  close: "बंद करें",
 
-  vehicleId: "ವಾಹನ ID",
-  vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
+  vehicleId: "वाहन ID",
+  vehicleType: "वाहन प्रकार",
 
   types: {
-    miniTruck: "ಮಿನಿ ಟ್ರಕ್",
-    autoTipper: "ಆಟೋ ಟಿಪ್ಪರ್",
-    compactor: "ಕಾಂಪ್ಯಾಕ್ಟರ್",
-    dumper: "ಡಂಪರ್",
+    miniTruck: "मिनी ट्रक",
+    autoTipper: "ऑटो टिप्पर",
+    compactor: "कॉम्पैक्टर",
+    dumper: "डम्पर",
   },
 
-  active: "ಸಕ್ರಿಯ",
-  inactive: "ನಿಷ್ಕ್ರಿಯ",
+  active: "सक्रिय",
+  inactive: "निष्क्रिय",
 
-  selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+  selectCity: "शहर चुनें",
+  selectZone: "ज़ोन चुनें",
+  selectDivision: "डिवीजन चुनें",
+  selectWard: "वार्ड चुनें",
 
-  cancel: "ರದ್ದುಮಾಡಿ",
-  create: "ರಚಿಸಿ",
+  cancel: "रद्द करें",
+  create: "बनाएं",
 
-  validation: "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
-  createFailed: "ವಾಹನವನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  validation: "कृपया सभी फ़ील्ड भरें।",
+  createFailed: "वाहन बनाने में विफल",
+}, 
 },
-},
+
 };
 
 export default hi;
