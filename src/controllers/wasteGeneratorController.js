@@ -274,24 +274,12 @@ exports.getMap = async (req, res) => {
   try {
     const { date, cityId, zoneId, divisionId, wardId } = req.query;
 
-    /*
-    |--------------------------------------------------------------------------
-    | REQUIRED PARAMETERS
-    |--------------------------------------------------------------------------
-    */
-
     if (!date || !cityId || !zoneId || !divisionId || !wardId) {
       return res.status(400).json({
         success: false,
         message: "date, cityId, zoneId, divisionId and wardId are required",
       });
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET MAP DATA
-    |--------------------------------------------------------------------------
-    */
 
     const data = await wasteGeneratorService.getWasteGeneratorMap({
       date,
@@ -301,23 +289,11 @@ exports.getMap = async (req, res) => {
       wardId,
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | SUCCESS RESPONSE
-    |--------------------------------------------------------------------------
-    */
-
     return res.status(200).json({
       success: true,
       data,
     });
   } catch (error) {
-    /*
-    |--------------------------------------------------------------------------
-    | ERROR
-    |--------------------------------------------------------------------------
-    */
-
     console.error("Waste Generator Map Error:", error);
 
     return res.status(500).json({
