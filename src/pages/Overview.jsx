@@ -38,7 +38,8 @@ export default function Overview() {
 
   useEffect(() => {
     /*
-     * Wait until the cascading filter has finished loading.
+     * Wait until the cascading geographic filters
+     * have finished loading.
      */
 
     if (!selectedCity || !selectedZone || !selectedDivision || !selectedWard) {
@@ -50,27 +51,84 @@ export default function Overview() {
     const fetchOverview = async () => {
       try {
         setLoading(true);
+
         setError("");
 
         /*
          * =====================================================
-         * BUILD FILTER QUERY
+         * SELECTED FILTER IDS
          * =====================================================
+         */
+
+        const cityId = selectedCity.city_id;
+
+        const zoneId = selectedZone.zone_id;
+
+        const divisionId = selectedDivision.division_id;
+
+        const wardId = selectedWard.ward_id;
+
+        /*
+         * =====================================================
+         * SUMMARY / VEHICLE QUERY
+         * =====================================================
+         *
+         * These endpoints use the complete selected scope:
+         *
+         * City
+         *   ↓
+         * Zone
+         *   ↓
+         * Division
+         *   ↓
+         * Ward
          */
 
         const params = new URLSearchParams();
 
         params.set("date", selectedDate);
 
-        params.set("cityId", String(selectedCity.city_id));
+        params.set("cityId", String(cityId));
 
-        params.set("zoneId", String(selectedZone.zone_id));
+        params.set("zoneId", String(zoneId));
 
-        params.set("divisionId", String(selectedDivision.division_id));
+        params.set("divisionId", String(divisionId));
 
-        params.set("wardId", String(selectedWard.ward_id));
+        params.set("wardId", String(wardId));
 
         const queryString = params.toString();
+
+        /*
+         * =====================================================
+         * GENERATION TREND QUERY
+         * =====================================================
+         *
+         * Generation Trend is division-wise.
+         *
+         * Therefore the selected ward is intentionally
+         * NOT sent here.
+         *
+         * Backend itself resolves all wards belonging
+         * to the selected division.
+         */
+
+        const trendParams = new URLSearchParams();
+
+        trendParams.set("date", selectedDate);
+
+        trendParams.set("cityId", String(cityId));
+
+        trendParams.set("zoneId", String(zoneId));
+
+        trendParams.set("divisionId", String(divisionId));
+
+        const trendQueryString = trendParams.toString();
+
+        /*
+         * =====================================================
+         * DEBUG
+         * =====================================================
+         */
 
         console.log("=================================================");
 
@@ -96,37 +154,11 @@ export default function Overview() {
 
         console.log("Date:", selectedDate);
 
-        console.log("Query:", queryString);
+        console.log("Summary Query:", queryString);
+
+        console.log("Trend Query:", trendQueryString);
 
         console.log("=================================================");
-
-        /*
-         * =====================================================
-         * GENERATION TREND QUERY
-         * =====================================================
-         *
-         * Generation Trend is division-wise.
-         *
-         * Therefore:
-         *
-         * cityId
-         * zoneId
-         * divisionId
-         *
-         * are supplied.
-         *
-         * wardId is intentionally NOT supplied.
-         */
-
-        const trendParams = new URLSearchParams({
-          date: selectedDate,
-
-          cityId: String(selectedCity.city_id),
-
-          zoneId: String(selectedZone.zone_id),
-
-          divisionId: String(selectedDivision.division_id),
-        });
 
         /*
          * =====================================================
@@ -134,13 +166,21 @@ export default function Overview() {
          * =====================================================
          */
 
-        const [summary, vehicleSummary, generationTrend] = await Promise.all([
+        const [
+          summaryResponse,
+          vehicleSummaryResponse,
+          generationTrendResponse,
+        ] = await Promise.all([
           api.get(`/api/admin/overview/summary?${queryString}`),
 
           api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
 
-          api.get(`/api/admin/overview/generation-trend?${queryString}`),
+          api.get(`/api/admin/overview/generation-trend?${trendQueryString}`),
         ]);
+
+        /*
+         * Component was unmounted while requests were running.
+         */
 
         if (!mounted) {
           return;
@@ -148,40 +188,90 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * STORE RESPONSE
+         * SAFE RESPONSE EXTRACTION
          * =====================================================
          */
 
-        const summaryData = summary.data.data;
+        const summaryData = summaryResponse?.data?.data || {};
 
-        const generationTrendData = generationTrend.data.data || [];
+        const vehicleSummaryData = vehicleSummaryResponse?.data?.data || {};
+
+        const generationTrendData = Array.isArray(
+          generationTrendResponse?.data?.data,
+        )
+          ? generationTrendResponse.data.data
+          : [];
 
         /*
          * =====================================================
-         * CHECK FOR NO DATA
+         * NORMALIZED DEFAULTS
          * =====================================================
          *
-         * If the selected date has no telemetry,
-         * show "No Data Found" while keeping Header alive.
+         * IMPORTANT:
+         *
+         * No telemetry is NOT an application error.
+         *
+         * If the selected date has no telemetry:
+         *
+         * waste             → 0
+         * collection points → 0
+         * citizens           → backend value
+         * vehicles           → 0 / available registered count
+         * generation trend   → []
+         *
+         * The dashboard must still render.
          */
 
-        const hasNoData =
-          Number(summaryData?.totalWasteCollected || 0) === 0 &&
-          Number(summaryData?.collectionPoints || 0) === 0 &&
-          generationTrendData.length === 0;
+        const normalizedSummary = {
+          totalWasteCollected: Number(summaryData.totalWasteCollected) || 0,
 
-        setOverviewData({
-          summary: summary.data.data,
+          collectionPoints: Number(summaryData.collectionPoints) || 0,
 
-          vehicleSummary: vehicleSummary.data.data,
+          totalCitizens: Number(summaryData.totalCitizens) || 0,
 
-          generationTrend: generationTrend.data.data,
-        });
+          trashGiven: Number(summaryData.trashGiven) || 0,
+
+          notGiven: Number(summaryData.notGiven) || 0,
+        };
+
+        const normalizedVehicleSummary = {
+          totalVehicles: Number(vehicleSummaryData.totalVehicles) || 0,
+
+          runningVehicles: Number(vehicleSummaryData.runningVehicles) || 0,
+
+          inactiveVehicles: Number(vehicleSummaryData.inactiveVehicles) || 0,
+
+          vehicleStatus: Array.isArray(vehicleSummaryData.vehicleStatus)
+            ? vehicleSummaryData.vehicleStatus
+            : [],
+
+          inactivityThresholdMinutes:
+            Number(vehicleSummaryData.inactivityThresholdMinutes) || 30,
+        };
 
         /*
-         * Clear any previous error after
-         * successful response.
+         * =====================================================
+         * STORE DATA
+         * =====================================================
+         *
+         * IMPORTANT:
+         *
+         * There is intentionally NO:
+         *
+         * hasNoData
+         *
+         * flag.
+         *
+         * Zero telemetry is valid dashboard state.
          */
+
+        setOverviewData({
+          summary: normalizedSummary,
+
+          vehicleSummary: normalizedVehicleSummary,
+
+          generationTrend: generationTrendData,
+        });
 
         setError("");
       } catch (err) {
@@ -193,26 +283,26 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * MISSING DAY TABLE HANDLING
+         * BACKEND ERROR MESSAGE
          * =====================================================
-         *
-         * PostgreSQL:
-         *
-         * Code 42P01
-         *
-         * means the requested relation/table does not exist.
-         *
-         * Example:
-         *
-         * day_15082026 does not exist
-         *
-         * This is NOT a dashboard crash.
-         *
-         * Treat it as "No Data Found".
          */
 
         const backendMessage =
           err?.response?.data?.message || err?.message || "";
+
+        /*
+         * =====================================================
+         * MISSING DAY TABLE
+         * =====================================================
+         *
+         * Normally the backend already handles PostgreSQL
+         * 42P01 by returning empty data.
+         *
+         * This frontend fallback exists only as a safety net.
+         *
+         * A missing telemetry day is NOT treated as a
+         * dashboard error.
+         */
 
         const isMissingDayTable =
           backendMessage.includes("42P01") ||
@@ -221,26 +311,32 @@ export default function Overview() {
 
         if (isMissingDayTable) {
           setOverviewData({
-            summary: null,
+            summary: {
+              totalWasteCollected: 0,
+
+              collectionPoints: 0,
+
+              totalCitizens: 0,
+
+              trashGiven: 0,
+
+              notGiven: 0,
+            },
 
             vehicleSummary: {
               totalVehicles: 0,
+
               runningVehicles: 0,
+
               inactiveVehicles: 0,
+
               vehicleStatus: [],
+
+              inactivityThresholdMinutes: 30,
             },
 
             generationTrend: [],
-
-            map: null,
-
-            hasNoData: true,
           });
-
-          /*
-           * IMPORTANT:
-           * Do NOT put anything into error.
-           */
 
           setError("");
 
@@ -251,13 +347,9 @@ export default function Overview() {
          * =====================================================
          * REAL ERROR
          * =====================================================
-         *
-         * Keep Header visible.
-         * Show the error below the Header.
-         *
-         * No full-screen error.
-         * No Retry button.
          */
+
+        setOverviewData(null);
 
         setError(backendMessage || "Unable to connect to the server.");
       } finally {
@@ -289,29 +381,22 @@ export default function Overview() {
    * RENDER
    * =========================================================
    *
-   * IMPORTANT:
+   * Header ALWAYS remains visible.
    *
-   * Header is ALWAYS rendered.
-   *
-   * This means even if:
-   *
-   * day_15082026
-   * does not exist,
-   *
-   * the admin can still use:
-   *
-   * City
-   * Zone
-   * Division
-   * Ward
-   * Date
-   *
-   * and move back to a valid date.
+   * Dashboard renders even when telemetry is zero.
    */
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+
+      {/* =====================================================
+          LOADING
+      ===================================================== */}
 
       {loading && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -321,19 +406,9 @@ export default function Overview() {
         </main>
       )}
 
-      {!loading && !error && overviewData?.hasNoData && (
-        <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
-          <div className="text-center">
-            <p className="text-2xl font-semibold text-gray-700">
-              No Data Found
-            </p>
-
-            <p className="mt-2 text-gray-500">
-              No telemetry data is available for {selectedDate}.
-            </p>
-          </div>
-        </main>
-      )}
+      {/* =====================================================
+          REAL ERROR
+      ===================================================== */}
 
       {!loading && error && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -343,17 +418,33 @@ export default function Overview() {
         </main>
       )}
 
-      {!loading && !error && !overviewData?.hasNoData && (
+      {/* =====================================================
+          DASHBOARD
+      ===================================================== */}
+
+      {!loading && !error && overviewData && (
         <main className="space-y-2 px-8 py-6">
-          <OverviewKPIs data={overviewData?.summary} />
+          {/* =================================================
+              KPI CARDS
+          ================================================= */}
+
+          <OverviewKPIs data={overviewData.summary} />
+
+          {/* =================================================
+              VEHICLES + GENERATION TREND
+          ================================================= */}
 
           <VehicleStats
-            vehicleData={overviewData?.vehicleSummary}
-            trendData={overviewData?.generationTrend}
+            vehicleData={overviewData.vehicleSummary}
+            trendData={overviewData.generationTrend}
           />
 
+          {/* =================================================
+              CITY / WARD MAP
+          ================================================= */}
+
           <CityOverviewMap
-            mapData={overviewData?.map}
+            mapData={overviewData.map}
             selectedDate={selectedDate}
           />
         </main>

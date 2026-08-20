@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
+
 import { Trash2, MapPinned, Users, User } from "lucide-react";
+
 import { gsap } from "gsap";
 
 import { useLanguage } from "../../i18n";
@@ -18,41 +20,78 @@ export default function OverviewKPIs({ data }) {
       cardsRef.current,
       {
         opacity: 0,
+
         y: 28,
+
         scale: 0.94,
+
         filter: "blur(8px)",
       },
       {
         opacity: 1,
+
         y: 0,
+
         scale: 1,
+
         filter: "blur(0px)",
+
         duration: 0.85,
+
         stagger: 0.1,
+
         ease: "power3.out",
+
         clearProps: "filter",
-      }
+      },
     );
   }, []);
 
   /* =========================================================
+     SAFE DATA
+  =========================================================
+   *
+   * Missing / null backend data must still render
+   * the KPI cards.
+   *
+   * No telemetry:
+   *
+   * totalWasteCollected → 0
+   * collectionPoints    → 0
+   * totalCitizens       → 0
+   * trashGiven          → 0
+   * notGiven            → 0
+   */
+
+  const safeData = useMemo(
+    () => ({
+      totalWasteCollected: 0,
+
+      collectionPoints: 0,
+
+      totalCitizens: 0,
+
+      trashGiven: 0,
+
+      notGiven: 0,
+
+      ...(data || {}),
+    }),
+    [data],
+  );
+
+  /* =========================================================
      WASTE FORMATTER
   =========================================================
-
-     Backend always returns waste in KG.
-
-     < 1000 KG
-         → display KG
-
-     >= 1000 KG
-         → convert to TON
-
-     Examples:
-
-     850       → 850.00 KG
-     1000      → 1.00 TON
-     8106.79   → 8.11 TONS
-  ========================================================= */
+   *
+   * Backend returns waste in KG.
+   *
+   * < 1000 KG
+   *     → KG
+   *
+   * >= 1000 KG
+   *     → TON / TONS
+   */
 
   const formatWaste = (value) => {
     const kg = Number(value) || 0;
@@ -63,6 +102,7 @@ export default function OverviewKPIs({ data }) {
       return {
         value: tons.toLocaleString(undefined, {
           minimumFractionDigits: 2,
+
           maximumFractionDigits: 2,
         }),
 
@@ -76,6 +116,7 @@ export default function OverviewKPIs({ data }) {
     return {
       value: kg.toLocaleString(undefined, {
         minimumFractionDigits: 2,
+
         maximumFractionDigits: 2,
       }),
 
@@ -88,16 +129,11 @@ export default function OverviewKPIs({ data }) {
   ========================================================= */
 
   const kpis = useMemo(() => {
-    if (!data) return [];
-
-    const waste = formatWaste(data.totalWasteCollected);
+    const waste = formatWaste(safeData.totalWasteCollected);
 
     return [
       {
-        title: t(
-          "overview.kpis.totalWasteCollected",
-          "Total Waste Collected"
-        ),
+        title: t("overview.kpis.totalWasteCollected", "Total Waste Collected"),
 
         value: waste.value,
 
@@ -111,12 +147,9 @@ export default function OverviewKPIs({ data }) {
       },
 
       {
-        title: t(
-          "overview.kpis.collectionPoints",
-          "Collection Points"
-        ),
+        title: t("overview.kpis.collectionPoints", "Collection Points"),
 
-        value: Number(data.collectionPoints).toLocaleString(),
+        value: Number(safeData.collectionPoints || 0).toLocaleString(),
 
         unit: "",
 
@@ -128,12 +161,9 @@ export default function OverviewKPIs({ data }) {
       },
 
       {
-        title: t(
-          "overview.kpis.totalCitizens",
-          "Total Citizens"
-        ),
+        title: t("overview.kpis.totalCitizens", "Total Citizens"),
 
-        value: Number(data.totalCitizens).toLocaleString(),
+        value: Number(safeData.totalCitizens || 0).toLocaleString(),
 
         unit: "",
 
@@ -144,33 +174,23 @@ export default function OverviewKPIs({ data }) {
         bg: "bg-violet-50",
       },
     ];
-  }, [data, t]);
-
-  /* =========================================================
-     NO DATA
-  ========================================================= */
-
-  if (!data) return null;
+  }, [safeData, t]);
 
   /* =========================================================
      CITIZEN PERCENTAGES
   ========================================================= */
 
+  const totalCitizens = Number(safeData.totalCitizens) || 0;
+
+  const trashGiven = Number(safeData.trashGiven) || 0;
+
+  const notGiven = Number(safeData.notGiven) || 0;
+
   const trashGivenPercentage =
-    data.totalCitizens > 0
-      ? (
-          (data.trashGiven / data.totalCitizens) *
-          100
-        ).toFixed(1)
-      : "0.0";
+    totalCitizens > 0 ? ((trashGiven / totalCitizens) * 100).toFixed(1) : "0.0";
 
   const notGivenPercentage =
-    data.totalCitizens > 0
-      ? (
-          (data.notGiven / data.totalCitizens) *
-          100
-        ).toFixed(1)
-      : "0.0";
+    totalCitizens > 0 ? ((notGiven / totalCitizens) * 100).toFixed(1) : "0.0";
 
   /* =========================================================
      RENDER
@@ -179,11 +199,7 @@ export default function OverviewKPIs({ data }) {
   return (
     <>
       {/* =====================================================
-          RESPONSIVE KPI GRID
-          
-          IMPORTANT:
-          We intentionally use explicit CSS media queries
-          instead of Tailwind arbitrary breakpoints here.
+          RESPONSIVE GRID
       ===================================================== */}
 
       <style>
@@ -195,34 +211,25 @@ export default function OverviewKPIs({ data }) {
             gap: 12px;
           }
 
-          /* ================================================
-             TABLET
-             ================================================ */
-
           @media (min-width: 768px) {
             .overview-kpi-grid {
-              grid-template-columns: repeat(2, minmax(0, 1fr));
+              grid-template-columns: repeat(
+                2,
+                minmax(0, 1fr)
+              );
             }
           }
-
-          /* ================================================
-             DESKTOP
-             
-             1200px AND ABOVE = ALWAYS 4 COLUMNS
-             ================================================ */
 
           @media (min-width: 1200px) {
             .overview-kpi-grid {
-              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              grid-template-columns: repeat(
+                4,
+                minmax(0, 1fr)
+              ) !important;
+
               gap: 8px;
             }
           }
-
-          /* ================================================
-             LARGE DESKTOP
-             
-             Give cards a little more breathing room.
-             ================================================ */
 
           @media (min-width: 1440px) {
             .overview-kpi-grid {
@@ -243,26 +250,21 @@ export default function OverviewKPIs({ data }) {
           return (
             <div
               key={item.title}
-              ref={(el) => (cardsRef.current[index] = el)}
+              ref={(element) => {
+                cardsRef.current[index] = element;
+              }}
               className="
                 bg-white
-
                 h-[110px]
-
                 rounded-[22px]
-
                 border
                 border-[#EEF1F6]
-
                 px-4
                 sm:px-5
                 xl:px-7
-
                 flex
                 items-center
-
                 shadow-[0_4px_12px_rgba(15,23,42,0.04)]
-
                 min-w-0
                 w-full
               "
@@ -275,23 +277,15 @@ export default function OverviewKPIs({ data }) {
                 className={`
                   w-11
                   h-11
-
                   rounded-xl
-
                   ${item.bg}
-
                   flex
                   items-center
                   justify-center
-
                   flex-shrink-0
                 `}
               >
-                <Icon
-                  size={21}
-                  strokeWidth={2.3}
-                  className={item.iconColor}
-                />
+                <Icon size={21} strokeWidth={2.3} className={item.iconColor} />
               </div>
 
               {/* =============================================
@@ -303,7 +297,6 @@ export default function OverviewKPIs({ data }) {
                   ml-3
                   sm:ml-4
                   xl:ml-5
-
                   min-w-0
                   flex-1
                 "
@@ -312,13 +305,9 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-[13px]
                     sm:text-[14px]
-
                     font-medium
-
                     text-[#1F2937]
-
                     leading-snug
-
                     truncate
                   "
                 >
@@ -329,12 +318,9 @@ export default function OverviewKPIs({ data }) {
                   className="
                     flex
                     items-end
-
                     gap-1.5
                     sm:gap-2
-
                     mt-2
-
                     whitespace-nowrap
                   "
                 >
@@ -342,11 +328,8 @@ export default function OverviewKPIs({ data }) {
                     className="
                       text-[19px]
                       sm:text-[20px]
-
                       font-bold
-
                       text-[#111827]
-
                       leading-none
                     "
                   >
@@ -358,11 +341,8 @@ export default function OverviewKPIs({ data }) {
                       className="
                         text-[11px]
                         sm:text-[12px]
-
                         font-semibold
-
                         text-indigo-600
-
                         leading-none
                       "
                     >
@@ -380,27 +360,22 @@ export default function OverviewKPIs({ data }) {
         =================================================== */}
 
         <div
-          ref={(el) => (cardsRef.current[3] = el)}
+          ref={(element) => {
+            cardsRef.current[3] = element;
+          }}
           className="
             bg-white
-
             h-[110px]
-
             rounded-[22px]
-
             border
             border-[#EEF1F6]
-
             px-4
             sm:px-5
             xl:px-7
-
             flex
             flex-col
             justify-center
-
             shadow-[0_4px_12px_rgba(15,23,42,0.04)]
-
             min-w-0
             w-full
           "
@@ -413,19 +388,13 @@ export default function OverviewKPIs({ data }) {
             className="
               text-[14px]
               sm:text-[15px]
-
               text-[#111827]
-
               mb-3
               sm:mb-4
-
               leading-none
             "
           >
-            {t(
-              "overview.kpis.citizensTrend",
-              "Citizens Trend"
-            )}
+            {t("overview.kpis.citizensTrend", "Citizens Trend")}
           </h3>
 
           {/* ===============================================
@@ -442,24 +411,16 @@ export default function OverviewKPIs({ data }) {
                 flex
                 items-center
                 justify-between
-
                 gap-3
-
                 min-w-0
               "
             >
-              {/* ===========================================
-                  LABEL
-              =========================================== */}
-
               <div
                 className="
                   flex
                   items-center
-
                   gap-2
                   sm:gap-3
-
                   min-w-0
                 "
               >
@@ -469,7 +430,6 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-green-500
                     fill-green-500
-
                     flex-shrink-0
                   "
                 />
@@ -478,31 +438,20 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-[12px]
                     sm:text-[13px]
-
                     text-gray-700
-
                     truncate
                   "
                 >
-                  {t(
-                    "overview.kpis.trashGiven",
-                    "Trash Given"
-                  )}
+                  {t("overview.kpis.trashGiven", "Trash Given")}
                 </span>
               </div>
-
-              {/* ===========================================
-                  VALUE
-              =========================================== */}
 
               <div
                 className="
                   flex
                   items-center
-
                   gap-2
                   sm:gap-3
-
                   shrink-0
                 "
               >
@@ -510,26 +459,19 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-[14px]
                     sm:text-[15px]
-
                     font-bold
-
                     text-green-500
                   "
                 >
-                  {Number(
-                    data.trashGiven
-                  ).toLocaleString()}
+                  {trashGiven.toLocaleString()}
                 </span>
 
                 <span
                   className="
                     text-[11px]
                     sm:text-[12px]
-
                     font-semibold
-
                     text-gray-500
-
                     whitespace-nowrap
                   "
                 >
@@ -547,24 +489,16 @@ export default function OverviewKPIs({ data }) {
                 flex
                 items-center
                 justify-between
-
                 gap-3
-
                 min-w-0
               "
             >
-              {/* ===========================================
-                  LABEL
-              =========================================== */}
-
               <div
                 className="
                   flex
                   items-center
-
                   gap-2
                   sm:gap-3
-
                   min-w-0
                 "
               >
@@ -574,7 +508,6 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-orange-500
                     fill-orange-500
-
                     flex-shrink-0
                   "
                 />
@@ -583,31 +516,20 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-[12px]
                     sm:text-[13px]
-
                     text-gray-700
-
                     truncate
                   "
                 >
-                  {t(
-                    "overview.kpis.notGiven",
-                    "Not Given"
-                  )}
+                  {t("overview.kpis.notGiven", "Not Given")}
                 </span>
               </div>
-
-              {/* ===========================================
-                  VALUE
-              =========================================== */}
 
               <div
                 className="
                   flex
                   items-center
-
                   gap-2
                   sm:gap-3
-
                   shrink-0
                 "
               >
@@ -615,26 +537,19 @@ export default function OverviewKPIs({ data }) {
                   className="
                     text-[14px]
                     sm:text-[15px]
-
                     font-bold
-
                     text-orange-500
                   "
                 >
-                  {Number(
-                    data.notGiven
-                  ).toLocaleString()}
+                  {notGiven.toLocaleString()}
                 </span>
 
                 <span
                   className="
                     text-[11px]
                     sm:text-[12px]
-
                     font-semibold
-
                     text-gray-500
-
                     whitespace-nowrap
                   "
                 >
