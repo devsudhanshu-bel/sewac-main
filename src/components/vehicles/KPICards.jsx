@@ -17,9 +17,15 @@ export default function KPICards({ summary }) {
      SAFE SUMMARY VALUES
   ========================================================= */
 
-  const totalVehicles = Number(summary?.totalVehicles) || 0;
-  const activeVehicles = Number(summary?.activeVehicles) || 0;
-  const inactiveVehicles = Number(summary?.inactiveVehicles) || 0;
+  const totalVehicles =
+    Number(summary?.totalVehicles) || 0;
+
+  const activeVehicles =
+    Number(summary?.activeVehicles) || 0;
+
+  const inactiveVehicles =
+    Number(summary?.inactiveVehicles) || 0;
+
   const averageWeightPerVehicle =
     Number(summary?.averageWeightPerVehicle) || 0;
 
@@ -102,7 +108,7 @@ export default function KPICards({ summary }) {
           {/* Title */}
 
           <div className="text-right">
-            <h3 className="text-[16px] font-semibold text-[#111827] leading-7">
+            <h3 className="text-[14px] font-semibold text-[#111827] leading-6">
               {t(
                 "vehicles.kpis.totalVehicles",
                 "Total Vehicles"
@@ -114,7 +120,7 @@ export default function KPICards({ summary }) {
         {/* KPI Number */}
 
         <div className="absolute left-8 bottom-8">
-          <h2 className="text-[36px] leading-none font-bold tracking-[-0.04em] text-[#111827]">
+          <h2 className="text-[30px] leading-none font-bold tracking-[-0.035em] text-[#111827]">
             {totalVehicles.toLocaleString()}
           </h2>
         </div>
@@ -153,7 +159,7 @@ export default function KPICards({ summary }) {
             </div>
 
             <div>
-              <p className="text-[16px] font-semibold text-[#111827]">
+              <p className="text-[14px] font-semibold text-[#111827]">
                 {t(
                   "vehicles.kpis.activeVehicles",
                   "Active Vehicles"
@@ -161,11 +167,11 @@ export default function KPICards({ summary }) {
               </p>
 
               <div className="flex items-end gap-3 mt-1">
-                <span className="text-[20px] font-bold text-[#111827]">
+                <span className="text-[18px] font-bold text-[#111827]">
                   {activeVehicles.toLocaleString()}
                 </span>
 
-                <span className="text-[15px] font-semibold text-[#16A34A]">
+                <span className="text-[13px] font-semibold text-[#16A34A]">
                   ({activePercent}%)
                 </span>
               </div>
@@ -184,7 +190,7 @@ export default function KPICards({ summary }) {
             </div>
 
             <div>
-              <p className="text-[16px] font-semibold text-[#111827]">
+              <p className="text-[14px] font-semibold text-[#111827]">
                 {t(
                   "vehicles.kpis.inactiveVehicles",
                   "Inactive Vehicles"
@@ -192,11 +198,11 @@ export default function KPICards({ summary }) {
               </p>
 
               <div className="flex items-end gap-3 mt-1">
-                <span className="text-[20px] font-bold text-[#111827]">
+                <span className="text-[18px] font-bold text-[#111827]">
                   {inactiveVehicles.toLocaleString()}
                 </span>
 
-                <span className="text-[15px] font-semibold text-[#EF4444]">
+                <span className="text-[13px] font-semibold text-[#EF4444]">
                   ({inactivePercent}%)
                 </span>
               </div>
@@ -242,7 +248,7 @@ export default function KPICards({ summary }) {
           {/* Title */}
 
           <div className="text-right max-w-[180px]">
-            <h3 className="text-[16px] font-semibold text-[#111827] leading-7">
+            <h3 className="text-[14px] font-semibold text-[#111827] leading-6">
               {t(
                 "vehicles.kpis.averageWeight",
                 "Per Vehicles Avg"
@@ -259,14 +265,17 @@ export default function KPICards({ summary }) {
         {/* KPI Value */}
 
         <div className="absolute left-8 bottom-8 flex items-end gap-3">
-          <h2 className="text-[36px] leading-none font-bold tracking-[-0.04em] text-[#111827]">
-            {averageWeightPerVehicle.toLocaleString(undefined, {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 2,
-            })}
+          <h2 className="text-[30px] leading-none font-bold tracking-[-0.035em] text-[#111827]">
+            {averageWeightPerVehicle.toLocaleString(
+              undefined,
+              {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              }
+            )}
           </h2>
 
-          <span className="text-[18px] font-semibold text-[#3452C5] mb-[6px]">
+          <span className="text-[15px] font-semibold text-[#3452C5] mb-[5px]">
             {t("units.ton", "Ton")}
           </span>
         </div>
