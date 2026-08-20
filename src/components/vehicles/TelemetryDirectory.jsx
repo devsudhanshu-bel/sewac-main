@@ -90,13 +90,8 @@ export default function TelemetryDirectory() {
         },
       });
 
-      setTelemetry(
-        res.data.data.vehicles
-      );
-
-      setPagination(
-        res.data.data.pagination
-      );
+      setTelemetry(res.data.data.vehicles);
+      setPagination(res.data.data.pagination);
     } catch (err) {
       console.error(err);
     }
@@ -158,18 +153,16 @@ export default function TelemetryDirectory() {
 
     const csv = [
       headers.join(","),
-      ...rows.map((r) => r.join(","))
+      ...rows.map((r) => r.join(",")),
     ].join("\n");
 
     const blob = new Blob([csv], {
       type: "text/csv;charset=utf-8;",
     });
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-    const link =
-      document.createElement("a");
+    const link = document.createElement("a");
 
     link.href = url;
     link.download = "vehicles.csv";
@@ -196,8 +189,6 @@ export default function TelemetryDirectory() {
 
       <div className="flex items-center justify-between px-8 py-5 border-b border-[#F3F4F6]">
 
-        {/* LEFT */}
-
         <div className="flex items-center gap-4">
 
           <RadioTower
@@ -214,11 +205,9 @@ export default function TelemetryDirectory() {
 
         </div>
 
-        {/* RIGHT */}
-
         <div className="flex items-center gap-4">
 
-          {/* SEARCH */}
+          {/* Search */}
 
           <div className="relative w-[420px]">
 
@@ -238,27 +227,12 @@ export default function TelemetryDirectory() {
                 "vehicles.telemetryDirectory.searchPlaceholder",
                 "Search by Vehicle ID"
               )}
-              className="
-                w-full
-                h-12
-                pl-12
-                pr-4
-                border
-                border-gray-300
-                rounded-xl
-                bg-white
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-[#6C2BFF]
-                focus:border-[#6C2BFF]
-                transition
-              "
+              className="w-full h-12 pl-12 pr-4 border border-gray-300 rounded-xl bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6C2BFF] focus:border-[#6C2BFF] transition"
             />
 
           </div>
 
-          {/* STATUS FILTER */}
+          {/* Status */}
 
           <select
             value={status}
@@ -266,21 +240,8 @@ export default function TelemetryDirectory() {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="
-              h-12
-              w-[180px]
-              rounded-xl
-              border
-              border-gray-300
-              bg-white
-              px-4
-              text-sm
-              focus:outline-none
-              focus:ring-2
-              focus:ring-[#6C2BFF]
-            "
+            className="h-12 w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#6C2BFF]"
           >
-
             <option value="ALL">
               {t(
                 "vehicles.telemetryDirectory.allStatus",
@@ -301,53 +262,28 @@ export default function TelemetryDirectory() {
                 "Inactive"
               )}
             </option>
-
           </select>
 
-          {/* DOWNLOAD */}
+          {/* Download */}
 
           <button
-            type="button"
             onClick={downloadCSV}
             title={t(
               "vehicles.telemetryDirectory.download",
               "Download"
             )}
-            className="
-              w-12
-              h-12
-              rounded-xl
-              border
-              border-gray-300
-              flex
-              items-center
-              justify-center
-              hover:bg-gray-50
-              transition
-            "
+            className="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50"
           >
-
             <Download size={20} />
-
           </button>
 
-          {/* CREATE */}
+          {/* Create */}
 
           <button
-            type="button"
             onClick={() =>
               setShowCreateModal(true)
             }
-            className="
-              h-[48px]
-              px-6
-              rounded-xl
-              bg-[#6C2BFF]
-              text-white
-              font-semibold
-              hover:bg-[#5B21E6]
-              transition
-            "
+            className="h-[48px] px-6 rounded-xl bg-[#6C2BFF] text-white font-semibold"
           >
             {t(
               "vehicles.telemetryDirectory.createVehicle",
@@ -366,10 +302,6 @@ export default function TelemetryDirectory() {
       <div className="overflow-x-auto">
 
         <table className="w-full table-fixed">
-
-          {/* =================================================
-              TABLE HEADER
-          ================================================= */}
 
           <thead className="bg-[#F8F8FC]">
 
@@ -418,142 +350,107 @@ export default function TelemetryDirectory() {
 
           </thead>
 
-          {/* =================================================
-              TABLE BODY
-          ================================================= */}
-
           <tbody>
 
-            {telemetry.map(
-              (vehicle, index) => (
-                <tr
-                  key={vehicle.vehicle_id}
-                  className="
-                    border-b
-                    border-[#ECECF3]
-                    hover:bg-[#FAFAFF]
-                  "
-                >
+            {telemetry.map((vehicle, index) => (
 
-                  {/* INDEX */}
+              <tr
+                key={vehicle.vehicle_id}
+                className="border-b border-[#ECECF3] hover:bg-[#FAFAFF]"
+              >
 
-                  <td className="w-[60px] px-4 py-4">
-                    {(page - 1) *
-                      limit +
-                      index +
-                      1}
-                  </td>
+                <td className="w-[60px] px-4 py-4">
+                  {(page - 1) * limit +
+                    index +
+                    1}
+                </td>
 
-                  {/* VEHICLE ID */}
+                <td className="w-[140px] px-4 py-4">
+                  {vehicle.vehicle_id}
+                </td>
 
-                  <td className="w-[140px] px-4 py-4">
-                    {vehicle.vehicle_id}
-                  </td>
+                <td className="w-[180px] px-4 py-4">
+                  {vehicle.zone}
+                </td>
 
-                  {/* ZONE */}
+                <td className="w-[220px] px-4 py-4 whitespace-nowrap">
+                  {new Date(
+                    vehicle.created_at
+                  ).toLocaleString()}
+                </td>
 
-                  <td className="w-[180px] px-4 py-4">
-                    {vehicle.zone}
-                  </td>
+                <td className="w-[120px] px-4 py-4 text-center">
+                  <StatusBadge
+                    status={vehicle.status}
+                    t={t}
+                  />
+                </td>
 
-                  {/* LAST UPDATE */}
+                <td className="w-[140px] px-4 py-4 text-center">
 
-                  <td className="w-[220px] px-4 py-4 whitespace-nowrap">
+                  <select
+                    className="border rounded-lg px-2 py-1 text-sm"
+                    defaultValue="Action"
+                    onChange={(e) => {
 
-                    {new Date(
-                      vehicle.created_at
-                    ).toLocaleString()}
+                      const action =
+                        e.target.value;
 
-                  </td>
+                      if (action === "edit") {
+                        setSelectedVehicle(
+                          vehicle
+                        );
 
-                  {/* STATUS */}
+                        setShowEditModal(
+                          true
+                        );
+                      }
 
-                  <td className="w-[120px] px-4 py-4 text-center">
+                      if (
+                        action === "delete"
+                      ) {
+                        setSelectedVehicle(
+                          vehicle
+                        );
 
-                    <StatusBadge
-                      status={vehicle.status}
-                      t={t}
-                    />
+                        setShowDeleteModal(
+                          true
+                        );
+                      }
 
-                  </td>
+                      e.target.value =
+                        "Action";
+                    }}
+                  >
 
-                  {/* ACTIONS */}
+                    <option value="Action">
+                      {t(
+                        "vehicles.telemetryDirectory.action",
+                        "Action"
+                      )}
+                    </option>
 
-                  <td className="w-[140px] px-4 py-4 text-center">
+                    <option value="edit">
+                      {t(
+                        "vehicles.telemetryDirectory.update",
+                        "Update"
+                      )}
+                    </option>
 
-                    <select
-                      className="
-                        border
-                        rounded-lg
-                        px-2
-                        py-1
-                        text-sm
-                      "
-                      defaultValue="Action"
-                      onChange={async (e) => {
+                    <option value="delete">
+                      {t(
+                        "vehicles.telemetryDirectory.delete",
+                        "Delete"
+                      )}
+                    </option>
 
-                        const action =
-                          e.target.value;
+                  </select>
 
-                        if (
-                          action ===
-                          "edit"
-                        ) {
-                          setSelectedVehicle(
-                            vehicle
-                          );
+                </td>
 
-                          setShowEditModal(
-                            true
-                          );
-                        }
+              </tr>
 
-                        if (
-                          action ===
-                          "delete"
-                        ) {
-                          setSelectedVehicle(
-                            vehicle
-                          );
-
-                          setShowDeleteModal(
-                            true
-                          );
-                        }
-
-                        e.target.value =
-                          "Action";
-                      }}
-                    >
-
-                      <option value="Action">
-                        {t(
-                          "vehicles.telemetryDirectory.action",
-                          "Action"
-                        )}
-                      </option>
-
-                      <option value="edit">
-                        {t(
-                          "vehicles.telemetryDirectory.update",
-                          "Update"
-                        )}
-                      </option>
-
-                      <option value="delete">
-                        {t(
-                          "vehicles.telemetryDirectory.delete",
-                          "Delete"
-                        )}
-                      </option>
-
-                    </select>
-
-                  </td>
-
-                </tr>
-              )
-            )}
+            ))}
 
           </tbody>
 
@@ -567,10 +464,7 @@ export default function TelemetryDirectory() {
 
       <div className="flex items-center justify-between px-8 py-5 border-t border-[#ECECF3]">
 
-        {/* SHOWING */}
-
-        <p className="text-[14px] text-[#374151]">
-
+        <p>
           {t(
             "vehicles.telemetryDirectory.showing",
             "Showing"
@@ -598,10 +492,7 @@ export default function TelemetryDirectory() {
             "vehicles.telemetryDirectory.vehicles",
             "vehicles"
           )}
-
         </p>
-
-        {/* ROWS PER PAGE */}
 
         <div className="flex items-center gap-4">
 
@@ -620,31 +511,12 @@ export default function TelemetryDirectory() {
               );
               setPage(1);
             }}
-            className="
-              h-[40px]
-              rounded-xl
-              border
-              border-[#E5E7EB]
-              px-3
-            "
+            className="h-[40px] rounded-xl border border-[#E5E7EB] px-3"
           >
-
-            <option value={5}>
-              5
-            </option>
-
-            <option value={10}>
-              10
-            </option>
-
-            <option value={20}>
-              20
-            </option>
-
-            <option value={100}>
-              100
-            </option>
-
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={100}>100</option>
           </select>
 
         </div>
@@ -652,7 +524,7 @@ export default function TelemetryDirectory() {
       </div>
 
       {/* =====================================================
-          CREATE VEHICLE MODAL
+          CREATE MODAL
       ===================================================== */}
 
       {showCreateModal && (
@@ -665,7 +537,7 @@ export default function TelemetryDirectory() {
       )}
 
       {/* =====================================================
-          EDIT VEHICLE MODAL
+          EDIT MODAL
       ===================================================== */}
 
       {showEditModal && (
@@ -679,7 +551,7 @@ export default function TelemetryDirectory() {
       )}
 
       {/* =====================================================
-          DELETE VEHICLE MODAL
+          DELETE MODAL
       ===================================================== */}
 
       {showDeleteModal && (

@@ -309,7 +309,9 @@ vehicles: {
     belowThreshold: "Below Threshold",
     averageWaste: "Average Waste",
 
-    wasteGeneratedLegend: "Waste Generated (Ton)",
+    wasteGeneratedLegend:
+      "Waste Generated (Ton)",
+
     thresholdLegend:
       "Average Waste Generated (Threshold)",
   },
@@ -317,10 +319,13 @@ vehicles: {
   telemetryDirectory: {
     title: "Telemetry Directory",
 
-    searchPlaceholder: "Search by Vehicle ID",
+    searchPlaceholder:
+      "Search by Vehicle ID",
 
     allStatus: "All Status",
+
     active: "Active",
+
     inactive: "Inactive",
 
     download: "Download",
@@ -328,18 +333,27 @@ vehicles: {
     createVehicle: "Create Vehicle",
 
     vehicleId: "Vehicle ID",
+
     routeZone: "Route / Zone",
+
     lastUpdate: "Last Update",
+
     status: "Status",
+
     actions: "Actions",
 
     action: "Action",
+
     update: "Update",
+
     delete: "Delete",
 
     showing: "Showing",
+
     to: "to",
+
     of: "of",
+
     vehicles: "vehicles",
 
     rowsPerPage: "Rows per page:",
@@ -356,34 +370,49 @@ vehicles: {
     },
   },
 
-  createVehicle: {
-    title: "Create Vehicle",
-
-    close: "Close",
+  editVehicle: {
+    title: "Update Vehicle",
 
     vehicleId: "Vehicle ID",
+
     vehicleType: "Vehicle Type",
 
-    types: {
-      miniTruck: "Mini Truck",
-      autoTipper: "Auto Tipper",
-      compactor: "Compactor",
-      dumper: "Dumper",
-    },
-
     active: "ACTIVE",
+
     inactive: "INACTIVE",
 
     selectCity: "Select City",
+
     selectZone: "Select Zone",
+
     selectDivision: "Select Division",
+
     selectWard: "Select Ward",
 
     cancel: "Cancel",
-    create: "Create",
 
-    validation: "Please fill all fields.",
-    createFailed: "Failed to create vehicle",
+    update: "Update",
+
+    errors: {
+      updateFailed:
+        "Failed to update vehicle",
+    },
+  },
+
+  deleteVehicle: {
+    title: "Delete Vehicle",
+
+    confirmation:
+      "Are you sure you want to delete vehicle",
+
+    cancel: "Cancel",
+
+    delete: "Delete",
+
+    errors: {
+      deleteFailed:
+        "Failed to delete vehicle.",
+    },
   },
 },
 

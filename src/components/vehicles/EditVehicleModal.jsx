@@ -1,8 +1,17 @@
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
+
 import api from "../../api/axios";
 
-export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
+import { useLanguage } from "../../i18n";
+
+export default function EditVehicleModal({
+  vehicle,
+  onClose,
+  onSuccess,
+}) {
+  const { t } = useLanguage();
+
   const [form, setForm] = useState(
     vehicle || {
       vehicle_id: "",
@@ -12,12 +21,17 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
       division: "",
       ward: "",
       status: "ACTIVE",
-    },
+    }
   );
+
   const [cities, setCities] = useState([]);
   const [zones, setZones] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [wards, setWards] = useState([]);
+
+  /* ===========================================================
+     HANDLE CHANGE
+  =========================================================== */
 
   const handleChange = (e) => {
     setForm({
@@ -26,65 +40,141 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
     });
   };
 
+  /* ===========================================================
+     LOAD CITIES
+  =========================================================== */
+
   useEffect(() => {
     loadCities();
   }, []);
 
   const loadCities = async () => {
-    const res = await api.get("/api/filters/cities");
+    const res = await api.get(
+      "/api/filters/cities"
+    );
+
     setCities(res.data);
   };
 
+  /* ===========================================================
+     LOAD ZONES
+  =========================================================== */
+
   const loadZones = async (cityId) => {
-    const res = await api.get(`/api/filters/zones/${cityId}`);
+    const res = await api.get(
+      `/api/filters/zones/${cityId}`
+    );
+
     setZones(res.data);
   };
 
+  /* ===========================================================
+     LOAD DIVISIONS
+  =========================================================== */
+
   const loadDivisions = async (zoneId) => {
-    const res = await api.get(`/api/filters/divisions/${zoneId}`);
+    const res = await api.get(
+      `/api/filters/divisions/${zoneId}`
+    );
+
     setDivisions(res.data);
   };
 
+  /* ===========================================================
+     LOAD WARDS
+  =========================================================== */
+
   const loadWards = async (divisionId) => {
-    const res = await api.get(`/api/filters/wards/${divisionId}`);
+    const res = await api.get(
+      `/api/filters/wards/${divisionId}`
+    );
+
     setWards(res.data);
   };
 
+  /* ===========================================================
+     UPDATE VEHICLE
+  =========================================================== */
+
   const handleSubmit = async () => {
     try {
-      await api.put(`/api/vehicles/${vehicle.vehicle_id}`, form);
+      await api.put(
+        `/api/vehicles/${vehicle.vehicle_id}`,
+        form
+      );
+
       onSuccess();
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to update vehicle");
+
+      alert(
+        t(
+          "vehicles.editVehicle.errors.updateFailed",
+          "Failed to update vehicle"
+        )
+      );
     }
   };
+
+  /* ===========================================================
+     SYNC VEHICLE
+  =========================================================== */
+
   useEffect(() => {
     if (vehicle) {
       setForm(vehicle);
     }
   }, [vehicle]);
 
+  /* ===========================================================
+     RENDER
+  =========================================================== */
+
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+
       <div className="bg-white rounded-2xl p-6 w-[600px]">
+
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
+
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-bold">Update Vehicle</h2>
+
+          <h2 className="text-xl font-bold">
+            {t(
+              "vehicles.editVehicle.title",
+              "Update Vehicle"
+            )}
+          </h2>
 
           <button onClick={onClose}>
             <X />
           </button>
+
         </div>
 
+        {/* =====================================================
+            FORM
+        ===================================================== */}
+
         <div className="grid grid-cols-2 gap-4">
+
+          {/* Vehicle ID */}
+
           <input
             name="vehicle_id"
-            placeholder="Vehicle ID"
+            placeholder={t(
+              "vehicles.editVehicle.vehicleId",
+              "Vehicle ID"
+            )}
             value={form.vehicle_id}
             onChange={handleChange}
             className="border rounded-lg p-3"
           />
+
+          {/* Vehicle Type */}
 
           <select
             name="vehicle_type"
@@ -92,12 +182,31 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
             onChange={handleChange}
             className="border rounded-lg p-3"
           >
-            <option value="">Vehicle Type</option>
-            <option>Mini Truck</option>
-            <option>Auto Tipper</option>
-            <option>Compactor</option>
-            <option>Dumper</option>
+            <option value="">
+              {t(
+                "vehicles.editVehicle.vehicleType",
+                "Vehicle Type"
+              )}
+            </option>
+
+            <option>
+              Mini Truck
+            </option>
+
+            <option>
+              Auto Tipper
+            </option>
+
+            <option>
+              Compactor
+            </option>
+
+            <option>
+              Dumper
+            </option>
           </select>
+
+          {/* Status */}
 
           <select
             name="status"
@@ -105,18 +214,37 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
             onChange={handleChange}
             className="border rounded-lg p-3"
           >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
+            <option value="ACTIVE">
+              {t(
+                "vehicles.editVehicle.active",
+                "ACTIVE"
+              )}
+            </option>
+
+            <option value="INACTIVE">
+              {t(
+                "vehicles.editVehicle.inactive",
+                "INACTIVE"
+              )}
+            </option>
           </select>
+
+          {/* City */}
 
           <select
             className="border rounded-lg p-3"
+            value=""
             onChange={(e) => {
-              const cityId = e.target.value;
+
+              const cityId =
+                e.target.value;
 
               setForm({
                 ...form,
-                city: e.target.options[e.target.selectedIndex].text,
+                city:
+                  e.target.options[
+                    e.target.selectedIndex
+                  ].text,
                 zone: "",
                 division: "",
                 ward: "",
@@ -125,23 +253,41 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
               loadZones(cityId);
             }}
           >
-            <option>Select City</option>
+
+            <option value="">
+              {t(
+                "vehicles.editVehicle.selectCity",
+                "Select City"
+              )}
+            </option>
 
             {cities.map((city) => (
-              <option key={city.city_id} value={city.city_id}>
+              <option
+                key={city.city_id}
+                value={city.city_id}
+              >
                 {city.city_name}
               </option>
             ))}
+
           </select>
+
+          {/* Zone */}
 
           <select
             className="border rounded-lg p-3"
+            value=""
             onChange={(e) => {
-              const zoneId = e.target.value;
+
+              const zoneId =
+                e.target.value;
 
               setForm({
                 ...form,
-                zone: e.target.options[e.target.selectedIndex].text,
+                zone:
+                  e.target.options[
+                    e.target.selectedIndex
+                  ].text,
                 division: "",
                 ward: "",
               });
@@ -149,70 +295,140 @@ export default function EditVehicleModal({ vehicle, onClose, onSuccess }) {
               loadDivisions(zoneId);
             }}
           >
-            <option>Select Zone</option>
+
+            <option value="">
+              {t(
+                "vehicles.editVehicle.selectZone",
+                "Select Zone"
+              )}
+            </option>
 
             {zones.map((zone) => (
-              <option key={zone.zone_id} value={zone.zone_id}>
+              <option
+                key={zone.zone_id}
+                value={zone.zone_id}
+              >
                 {zone.zone_name}
               </option>
             ))}
+
           </select>
+
+          {/* Division */}
 
           <select
             className="border rounded-lg p-3"
+            value=""
             onChange={(e) => {
-              const divisionId = e.target.value;
+
+              const divisionId =
+                e.target.value;
 
               setForm({
                 ...form,
-                division: e.target.options[e.target.selectedIndex].text,
+                division:
+                  e.target.options[
+                    e.target.selectedIndex
+                  ].text,
                 ward: "",
               });
 
               loadWards(divisionId);
             }}
           >
-            <option>Select Division</option>
 
-            {divisions.map((division) => (
-              <option key={division.division_id} value={division.division_id}>
-                {division.division_name}
-              </option>
-            ))}
+            <option value="">
+              {t(
+                "vehicles.editVehicle.selectDivision",
+                "Select Division"
+              )}
+            </option>
+
+            {divisions.map(
+              (division) => (
+                <option
+                  key={
+                    division.division_id
+                  }
+                  value={
+                    division.division_id
+                  }
+                >
+                  {division.division_name}
+                </option>
+              )
+            )}
+
           </select>
+
+          {/* Ward */}
 
           <select
             className="border rounded-lg p-3"
+            value=""
             onChange={(e) => {
+
               setForm({
                 ...form,
-                ward: e.target.options[e.target.selectedIndex].text,
+                ward:
+                  e.target.options[
+                    e.target.selectedIndex
+                  ].text,
               });
+
             }}
           >
-            <option>Select Ward</option>
+
+            <option value="">
+              {t(
+                "vehicles.editVehicle.selectWard",
+                "Select Ward"
+              )}
+            </option>
 
             {wards.map((ward) => (
-              <option key={ward.ward_id} value={ward.ward_id}>
+              <option
+                key={ward.ward_id}
+                value={ward.ward_id}
+              >
                 {ward.ward_name}
               </option>
             ))}
+
           </select>
+
         </div>
 
+        {/* =====================================================
+            ACTIONS
+        ===================================================== */}
+
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="border rounded-lg px-5 py-2">
-            Cancel
+
+          <button
+            onClick={onClose}
+            className="border rounded-lg px-5 py-2"
+          >
+            {t(
+              "vehicles.editVehicle.cancel",
+              "Cancel"
+            )}
           </button>
 
           <button
             onClick={handleSubmit}
             className="bg-[#6C2BFF] text-white rounded-lg px-5 py-2"
           >
-            Update
+            {t(
+              "vehicles.editVehicle.update",
+              "Update"
+            )}
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }

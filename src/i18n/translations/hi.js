@@ -307,7 +307,7 @@ vehicles: {
   },
 
   averageWeightChart: {
-    title: "औसत उत्पन्न कचरा वजन (लाइन ग्राफ)",
+    title: "औसत उत्पन्न वजन (लाइन ग्राफ)",
     averageWasteGenerated: "औसत उत्पन्न कचरा:",
     viewBy: "इसके अनुसार देखें:",
     city: "शहर",
@@ -321,7 +321,9 @@ vehicles: {
     belowThreshold: "सीमा से कम",
     averageWaste: "औसत कचरा",
 
-    wasteGeneratedLegend: "उत्पन्न कचरा (टन)",
+    wasteGeneratedLegend:
+      "उत्पन्न कचरा (टन)",
+
     thresholdLegend:
       "औसत उत्पन्न कचरा (सीमा)",
   },
@@ -329,36 +331,48 @@ vehicles: {
   telemetryDirectory: {
     title: "टेलीमेट्री निर्देशिका",
 
-    searchPlaceholder: "वाहन ID से खोजें",
+    searchPlaceholder:
+      "वाहन ID से खोजें",
 
     allStatus: "सभी स्थिति",
+
     active: "सक्रिय",
+
     inactive: "निष्क्रिय",
 
     download: "डाउनलोड",
 
-    createVehicle: "वाहन बनाएं",
+    createVehicle: "वाहन बनाएँ",
 
     vehicleId: "वाहन ID",
-    routeZone: "रूट / ज़ोन",
-    lastUpdate: "अंतिम अपडेट",
-    status: "स्थिति",
-    actions: "कार्रवाई",
 
-    action: "कार्रवाई",
+    routeZone: "रूट / ज़ोन",
+
+    lastUpdate: "अंतिम अपडेट",
+
+    status: "स्थिति",
+
+    actions: "क्रियाएँ",
+
+    action: "क्रिया",
+
     update: "अपडेट करें",
-    delete: "हटाएं",
+
+    delete: "हटाएँ",
 
     showing: "दिखाया जा रहा है",
+
     to: "से",
+
     of: "में से",
+
     vehicles: "वाहन",
 
-    rowsPerPage: "प्रति पृष्ठ पंक्तियां:",
+    rowsPerPage: "प्रति पृष्ठ पंक्तियाँ:",
 
     csv: {
       vehicleId: "वाहन ID",
-      vehicleNumber: "वाहन नंबर",
+      vehicleNumber: "वाहन संख्या",
       vehicleType: "वाहन प्रकार",
       city: "शहर",
       zone: "ज़ोन",
@@ -368,35 +382,66 @@ vehicles: {
     },
   },
 
-   createVehicle: {
-  title: "वाहन बनाएं",
+  editVehicle: {
+    title: "वाहन अपडेट करें",
 
-  close: "बंद करें",
+    vehicleId: "वाहन ID",
 
-  vehicleId: "वाहन ID",
-  vehicleType: "वाहन प्रकार",
+    vehicleType: "वाहन प्रकार",
 
-  types: {
-    miniTruck: "मिनी ट्रक",
-    autoTipper: "ऑटो टिप्पर",
-    compactor: "कॉम्पैक्टर",
-    dumper: "डम्पर",
+    active: "सक्रिय",
+
+    inactive: "निष्क्रिय",
+
+    selectCity: "शहर चुनें",
+
+    selectZone: "ज़ोन चुनें",
+
+    selectDivision: "डिवीजन चुनें",
+
+    selectWard: "वार्ड चुनें",
+
+    cancel: "रद्द करें",
+
+    update: "अपडेट करें",
+
+    errors: {
+      updateFailed:
+        "वाहन अपडेट नहीं किया जा सका",
+    },
   },
 
-  active: "सक्रिय",
-  inactive: "निष्क्रिय",
+  deleteVehicle: {
+    title: "वाहन हटाएँ",
 
-  selectCity: "शहर चुनें",
-  selectZone: "ज़ोन चुनें",
-  selectDivision: "डिवीजन चुनें",
-  selectWard: "वार्ड चुनें",
+    confirmation:
+      "क्या आप वाकई इस वाहन को हटाना चाहते हैं",
 
-  cancel: "रद्द करें",
-  create: "बनाएं",
+    cancel: "रद्द करें",
 
-  validation: "कृपया सभी फ़ील्ड भरें।",
-  createFailed: "वाहन बनाने में विफल",
-}, 
+    delete: "हटाएँ",
+
+    errors: {
+      deleteFailed:
+        "वाहन हटाया नहीं जा सका।",
+    },
+  },
+},
+
+plants: {
+  title: "प्लांट अवलोकन",
+
+  description:
+    "सभी अपशिष्ट प्रसंस्करण प्लांटों और उनकी गतिविधियों की निगरानी करें।",
+
+  loading: "प्लांट डैशबोर्ड लोड हो रहा है...",
+
+  retry: "पुनः प्रयास करें",
+
+  errors: {
+    serverConnection:
+      "सर्वर से कनेक्ट नहीं हो सका।",
+  },
 },
 
 };

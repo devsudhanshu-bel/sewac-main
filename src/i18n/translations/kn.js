@@ -296,7 +296,7 @@ vehicles: {
   title: "ವಾಹನಗಳು",
 
   description:
-    "ವಾಹನ ಪಡೆಯ ಸ್ಥಿತಿ, ಚಟುವಟಿಕೆ ಮತ್ತು ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣಾ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
+    "ವಾಹನಗಳ ಸ್ಥಿತಿ, ಚಟುವಟಿಕೆ ಮತ್ತು ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣಾ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
 
   kpis: {
     totalVehicles: "ಒಟ್ಟು ವಾಹನಗಳು",
@@ -307,51 +307,65 @@ vehicles: {
   },
 
   averageWeightChart: {
-    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
-    averageWasteGenerated: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ:",
-    viewBy: "ಇದರ ಪ್ರಕಾರ ವೀಕ್ಷಿಸಿ:",
+    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
+    averageWasteGenerated: "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ:",
+    viewBy: "ಇದರ ಮೂಲಕ ವೀಕ್ಷಿಸಿ:",
     city: "ನಗರ",
     weightOfWaste: "ತ್ಯಾಜ್ಯದ ತೂಕ (ಟನ್)",
 
     zoneName: "ವಲಯದ ಹೆಸರು",
-    wasteGenerated: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ",
+    wasteGenerated: "ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ",
     vehiclesRunning: "ಚಾಲನೆಯಲ್ಲಿರುವ ವಾಹನಗಳು",
     difference: "ವ್ಯತ್ಯಾಸ",
     overThreshold: "ಮಿತಿಗಿಂತ ಹೆಚ್ಚು",
     belowThreshold: "ಮಿತಿಗಿಂತ ಕಡಿಮೆ",
     averageWaste: "ಸರಾಸರಿ ತ್ಯಾಜ್ಯ",
 
-    wasteGeneratedLegend: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಟನ್)",
+    wasteGeneratedLegend:
+      "ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ (ಟನ್)",
+
     thresholdLegend:
-      "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಮಿತಿ)",
+      "ಸರಾಸರಿ ಉತ್ಪಾದಿತ ತ್ಯಾಜ್ಯ (ಮಿತಿ)",
   },
 
   telemetryDirectory: {
     title: "ಟೆಲಿಮೆಟ್ರಿ ಡೈರೆಕ್ಟರಿ",
 
-    searchPlaceholder: "ವಾಹನ ID ಮೂಲಕ ಹುಡುಕಿ",
+    searchPlaceholder:
+      "ವಾಹನ ID ಮೂಲಕ ಹುಡುಕಿ",
 
     allStatus: "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
+
     active: "ಸಕ್ರಿಯ",
+
     inactive: "ನಿಷ್ಕ್ರಿಯ",
 
     download: "ಡೌನ್‌ಲೋಡ್",
 
-    createVehicle: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+    createVehicle: "ವಾಹನ ರಚಿಸಿ",
 
     vehicleId: "ವಾಹನ ID",
+
     routeZone: "ಮಾರ್ಗ / ವಲಯ",
+
     lastUpdate: "ಕೊನೆಯ ನವೀಕರಣ",
+
     status: "ಸ್ಥಿತಿ",
+
     actions: "ಕ್ರಿಯೆಗಳು",
 
     action: "ಕ್ರಿಯೆ",
+
     update: "ನವೀಕರಿಸಿ",
+
     delete: "ಅಳಿಸಿ",
 
     showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+
     to: "ರಿಂದ",
-    of: "ಒಟ್ಟು",
+
+    of: "ರಲ್ಲಿ",
+
     vehicles: "ವಾಹನಗಳು",
 
     rowsPerPage: "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು:",
@@ -368,37 +382,50 @@ vehicles: {
     },
   },
 
+  editVehicle: {
+    title: "ವಾಹನವನ್ನು ನವೀಕರಿಸಿ",
 
+    vehicleId: "ವಾಹನ ID",
 
-createVehicle: {
-  title: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+    vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
 
-  close: "ಮುಚ್ಚಿ",
+    active: "ಸಕ್ರಿಯ",
 
-  vehicleId: "ವಾಹನ ID",
-  vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
+    inactive: "ನಿಷ್ಕ್ರಿಯ",
 
-  types: {
-    miniTruck: "ಮಿನಿ ಟ್ರಕ್",
-    autoTipper: "ಆಟೋ ಟಿಪ್ಪರ್",
-    compactor: "ಕಾಂಪ್ಯಾಕ್ಟರ್",
-    dumper: "ಡಂಪರ್",
+    selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+    selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+    selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+    selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+
+    cancel: "ರದ್ದುಮಾಡಿ",
+
+    update: "ನವೀಕರಿಸಿ",
+
+    errors: {
+      updateFailed:
+        "ವಾಹನವನ್ನು ನವೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    },
   },
 
-  active: "ಸಕ್ರಿಯ",
-  inactive: "ನಿಷ್ಕ್ರಿಯ",
+  deleteVehicle: {
+    title: "ವಾಹನ ಅಳಿಸಿ",
 
-  selectCity: "ನಗರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectZone: "ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectDivision: "ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-  selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+    confirmation:
+      "ಈ ವಾಹನವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ",
 
-  cancel: "ರದ್ದುಮಾಡಿ",
-  create: "ರಚಿಸಿ",
+    cancel: "ರದ್ದುಮಾಡಿ",
 
-  validation: "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
-  createFailed: "ವಾಹನವನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
-},
+    delete: "ಅಳಿಸಿ",
+
+    errors: {
+      deleteFailed:
+        "ವಾಹನವನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    },
+  },
 },
 
 plants: {
