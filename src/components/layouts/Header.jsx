@@ -11,7 +11,12 @@ import {
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
@@ -72,7 +77,11 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+      atob(
+        payload
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
     );
 
     return {
@@ -253,7 +262,11 @@ function Dropdown({
                 {label === value && (
                   <Check
                     size={14}
-                    className="text-violet-600 shrink-0 ml-2"
+                    className="
+                      text-violet-600
+                      shrink-0
+                      ml-2
+                    "
                   />
                 )}
               </button>
@@ -281,7 +294,9 @@ const toggleSidebar = () => {
 
 export default function Header({
   variant = "dashboard",
-  selectedDate = new Date().toISOString().split("T")[0],
+  selectedDate = new Date()
+    .toISOString()
+    .split("T")[0],
   setSelectedDate = () => {},
 }) {
   const navigate = useNavigate();
@@ -295,6 +310,10 @@ export default function Header({
     setLanguage,
     t,
   } = useLanguage();
+
+  /* =======================================================
+     REFS
+  ======================================================= */
 
   const headerRef = useRef(null);
   const controlsRef = useRef(null);
@@ -336,7 +355,10 @@ export default function Header({
   const roleLabel = getRoleLabel(user.role);
 
   const userInitial =
-    user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+    user.name
+      ?.trim()
+      ?.charAt(0)
+      ?.toUpperCase() || "A";
 
   /* =======================================================
      STATE
@@ -346,9 +368,11 @@ export default function Header({
 
   const [search, setSearch] = useState("");
 
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] =
+    useState(false);
 
-  const [languageOpen, setLanguageOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] =
+    useState(false);
 
   const isDashboard = variant === "dashboard";
 
@@ -428,7 +452,10 @@ export default function Header({
     window.addEventListener("mousedown", close);
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
@@ -438,17 +465,26 @@ export default function Header({
 
   useEffect(() => {
     function shortcut(e) {
-      if (e.key === "/" && variant !== "dashboard") {
+      if (
+        e.key === "/" &&
+        variant !== "dashboard"
+      ) {
         e.preventDefault();
 
         searchRef.current?.focus();
       }
     }
 
-    window.addEventListener("keydown", shortcut);
+    window.addEventListener(
+      "keydown",
+      shortcut
+    );
 
     return () => {
-      window.removeEventListener("keydown", shortcut);
+      window.removeEventListener(
+        "keydown",
+        shortcut
+      );
     };
   }, [variant]);
 
@@ -486,7 +522,9 @@ export default function Header({
      LANGUAGE HANDLER
   ======================================================= */
 
-  const handleLanguageChange = (languageCode) => {
+  const handleLanguageChange = (
+    languageCode
+  ) => {
     setLanguage(languageCode);
     setLanguageOpen(false);
   };
@@ -503,17 +541,25 @@ export default function Header({
         : "HI";
 
   /* =======================================================
-     SHARED FILTERS
+     SHARED LOCATION FILTERS
+
+     Desktop:
+       Inline
+
+     Tablet/Mobile:
+       Horizontal scroll row
   ======================================================= */
 
   const locationFilters = (
     <>
-      {/* ================= CITY ================= */}
+      {/* =================================================
+          CITY
+      ================================================= */}
 
       <Dropdown
         width="
-          w-[118px]
-          sm:w-[125px]
+          w-[148px]
+          sm:w-[155px]
           lg:w-[118px]
         "
         value={
@@ -525,12 +571,14 @@ export default function Header({
         placeholder={t("filters.city")}
       />
 
-      {/* ================= ZONE ================= */}
+      {/* =================================================
+          ZONE
+      ================================================= */}
 
       <Dropdown
         width="
-          w-[190px]
-          sm:w-[210px]
+          w-[220px]
+          sm:w-[235px]
           lg:w-[200px]
         "
         value={
@@ -542,12 +590,14 @@ export default function Header({
         placeholder={t("filters.zone")}
       />
 
-      {/* ================= DIVISION ================= */}
+      {/* =================================================
+          DIVISION
+      ================================================= */}
 
       <Dropdown
         width="
-          w-[138px]
-          sm:w-[145px]
+          w-[170px]
+          sm:w-[180px]
           lg:w-[138px]
         "
         value={
@@ -559,12 +609,14 @@ export default function Header({
         placeholder="Select Division"
       />
 
-      {/* ================= WARD ================= */}
+      {/* =================================================
+          WARD
+      ================================================= */}
 
       <Dropdown
         width="
-          w-[125px]
-          sm:w-[135px]
+          w-[155px]
+          sm:w-[165px]
           lg:w-[122px]
         "
         value={
@@ -590,25 +642,45 @@ export default function Header({
         sticky
         top-0
         z-[9999]
+
         w-full
+
         bg-white
+
         border-b
         border-gray-100
+
         px-3
         sm:px-4
         lg:px-4
-        py-2
+
+        pt-2
+        pb-2
+
         lg:h-16
+
+        overflow-visible
       "
     >
       {/* ===================================================
-          MAIN HEADER ROW
+          PRIMARY HEADER ROW
       =================================================== */}
 
-      <div className="flex items-center justify-between gap-2 min-h-12 lg:h-full">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
 
+          gap-2
+
+          min-h-[44px]
+
+          lg:h-full
+        "
+      >
         {/* =================================================
-            LEFT SIDE
+            LEFT / BRAND / DESKTOP FILTERS
         ================================================= */}
 
         <div
@@ -616,26 +688,33 @@ export default function Header({
           className="
             flex
             items-center
+
             gap-2
+
             min-w-0
+
             flex-1
           "
         >
-
           {/* ===============================================
-              MOBILE / TABLET BRAND
+              MOBILE / TABLET BRAND AREA
           =============================================== */}
 
           <div
             className="
               flex
-              lg:hidden
               items-center
+
               gap-2
+
               shrink-0
+
+              lg:hidden
             "
           >
-            {/* MOBILE MENU */}
+            {/* =============================================
+                MOBILE MENU
+            ============================================= */}
 
             <button
               type="button"
@@ -643,37 +722,56 @@ export default function Header({
               aria-label="Open navigation menu"
               className="
                 md:hidden
+
                 w-9
                 h-9
+
                 rounded-xl
+
                 border
                 border-gray-200
+
                 bg-white
+
                 flex
                 items-center
                 justify-center
+
                 text-[#16295A]
+
                 hover:border-violet-400
                 hover:text-violet-600
+
                 transition-all
+                duration-200
+
+                shrink-0
               "
             >
               <Menu size={19} />
             </button>
 
-            {/* MOBILE / TABLET LOGO */}
+            {/* =============================================
+                SEWAC LOGO
+            ============================================= */}
 
             <img
               src={SewacLogo}
               alt="SEWAC"
               draggable={false}
               className="
-                w-[72px]
-                sm:w-[82px]
-                md:w-[72px]
+                w-[64px]
+                sm:w-[76px]
+                md:w-[68px]
+
                 h-auto
+
                 object-contain
+
                 select-none
+
+                shrink-0
+
                 lg:hidden
               "
             />
@@ -688,8 +786,12 @@ export default function Header({
               className="
                 hidden
                 lg:flex
+
                 items-center
+
                 gap-2
+
+                min-w-0
               "
             >
               {locationFilters}
@@ -699,7 +801,14 @@ export default function Header({
                DESKTOP SEARCH
             ============================================= */
 
-            <div className="relative hidden lg:block">
+            <div
+              className="
+                relative
+
+                hidden
+                lg:block
+              "
+            >
               <Search
                 size={16}
                 className="
@@ -707,6 +816,7 @@ export default function Header({
                   left-3
                   top-1/2
                   -translate-y-1/2
+
                   text-gray-400
                 "
               />
@@ -721,17 +831,26 @@ export default function Header({
                 placeholder={t("header.search")}
                 className="
                   w-[330px]
+
                   h-9
+
                   rounded-xl
+
                   border
                   border-gray-200
+
                   bg-white
+
                   pl-10
                   pr-9
+
                   text-[12px]
+
                   outline-none
+
                   transition-all
                   duration-300
+
                   focus:border-violet-500
                   focus:ring-2
                   focus:ring-violet-100
@@ -741,14 +860,19 @@ export default function Header({
               {search.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() =>
+                    setSearch("")
+                  }
                   className="
                     absolute
                     right-3
                     top-1/2
                     -translate-y-1/2
+
                     text-gray-400
+
                     hover:text-violet-600
+
                     transition
                   "
                 >
@@ -759,11 +883,20 @@ export default function Header({
           )}
 
           {/* ===============================================
-              TABLET / MOBILE SEARCH
+              MOBILE / TABLET SEARCH
           =============================================== */}
 
           {!isDashboard && (
-            <div className="relative flex-1 min-w-0 lg:hidden">
+            <div
+              className="
+                relative
+
+                flex-1
+                min-w-0
+
+                lg:hidden
+              "
+            >
               <Search
                 size={15}
                 className="
@@ -771,6 +904,7 @@ export default function Header({
                   left-3
                   top-1/2
                   -translate-y-1/2
+
                   text-gray-400
                 "
               />
@@ -784,18 +918,28 @@ export default function Header({
                 placeholder={t("header.search")}
                 className="
                   w-full
+
                   max-w-[360px]
+
                   h-9
+
                   rounded-xl
+
                   border
                   border-gray-200
+
                   bg-white
+
                   pl-9
                   pr-8
+
                   text-[12px]
+
                   outline-none
+
                   transition-all
                   duration-300
+
                   focus:border-violet-500
                   focus:ring-2
                   focus:ring-violet-100
@@ -805,12 +949,15 @@ export default function Header({
               {search.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() =>
+                    setSearch("")
+                  }
                   className="
                     absolute
                     right-3
                     top-1/2
                     -translate-y-1/2
+
                     text-gray-400
                   "
                 >
@@ -822,7 +969,7 @@ export default function Header({
         </div>
 
         {/* =================================================
-            RIGHT SIDE
+            RIGHT SIDE CONTROLS
         ================================================= */}
 
         <div
@@ -830,17 +977,28 @@ export default function Header({
             flex
             items-center
             justify-end
-            gap-1.5
+
+            gap-1
             sm:gap-2
+
             shrink-0
           "
         >
-
           {/* ===============================================
               CALENDAR
           =============================================== */}
 
-          <div className="flex items-center justify-center shrink-0">
+          <div
+            className="
+              flex
+              items-center
+              justify-center
+
+              shrink-0
+
+              [&>div]:shrink-0
+            "
+          >
             <Calendar
               value={selectedDateObj}
               onChange={(date) => {
@@ -853,30 +1011,42 @@ export default function Header({
 
           {/* ===============================================
               WET / DRY DAY
+
+              Hidden below sm so mobile remains clean.
           =============================================== */}
 
           <div
             className="
               hidden
               sm:flex
+
               rounded-xl
+
               border
               border-gray-200
+
               overflow-hidden
+
               shrink-0
             "
           >
             {isDryDay && (
               <button
                 type="button"
-                onClick={() => setDayType("dry")}
+                onClick={() =>
+                  setDayType("dry")
+                }
                 className={`
                   h-9
+
                   px-3
                   lg:px-4
+
                   text-[11px]
                   lg:text-[12px]
+
                   font-semibold
+
                   transition-all
                   duration-300
 
@@ -893,14 +1063,20 @@ export default function Header({
 
             <button
               type="button"
-              onClick={() => setDayType("wet")}
+              onClick={() =>
+                setDayType("wet")
+              }
               className={`
                 h-9
+
                 px-3
                 lg:px-4
+
                 text-[11px]
                 lg:text-[12px]
+
                 font-semibold
+
                 transition-all
                 duration-300
 
@@ -921,45 +1097,73 @@ export default function Header({
 
           <div
             ref={languageRef}
-            className="relative shrink-0"
+            className="
+              relative
+              shrink-0
+            "
           >
             <button
               type="button"
               onClick={() =>
-                setLanguageOpen(!languageOpen)
+                setLanguageOpen(
+                  !languageOpen
+                )
               }
               aria-expanded={languageOpen}
               className="
                 h-9
+
                 px-2
                 sm:px-3
+
                 rounded-xl
+
                 border
                 border-gray-200
+
                 bg-white
+
                 flex
                 items-center
-                gap-1.5
-                sm:gap-2
+
+                gap-1
+                sm:gap-1.5
+
                 hover:border-violet-400
+
                 transition-all
                 duration-300
               "
             >
               <Globe
                 size={14}
-                className="text-violet-600"
+                className="
+                  text-violet-600
+                  shrink-0
+                "
               />
 
-              <span className="text-[11px] sm:text-[12px] font-semibold text-[#16295A]">
+              <span
+                className="
+                  text-[11px]
+                  sm:text-[12px]
+
+                  font-semibold
+
+                  text-[#16295A]
+                "
+              >
                 {currentLanguageCode}
               </span>
 
               <ChevronDown
                 size={12}
                 className={`
+                  shrink-0
+
                   transition-transform
                   duration-300
+
                   ${
                     languageOpen
                       ? "rotate-180"
@@ -969,19 +1173,32 @@ export default function Header({
               />
             </button>
 
+            {/* =============================================
+                LANGUAGE MENU
+            ============================================= */}
+
             {languageOpen && (
               <div
                 className="
                   absolute
+
                   right-0
+
                   top-11
+
                   w-44
+
                   rounded-2xl
+
                   bg-white
+
                   border
                   border-gray-100
+
                   shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+
                   overflow-hidden
+
                   z-[99999]
                 "
               >
@@ -996,25 +1213,36 @@ export default function Header({
                     }
                     className="
                       w-full
+
                       px-4
                       py-3
+
                       flex
                       items-center
                       justify-between
+
                       text-[12px]
+
                       hover:bg-violet-50
+
                       transition
+
                       text-left
                     "
                   >
                     <span>
-                      {t(item.translationKey)}
+                      {t(
+                        item.translationKey
+                      )}
                     </span>
 
-                    {language === item.code && (
+                    {language ===
+                      item.code && (
                       <Check
                         size={14}
-                        className="text-violet-600"
+                        className="
+                          text-violet-600
+                        "
                       />
                     )}
                   </button>
@@ -1029,75 +1257,143 @@ export default function Header({
 
           <div
             ref={profileRef}
-            className="relative shrink-0"
+            className="
+              relative
+              shrink-0
+            "
           >
             <button
               type="button"
               onClick={() =>
-                setProfileOpen(!profileOpen)
+                setProfileOpen(
+                  !profileOpen
+                )
               }
               aria-expanded={profileOpen}
               className="
                 h-9
+
                 pl-1
                 pr-1
+
                 sm:pl-2
                 sm:pr-2
+
                 lg:pr-3
+
                 rounded-xl
+
                 border
                 border-gray-200
+
                 bg-white
+
                 flex
                 items-center
+
                 gap-1.5
                 sm:gap-2
+
                 hover:border-violet-400
+
                 transition-all
                 duration-300
               "
             >
-              {/* ================= AVATAR ================= */}
+              {/* =========================================
+                  AVATAR
+              ========================================= */}
 
               <div
                 className="
                   w-8
                   h-8
+
                   rounded-full
+
                   bg-gradient-to-r
                   from-violet-600
                   to-fuchsia-600
+
                   text-white
+
                   text-[13px]
+
                   font-semibold
+
                   flex
                   items-center
                   justify-center
+
                   shrink-0
                 "
               >
                 {userInitial}
               </div>
 
-              {/* ================= USER INFO ================= */}
+              {/* =========================================
+                  USER INFORMATION
 
-              <div className="hidden sm:block text-left leading-tight max-w-[110px] lg:max-w-none">
-                <h4 className="text-[11px] lg:text-[12px] font-semibold text-[#16295A] truncate">
+                  Hidden on very small screens.
+              ========================================= */}
+
+              <div
+                className="
+                  hidden
+                  sm:block
+
+                  text-left
+
+                  leading-tight
+
+                  max-w-[100px]
+                  lg:max-w-none
+                "
+              >
+                <h4
+                  className="
+                    text-[11px]
+                    lg:text-[12px]
+
+                    font-semibold
+
+                    text-[#16295A]
+
+                    truncate
+                  "
+                >
                   {user.name}
                 </h4>
 
-                <p className="text-[9px] lg:text-[10px] text-gray-500 truncate">
+                <p
+                  className="
+                    text-[9px]
+                    lg:text-[10px]
+
+                    text-gray-500
+
+                    truncate
+                  "
+                >
                   {roleLabel}
                 </p>
               </div>
+
+              {/* =========================================
+                  PROFILE ARROW
+              ========================================= */}
 
               <ChevronDown
                 size={12}
                 className={`
                   hidden
                   sm:block
+
+                  shrink-0
+
                   transition-transform
                   duration-300
+
                   ${
                     profileOpen
                       ? "rotate-180"
@@ -1115,15 +1411,24 @@ export default function Header({
               <div
                 className="
                   absolute
+
                   right-0
+
                   top-11
+
                   w-56
+
                   rounded-2xl
+
                   bg-white
+
                   border
                   border-gray-100
+
                   shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+
                   overflow-hidden
+
                   z-[99999]
                 "
                 ref={(el) => {
@@ -1146,44 +1451,88 @@ export default function Header({
                   }
                 }}
               >
-                {/* ================= USER INFORMATION ================= */}
+                {/* =========================================
+                    USER INFORMATION
+                ========================================= */}
 
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
+                <div
+                  className="
+                    px-5
+                    py-4
 
+                    border-b
+                    border-gray-100
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                    "
+                  >
                     <div
                       className="
                         w-9
                         h-9
+
                         rounded-full
+
                         bg-gradient-to-r
                         from-violet-600
                         to-fuchsia-600
+
                         text-white
+
                         text-[14px]
+
                         font-semibold
+
                         flex
                         items-center
                         justify-center
+
+                        shrink-0
                       "
                     >
                       {userInitial}
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-[13px] text-[#16295A] truncate">
+                      <h3
+                        className="
+                          font-semibold
+
+                          text-[13px]
+
+                          text-[#16295A]
+
+                          truncate
+                        "
+                      >
                         {user.name}
                       </h3>
 
-                      <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+                      <p
+                        className="
+                          text-[10px]
+
+                          text-gray-500
+
+                          mt-0.5
+
+                          truncate
+                        "
+                      >
                         {roleLabel}
                       </p>
                     </div>
-
                   </div>
                 </div>
 
-                {/* ================= SETTINGS ================= */}
+                {/* =========================================
+                    SETTINGS
+                ========================================= */}
 
                 <button
                   type="button"
@@ -1196,14 +1545,21 @@ export default function Header({
                   }}
                   className="
                     w-full
+
                     px-5
                     py-3
+
                     flex
                     items-center
+
                     gap-3
+
                     text-[12px]
+
                     text-[#16295A]
+
                     hover:bg-violet-50
+
                     transition
                   "
                 >
@@ -1212,7 +1568,9 @@ export default function Header({
                   {t("sidebar.settings")}
                 </button>
 
-                {/* ================= LOGOUT ================= */}
+                {/* =========================================
+                    LOGOUT
+                ========================================= */}
 
                 <button
                   type="button"
@@ -1223,14 +1581,21 @@ export default function Header({
                   }}
                   className="
                     w-full
+
                     px-5
                     py-3
+
                     flex
                     items-center
+
                     gap-3
+
                     text-[12px]
+
                     text-red-500
+
                     hover:bg-red-50
+
                     transition
                   "
                 >
@@ -1247,23 +1612,48 @@ export default function Header({
       {/* ===================================================
           RESPONSIVE LOCATION FILTER ROW
 
-          Tablet + Mobile only
+          Only visible below desktop.
+
+          Desktop:
+            Filters remain in primary row.
+
+          Tablet:
+            Filters get their own row.
+
+          Mobile:
+            Filters become horizontally scrollable.
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
             lg:hidden
+
             w-full
+
             overflow-x-auto
             overflow-y-visible
+
             scrollbar-none
+
             pt-1
             pb-1
+
             -mx-0.5
           "
         >
-          <div className="flex items-center gap-2 min-w-max px-0.5">
+          <div
+            className="
+              flex
+              items-center
+
+              gap-2
+
+              min-w-max
+
+              px-0.5
+            "
+          >
             {locationFilters}
           </div>
         </div>
