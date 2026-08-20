@@ -6,27 +6,40 @@ import {
   PackageOpen,
 } from "lucide-react";
 
+import { useLanguage } from "../../i18n";
+
 export default function KPICards({ summary }) {
-
-    const {
-        totalVehicles,
-        activeVehicles,
-        inactiveVehicles,
-        averageWeightPerVehicle
-    } = summary;
-
-    const avgWeight = averageWeightPerVehicle;
-  const activePercent = (
-    (activeVehicles / totalVehicles) *
-    100
-  ).toFixed(1);
-
-  const inactivePercent = (
-    (inactiveVehicles / totalVehicles) *
-    100
-  ).toFixed(1);
-
   const sectionRef = useRef(null);
+
+  const { t } = useLanguage();
+
+  /* =========================================================
+     SAFE SUMMARY VALUES
+  ========================================================= */
+
+  const totalVehicles = Number(summary?.totalVehicles) || 0;
+  const activeVehicles = Number(summary?.activeVehicles) || 0;
+  const inactiveVehicles = Number(summary?.inactiveVehicles) || 0;
+  const averageWeightPerVehicle =
+    Number(summary?.averageWeightPerVehicle) || 0;
+
+  /* =========================================================
+     PERCENTAGES
+  ========================================================= */
+
+  const activePercent =
+    totalVehicles > 0
+      ? ((activeVehicles / totalVehicles) * 100).toFixed(1)
+      : "0.0";
+
+  const inactivePercent =
+    totalVehicles > 0
+      ? ((inactiveVehicles / totalVehicles) * 100).toFixed(1)
+      : "0.0";
+
+  /* =========================================================
+     GSAP ANIMATION
+  ========================================================= */
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -43,15 +56,18 @@ export default function KPICards({ summary }) {
     return () => ctx.revert();
   }, []);
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <section
       ref={sectionRef}
       className="grid grid-cols-1 xl:grid-cols-3 gap-6"
     >
-
-      {/* ========================= */}
-      {/* Total Vehicles */}
-      {/* ========================= */}
+      {/* =====================================================
+          TOTAL VEHICLES
+      ===================================================== */}
 
       <div
         className="
@@ -70,50 +86,43 @@ export default function KPICards({ summary }) {
           py-7
         "
       >
-
         {/* Top Row */}
 
         <div className="flex items-start justify-between">
-
           {/* Icon */}
 
           <div className="w-[56px] h-[56px] rounded-2xl bg-[#F4EEFF] flex items-center justify-center">
-
             <Truck
               size={26}
               strokeWidth={2.2}
               className="text-[#6C2BFF]"
             />
-
           </div>
 
           {/* Title */}
 
           <div className="text-right">
-
             <h3 className="text-[16px] font-semibold text-[#111827] leading-7">
-              Total Vehicles
+              {t(
+                "vehicles.kpis.totalVehicles",
+                "Total Vehicles"
+              )}
             </h3>
-
           </div>
-
         </div>
 
         {/* KPI Number */}
 
         <div className="absolute left-8 bottom-8">
-
           <h2 className="text-[36px] leading-none font-bold tracking-[-0.04em] text-[#111827]">
             {totalVehicles.toLocaleString()}
           </h2>
-
         </div>
-
       </div>
 
-      {/* ========================================================= */}
-      {/* ACTIVE / INACTIVE */}
-      {/* ========================================================= */}
+      {/* =====================================================
+          ACTIVE / INACTIVE
+      ===================================================== */}
 
       <div
         className="
@@ -131,87 +140,74 @@ export default function KPICards({ summary }) {
           py-6
         "
       >
-
         <div className="flex flex-col justify-between h-full">
-
-          {/* Active */}
+          {/* ================= ACTIVE ================= */}
 
           <div className="flex items-center gap-5">
-
             <div className="w-[56px] h-[56px] rounded-2xl bg-[#DDF8EA] flex items-center justify-center">
-
               <TruckIcon
                 size={26}
                 strokeWidth={2.2}
                 className="text-[#14B86A]"
               />
-
             </div>
 
             <div>
-
               <p className="text-[16px] font-semibold text-[#111827]">
-                Active Vehicles
+                {t(
+                  "vehicles.kpis.activeVehicles",
+                  "Active Vehicles"
+                )}
               </p>
 
               <div className="flex items-end gap-3 mt-1">
-
                 <span className="text-[20px] font-bold text-[#111827]">
-                  {activeVehicles}
+                  {activeVehicles.toLocaleString()}
                 </span>
 
                 <span className="text-[15px] font-semibold text-[#16A34A]">
                   ({activePercent}%)
                 </span>
-
               </div>
-
             </div>
-
           </div>
 
-          {/* Inactive */}
+          {/* ================= INACTIVE ================= */}
 
           <div className="flex items-center gap-5">
-
             <div className="w-[56px] h-[56px] rounded-2xl bg-[#FFE8E8] flex items-center justify-center">
-
               <TruckIcon
                 size={26}
                 strokeWidth={2.2}
                 className="text-[#FF3B30]"
               />
-
             </div>
 
             <div>
-
               <p className="text-[16px] font-semibold text-[#111827]">
-                Inactive Vehicles
+                {t(
+                  "vehicles.kpis.inactiveVehicles",
+                  "Inactive Vehicles"
+                )}
               </p>
 
               <div className="flex items-end gap-3 mt-1">
-
                 <span className="text-[20px] font-bold text-[#111827]">
-                  {inactiveVehicles}
+                  {inactiveVehicles.toLocaleString()}
                 </span>
 
                 <span className="text-[15px] font-semibold text-[#EF4444]">
                   ({inactivePercent}%)
                 </span>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-            {/* ========================= */}
-      {/* Average Weight */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          AVERAGE WEIGHT
+      ===================================================== */}
 
       <div
         className="
@@ -230,53 +226,51 @@ export default function KPICards({ summary }) {
           py-8
         "
       >
-
         {/* Top Row */}
 
         <div className="flex items-start justify-between">
-
           {/* Icon */}
 
           <div className="w-[56px] h-[56px] rounded-2xl bg-[#F4EEFF] flex items-center justify-center">
-
             <PackageOpen
               size={26}
               strokeWidth={2.2}
               className="text-[#6C2BFF]"
             />
-
           </div>
 
           {/* Title */}
 
           <div className="text-right max-w-[180px]">
-
             <h3 className="text-[16px] font-semibold text-[#111827] leading-7">
-              Per Vehicles Avg
+              {t(
+                "vehicles.kpis.averageWeight",
+                "Per Vehicles Avg"
+              )}
               <br />
-              Weight Collection
+              {t(
+                "vehicles.kpis.weightCollection",
+                "Weight Collection"
+              )}
             </h3>
-
           </div>
-
         </div>
 
         {/* KPI Value */}
 
         <div className="absolute left-8 bottom-8 flex items-end gap-3">
-
           <h2 className="text-[36px] leading-none font-bold tracking-[-0.04em] text-[#111827]">
-            {avgWeight}
+            {averageWeightPerVehicle.toLocaleString(undefined, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            })}
           </h2>
 
           <span className="text-[18px] font-semibold text-[#3452C5] mb-[6px]">
-            Ton
+            {t("units.ton", "Ton")}
           </span>
-
         </div>
-
       </div>
-
     </section>
   );
 }

@@ -291,6 +291,21 @@ wasteGenerators: {
     },
   },
 },
+
+vehicles: {
+  title: "वाहन",
+
+  description:
+    "वाहन बेड़े की स्थिति, गतिविधि और कचरा संग्रहण प्रदर्शन की निगरानी करें।",
+
+  kpis: {
+    totalVehicles: "कुल वाहन",
+    activeVehicles: "सक्रिय वाहन",
+    inactiveVehicles: "निष्क्रिय वाहन",
+    averageWeight: "प्रति वाहन औसत",
+    weightCollection: "कचरा संग्रहण",
+  },
+},
 };
 
 export default hi;

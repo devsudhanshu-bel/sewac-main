@@ -279,6 +279,21 @@ wasteGenerators: {
     },
   },
 },
+
+vehicles: {
+  title: "Vehicles",
+
+  description:
+    "Monitor vehicle fleet status, activity and waste collection performance.",
+
+  kpis: {
+    totalVehicles: "Total Vehicles",
+    activeVehicles: "Active Vehicles",
+    inactiveVehicles: "Inactive Vehicles",
+    averageWeight: "Per Vehicles Avg",
+    weightCollection: "Weight Collection",
+  },
+},
 };
 
 export default en;

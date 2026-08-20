@@ -291,6 +291,21 @@ wasteGenerators: {
     },
   },
 },
+
+vehicles: {
+  title: "ವಾಹನಗಳು",
+
+  description:
+    "ವಾಹನಗಳ ಸ್ಥಿತಿ, ಚಟುವಟಿಕೆ ಮತ್ತು ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣಾ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
+
+  kpis: {
+    totalVehicles: "ಒಟ್ಟು ವಾಹನಗಳು",
+    activeVehicles: "ಸಕ್ರಿಯ ವಾಹನಗಳು",
+    inactiveVehicles: "ನಿಷ್ಕ್ರಿಯ ವಾಹನಗಳು",
+    averageWeight: "ಪ್ರತಿ ವಾಹನದ ಸರಾಸರಿ",
+    weightCollection: "ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣೆ",
+  },
+},
 };
 
 export default kn;
