@@ -1,28 +1,53 @@
 import Header from "../components/layouts/Header";
 import { useEffect, useState } from "react";
+
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
 import ComplaintFilters from "../components/complaints/ComplaintFilters";
 import ComplaintTable from "../components/complaints/ComplaintTable";
 import ComplaintDetails from "../components/complaints/ComplaintDetails";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function Complaints() {
+  /* =========================================================
+     COMPLAINT DATA
+  ========================================================= */
+
   const [complaints, setComplaints] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
+
+  /* =========================================================
+     KPI DATA
+  ========================================================= */
+
   const [kpis, setKpis] = useState({
     total: 0,
     pending: 0,
-    assigned: 0,
-    inProgress: 0,
     readyForVerification: 0,
     otpSent: 0,
     closed: 0,
   });
+
+  /* =========================================================
+     SELECTED COMPLAINT
+  ========================================================= */
+
   const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [otpSent, setOtpSent] = useState(false);
+
+  /* =========================================================
+     SAVE STATE
+  ========================================================= */
+
   const [savingComplaint, setSavingComplaint] = useState(false);
+
+  /* =========================================================
+     PAGINATION
+  ========================================================= */
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -30,14 +55,31 @@ export default function Complaints() {
     totalPages: 0,
   });
 
+  /* =========================================================
+     FILTERS
+  ========================================================= */
+
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "",
+    category: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+
+  /* =========================================================
+     ADMIN TOKEN
+  ========================================================= */
+
   const getAdminToken = () => {
-    // IMPORTANT:
-    // Replace this with your existing Admin auth storage key
-    // once we confirm it.
     return sessionStorage.getItem("token");
   };
 
-  const fetchComplaints = async (page = 1) => {
+  /* =========================================================
+     FETCH COMPLAINTS
+  ========================================================= */
+
+  const fetchComplaints = async (page = 1, activeFilters = filters) => {
     try {
       setLoading(true);
       setError("");
@@ -48,10 +90,46 @@ export default function Complaints() {
         throw new Error("Admin authentication token not found.");
       }
 
+      const params = new URLSearchParams();
+
+      params.set("page", page);
+      params.set("limit", 10);
+
+      /* SEARCH */
+
+      if (activeFilters.search?.trim()) {
+        params.set("search", activeFilters.search.trim());
+      }
+
+      /* STATUS */
+
+      if (activeFilters.status) {
+        params.set("status", activeFilters.status);
+      }
+
+      /* CATEGORY */
+
+      if (activeFilters.category) {
+        params.set("category", activeFilters.category);
+      }
+
+      /* DATE FROM */
+
+      if (activeFilters.dateFrom) {
+        params.set("dateFrom", activeFilters.dateFrom);
+      }
+
+      /* DATE TO */
+
+      if (activeFilters.dateTo) {
+        params.set("dateTo", activeFilters.dateTo);
+      }
+
       const response = await fetch(
-        `${API_BASE_URL}/api/complaints?page=${page}&limit=10`,
+        `${API_BASE_URL}/api/complaints?${params.toString()}`,
         {
           method: "GET",
+
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
@@ -77,11 +155,16 @@ export default function Complaints() {
       );
     } catch (err) {
       console.error("Fetch complaints error:", err);
+
       setError(err.message || "Unable to fetch complaints.");
     } finally {
       setLoading(false);
     }
   };
+
+  /* =========================================================
+     FETCH KPIs
+  ========================================================= */
 
   const fetchKPIs = async () => {
     try {
@@ -93,6 +176,7 @@ export default function Complaints() {
 
       const response = await fetch(`${API_BASE_URL}/api/complaints/kpis`, {
         method: "GET",
+
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
@@ -109,8 +193,6 @@ export default function Complaints() {
         result.data || {
           total: 0,
           pending: 0,
-          assigned: 0,
-          inProgress: 0,
           readyForVerification: 0,
           otpSent: 0,
           closed: 0,
@@ -120,6 +202,10 @@ export default function Complaints() {
       console.error("Fetch complaint KPIs error:", err);
     }
   };
+
+  /* =========================================================
+     SAVE COMPLAINT
+  ========================================================= */
 
   const saveComplaintChanges = async (updates) => {
     if (!selectedComplaint?.ticket_number) {
@@ -141,14 +227,15 @@ export default function Complaints() {
         )}`,
         {
           method: "PATCH",
+
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+
           body: JSON.stringify({
             status: updates.status,
-            assigned_to: updates.assigned_to,
             remarks: updates.remarks,
           }),
         },
@@ -160,19 +247,16 @@ export default function Complaints() {
         throw new Error(result.message || "Failed to update complaint.");
       }
 
-      /*
-       * Update drawer immediately.
-       */
+      /* Update selected complaint */
+
       setSelectedComplaint(result.data);
 
-      /*
-       * Refresh table.
-       */
-      await fetchComplaints(pagination.page);
+      /* Refresh table */
 
-      /*
-       * Refresh KPI cards.
-       */
+      await fetchComplaints(pagination.page, filters);
+
+      /* Refresh KPI cards */
+
       await fetchKPIs();
 
       alert("Complaint updated successfully.");
@@ -184,6 +268,10 @@ export default function Complaints() {
       setSavingComplaint(false);
     }
   };
+
+  /* =========================================================
+     REQUEST VERIFICATION OTP
+  ========================================================= */
 
   const requestVerification = async () => {
     if (!selectedComplaint?.ticket_number) {
@@ -198,9 +286,12 @@ export default function Complaints() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/complaints/${selectedComplaint.ticket_number}/request-verification`,
+        `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+          selectedComplaint.ticket_number,
+        )}/request-verification`,
         {
           method: "POST",
+
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
@@ -209,30 +300,33 @@ export default function Complaints() {
       );
 
       const result = await response.json();
-      console.log("Verification response:", response.status, result);
 
       if (!response.ok || result.success !== true) {
         throw new Error(result.message || "Failed to request verification.");
       }
 
-      console.log("Verification OTP requested:", result);
-
-      setOtpSent(true);
-
       /*
-       * Refresh complaint list so the table reflects
-       * the backend status.
+       * IMPORTANT:
+       *
+       * We intentionally DO NOT store or expose
+       * the OTP here.
+       *
+       * Backend generates it and sends/stores it
+       * on the citizen side.
+       *
+       * Admin only knows that OTP was sent.
        */
-      await fetchComplaints(pagination.page);
 
-      /*
-       * Refresh KPI values.
-       */
+      /* Refresh table */
+
+      await fetchComplaints(pagination.page, filters);
+
+      /* Refresh KPI cards */
+
       await fetchKPIs();
 
-      /*
-       * Refresh the selected complaint itself.
-       */
+      /* Refresh selected complaint */
+
       try {
         const detailResponse = await fetch(
           `${API_BASE_URL}/api/complaints/${encodeURIComponent(
@@ -240,6 +334,7 @@ export default function Complaints() {
           )}`,
           {
             method: "GET",
+
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
@@ -264,6 +359,10 @@ export default function Complaints() {
     }
   };
 
+  /* =========================================================
+     VERIFY OTP
+  ========================================================= */
+
   const verifyOTP = async (otp) => {
     if (!selectedComplaint?.ticket_number) {
       throw new Error("No complaint selected.");
@@ -281,14 +380,18 @@ export default function Complaints() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/complaints/${selectedComplaint.ticket_number}/verify`,
+        `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+          selectedComplaint.ticket_number,
+        )}/verify`,
         {
           method: "POST",
+
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+
           body: JSON.stringify({
             otp,
           }),
@@ -297,25 +400,23 @@ export default function Complaints() {
 
       const result = await response.json();
 
-      console.log("OTP verification response:", result);
-
       if (!response.ok || result.success !== true) {
         throw new Error(result.message || "Failed to verify OTP.");
       }
 
       alert("Complaint closed successfully.");
 
-      // Refresh the complaint list.
-      await fetchComplaints(pagination.page);
+      /* Refresh table */
 
-      // Refresh KPI cards.
+      await fetchComplaints(pagination.page, filters);
+
+      /* Refresh KPI cards */
+
       await fetchKPIs();
 
-      // Close the details panel.
-      setSelectedComplaint(null);
+      /* Close details */
 
-      // Reset OTP request state.
-      setOtpSent(false);
+      setSelectedComplaint(null);
 
       return result;
     } catch (err) {
@@ -327,37 +428,104 @@ export default function Complaints() {
     }
   };
 
+  /* =========================================================
+     FILTER CHANGE
+  ========================================================= */
+
+  const handleFilterChange = (key, value) => {
+    const nextFilters = {
+      ...filters,
+      [key]: value,
+    };
+
+    setFilters(nextFilters);
+
+    fetchComplaints(1, nextFilters);
+  };
+
+  /* =========================================================
+     RESET FILTERS
+  ========================================================= */
+
+  const resetFilters = () => {
+    const nextFilters = {
+      search: "",
+      status: "",
+      category: "",
+      dateFrom: "",
+      dateTo: "",
+    };
+
+    setFilters(nextFilters);
+
+    fetchComplaints(1, nextFilters);
+  };
+
+  /* =========================================================
+     INITIAL LOAD
+  ========================================================= */
+
   useEffect(() => {
-    fetchComplaints(1);
+    fetchComplaints(1, {
+      search: "",
+      status: "",
+      category: "",
+      dateFrom: "",
+      dateTo: "",
+    });
+
     fetchKPIs();
   }, []);
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FC]">
       <Header variant="default" />
 
       <div className="flex gap-6 px-8 py-6">
+        {/* ===================================================
+            MAIN CONTENT
+        =================================================== */}
+
         <div className="flex-1 min-w-0 space-y-5">
           <ComplaintHeader />
 
+          {/* KPIs */}
+
           <ComplaintKPIs kpis={kpis} />
 
-          <ComplaintFilters />
+          {/* FILTERS */}
+
+          <ComplaintFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onReset={resetFilters}
+          />
+
+          {/* TABLE */}
 
           <ComplaintTable
             complaints={complaints}
             loading={loading}
             error={error}
             pagination={pagination}
-            onPageChange={fetchComplaints}
-            onSelectComplaint={setSelectedComplaint}
+            onPageChange={(page) => fetchComplaints(page, filters)}
+            onSelectComplaint={(complaint) => {
+              setSelectedComplaint(complaint);
+            }}
           />
         </div>
+
+        {/* ===================================================
+            DETAILS
+        =================================================== */}
 
         <div className="w-[370px] shrink-0">
           <ComplaintDetails
             complaint={selectedComplaint}
-            otpSent={otpSent}
             saving={savingComplaint}
             onRequestVerification={requestVerification}
             onVerifyOTP={verifyOTP}
