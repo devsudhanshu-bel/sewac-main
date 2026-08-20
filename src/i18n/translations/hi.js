@@ -158,6 +158,14 @@ units: {
 },
 
 wasteGenerators: {
+
+  wasteGenerators: {
+  title: "कचरा उत्पादक",
+
+  description:
+    "कचरा उत्पादकों की भागीदारी, कचरा योगदान, गतिविधि, निगरानी और संग्रहण प्रदर्शन का अवलोकन।",
+},
+
   kpis: {
     generatorStatus: "कचरा उत्पादक स्थिति",
     activeGenerators: "सक्रिय कचरा उत्पादक",

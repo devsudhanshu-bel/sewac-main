@@ -146,6 +146,13 @@ const en = {
 },
 
 wasteGenerators: {
+
+  title: "Waste Generators",
+
+  description:
+    "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance.",
+
+  
   kpis: {
     generatorStatus: "Waste Generator Status",
     activeGenerators: "Active Waste Generators",
