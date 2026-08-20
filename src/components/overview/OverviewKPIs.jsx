@@ -177,455 +177,474 @@ export default function OverviewKPIs({ data }) {
   ========================================================= */
 
   return (
-    <div
-      className="
-        w-full
-
-        grid
-
-        /* ================================================
-           MOBILE
-           ================================================ */
-
-        grid-cols-1
-
-        /* ================================================
-           TABLET
-           769px - 1200px
-
-           2 CARDS PER ROW
-           ================================================ */
-
-        md:grid-cols-2
-
-        /* ================================================
-           DESKTOP
-           1201px+
-
-           4 CARDS IN ONE ROW
-           ================================================ */
-
-        min-[1201px]:grid-cols-4
-
-        gap-3
-
-        min-[1201px]:gap-2
-      "
-    >
+    <>
       {/* =====================================================
-          KPI CARDS
+          RESPONSIVE KPI GRID
+          
+          IMPORTANT:
+          We intentionally use explicit CSS media queries
+          instead of Tailwind arbitrary breakpoints here.
       ===================================================== */}
 
-      {kpis.map((item, index) => {
-        const Icon = item.icon;
+      <style>
+        {`
+          .overview-kpi-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
 
-        return (
-          <div
-            key={item.title}
-            ref={(el) => (cardsRef.current[index] = el)}
-            className="
-              bg-white
+          /* ================================================
+             TABLET
+             ================================================ */
 
-              h-[110px]
+          @media (min-width: 768px) {
+            .overview-kpi-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+          }
 
-              rounded-[22px]
+          /* ================================================
+             DESKTOP
+             
+             1200px AND ABOVE = ALWAYS 4 COLUMNS
+             ================================================ */
 
-              border
-              border-[#EEF1F6]
+          @media (min-width: 1200px) {
+            .overview-kpi-grid {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 8px;
+            }
+          }
 
-              px-4
-              sm:px-5
-              min-[1201px]:px-7
+          /* ================================================
+             LARGE DESKTOP
+             
+             Give cards a little more breathing room.
+             ================================================ */
 
-              flex
-              items-center
+          @media (min-width: 1440px) {
+            .overview-kpi-grid {
+              gap: 10px;
+            }
+          }
+        `}
+      </style>
 
-              shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+      <div className="overview-kpi-grid">
+        {/* ===================================================
+            KPI CARDS
+        =================================================== */}
 
-              min-w-0
+        {kpis.map((item, index) => {
+          const Icon = item.icon;
 
-              w-full
-            "
-          >
-            {/* =================================================
-                ICON
-            ================================================= */}
-
+          return (
             <div
-              className={`
-                w-11
-                h-11
+              key={item.title}
+              ref={(el) => (cardsRef.current[index] = el)}
+              className="
+                bg-white
 
-                rounded-xl
+                h-[110px]
 
-                ${item.bg}
+                rounded-[22px]
+
+                border
+                border-[#EEF1F6]
+
+                px-4
+                sm:px-5
+                xl:px-7
 
                 flex
                 items-center
-                justify-center
 
-                flex-shrink-0
-              `}
-            >
-              <Icon
-                size={21}
-                strokeWidth={2.3}
-                className={item.iconColor}
-              />
-            </div>
-
-            {/* =================================================
-                CONTENT
-            ================================================= */}
-
-            <div
-              className="
-                ml-3
-                sm:ml-4
-                min-[1201px]:ml-5
+                shadow-[0_4px_12px_rgba(15,23,42,0.04)]
 
                 min-w-0
-
-                flex-1
+                w-full
               "
             >
-              <p
-                className="
-                  text-[13px]
-                  sm:text-[14px]
+              {/* =============================================
+                  ICON
+              ============================================= */}
 
-                  font-medium
+              <div
+                className={`
+                  w-11
+                  h-11
 
-                  text-[#1F2937]
+                  rounded-xl
 
-                  leading-snug
+                  ${item.bg}
 
-                  truncate
-                "
+                  flex
+                  items-center
+                  justify-center
+
+                  flex-shrink-0
+                `}
               >
-                {item.title}
-              </p>
+                <Icon
+                  size={21}
+                  strokeWidth={2.3}
+                  className={item.iconColor}
+                />
+              </div>
+
+              {/* =============================================
+                  CONTENT
+              ============================================= */}
 
               <div
                 className="
-                  flex
-                  items-end
+                  ml-3
+                  sm:ml-4
+                  xl:ml-5
 
-                  gap-1.5
-                  sm:gap-2
-
-                  mt-2
-
-                  whitespace-nowrap
+                  min-w-0
+                  flex-1
                 "
               >
-                <span
+                <p
                   className="
-                    text-[19px]
-                    sm:text-[20px]
+                    text-[13px]
+                    sm:text-[14px]
 
-                    font-bold
+                    font-medium
 
-                    text-[#111827]
+                    text-[#1F2937]
 
-                    leading-none
+                    leading-snug
+
+                    truncate
                   "
                 >
-                  {item.value}
-                </span>
+                  {item.title}
+                </p>
 
-                {item.unit && (
+                <div
+                  className="
+                    flex
+                    items-end
+
+                    gap-1.5
+                    sm:gap-2
+
+                    mt-2
+
+                    whitespace-nowrap
+                  "
+                >
                   <span
                     className="
-                      text-[11px]
-                      sm:text-[12px]
+                      text-[19px]
+                      sm:text-[20px]
 
-                      font-semibold
+                      font-bold
 
-                      text-indigo-600
+                      text-[#111827]
 
                       leading-none
                     "
                   >
-                    {item.unit}
+                    {item.value}
                   </span>
-                )}
+
+                  {item.unit && (
+                    <span
+                      className="
+                        text-[11px]
+                        sm:text-[12px]
+
+                        font-semibold
+
+                        text-indigo-600
+
+                        leading-none
+                      "
+                    >
+                      {item.unit}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
 
-      {/* =====================================================
-          CITIZENS TREND
-      ===================================================== */}
-
-      <div
-        ref={(el) => (cardsRef.current[3] = el)}
-        className="
-          bg-white
-
-          h-[110px]
-
-          rounded-[22px]
-
-          border
-          border-[#EEF1F6]
-
-          px-4
-          sm:px-5
-          min-[1201px]:px-7
-
-          flex
-          flex-col
-          justify-center
-
-          shadow-[0_4px_12px_rgba(15,23,42,0.04)]
-
-          min-w-0
-
-          w-full
-        "
-      >
         {/* ===================================================
-            TITLE
+            CITIZENS TREND
         =================================================== */}
 
-        <h3
+        <div
+          ref={(el) => (cardsRef.current[3] = el)}
           className="
-            text-[14px]
-            sm:text-[15px]
+            bg-white
 
-            text-[#111827]
+            h-[110px]
 
-            mb-3
-            sm:mb-4
+            rounded-[22px]
 
-            leading-none
+            border
+            border-[#EEF1F6]
+
+            px-4
+            sm:px-5
+            xl:px-7
+
+            flex
+            flex-col
+            justify-center
+
+            shadow-[0_4px_12px_rgba(15,23,42,0.04)]
+
+            min-w-0
+            w-full
           "
         >
-          {t(
-            "overview.kpis.citizensTrend",
-            "Citizens Trend"
-          )}
-        </h3>
+          {/* ===============================================
+              TITLE
+          =============================================== */}
 
-        {/* ===================================================
-            TREND ROWS
-        =================================================== */}
-
-        <div className="space-y-3">
-          {/* =================================================
-              TRASH GIVEN
-          ================================================= */}
-
-          <div
+          <h3
             className="
-              flex
-              items-center
-              justify-between
+              text-[14px]
+              sm:text-[15px]
 
-              gap-3
+              text-[#111827]
 
-              min-w-0
+              mb-3
+              sm:mb-4
+
+              leading-none
             "
           >
-            {/* ===============================================
-                LABEL
-            =============================================== */}
+            {t(
+              "overview.kpis.citizensTrend",
+              "Citizens Trend"
+            )}
+          </h3>
+
+          {/* ===============================================
+              TREND ROWS
+          =============================================== */}
+
+          <div className="space-y-3">
+            {/* =============================================
+                TRASH GIVEN
+            ============================================= */}
 
             <div
               className="
                 flex
                 items-center
+                justify-between
 
-                gap-2
-                sm:gap-3
+                gap-3
 
                 min-w-0
               "
             >
-              <User
-                size={16}
-                strokeWidth={2.3}
+              {/* ===========================================
+                  LABEL
+              =========================================== */}
+
+              <div
                 className="
-                  text-green-500
-                  fill-green-500
+                  flex
+                  items-center
 
-                  flex-shrink-0
-                "
-              />
+                  gap-2
+                  sm:gap-3
 
-              <span
-                className="
-                  text-[12px]
-                  sm:text-[13px]
-
-                  text-gray-700
-
-                  truncate
+                  min-w-0
                 "
               >
-                {t(
-                  "overview.kpis.trashGiven",
-                  "Trash Given"
-                )}
-              </span>
+                <User
+                  size={16}
+                  strokeWidth={2.3}
+                  className="
+                    text-green-500
+                    fill-green-500
+
+                    flex-shrink-0
+                  "
+                />
+
+                <span
+                  className="
+                    text-[12px]
+                    sm:text-[13px]
+
+                    text-gray-700
+
+                    truncate
+                  "
+                >
+                  {t(
+                    "overview.kpis.trashGiven",
+                    "Trash Given"
+                  )}
+                </span>
+              </div>
+
+              {/* ===========================================
+                  VALUE
+              =========================================== */}
+
+              <div
+                className="
+                  flex
+                  items-center
+
+                  gap-2
+                  sm:gap-3
+
+                  shrink-0
+                "
+              >
+                <span
+                  className="
+                    text-[14px]
+                    sm:text-[15px]
+
+                    font-bold
+
+                    text-green-500
+                  "
+                >
+                  {Number(
+                    data.trashGiven
+                  ).toLocaleString()}
+                </span>
+
+                <span
+                  className="
+                    text-[11px]
+                    sm:text-[12px]
+
+                    font-semibold
+
+                    text-gray-500
+
+                    whitespace-nowrap
+                  "
+                >
+                  ({trashGivenPercentage}%)
+                </span>
+              </div>
             </div>
 
-            {/* ===============================================
-                VALUE
-            =============================================== */}
+            {/* =============================================
+                NOT GIVEN
+            ============================================= */}
 
             <div
               className="
                 flex
                 items-center
+                justify-between
 
-                gap-2
-                sm:gap-3
-
-                shrink-0
-              "
-            >
-              <span
-                className="
-                  text-[14px]
-                  sm:text-[15px]
-
-                  font-bold
-
-                  text-green-500
-                "
-              >
-                {Number(
-                  data.trashGiven
-                ).toLocaleString()}
-              </span>
-
-              <span
-                className="
-                  text-[11px]
-                  sm:text-[12px]
-
-                  font-semibold
-
-                  text-gray-500
-
-                  whitespace-nowrap
-                "
-              >
-                ({trashGivenPercentage}%)
-              </span>
-            </div>
-          </div>
-
-          {/* =================================================
-              NOT GIVEN
-          ================================================= */}
-
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-
-              gap-3
-
-              min-w-0
-            "
-          >
-            {/* ===============================================
-                LABEL
-            =============================================== */}
-
-            <div
-              className="
-                flex
-                items-center
-
-                gap-2
-                sm:gap-3
+                gap-3
 
                 min-w-0
               "
             >
-              <User
-                size={16}
-                strokeWidth={2.3}
+              {/* ===========================================
+                  LABEL
+              =========================================== */}
+
+              <div
                 className="
-                  text-orange-500
-                  fill-orange-500
+                  flex
+                  items-center
 
-                  flex-shrink-0
-                "
-              />
+                  gap-2
+                  sm:gap-3
 
-              <span
-                className="
-                  text-[12px]
-                  sm:text-[13px]
-
-                  text-gray-700
-
-                  truncate
+                  min-w-0
                 "
               >
-                {t(
-                  "overview.kpis.notGiven",
-                  "Not Given"
-                )}
-              </span>
-            </div>
+                <User
+                  size={16}
+                  strokeWidth={2.3}
+                  className="
+                    text-orange-500
+                    fill-orange-500
 
-            {/* ===============================================
-                VALUE
-            =============================================== */}
+                    flex-shrink-0
+                  "
+                />
 
-            <div
-              className="
-                flex
-                items-center
+                <span
+                  className="
+                    text-[12px]
+                    sm:text-[13px]
 
-                gap-2
-                sm:gap-3
+                    text-gray-700
 
-                shrink-0
-              "
-            >
-              <span
+                    truncate
+                  "
+                >
+                  {t(
+                    "overview.kpis.notGiven",
+                    "Not Given"
+                  )}
+                </span>
+              </div>
+
+              {/* ===========================================
+                  VALUE
+              =========================================== */}
+
+              <div
                 className="
-                  text-[14px]
-                  sm:text-[15px]
+                  flex
+                  items-center
 
-                  font-bold
+                  gap-2
+                  sm:gap-3
 
-                  text-orange-500
+                  shrink-0
                 "
               >
-                {Number(
-                  data.notGiven
-                ).toLocaleString()}
-              </span>
+                <span
+                  className="
+                    text-[14px]
+                    sm:text-[15px]
 
-              <span
-                className="
-                  text-[11px]
-                  sm:text-[12px]
+                    font-bold
 
-                  font-semibold
+                    text-orange-500
+                  "
+                >
+                  {Number(
+                    data.notGiven
+                  ).toLocaleString()}
+                </span>
 
-                  text-gray-500
+                <span
+                  className="
+                    text-[11px]
+                    sm:text-[12px]
 
-                  whitespace-nowrap
-                "
-              >
-                ({notGivenPercentage}%)
-              </span>
+                    font-semibold
+
+                    text-gray-500
+
+                    whitespace-nowrap
+                  "
+                >
+                  ({notGivenPercentage}%)
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
