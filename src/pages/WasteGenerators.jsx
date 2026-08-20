@@ -9,6 +9,7 @@ import GVPGen from "../components/waste-generators/GVPGen";
 import WasteGenDir from "../components/waste-generators/WasteGenDir";
 
 import { useFilters } from "../contexts/FilterContext";
+import { useLanguage } from "../i18n";
 
 export default function WasteGenerators() {
   const [summary, setSummary] = useState(null);
@@ -19,6 +20,12 @@ export default function WasteGenerators() {
 
   const { selectedCity, selectedZone, selectedDivision, selectedWard } =
     useFilters();
+
+  const { t } = useLanguage();
+
+  /* =========================================================
+     LOAD WASTE GENERATOR SUMMARY
+  ========================================================= */
 
   const loadSummary = async () => {
     try {
@@ -56,6 +63,10 @@ export default function WasteGenerators() {
     }
   };
 
+  /* =========================================================
+     RELOAD SUMMARY WHEN FILTERS / DATE CHANGE
+  ========================================================= */
+
   useEffect(() => {
     loadSummary();
   }, [
@@ -66,25 +77,53 @@ export default function WasteGenerators() {
     selectedWard?.ward_id,
   ]);
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
+      <Header
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+      />
 
       <div className="w-full px-8 py-7 overflow-x-hidden">
+        {/* ===================================================
+            PAGE TITLE
+        =================================================== */}
+
         <div>
           <h1 className="text-[34px] font-bold tracking-tight text-[#16295A]">
-            Waste Generators
+            {t(
+              "wasteGenerators.title",
+              "Waste Generators",
+            )}
           </h1>
 
           <p className="mt-1 text-[14px] text-slate-500">
-            Overview of waste generators participation, waste contribution,
-            activity, monitoring and collection performance.
+            {t(
+              "wasteGenerators.description",
+              "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance.",
+            )}
           </p>
         </div>
+
+        {/* ===================================================
+            WASTE GENERATOR KPIs
+        =================================================== */}
 
         <section className="mt-6">
           <WasteGenKPIs summary={summary} />
         </section>
+
+        {/* ===================================================
+            MAP + GVP TREND
+        =================================================== */}
 
         <section
           className="
@@ -96,9 +135,13 @@ export default function WasteGenerators() {
             items-stretch
           "
         >
+          {/* ================= COLLECTION MAP ================= */}
+
           <div className="min-w-0 h-full">
             <WasteGenMap selectedDate={selectedDate} />
           </div>
+
+          {/* ================= GVP GENERATION ================= */}
 
           <div className="min-w-0 h-full">
             <GVPGen
@@ -110,6 +153,10 @@ export default function WasteGenerators() {
             />
           </div>
         </section>
+
+        {/* ===================================================
+            WASTE GENERATOR DIRECTORY
+        =================================================== */}
 
         <section className="mt-5 mb-8">
           <WasteGenDir />
