@@ -46,25 +46,39 @@ const getNestedValue = (object, path) => {
 };
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguageState] = useState(getInitialLanguage);
+  const [language, setLanguageState] = useState(
+    getInitialLanguage
+  );
 
   const setLanguage = (newLanguage) => {
     if (!translations[newLanguage]) {
-      console.warn(`Unsupported language: ${newLanguage}`);
+      console.warn(
+        `Unsupported language: ${newLanguage}`
+      );
+
       return;
     }
 
     setLanguageState(newLanguage);
 
     try {
-      localStorage.setItem(STORAGE_KEY, newLanguage);
+      localStorage.setItem(
+        STORAGE_KEY,
+        newLanguage
+      );
     } catch (error) {
-      console.warn("Unable to save language:", error);
+      console.warn(
+        "Unable to save language:",
+        error
+      );
     }
   };
 
   const t = (key, fallback) => {
-    const value = getNestedValue(translations[language], key);
+    const value = getNestedValue(
+      translations[language],
+      key
+    );
 
     if (value !== undefined) {
       return value;
@@ -74,7 +88,6 @@ export const LanguageProvider = ({ children }) => {
       return fallback;
     }
 
-    // During development, showing the key makes missing translations easy to find.
     return key;
   };
 
@@ -88,6 +101,7 @@ export const LanguageProvider = ({ children }) => {
       setLanguage,
       t,
       translations: translations[language],
+
       availableLanguages: [
         {
           code: "en",
