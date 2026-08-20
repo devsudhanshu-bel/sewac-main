@@ -38,7 +38,7 @@ export default function OverviewKPIs({ data }) {
   /* =========================================================
      WASTE FORMATTER
   =========================================================
-  
+
      Backend always returns waste in KG.
 
      < 1000 KG
@@ -177,7 +177,7 @@ export default function OverviewKPIs({ data }) {
   ========================================================= */
 
   return (
-    <div className="grid grid-cols-4 gap-6">
+    <div className="grid grid-cols-4 gap-2">
       {/* =====================================================
           KPI CARDS
       ===================================================== */}
