@@ -11,16 +11,11 @@ export default function DeletePlantModal({
 
   const handleDelete = async () => {
     try {
-
-      await api.delete(
-        `/api/plants/${plant.id}`
-      );
+      await api.delete(`/api/plants/${plant.id}`);
 
       onSuccess();
       onClose();
-
     } catch (err) {
-
       console.error(err);
 
       alert(
@@ -29,19 +24,15 @@ export default function DeletePlantModal({
           "Failed to delete plant."
         )
       );
-
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-      <div className="bg-white rounded-2xl w-[420px] p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
+      <div className="w-[420px] max-w-full rounded-2xl bg-white p-6 shadow-xl">
 
         {/* Header */}
-
-        <div className="flex justify-between items-center mb-5">
-
+        <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold text-red-600">
             {t(
               "plants.deletePlant.title",
@@ -49,25 +40,27 @@ export default function DeletePlantModal({
             )}
           </h2>
 
-          <button onClick={onClose}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
             <X size={22} />
           </button>
-
         </div>
 
-        {/* Icon */}
-
-        <div className="flex justify-center mb-5">
-
-          <Trash2
-            size={56}
-            className="text-red-500"
-          />
-
+        {/* Delete Icon */}
+        <div className="mb-5 flex justify-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+            <Trash2
+              size={42}
+              className="text-red-500"
+              strokeWidth={2}
+            />
+          </div>
         </div>
 
         {/* Confirmation */}
-
         <p className="text-center text-gray-700">
           {t(
             "plants.deletePlant.confirmation",
@@ -75,21 +68,36 @@ export default function DeletePlantModal({
           )}
         </p>
 
-        <p className="text-center font-semibold mt-2">
-          {plant.plant_name}
+        {/* Plant Name */}
+        <p className="mt-2 text-center font-semibold text-gray-900">
+          {plant?.plant_name || "-"}
         </p>
 
-        <p className="text-center text-gray-500">
-          {plant.zone}
-        </p>
+        {/* Zone */}
+        {plant?.zone && (
+          <p className="mt-1 text-center text-sm text-gray-500">
+            {plant.zone}
+          </p>
+        )}
 
         {/* Buttons */}
-
-        <div className="flex justify-end gap-3 mt-8">
+        <div className="mt-8 flex justify-end gap-3">
 
           <button
+            type="button"
             onClick={onClose}
-            className="px-5 py-2 border rounded-lg"
+            className="
+              rounded-lg
+              border
+              border-gray-200
+              px-5
+              py-2
+              text-sm
+              font-medium
+              text-gray-700
+              transition
+              hover:bg-gray-50
+            "
           >
             {t(
               "plants.deletePlant.cancel",
@@ -98,8 +106,19 @@ export default function DeletePlantModal({
           </button>
 
           <button
+            type="button"
             onClick={handleDelete}
-            className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="
+              rounded-lg
+              bg-red-600
+              px-5
+              py-2
+              text-sm
+              font-semibold
+              text-white
+              transition
+              hover:bg-red-700
+            "
           >
             {t(
               "plants.deletePlant.delete",
@@ -108,9 +127,7 @@ export default function DeletePlantModal({
           </button>
 
         </div>
-
       </div>
-
     </div>
   );
 }
