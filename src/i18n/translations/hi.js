@@ -303,11 +303,11 @@ vehicles: {
     activeVehicles: "सक्रिय वाहन",
     inactiveVehicles: "निष्क्रिय वाहन",
     averageWeight: "प्रति वाहन औसत",
-    weightCollection: "कचरा संग्रहण",
+    weightCollection: "वजन संग्रहण",
   },
 
   averageWeightChart: {
-    title: "औसत उत्पन्न वजन (लाइन ग्राफ)",
+    title: "औसत उत्पन्न कचरा वजन (लाइन ग्राफ)",
     averageWasteGenerated: "औसत उत्पन्न कचरा:",
     viewBy: "इसके अनुसार देखें:",
     city: "शहर",
@@ -324,6 +324,48 @@ vehicles: {
     wasteGeneratedLegend: "उत्पन्न कचरा (टन)",
     thresholdLegend:
       "औसत उत्पन्न कचरा (सीमा)",
+  },
+
+  telemetryDirectory: {
+    title: "टेलीमेट्री निर्देशिका",
+
+    searchPlaceholder: "वाहन ID से खोजें",
+
+    allStatus: "सभी स्थिति",
+    active: "सक्रिय",
+    inactive: "निष्क्रिय",
+
+    download: "डाउनलोड",
+
+    createVehicle: "वाहन बनाएं",
+
+    vehicleId: "वाहन ID",
+    routeZone: "रूट / ज़ोन",
+    lastUpdate: "अंतिम अपडेट",
+    status: "स्थिति",
+    actions: "कार्रवाई",
+
+    action: "कार्रवाई",
+    update: "अपडेट करें",
+    delete: "हटाएं",
+
+    showing: "दिखाया जा रहा है",
+    to: "से",
+    of: "में से",
+    vehicles: "वाहन",
+
+    rowsPerPage: "प्रति पृष्ठ पंक्तियां:",
+
+    csv: {
+      vehicleId: "वाहन ID",
+      vehicleNumber: "वाहन नंबर",
+      vehicleType: "वाहन प्रकार",
+      city: "शहर",
+      zone: "ज़ोन",
+      division: "डिवीजन",
+      ward: "वार्ड",
+      status: "स्थिति",
+    },
   },
 },
 };

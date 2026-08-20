@@ -313,6 +313,48 @@ vehicles: {
     thresholdLegend:
       "Average Waste Generated (Threshold)",
   },
+
+  telemetryDirectory: {
+    title: "Telemetry Directory",
+
+    searchPlaceholder: "Search by Vehicle ID",
+
+    allStatus: "All Status",
+    active: "Active",
+    inactive: "Inactive",
+
+    download: "Download",
+
+    createVehicle: "Create Vehicle",
+
+    vehicleId: "Vehicle ID",
+    routeZone: "Route / Zone",
+    lastUpdate: "Last Update",
+    status: "Status",
+    actions: "Actions",
+
+    action: "Action",
+    update: "Update",
+    delete: "Delete",
+
+    showing: "Showing",
+    to: "to",
+    of: "of",
+    vehicles: "vehicles",
+
+    rowsPerPage: "Rows per page:",
+
+    csv: {
+      vehicleId: "Vehicle ID",
+      vehicleNumber: "Vehicle Number",
+      vehicleType: "Vehicle Type",
+      city: "City",
+      zone: "Zone",
+      division: "Division",
+      ward: "Ward",
+      status: "Status",
+    },
+  },
 },
 };
 

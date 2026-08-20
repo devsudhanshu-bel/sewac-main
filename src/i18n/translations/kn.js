@@ -296,20 +296,20 @@ vehicles: {
   title: "ವಾಹನಗಳು",
 
   description:
-    "ವಾಹನಗಳ ಸ್ಥಿತಿ, ಚಟುವಟಿಕೆ ಮತ್ತು ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣಾ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
+    "ವಾಹನ ಪಡೆಯ ಸ್ಥಿತಿ, ಚಟುವಟಿಕೆ ಮತ್ತು ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣಾ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
 
   kpis: {
     totalVehicles: "ಒಟ್ಟು ವಾಹನಗಳು",
     activeVehicles: "ಸಕ್ರಿಯ ವಾಹನಗಳು",
     inactiveVehicles: "ನಿಷ್ಕ್ರಿಯ ವಾಹನಗಳು",
     averageWeight: "ಪ್ರತಿ ವಾಹನದ ಸರಾಸರಿ",
-    weightCollection: "ತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣೆ",
+    weightCollection: "ತೂಕ ಸಂಗ್ರಹಣೆ",
   },
 
   averageWeightChart: {
-    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
+    title: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ ತೂಕ (ಲೈನ್ ಗ್ರಾಫ್)",
     averageWasteGenerated: "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ:",
-    viewBy: "ವೀಕ್ಷಣೆ:",
+    viewBy: "ಇದರ ಪ್ರಕಾರ ವೀಕ್ಷಿಸಿ:",
     city: "ನಗರ",
     weightOfWaste: "ತ್ಯಾಜ್ಯದ ತೂಕ (ಟನ್)",
 
@@ -324,6 +324,48 @@ vehicles: {
     wasteGeneratedLegend: "ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಟನ್)",
     thresholdLegend:
       "ಸರಾಸರಿ ಉತ್ಪಾದಿಸಿದ ತ್ಯಾಜ್ಯ (ಮಿತಿ)",
+  },
+
+  telemetryDirectory: {
+    title: "ಟೆಲಿಮೆಟ್ರಿ ಡೈರೆಕ್ಟರಿ",
+
+    searchPlaceholder: "ವಾಹನ ID ಮೂಲಕ ಹುಡುಕಿ",
+
+    allStatus: "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
+    active: "ಸಕ್ರಿಯ",
+    inactive: "ನಿಷ್ಕ್ರಿಯ",
+
+    download: "ಡೌನ್‌ಲೋಡ್",
+
+    createVehicle: "ವಾಹನವನ್ನು ರಚಿಸಿ",
+
+    vehicleId: "ವಾಹನ ID",
+    routeZone: "ಮಾರ್ಗ / ವಲಯ",
+    lastUpdate: "ಕೊನೆಯ ನವೀಕರಣ",
+    status: "ಸ್ಥಿತಿ",
+    actions: "ಕ್ರಿಯೆಗಳು",
+
+    action: "ಕ್ರಿಯೆ",
+    update: "ನವೀಕರಿಸಿ",
+    delete: "ಅಳಿಸಿ",
+
+    showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+    to: "ರಿಂದ",
+    of: "ಒಟ್ಟು",
+    vehicles: "ವಾಹನಗಳು",
+
+    rowsPerPage: "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು:",
+
+    csv: {
+      vehicleId: "ವಾಹನ ID",
+      vehicleNumber: "ವಾಹನ ಸಂಖ್ಯೆ",
+      vehicleType: "ವಾಹನ ಪ್ರಕಾರ",
+      city: "ನಗರ",
+      zone: "ವಲಯ",
+      division: "ವಿಭಾಗ",
+      ward: "ವಾರ್ಡ್",
+      status: "ಸ್ಥಿತಿ",
+    },
   },
 },
 };
