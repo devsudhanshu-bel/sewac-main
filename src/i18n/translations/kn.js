@@ -62,7 +62,14 @@ const kn = {
       totalWasteCollected: "ಒಟ್ಟು ಸಂಗ್ರಹಿಸಿದ ತ್ಯಾಜ್ಯ",
       collectionPoints: "ಸಂಗ್ರಹಣಾ ಕೇಂದ್ರಗಳು",
       totalCitizens: "ಒಟ್ಟು ನಾಗರಿಕರು",
+
+      citizensTrend: "ನಾಗರಿಕರ ಪ್ರವೃತ್ತಿ",
+      trashGiven: "ತ್ಯಾಜ್ಯ ನೀಡಿದವರು",
+      notGiven: "ತ್ಯಾಜ್ಯ ನೀಡದವರು",
+
       kg: "ಕೆಜಿ",
+      ton: "ಟನ್",
+      tons: "ಟನ್‌ಗಳು",
     },
 
     citizenTrend: {

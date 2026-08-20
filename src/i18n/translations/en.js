@@ -62,7 +62,14 @@ const en = {
       totalWasteCollected: "Total Waste Collected",
       collectionPoints: "Collection Points",
       totalCitizens: "Total Citizens",
+
+      citizensTrend: "Citizens Trend",
+      trashGiven: "Trash Given",
+      notGiven: "Not Given",
+
       kg: "KG",
+      ton: "TON",
+      tons: "TONS",
     },
 
     citizenTrend: {

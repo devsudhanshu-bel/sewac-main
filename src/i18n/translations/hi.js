@@ -62,7 +62,14 @@ const hi = {
       totalWasteCollected: "कुल एकत्रित कचरा",
       collectionPoints: "संग्रहण केंद्र",
       totalCitizens: "कुल नागरिक",
+
+      citizensTrend: "नागरिकों की प्रवृत्ति",
+      trashGiven: "कचरा दिया",
+      notGiven: "कचरा नहीं दिया",
+
       kg: "किग्रा",
+      ton: "टन",
+      tons: "टन",
     },
 
     citizenTrend: {
@@ -119,7 +126,7 @@ const hi = {
 
     contractor: {
       title: "ठेकेदार उपयोगकर्ता",
-      description: "ठेकेदार खातों और अनुमतियों को प्रबंधित करें।",
+      description: "ठेकेदार खातों और अनुमतियों को प्रबंधित करें.",
       search: "ठेकेदारों को खोजें...",
       add: "ठेकेदार जोड़ें",
       name: "नाम",
