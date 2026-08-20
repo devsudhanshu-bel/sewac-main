@@ -311,10 +311,7 @@ export default function Overview() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-      />
+      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
       {loading && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -355,7 +352,10 @@ export default function Overview() {
             trendData={overviewData?.generationTrend}
           />
 
-          <CityOverviewMap mapData={overviewData?.map} />
+          <CityOverviewMap
+            mapData={overviewData?.map}
+            selectedDate={selectedDate}
+          />
         </main>
       )}
     </div>

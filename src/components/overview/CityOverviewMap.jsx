@@ -943,6 +943,7 @@ function FilterDropdown({
 export default function CityMapOverview({
   cityId = DEFAULT_CITY_ID,
   onViewChange,
+  selectedDate,
 }) {
   /*
   ============================================================
@@ -961,7 +962,6 @@ export default function CityMapOverview({
     selectedZone: headerSelectedZone,
     selectedDivision: headerSelectedDivision,
     selectedWard: headerSelectedWard,
-    selectedDate: headerSelectedDate,
   } = useFilters();
   const [loading, setLoading] = useState(true);
 
@@ -3413,7 +3413,7 @@ export default function CityMapOverview({
       min-h-0
     "
           >
-            <GVPOverviewMap selectedDate={headerSelectedDate} />
+            <GVPOverviewMap selectedDate={selectedDate} />
           </div>
         )}
         {/* ====================================================
