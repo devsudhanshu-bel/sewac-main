@@ -1,5 +1,8 @@
-import { X, MapPin } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  X,
+  MapPin,
+} from "lucide-react";
+
 import {
   MapContainer,
   TileLayer,
@@ -7,98 +10,103 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+
 import L from "leaflet";
+import { useEffect, useState } from "react";
+
 import "leaflet/dist/leaflet.css";
 
 import api from "../../api/axios";
 import { useLanguage } from "../../i18n";
 
-/* -------------------------------------------------------
-   Default Bengaluru location
-------------------------------------------------------- */
+/* =========================================================
+   DEFAULT LOCATION
+========================================================= */
 
 const DEFAULT_LOCATION = [12.9716, 77.5946];
 
-/* -------------------------------------------------------
-   Custom Plant Marker
-------------------------------------------------------- */
+/* =========================================================
+   PURPLE PLANT MARKER
+========================================================= */
 
 const plantIcon = L.divIcon({
-  className: "custom-plant-marker",
+  className: "plant-location-marker",
   html: `
     <div
       style="
-        width: 34px;
-        height: 34px;
+        width: 38px;
+        height: 38px;
         border-radius: 50% 50% 50% 0;
-        background: #6C2BFF;
+        background: #7c3aed;
+        border: 3px solid white;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.30);
         transform: rotate(-45deg);
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-        border: 3px solid white;
       "
     >
       <div
         style="
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
+          width: 12px;
+          height: 12px;
           background: white;
+          border-radius: 50%;
         "
       ></div>
     </div>
   `,
-  iconSize: [34, 34],
-  iconAnchor: [17, 34],
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
 });
 
-/* -------------------------------------------------------
-   Map click handler
-------------------------------------------------------- */
+/* =========================================================
+   MAP CLICK HANDLER
+========================================================= */
 
 function LocationSelector({ onSelect }) {
   useMapEvents({
     click(e) {
-      onSelect(e.latlng.lat, e.latlng.lng);
+      onSelect([
+        e.latlng.lat,
+        e.latlng.lng,
+      ]);
     },
   });
 
   return null;
 }
 
-/* -------------------------------------------------------
-   Keep map centered on selected location
-------------------------------------------------------- */
+/* =========================================================
+   MAP CENTER CONTROLLER
+========================================================= */
 
-function MapCenterController({ latitude, longitude }) {
+function MapCenterController({ position }) {
   const map = useMap();
 
   useEffect(() => {
-    const lat = Number(latitude);
-    const lng = Number(longitude);
-
     if (
-      Number.isFinite(lat) &&
-      Number.isFinite(lng) &&
-      lat >= -90 &&
-      lat <= 90 &&
-      lng >= -180 &&
-      lng <= 180
+      Array.isArray(position) &&
+      position.length === 2 &&
+      Number.isFinite(position[0]) &&
+      Number.isFinite(position[1])
     ) {
-      map.setView([lat, lng], map.getZoom(), {
+      map.setView(position, map.getZoom(), {
         animate: true,
       });
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
     }
-  }, [latitude, longitude, map]);
+  }, [position, map]);
 
   return null;
 }
 
-/* -------------------------------------------------------
-   Edit Plant Modal
-------------------------------------------------------- */
+/* =========================================================
+   EDIT PLANT MODAL
+========================================================= */
 
 export default function EditPlantModal({
   plant,
@@ -118,89 +126,165 @@ export default function EditPlantModal({
     capacity_ton_per_day: "",
     vehicles_enrolled: "",
     total_waste_collected: "",
-    latitude: "",
-    longitude: "",
+    latitude: DEFAULT_LOCATION[0],
+    longitude: DEFAULT_LOCATION[1],
     status: "ACTIVE",
   });
 
-  /* -----------------------------------------------------
-     Load selected plant
-  ----------------------------------------------------- */
+  /* =======================================================
+     MAP POSITION
+  ======================================================= */
+
+  const [position, setPosition] = useState(
+    DEFAULT_LOCATION
+  );
+
+  /* =======================================================
+     LOAD PLANT
+  ======================================================= */
 
   useEffect(() => {
-    if (plant) {
-      setForm({
-        plant_name: plant.plant_name ?? "",
-        plant_type: plant.plant_type ?? "",
-        city: plant.city ?? "",
-        zone: plant.zone ?? "",
-        division: plant.division ?? "",
-        ward: plant.ward ?? "",
-        plant_manager: plant.plant_manager ?? "",
-        capacity_ton_per_day:
-          plant.capacity_ton_per_day ?? "",
-        vehicles_enrolled:
-          plant.vehicles_enrolled ?? "",
-        total_waste_collected:
-          plant.total_waste_collected ?? "",
-        latitude: plant.latitude ?? "",
-        longitude: plant.longitude ?? "",
-        status: plant.status ?? "ACTIVE",
-      });
-    }
+    if (!plant) return;
+
+    const latitude =
+      Number(plant.latitude) ||
+      DEFAULT_LOCATION[0];
+
+    const longitude =
+      Number(plant.longitude) ||
+      DEFAULT_LOCATION[1];
+
+    setForm({
+      plant_name: plant.plant_name ?? "",
+      plant_type: plant.plant_type ?? "",
+      city: plant.city ?? "",
+      zone: plant.zone ?? "",
+      division: plant.division ?? "",
+      ward: plant.ward ?? "",
+      plant_manager:
+        plant.plant_manager ?? "",
+      capacity_ton_per_day:
+        plant.capacity_ton_per_day ?? "",
+      vehicles_enrolled:
+        plant.vehicles_enrolled ?? "",
+      total_waste_collected:
+        plant.total_waste_collected ?? "",
+      latitude,
+      longitude,
+      status: plant.status ?? "ACTIVE",
+    });
+
+    setPosition([
+      latitude,
+      longitude,
+    ]);
+
   }, [plant]);
 
-  /* -----------------------------------------------------
-     Input handler
-  ----------------------------------------------------- */
+  /* =======================================================
+     FORM CHANGE
+  ======================================================= */
 
   const handleChange = (e) => {
+    const {
+      name,
+      value,
+    } = e.target;
+
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    }));
+
+    /* Keep map synced with manually entered coordinates */
+
+    if (name === "latitude") {
+      const lat = Number(value);
+
+      if (
+        Number.isFinite(lat) &&
+        lat >= -90 &&
+        lat <= 90
+      ) {
+        setPosition((prev) => [
+          lat,
+          prev[1],
+        ]);
+      }
+    }
+
+    if (name === "longitude") {
+      const lng = Number(value);
+
+      if (
+        Number.isFinite(lng) &&
+        lng >= -180 &&
+        lng <= 180
+      ) {
+        setPosition((prev) => [
+          prev[0],
+          lng,
+        ]);
+      }
+    }
+  };
+
+  /* =======================================================
+     MAP LOCATION SELECT
+  ======================================================= */
+
+  const handleMapLocation = ([lat, lng]) => {
+    setPosition([
+      lat,
+      lng,
+    ]);
+
+    setForm((prev) => ({
+      ...prev,
+      latitude: lat.toFixed(7),
+      longitude: lng.toFixed(7),
     }));
   };
 
-  /* -----------------------------------------------------
-     Map location handler
-  ----------------------------------------------------- */
-
-  const handleMapLocation = (lat, lng) => {
-    setForm((prev) => ({
-      ...prev,
-      latitude: lat.toFixed(8),
-      longitude: lng.toFixed(8),
-    }));
-  };
-
-  /* -----------------------------------------------------
-     Submit
-  ----------------------------------------------------- */
+  /* =======================================================
+     SUBMIT
+  ======================================================= */
 
   const handleSubmit = async () => {
+    if (!plant?.id) return;
+
     try {
-      await api.put(`/api/plants/${plant.id}`, {
-        ...form,
+      await api.put(
+        `/api/plants/${plant.id}`,
+        {
+          ...form,
 
-        capacity_ton_per_day: Number(
-          form.capacity_ton_per_day
-        ),
+          capacity_ton_per_day:
+            Number(
+              form.capacity_ton_per_day
+            ),
 
-        vehicles_enrolled: Number(
-          form.vehicles_enrolled
-        ),
+          vehicles_enrolled:
+            Number(
+              form.vehicles_enrolled
+            ),
 
-        total_waste_collected: Number(
-          form.total_waste_collected
-        ),
+          total_waste_collected:
+            Number(
+              form.total_waste_collected
+            ),
 
-        latitude: Number(form.latitude),
+          latitude:
+            Number(form.latitude),
 
-        longitude: Number(form.longitude),
-      });
+          longitude:
+            Number(form.longitude),
+        }
+      );
 
       onSuccess();
       onClose();
+
     } catch (err) {
       console.error(err);
 
@@ -213,25 +297,6 @@ export default function EditPlantModal({
     }
   };
 
-  /* -----------------------------------------------------
-     Map position
-  ----------------------------------------------------- */
-
-  const latitude = Number(form.latitude);
-  const longitude = Number(form.longitude);
-
-  const hasValidLocation =
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180;
-
-  const mapCenter = hasValidLocation
-    ? [latitude, longitude]
-    : DEFAULT_LOCATION;
-
   return (
     <div
       className="
@@ -243,57 +308,74 @@ export default function EditPlantModal({
         justify-center
         bg-black/40
         p-4
-        sm:p-6
-        overflow-y-auto
-        isolation-isolate
       "
     >
+
+      {/* ===================================================
+          MODAL
+      =================================================== */}
+
       <div
         className="
           relative
           z-[10000]
+          flex
           w-full
-          max-w-[760px]
+          max-w-[900px]
           max-h-[92vh]
-          overflow-y-auto
+          flex-col
+          overflow-hidden
           rounded-2xl
           bg-white
           shadow-2xl
         "
       >
+
         {/* =================================================
-            Header
+            HEADER
         ================================================= */}
 
         <div
           className="
-            sticky
-            top-0
-            z-[20]
             flex
-            items-center
+            shrink-0
+            items-start
             justify-between
             border-b
             border-gray-100
-            bg-white
-            px-6
-            py-5
+            px-7
+            py-6
           "
         >
+
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
+
+            <h2
+              className="
+                text-[24px]
+                font-bold
+                text-[#16295A]
+              "
+            >
               {t(
                 "plants.editPlant.title",
                 "Update Plant"
               )}
             </h2>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p
+              className="
+                mt-1
+                text-[14px]
+                text-gray-500
+              "
+            >
               {t(
                 "plants.editPlant.subtitle",
-                "Update plant details and location"
+                "Update plant information and location"
               )}
             </p>
+
           </div>
 
           <button
@@ -302,7 +384,7 @@ export default function EditPlantModal({
             className="
               rounded-lg
               p-2
-              text-gray-500
+              text-gray-400
               transition
               hover:bg-gray-100
               hover:text-gray-700
@@ -310,45 +392,74 @@ export default function EditPlantModal({
           >
             <X size={22} />
           </button>
+
         </div>
 
         {/* =================================================
-            Content
+            SCROLLABLE CONTENT
         ================================================= */}
 
-        <div className="px-6 py-6">
+        <div
+          className="
+            min-h-0
+            flex-1
+            overflow-y-auto
+            px-7
+            py-6
+          "
+        >
 
           {/* =================================================
-              Location Map
+              LOCATION
           ================================================= */}
 
           <div className="mb-6">
-            <div className="mb-2 flex items-center gap-2">
+
+            <div className="mb-1 flex items-center gap-2">
+
               <MapPin
-                size={16}
+                size={20}
                 className="text-violet-600"
               />
 
-              <p className="text-sm font-semibold text-gray-800">
+              <h3
+                className="
+                  text-[18px]
+                  font-semibold
+                  text-[#16295A]
+                "
+              >
                 {t(
-                  "plants.editPlant.selectLocation",
+                  "plants.editPlant.plantLocation",
                   "Plant Location"
                 )}
-              </p>
+              </h3>
+
             </div>
 
-            <p className="mb-3 text-xs text-gray-500">
+            <p
+              className="
+                mb-4
+                text-[14px]
+                text-gray-500
+              "
+            >
               {t(
                 "plants.editPlant.mapInstruction",
                 "Click on the map to update the plant location."
               )}
             </p>
 
-            {/* Small contained map */}
+            {/* =================================================
+                MAP
+            ================================================= */}
+
             <div
               className="
                 relative
-                h-[230px]
+                z-0
+                isolate
+                h-[285px]
                 w-full
                 overflow-hidden
                 rounded-xl
@@ -357,16 +468,27 @@ export default function EditPlantModal({
                 bg-gray-100
               "
             >
+
               <MapContainer
-                center={mapCenter}
-                zoom={12}
+                center={position}
+                zoom={11}
                 scrollWheelZoom={true}
+                zoomControl={true}
                 className="h-full w-full"
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  zIndex: 0,
+                }}
               >
-                {/* White / Light CARTO map */}
+
+                {/* WHITE / LIGHT CARTO MAP */}
+
                 <TileLayer
-                  attribution='&copy; OpenStreetMap contributors &copy; CARTO'
                   url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  subdomains="abcd"
+                  maxZoom={20}
                 />
 
                 <LocationSelector
@@ -374,28 +496,25 @@ export default function EditPlantModal({
                 />
 
                 <MapCenterController
-                  latitude={form.latitude}
-                  longitude={form.longitude}
+                  position={position}
                 />
 
-                {hasValidLocation && (
-                  <Marker
-                    position={[
-                      latitude,
-                      longitude,
-                    ]}
-                    icon={plantIcon}
-                  />
-                )}
+                <Marker
+                  position={position}
+                  icon={plantIcon}
+                />
+
               </MapContainer>
+
             </div>
+
           </div>
 
           {/* =================================================
-              Form
+              FORM
           ================================================= */}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
             {/* Plant Name */}
 
@@ -408,15 +527,15 @@ export default function EditPlantModal({
                 "Plant Name"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -434,15 +553,15 @@ export default function EditPlantModal({
                 "Plant Type"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -460,15 +579,15 @@ export default function EditPlantModal({
                 "City"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -486,15 +605,15 @@ export default function EditPlantModal({
                 "Zone"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -512,15 +631,15 @@ export default function EditPlantModal({
                 "Division"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -538,15 +657,15 @@ export default function EditPlantModal({
                 "Ward"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -564,15 +683,15 @@ export default function EditPlantModal({
                 "Plant Manager"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -582,25 +701,24 @@ export default function EditPlantModal({
             {/* Capacity */}
 
             <input
-              name="capacity_ton_per_day"
               type="number"
-              step="any"
+              name="capacity_ton_per_day"
               value={form.capacity_ton_per_day}
               onChange={handleChange}
               placeholder={t(
                 "plants.editPlant.capacity",
-                "Capacity"
+                "Capacity (Ton/Day)"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -610,8 +728,8 @@ export default function EditPlantModal({
             {/* Vehicles */}
 
             <input
-              name="vehicles_enrolled"
               type="number"
+              name="vehicles_enrolled"
               value={form.vehicles_enrolled}
               onChange={handleChange}
               placeholder={t(
@@ -619,15 +737,15 @@ export default function EditPlantModal({
                 "Vehicles Enrolled"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -637,9 +755,8 @@ export default function EditPlantModal({
             {/* Waste */}
 
             <input
-              name="total_waste_collected"
               type="number"
-              step="any"
+              name="total_waste_collected"
               value={form.total_waste_collected}
               onChange={handleChange}
               placeholder={t(
@@ -647,15 +764,15 @@ export default function EditPlantModal({
                 "Waste Collected"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -665,9 +782,9 @@ export default function EditPlantModal({
             {/* Latitude */}
 
             <input
-              name="latitude"
               type="number"
               step="any"
+              name="latitude"
               value={form.latitude}
               onChange={handleChange}
               placeholder={t(
@@ -675,15 +792,15 @@ export default function EditPlantModal({
                 "Latitude"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -693,9 +810,9 @@ export default function EditPlantModal({
             {/* Longitude */}
 
             <input
-              name="longitude"
               type="number"
               step="any"
+              name="longitude"
               value={form.longitude}
               onChange={handleChange}
               placeholder={t(
@@ -703,15 +820,15 @@ export default function EditPlantModal({
                 "Longitude"
               )}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
-                bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
+                placeholder:text-gray-400
                 focus:border-violet-500
                 focus:ring-2
                 focus:ring-violet-100
@@ -725,13 +842,13 @@ export default function EditPlantModal({
               value={form.status}
               onChange={handleChange}
               className="
-                w-full
-                rounded-lg
+                h-14
+                rounded-xl
                 border
                 border-gray-200
                 bg-white
-                p-3
-                text-sm
+                px-4
+                text-[15px]
                 outline-none
                 transition
                 focus:border-violet-500
@@ -739,6 +856,7 @@ export default function EditPlantModal({
                 focus:ring-violet-100
               "
             >
+
               <option value="ACTIVE">
                 {t(
                   "plants.editPlant.active",
@@ -752,34 +870,39 @@ export default function EditPlantModal({
                   "INACTIVE"
                 )}
               </option>
+
             </select>
+
           </div>
+
         </div>
 
         {/* =================================================
-            Footer
+            FOOTER
         ================================================= */}
 
         <div
           className="
             flex
+            shrink-0
             justify-end
             gap-3
             border-t
             border-gray-100
             bg-white
-            px-6
+            px-7
             py-5
           "
         >
+
           <button
             type="button"
             onClick={onClose}
             className="
-              rounded-lg
+              rounded-xl
               border
               border-gray-200
-              px-5
+              px-6
               py-2.5
               text-sm
               font-medium
@@ -798,15 +921,16 @@ export default function EditPlantModal({
             type="button"
             onClick={handleSubmit}
             className="
-              rounded-lg
+              rounded-xl
               bg-[#6C2BFF]
-              px-5
+              px-7
               py-2.5
               text-sm
               font-semibold
               text-white
+              shadow-sm
               transition
-              hover:bg-[#5b21db]
+              hover:bg-[#5B21D6]
             "
           >
             {t(
@@ -814,8 +938,11 @@ export default function EditPlantModal({
               "Update"
             )}
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }
