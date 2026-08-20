@@ -30,9 +30,10 @@ export default function ComplaintDetails({
 
   /*
    * =========================================================
-   * SYNC LOCAL FORM WITH SELECTED COMPLAINT
+   * SYNC FORM WITH SELECTED COMPLAINT
    * =========================================================
    */
+
   useEffect(() => {
     if (!complaint) {
       setStatus("");
@@ -42,7 +43,7 @@ export default function ComplaintDetails({
       return;
     }
 
-    setStatus(complaint.status || "");
+    setStatus(complaint.status || "PENDING");
     setAssignedTo(complaint.assigned_to || "");
     setRemarks(complaint.remarks || "");
     setOtp("");
@@ -50,13 +51,19 @@ export default function ComplaintDetails({
 
   /*
    * =========================================================
-   * STATUS RULES
+   * CURRENT STATUS
    * =========================================================
    */
 
   const currentStatus = complaint?.status || "";
 
-  const canMoveToReady = currentStatus === "PENDING";
+  /*
+   * =========================================================
+   * STATUS FLAGS
+   * =========================================================
+   */
+
+  const isPending = currentStatus === "PENDING";
 
   const isReadyForVerification = currentStatus === "READY_FOR_VERIFICATION";
 
@@ -65,11 +72,24 @@ export default function ComplaintDetails({
   const isClosed = currentStatus === "CLOSED";
 
   /*
-   * Only these statuses are editable by Admin.
+   * =========================================================
+   * ADMIN-EDITABLE STATUS OPTIONS
+   * =========================================================
    *
-   * PENDING
-   * READY_FOR_VERIFICATION
+   * IMPORTANT:
+   *
+   * We deliberately DO NOT expose:
+   *
+   * ASSIGNED
+   * IN_PROGRESS
+   * OTP_SENT
+   * CLOSED
+   *
+   * to the admin status dropdown.
+   *
+   * The backend/system controls those states.
    */
+
   const adminStatusOptions = [
     {
       value: "PENDING",
@@ -83,7 +103,7 @@ export default function ComplaintDetails({
 
   /*
    * =========================================================
-   * SAVE
+   * SAVE CHANGES
    * =========================================================
    */
 
@@ -92,16 +112,29 @@ export default function ComplaintDetails({
       return;
     }
 
+    /*
+     * Only allow the actual workflow transition:
+     *
+     * PENDING
+     *    ↓
+     * READY_FOR_VERIFICATION
+     *
+     * If the complaint is already in another system-controlled
+     * state, don't send a status mutation.
+     */
+
+    const nextStatus = isPending ? status : currentStatus;
+
     onSaveChanges?.({
-      status,
-      assigned_to: assignedTo,
-      remarks,
+      status: nextStatus,
+      assigned_to: assignedTo || null,
+      remarks: remarks || null,
     });
   };
 
   /*
    * =========================================================
-   * OTP
+   * OTP INPUT
    * =========================================================
    */
 
@@ -109,6 +142,36 @@ export default function ComplaintDetails({
     const value = event.target.value.replace(/\D/g, "").slice(0, 6);
 
     setOtp(value);
+  };
+
+  /*
+   * =========================================================
+   * STATUS BADGE CLASS
+   * =========================================================
+   */
+
+  const getStatusBadgeClass = () => {
+    if (currentStatus === "CLOSED") {
+      return "bg-[#E4F8EE] text-[#20A66A]";
+    }
+
+    if (currentStatus === "READY_FOR_VERIFICATION") {
+      return "bg-[#E7F1FF] text-[#2878D8]";
+    }
+
+    if (currentStatus === "OTP_SENT") {
+      return "bg-[#F3E8FF] text-[#7C3AED]";
+    }
+
+    if (currentStatus === "IN_PROGRESS") {
+      return "bg-[#EAF2FF] text-[#2563EB]";
+    }
+
+    if (currentStatus === "ASSIGNED") {
+      return "bg-[#EEF2FF] text-[#4F46E5]";
+    }
+
+    return "bg-[#FFF5D9] text-[#D99100]";
   };
 
   return (
@@ -127,7 +190,17 @@ export default function ComplaintDetails({
           HEADER
       ===================================================== */}
 
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          px-5
+          py-4
+          border-b
+          border-gray-100
+        "
+      >
         <h2 className="text-[15px] font-bold text-[#16295A]">
           Complaint Details
         </h2>
@@ -155,13 +228,27 @@ export default function ComplaintDetails({
           SCROLL CONTENT
       ===================================================== */}
 
-      <div className="h-[calc(100%-65px)] overflow-y-auto px-5 py-4">
+      <div
+        className="
+          h-[calc(100%-65px)]
+          overflow-y-auto
+          px-5
+          py-4
+        "
+      >
         {/* ===================================================
             TICKET
         =================================================== */}
 
         <div className="mb-4">
-          <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
+          <p
+            className="
+              text-[10px]
+              font-semibold
+              text-gray-500
+              mb-1.5
+            "
+          >
             Ticket Number
           </p>
 
@@ -187,15 +274,7 @@ export default function ComplaintDetails({
                 rounded-full
                 text-[10px]
                 font-semibold
-                ${
-                  currentStatus === "CLOSED"
-                    ? "bg-[#E4F8EE] text-[#20A66A]"
-                    : currentStatus === "READY_FOR_VERIFICATION"
-                      ? "bg-[#E7F1FF] text-[#2878D8]"
-                      : currentStatus === "OTP_SENT"
-                        ? "bg-[#F3E8FF] text-[#7C3AED]"
-                        : "bg-[#FFF5D9] text-[#D99100]"
-                }
+                ${getStatusBadgeClass()}
               `}
             >
               {currentStatus || "—"}
@@ -436,7 +515,7 @@ export default function ComplaintDetails({
           <select
             value={assignedTo}
             onChange={(event) => setAssignedTo(event.target.value)}
-            disabled={!complaint || saving}
+            disabled={!complaint || saving || isClosed || isOtpSent}
             className="
               w-full
               h-9
@@ -476,6 +555,10 @@ export default function ComplaintDetails({
             <p className="text-[10px] font-semibold text-gray-500">Status</p>
           </div>
 
+          {/* ===============================================
+              CLOSED
+          =============================================== */}
+
           {isClosed ? (
             <div
               className="
@@ -496,6 +579,10 @@ export default function ComplaintDetails({
               Closed — Citizen Verified
             </div>
           ) : isOtpSent ? (
+            /* =============================================
+               OTP SENT
+            ============================================= */
+
             <div
               className="
                 w-full
@@ -515,10 +602,14 @@ export default function ComplaintDetails({
               Verification OTP Sent
             </div>
           ) : (
+            /* =============================================
+               ADMIN STATUS SELECT
+            ============================================= */
+
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              disabled={!complaint || saving}
+              disabled={!complaint || saving || !isPending}
               className="
                 w-full
                 h-9
@@ -560,7 +651,7 @@ export default function ComplaintDetails({
           <textarea
             value={remarks}
             onChange={(event) => setRemarks(event.target.value)}
-            disabled={!complaint || saving}
+            disabled={!complaint || saving || isClosed || isOtpSent}
             placeholder={
               complaint ? "Add remarks..." : "Select a complaint first..."
             }
@@ -587,7 +678,7 @@ export default function ComplaintDetails({
         </div>
 
         {/* ===================================================
-            ACTIONS
+            SAVE / CANCEL
         =================================================== */}
 
         {!isClosed && !isOtpSent && (
@@ -607,20 +698,20 @@ export default function ComplaintDetails({
                 setRemarks(complaint.remarks || "");
               }}
               className="
-                h-8
-                px-4
-                rounded-lg
-                border
-                border-gray-200
-                bg-white
-                text-[11px]
-                font-semibold
-                text-gray-600
-                hover:bg-gray-50
-                transition
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-              "
+                  h-8
+                  px-4
+                  rounded-lg
+                  border
+                  border-gray-200
+                  bg-white
+                  text-[11px]
+                  font-semibold
+                  text-gray-600
+                  hover:bg-gray-50
+                  transition
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                "
             >
               Cancel
             </button>
@@ -630,21 +721,21 @@ export default function ComplaintDetails({
               disabled={!complaint || saving}
               onClick={handleSave}
               className="
-                h-8
-                px-4
-                rounded-lg
-                bg-gradient-to-r
-                from-violet-600
-                to-fuchsia-600
-                text-white
-                text-[11px]
-                font-semibold
-                shadow-sm
-                hover:opacity-95
-                transition
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-              "
+                  h-8
+                  px-4
+                  rounded-lg
+                  bg-gradient-to-r
+                  from-violet-600
+                  to-fuchsia-600
+                  text-white
+                  text-[11px]
+                  font-semibold
+                  shadow-sm
+                  hover:opacity-95
+                  transition
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                "
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
@@ -655,32 +746,47 @@ export default function ComplaintDetails({
             VERIFICATION
         =================================================== */}
 
-        <div className="border-t border-gray-100 mt-2 pt-4">
+        <div
+          className="
+            border-t
+            border-gray-100
+            mt-2
+            pt-4
+          "
+        >
+          {/* ===============================================
+              READY → REQUEST OTP
+          =============================================== */}
+
           {isReadyForVerification && !otpSent && (
             <button
               type="button"
               disabled={!complaint || saving}
               onClick={() => onRequestVerification?.()}
               className="
-                w-full
-                h-9
-                rounded-lg
-                bg-gradient-to-r
-                from-violet-600
-                to-fuchsia-600
-                text-white
-                text-[11px]
-                font-semibold
-                shadow-sm
-                hover:opacity-95
-                transition
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-              "
+                  w-full
+                  h-9
+                  rounded-lg
+                  bg-gradient-to-r
+                  from-violet-600
+                  to-fuchsia-600
+                  text-white
+                  text-[11px]
+                  font-semibold
+                  shadow-sm
+                  hover:opacity-95
+                  transition
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                "
             >
               Request Verification OTP
             </button>
           )}
+
+          {/* ===============================================
+              OTP INPUT
+          =============================================== */}
 
           {isOtpSent && (
             <div className="mt-1">
@@ -740,6 +846,10 @@ export default function ComplaintDetails({
               </button>
             </div>
           )}
+
+          {/* ===============================================
+              CLOSED MESSAGE
+          =============================================== */}
 
           {isClosed && (
             <div
