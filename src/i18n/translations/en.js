@@ -490,13 +490,35 @@ plants: {
   description:
     "Monitor all waste processing plants and their operations.",
 
-  loading: "Loading Plant Dashboard...",
+  loading:
+    "Loading Plant Dashboard...",
 
-  retry: "Retry",
+  retry:
+    "Retry",
 
   errors: {
     serverConnection:
       "Unable to connect to the server.",
+  },
+
+  kpis: {
+    totalPlants:
+      "Total Plants",
+
+    allRegisteredPlants:
+      "All registered plants",
+
+    totalVehiclesEnrolled:
+      "Total Vehicles Enrolled",
+
+    acrossAllPlants:
+      "Across all plants",
+
+    totalWasteCollected:
+      "Total Waste Collected",
+
+    allTimeCollection:
+      "All time collection",
   },
 },
 };

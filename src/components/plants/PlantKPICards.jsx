@@ -4,35 +4,76 @@ import {
   Recycle,
 } from "lucide-react";
 
+import { useLanguage } from "../../i18n";
+
 export default function PlantKPICards({ data }) {
+  const { t } = useLanguage();
+
   const kpis = [
     {
-      title: "Total Plants",
+      title: t(
+        "plants.kpis.totalPlants",
+        "Total Plants"
+      ),
+
       value: (data?.totalPlants ?? 0).toLocaleString(),
-      subtitle: "All registered plants",
+
+      subtitle: t(
+        "plants.kpis.allRegisteredPlants",
+        "All registered plants"
+      ),
+
       icon: Factory,
+
       bg: "bg-violet-100",
+
       color: "text-violet-600",
     },
+
     {
-      title: "Total Vehicles Enrolled",
-      value: (data?.totalVehiclesEnrolled ?? 0).toLocaleString(),
-      subtitle: "Across all plants",
+      title: t(
+        "plants.kpis.totalVehiclesEnrolled",
+        "Total Vehicles Enrolled"
+      ),
+
+      value: (
+        data?.totalVehiclesEnrolled ?? 0
+      ).toLocaleString(),
+
+      subtitle: t(
+        "plants.kpis.acrossAllPlants",
+        "Across all plants"
+      ),
+
       icon: Truck,
+
       bg: "bg-emerald-100",
+
       color: "text-emerald-600",
     },
+
     {
-      title: "Total Waste Collected",
+      title: t(
+        "plants.kpis.totalWasteCollected",
+        "Total Waste Collected"
+      ),
+
       value: `${(
         data?.totalWasteCollected ?? 0
       ).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      })} Ton`,
-      subtitle: "All time collection",
+      })} ${t("units.ton", "Ton")}`,
+
+      subtitle: t(
+        "plants.kpis.allTimeCollection",
+        "All time collection"
+      ),
+
       icon: Recycle,
+
       bg: "bg-orange-100",
+
       color: "text-orange-500",
     },
   ];
@@ -59,7 +100,9 @@ export default function PlantKPICards({ data }) {
               min-h-[115px]
             "
           >
-            {/* Icon */}
+            {/* =================================================
+                ICON
+            ================================================= */}
 
             <div
               className={`
@@ -80,7 +123,9 @@ export default function PlantKPICards({ data }) {
               />
             </div>
 
-            {/* Text */}
+            {/* =================================================
+                TEXT
+            ================================================= */}
 
             <div className="min-w-0 flex flex-col">
               <p className="text-[13px] font-medium text-gray-500">
