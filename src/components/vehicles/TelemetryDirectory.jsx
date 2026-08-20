@@ -3,6 +3,7 @@ import {
   Search,
   Download,
 } from "lucide-react";
+
 import { useEffect, useState } from "react";
 
 import api from "../../api/axios";
@@ -22,11 +23,21 @@ function StatusBadge({ status, t }) {
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-lg px-3 py-1 text-[12px] font-semibold ${
-        active
-          ? "bg-[#E8FBF2] text-[#16A34A]"
-          : "bg-[#FFF0E8] text-[#F97316]"
-      }`}
+      className={`
+        inline-flex
+        items-center
+        justify-center
+        rounded-lg
+        px-3
+        py-1
+        text-[11px]
+        font-semibold
+        ${
+          active
+            ? "bg-[#E8FBF2] text-[#16A34A]"
+            : "bg-[#FFF0E8] text-[#F97316]"
+        }
+      `}
     >
       {active
         ? t(
@@ -224,30 +235,53 @@ export default function TelemetryDirectory() {
   =========================================================== */
 
   return (
-    <section className="bg-white rounded-[30px] border border-[#ECECF3] shadow-sm overflow-hidden">
-
+    <section
+      className="
+        bg-white
+        rounded-[30px]
+        border
+        border-[#ECECF3]
+        shadow-sm
+        overflow-hidden
+      "
+    >
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="flex items-center justify-between px-8 py-5 border-b border-[#F3F4F6]">
-
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          px-8
+          py-5
+          border-b
+          border-[#F3F4F6]
+        "
+      >
         {/* LEFT */}
 
         <div className="flex items-center gap-4">
-
           <RadioTower
-            size={22}
+            size={21}
             className="text-[#6C2BFF]"
           />
 
-          <h2 className="text-[18px] font-semibold uppercase tracking-wide text-[#111827]">
+          <h2
+            className="
+              text-[16px]
+              font-semibold
+              uppercase
+              tracking-wide
+              text-[#111827]
+            "
+          >
             {t(
               "vehicles.telemetryDirectory.title",
               "Telemetry Directory"
             )}
           </h2>
-
         </div>
 
         {/* RIGHT */}
@@ -257,10 +291,15 @@ export default function TelemetryDirectory() {
           {/* SEARCH */}
 
           <div className="relative w-[420px]">
-
             <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              size={17}
+              className="
+                absolute
+                left-4
+                top-1/2
+                -translate-y-1/2
+                text-gray-400
+              "
             />
 
             <input
@@ -283,7 +322,7 @@ export default function TelemetryDirectory() {
                 border-gray-300
                 rounded-xl
                 bg-white
-                text-sm
+                text-[13px]
                 focus:outline-none
                 focus:ring-2
                 focus:ring-[#6C2BFF]
@@ -291,7 +330,6 @@ export default function TelemetryDirectory() {
                 transition
               "
             />
-
           </div>
 
           {/* STATUS */}
@@ -310,7 +348,7 @@ export default function TelemetryDirectory() {
               border-gray-300
               bg-white
               px-4
-              text-sm
+              text-[13px]
               focus:outline-none
               focus:ring-2
               focus:ring-[#6C2BFF]
@@ -360,7 +398,7 @@ export default function TelemetryDirectory() {
               transition
             "
           >
-            <Download size={20} />
+            <Download size={19} />
           </button>
 
           {/* CREATE */}
@@ -376,6 +414,7 @@ export default function TelemetryDirectory() {
               rounded-xl
               bg-[#6C2BFF]
               text-white
+              text-[14px]
               font-semibold
               hover:bg-[#5B21E8]
               transition
@@ -386,9 +425,7 @@ export default function TelemetryDirectory() {
               "Create Vehicle"
             )}
           </button>
-
         </div>
-
       </div>
 
       {/* =====================================================
@@ -396,48 +433,106 @@ export default function TelemetryDirectory() {
       ===================================================== */}
 
       <div className="overflow-x-auto">
-
         <table className="w-full table-fixed">
 
           {/* HEADER */}
 
           <thead className="bg-[#F8F8FC]">
-
             <tr>
 
-              <th className="w-[40px] px-4 py-4 text-left">
+              <th
+                className="
+                  w-[40px]
+                  px-4
+                  py-4
+                  text-left
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 #
               </th>
 
-              <th className="w-[70px] px-4 py-4 text-left">
+              <th
+                className="
+                  w-[70px]
+                  px-4
+                  py-4
+                  text-left
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 {t(
                   "vehicles.telemetryDirectory.vehicleId",
                   "Vehicle ID"
                 )}
               </th>
 
-              <th className="w-[120px] px-4 py-4 text-left">
+              <th
+                className="
+                  w-[120px]
+                  px-4
+                  py-4
+                  text-left
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 {t(
                   "vehicles.telemetryDirectory.routeZone",
                   "Route / Zone"
                 )}
               </th>
 
-              <th className="w-[120px] px-4 py-4 text-left">
+              <th
+                className="
+                  w-[120px]
+                  px-4
+                  py-4
+                  text-left
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 {t(
                   "vehicles.telemetryDirectory.lastUpdate",
                   "Last Update"
                 )}
               </th>
 
-              <th className="w-[120px] px-4 py-4 text-center">
+              <th
+                className="
+                  w-[120px]
+                  px-4
+                  py-4
+                  text-center
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 {t(
                   "vehicles.telemetryDirectory.status",
                   "Status"
                 )}
               </th>
 
-              <th className="w-[140px] px-4 py-4 text-center">
+              <th
+                className="
+                  w-[140px]
+                  px-4
+                  py-4
+                  text-center
+                  text-[13px]
+                  font-semibold
+                  text-[#111827]
+                "
+              >
                 {t(
                   "vehicles.telemetryDirectory.actions",
                   "Actions"
@@ -445,7 +540,6 @@ export default function TelemetryDirectory() {
               </th>
 
             </tr>
-
           </thead>
 
           {/* BODY */}
@@ -455,17 +549,21 @@ export default function TelemetryDirectory() {
             {telemetry.length === 0 ? (
 
               <tr>
-
                 <td
                   colSpan={6}
-                  className="px-4 py-12 text-center text-gray-500"
+                  className="
+                    px-4
+                    py-12
+                    text-center
+                    text-[13px]
+                    text-gray-500
+                  "
                 >
                   {t(
                     "vehicles.telemetryDirectory.noVehicles",
                     "No vehicles found."
                   )}
                 </td>
-
               </tr>
 
             ) : (
@@ -474,9 +572,7 @@ export default function TelemetryDirectory() {
                 (vehicle, index) => (
 
                   <tr
-                    key={
-                      vehicle.vehicle_id
-                    }
+                    key={vehicle.vehicle_id}
                     className="
                       border-b
                       border-[#ECECF3]
@@ -487,7 +583,14 @@ export default function TelemetryDirectory() {
 
                     {/* NUMBER */}
 
-                    <td className="px-4 py-4">
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        text-[13px]
+                        text-[#111827]
+                      "
+                    >
                       {(page - 1) *
                         limit +
                         index +
@@ -496,19 +599,42 @@ export default function TelemetryDirectory() {
 
                     {/* VEHICLE ID */}
 
-                    <td className="px-4 py-4 font-medium">
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        text-[13px]
+                        font-medium
+                        text-[#111827]
+                      "
+                    >
                       {vehicle.vehicle_id}
                     </td>
 
                     {/* ZONE */}
 
-                    <td className="px-4 py-4">
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        text-[13px]
+                        text-[#111827]
+                      "
+                    >
                       {vehicle.zone || "—"}
                     </td>
 
                     {/* LAST UPDATE */}
 
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        whitespace-nowrap
+                        text-[13px]
+                        text-[#111827]
+                      "
+                    >
                       {vehicle.created_at
                         ? new Date(
                             vehicle.created_at
@@ -518,21 +644,30 @@ export default function TelemetryDirectory() {
 
                     {/* STATUS */}
 
-                    <td className="px-4 py-4 text-center">
-
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        text-center
+                      "
+                    >
                       <StatusBadge
                         status={
                           vehicle.status
                         }
                         t={t}
                       />
-
                     </td>
 
                     {/* ACTIONS */}
 
-                    <td className="px-4 py-4 text-center">
-
+                    <td
+                      className="
+                        px-4
+                        py-4
+                        text-center
+                      "
+                    >
                       <select
                         className="
                           border
@@ -540,7 +675,7 @@ export default function TelemetryDirectory() {
                           rounded-lg
                           px-2
                           py-1
-                          text-sm
+                          text-[12px]
                           bg-white
                           focus:outline-none
                           focus:ring-2
@@ -582,7 +717,6 @@ export default function TelemetryDirectory() {
                             "Action";
                         }}
                       >
-
                         <option value="Action">
                           {t(
                             "vehicles.telemetryDirectory.action",
@@ -603,34 +737,42 @@ export default function TelemetryDirectory() {
                             "Delete"
                           )}
                         </option>
-
                       </select>
-
                     </td>
 
                   </tr>
-
                 )
               )
-
             )}
 
           </tbody>
-
         </table>
-
       </div>
 
       {/* =====================================================
           FOOTER
       ===================================================== */}
 
-      <div className="flex items-center justify-between px-8 py-5 border-t border-[#ECECF3]">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          px-8
+          py-5
+          border-t
+          border-[#ECECF3]
+        "
+      >
 
         {/* SHOWING */}
 
-        <p className="text-[14px] text-[#374151]">
-
+        <p
+          className="
+            text-[12px]
+            text-[#374151]
+          "
+        >
           {t(
             "vehicles.telemetryDirectory.showing",
             "Showing"
@@ -670,14 +812,23 @@ export default function TelemetryDirectory() {
             "vehicles.telemetryDirectory.vehicles",
             "vehicles"
           )}
-
         </p>
 
         {/* ROWS */}
 
-        <div className="flex items-center gap-4">
-
-          <span className="text-[14px] text-[#6B7280]">
+        <div
+          className="
+            flex
+            items-center
+            gap-4
+          "
+        >
+          <span
+            className="
+              text-[12px]
+              text-[#6B7280]
+            "
+          >
             {t(
               "vehicles.telemetryDirectory.rowsPerPage",
               "Rows per page:"
@@ -700,9 +851,9 @@ export default function TelemetryDirectory() {
               border-[#E5E7EB]
               px-3
               bg-white
+              text-[12px]
             "
           >
-
             <option value={5}>
               5
             </option>
@@ -718,11 +869,8 @@ export default function TelemetryDirectory() {
             <option value={100}>
               100
             </option>
-
           </select>
-
         </div>
-
       </div>
 
       {/* =====================================================
@@ -771,7 +919,6 @@ export default function TelemetryDirectory() {
           }}
         />
       )}
-
     </section>
   );
 }
