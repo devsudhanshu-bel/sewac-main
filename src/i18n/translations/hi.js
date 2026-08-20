@@ -470,7 +470,8 @@ vehicles: {
 },
 
 plants: {
-  title: "प्लांट अवलोकन",
+  title:
+    "प्लांट अवलोकन",
 
   description:
     "सभी अपशिष्ट प्रसंस्करण प्लांट और उनके संचालन की निगरानी करें।",
@@ -505,8 +506,189 @@ plants: {
     allTimeCollection:
       "अब तक का संग्रह",
   },
-},
 
+  directory: {
+    title:
+      "प्लांट डायरेक्टरी",
+
+    addPlant:
+      "प्लांट जोड़ें",
+
+    plantName:
+      "प्लांट का नाम",
+
+    zone:
+      "ज़ोन",
+
+    capacity:
+      "क्षमता (टन/दिन)",
+
+    plantManager:
+      "प्लांट प्रबंधक",
+
+    vehiclesEnrolled:
+      "पंजीकृत वाहन",
+
+    actions:
+      "क्रियाएँ",
+
+    updatePlant:
+      "प्लांट अपडेट करें",
+
+    deletePlant:
+      "प्लांट हटाएँ",
+
+    noPlants:
+      "कोई प्लांट नहीं मिला।",
+
+    showing:
+      "दिखा रहे हैं",
+
+    of:
+      "में से",
+
+    plants:
+      "प्लांट",
+
+    rowsPerPage:
+      "प्रति पृष्ठ पंक्तियाँ",
+  },
+
+  createPlant: {
+    title:
+      "प्लांट बनाएँ",
+
+    plantName:
+      "प्लांट का नाम",
+
+    plantType:
+      "प्लांट का प्रकार",
+
+    city:
+      "शहर",
+
+    zone:
+      "ज़ोन",
+
+    division:
+      "डिवीजन",
+
+    ward:
+      "वार्ड",
+
+    plantManager:
+      "प्लांट प्रबंधक",
+
+    capacity:
+      "क्षमता (टन/दिन)",
+
+    vehiclesEnrolled:
+      "पंजीकृत वाहन",
+
+    wasteCollected:
+      "एकत्रित कचरा",
+
+    latitude:
+      "अक्षांश",
+
+    longitude:
+      "देशांतर",
+
+    active:
+      "सक्रिय",
+
+    inactive:
+      "निष्क्रिय",
+
+    cancel:
+      "रद्द करें",
+
+    create:
+      "बनाएँ",
+
+    errors: {
+      createFailed:
+        "प्लांट बनाने में विफल।",
+    },
+  },
+
+  editPlant: {
+    title:
+      "प्लांट अपडेट करें",
+
+    plantName:
+      "प्लांट का नाम",
+
+    plantType:
+      "प्लांट का प्रकार",
+
+    city:
+      "शहर",
+
+    zone:
+      "ज़ोन",
+
+    division:
+      "डिवीजन",
+
+    ward:
+      "वार्ड",
+
+    plantManager:
+      "प्लांट प्रबंधक",
+
+    capacity:
+      "क्षमता",
+
+    vehiclesEnrolled:
+      "पंजीकृत वाहन",
+
+    wasteCollected:
+      "एकत्रित कचरा",
+
+    latitude:
+      "अक्षांश",
+
+    longitude:
+      "देशांतर",
+
+    active:
+      "सक्रिय",
+
+    inactive:
+      "निष्क्रिय",
+
+    cancel:
+      "रद्द करें",
+
+    update:
+      "अपडेट करें",
+
+    errors: {
+      updateFailed:
+        "प्लांट अपडेट करने में विफल।",
+    },
+  },
+
+  deletePlant: {
+    title:
+      "प्लांट हटाएँ",
+
+    confirmation:
+      "क्या आप वाकई इस प्लांट को हटाना चाहते हैं?",
+
+    cancel:
+      "रद्द करें",
+
+    delete:
+      "हटाएँ",
+
+    errors: {
+      deleteFailed:
+        "प्लांट हटाने में विफल।",
+    },
+  },
+},
 };
 
 export default hi;

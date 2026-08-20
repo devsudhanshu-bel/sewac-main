@@ -520,6 +520,188 @@ plants: {
     allTimeCollection:
       "All time collection",
   },
+
+  directory: {
+    title:
+      "Plant Directory",
+
+    addPlant:
+      "Add Plant",
+
+    plantName:
+      "Plant Name",
+
+    zone:
+      "Zone",
+
+    capacity:
+      "Capacity (Ton/Day)",
+
+    plantManager:
+      "Plant Manager",
+
+    vehiclesEnrolled:
+      "Vehicles Enrolled",
+
+    actions:
+      "Actions",
+
+    updatePlant:
+      "Update Plant",
+
+    deletePlant:
+      "Delete Plant",
+
+    noPlants:
+      "No plants found.",
+
+    showing:
+      "Showing",
+
+    of:
+      "of",
+
+    plants:
+      "plants",
+
+    rowsPerPage:
+      "Rows per page",
+  },
+
+  createPlant: {
+    title:
+      "Create Plant",
+
+    plantName:
+      "Plant Name",
+
+    plantType:
+      "Plant Type",
+
+    city:
+      "City",
+
+    zone:
+      "Zone",
+
+    division:
+      "Division",
+
+    ward:
+      "Ward",
+
+    plantManager:
+      "Plant Manager",
+
+    capacity:
+      "Capacity (Ton/Day)",
+
+    vehiclesEnrolled:
+      "Vehicles Enrolled",
+
+    wasteCollected:
+      "Waste Collected",
+
+    latitude:
+      "Latitude",
+
+    longitude:
+      "Longitude",
+
+    active:
+      "ACTIVE",
+
+    inactive:
+      "INACTIVE",
+
+    cancel:
+      "Cancel",
+
+    create:
+      "Create",
+
+    errors: {
+      createFailed:
+        "Failed to create plant.",
+    },
+  },
+
+  editPlant: {
+    title:
+      "Update Plant",
+
+    plantName:
+      "Plant Name",
+
+    plantType:
+      "Plant Type",
+
+    city:
+      "City",
+
+    zone:
+      "Zone",
+
+    division:
+      "Division",
+
+    ward:
+      "Ward",
+
+    plantManager:
+      "Plant Manager",
+
+    capacity:
+      "Capacity",
+
+    vehiclesEnrolled:
+      "Vehicles Enrolled",
+
+    wasteCollected:
+      "Waste Collected",
+
+    latitude:
+      "Latitude",
+
+    longitude:
+      "Longitude",
+
+    active:
+      "ACTIVE",
+
+    inactive:
+      "INACTIVE",
+
+    cancel:
+      "Cancel",
+
+    update:
+      "Update",
+
+    errors: {
+      updateFailed:
+        "Failed to update plant.",
+    },
+  },
+
+  deletePlant: {
+    title:
+      "Delete Plant",
+
+    confirmation:
+      "Are you sure you want to delete this plant?",
+
+    cancel:
+      "Cancel",
+
+    delete:
+      "Delete",
+
+    errors: {
+      deleteFailed:
+        "Failed to delete plant.",
+    },
+  },
 },
 };
 

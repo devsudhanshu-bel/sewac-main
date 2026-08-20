@@ -574,7 +574,8 @@ vehicles: {
 },
 
 plants: {
-  title: "ಸಸ್ಯಗಳ ಅವಲೋಕನ",
+  title:
+    "ಸಸ್ಯಗಳ ಅವಲೋಕನ",
 
   description:
     "ಎಲ್ಲಾ ತ್ಯಾಜ್ಯ ಸಂಸ್ಕರಣಾ ಸಸ್ಯಗಳು ಮತ್ತು ಅವುಗಳ ಕಾರ್ಯಾಚರಣೆಗಳನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ.",
@@ -608,6 +609,188 @@ plants: {
 
     allTimeCollection:
       "ಇದುವರೆಗೆ ಸಂಗ್ರಹಣೆ",
+  },
+
+  directory: {
+    title:
+      "ಸಸ್ಯಗಳ ಡೈರೆಕ್ಟರಿ",
+
+    addPlant:
+      "ಸಸ್ಯವನ್ನು ಸೇರಿಸಿ",
+
+    plantName:
+      "ಸಸ್ಯದ ಹೆಸರು",
+
+    zone:
+      "ವಲಯ",
+
+    capacity:
+      "ಸಾಮರ್ಥ್ಯ (ಟನ್/ದಿನ)",
+
+    plantManager:
+      "ಸಸ್ಯ ವ್ಯವಸ್ಥಾಪಕರು",
+
+    vehiclesEnrolled:
+      "ನೋಂದಾಯಿಸಲಾದ ವಾಹನಗಳು",
+
+    actions:
+      "ಕ್ರಿಯೆಗಳು",
+
+    updatePlant:
+      "ಸಸ್ಯವನ್ನು ನವೀಕರಿಸಿ",
+
+    deletePlant:
+      "ಸಸ್ಯವನ್ನು ಅಳಿಸಿ",
+
+    noPlants:
+      "ಯಾವುದೇ ಸಸ್ಯಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+
+    showing:
+      "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+
+    of:
+      "ರಲ್ಲಿ",
+
+    plants:
+      "ಸಸ್ಯಗಳು",
+
+    rowsPerPage:
+      "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು",
+  },
+
+  createPlant: {
+    title:
+      "ಸಸ್ಯವನ್ನು ರಚಿಸಿ",
+
+    plantName:
+      "ಸಸ್ಯದ ಹೆಸರು",
+
+    plantType:
+      "ಸಸ್ಯದ ಪ್ರಕಾರ",
+
+    city:
+      "ನಗರ",
+
+    zone:
+      "ವಲಯ",
+
+    division:
+      "ವಿಭಾಗ",
+
+    ward:
+      "ವಾರ್ಡ್",
+
+    plantManager:
+      "ಸಸ್ಯ ವ್ಯವಸ್ಥಾಪಕರು",
+
+    capacity:
+      "ಸಾಮರ್ಥ್ಯ (ಟನ್/ದಿನ)",
+
+    vehiclesEnrolled:
+      "ನೋಂದಾಯಿಸಲಾದ ವಾಹನಗಳು",
+
+    wasteCollected:
+      "ಸಂಗ್ರಹಿಸಲಾದ ತ್ಯಾಜ್ಯ",
+
+    latitude:
+      "ಅಕ್ಷಾಂಶ",
+
+    longitude:
+      "ರೇಖಾಂಶ",
+
+    active:
+      "ಸಕ್ರಿಯ",
+
+    inactive:
+      "ನಿಷ್ಕ್ರಿಯ",
+
+    cancel:
+      "ರದ್ದುಮಾಡಿ",
+
+    create:
+      "ರಚಿಸಿ",
+
+    errors: {
+      createFailed:
+        "ಸಸ್ಯವನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    },
+  },
+
+  editPlant: {
+    title:
+      "ಸಸ್ಯವನ್ನು ನವೀಕರಿಸಿ",
+
+    plantName:
+      "ಸಸ್ಯದ ಹೆಸರು",
+
+    plantType:
+      "ಸಸ್ಯದ ಪ್ರಕಾರ",
+
+    city:
+      "ನಗರ",
+
+    zone:
+      "ವಲಯ",
+
+    division:
+      "ವಿಭಾಗ",
+
+    ward:
+      "ವಾರ್ಡ್",
+
+    plantManager:
+      "ಸಸ್ಯ ವ್ಯವಸ್ಥಾಪಕರು",
+
+    capacity:
+      "ಸಾಮರ್ಥ್ಯ",
+
+    vehiclesEnrolled:
+      "ನೋಂದಾಯಿಸಲಾದ ವಾಹನಗಳು",
+
+    wasteCollected:
+      "ಸಂಗ್ರಹಿಸಲಾದ ತ್ಯಾಜ್ಯ",
+
+    latitude:
+      "ಅಕ್ಷಾಂಶ",
+
+    longitude:
+      "ರೇಖಾಂಶ",
+
+    active:
+      "ಸಕ್ರಿಯ",
+
+    inactive:
+      "ನಿಷ್ಕ್ರಿಯ",
+
+    cancel:
+      "ರದ್ದುಮಾಡಿ",
+
+    update:
+      "ನವೀಕರಿಸಿ",
+
+    errors: {
+      updateFailed:
+        "ಸಸ್ಯವನ್ನು ನವೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    },
+  },
+
+  deletePlant: {
+    title:
+      "ಸಸ್ಯವನ್ನು ಅಳಿಸಿ",
+
+    confirmation:
+      "ಈ ಸಸ್ಯವನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?",
+
+    cancel:
+      "ರದ್ದುಮಾಡಿ",
+
+    delete:
+      "ಅಳಿಸಿ",
+
+    errors: {
+      deleteFailed:
+        "ಸಸ್ಯವನ್ನು ಅಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    },
   },
 },
 };
