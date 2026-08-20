@@ -179,6 +179,58 @@ wasteGenerators: {
     wardNo: "वार्ड संख्या",
     gvp: "GVP",
   },
+
+    map: {
+    title: "संग्रहण केंद्र निगरानी",
+    points: "पॉइंट्स",
+    ward: "वार्ड",
+    selectedWard: "चयनित वार्ड",
+
+    legend: {
+      collectionPoint: "संग्रहण केंद्र",
+      gvpPoint: "GVP पॉइंट",
+    },
+
+    loading: "दैनिक वाहन टेलीमेट्री लोड हो रही है...",
+
+    selectWard: "वार्ड चुनें",
+
+    selectWardDescription:
+      "हेडर से शहर, ज़ोन, डिवीजन और वार्ड चुनें।",
+
+    mapUnavailable: "मानचित्र उपलब्ध नहीं है",
+
+    noBoundary:
+      "इस चयन के लिए वार्ड सीमा उपलब्ध नहीं है",
+
+    noTelemetry:
+      "इस तारीख के लिए कोई टेलीमेट्री पॉइंट नहीं है",
+
+    summary: {
+      showing: "दिखाया जा रहा है",
+      telemetryCoordinates:
+        "वाहन टेबल से टेलीमेट्री निर्देशांक",
+      vehicleTables: "वाहन टेबल",
+      gvpPoints: "GVP पॉइंट्स",
+    },
+
+    errors: {
+      loadWardMap:
+        "चयनित वार्ड मानचित्र लोड नहीं किया जा सका।",
+    },
+
+    tooltip: {
+      collectionVehicle: "संग्रहण वाहन",
+      gvpPoint: "GVP पॉइंट",
+      vehicle: "वाहन",
+      table: "टेबल",
+      iot: "IoT",
+      unit: "यूनिट",
+      remarks: "टिप्पणियां",
+      gvpWaste: "GVP कचरा",
+      coordinates: "निर्देशांक",
+    },
+  },
 },
 };
 

@@ -167,6 +167,58 @@ wasteGenerators: {
     wardNo: "Ward No",
     gvp: "GVP",
   },
+
+    map: {
+    title: "Collection Point Monitoring",
+    points: "points",
+    ward: "Ward",
+    selectedWard: "Selected Ward",
+
+    legend: {
+      collectionPoint: "Collection Point",
+      gvpPoint: "GVP Point",
+    },
+
+    loading: "Loading daily vehicle telemetry...",
+
+    selectWard: "Select a ward",
+
+    selectWardDescription:
+      "Choose City, Zone, Division and Ward from the header.",
+
+    mapUnavailable: "Map unavailable",
+
+    noBoundary:
+      "Ward boundary unavailable for this selection",
+
+    noTelemetry:
+      "No telemetry points for this date",
+
+    summary: {
+      showing: "Showing",
+      telemetryCoordinates:
+        "telemetry coordinates from",
+      vehicleTables: "vehicle tables",
+      gvpPoints: "GVP points",
+    },
+
+    errors: {
+      loadWardMap:
+        "Unable to load the selected ward map.",
+    },
+
+    tooltip: {
+      collectionVehicle: "Collection Vehicle",
+      gvpPoint: "GVP Point",
+      vehicle: "Vehicle",
+      table: "Table",
+      iot: "IoT",
+      unit: "Unit",
+      remarks: "Remarks",
+      gvpWaste: "GVP waste",
+      coordinates: "Coordinates",
+    },
+  },
 },
 };
 

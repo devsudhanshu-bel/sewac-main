@@ -179,6 +179,58 @@ wasteGenerators: {
     wardNo: "ವಾರ್ಡ್ ಸಂಖ್ಯೆ",
     gvp: "GVP",
   },
+
+  map: {
+    title: "ಸಂಗ್ರಹಣಾ ಕೇಂದ್ರಗಳ ಮೇಲ್ವಿಚಾರಣೆ",
+    points: "ಪಾಯಿಂಟ್‌ಗಳು",
+    ward: "ವಾರ್ಡ್",
+    selectedWard: "ಆಯ್ಕೆ ಮಾಡಿದ ವಾರ್ಡ್",
+
+    legend: {
+      collectionPoint: "ಸಂಗ್ರಹಣಾ ಕೇಂದ್ರ",
+      gvpPoint: "GVP ಪಾಯಿಂಟ್",
+    },
+
+    loading: "ದೈನಂದಿನ ವಾಹನ ಟೆಲಿಮೆಟ್ರಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+
+    selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+
+    selectWardDescription:
+      "ಹೆಡರ್‌ನಿಂದ ನಗರ, ವಲಯ, ವಿಭಾಗ ಮತ್ತು ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ.",
+
+    mapUnavailable: "ನಕ್ಷೆ ಲಭ್ಯವಿಲ್ಲ",
+
+    noBoundary:
+      "ಈ ಆಯ್ಕೆಗೆ ವಾರ್ಡ್ ಗಡಿ ಲಭ್ಯವಿಲ್ಲ",
+
+    noTelemetry:
+      "ಈ ದಿನಾಂಕಕ್ಕೆ ಯಾವುದೇ ಟೆಲಿಮೆಟ್ರಿ ಪಾಯಿಂಟ್‌ಗಳಿಲ್ಲ",
+
+    summary: {
+      showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+      telemetryCoordinates:
+        "ವಾಹನ ಟೇಬಲ್‌ಗಳಿಂದ ಟೆಲಿಮೆಟ್ರಿ ನಿರ್ದೇಶಾಂಕಗಳು",
+      vehicleTables: "ವಾಹನ ಟೇಬಲ್‌ಗಳು",
+      gvpPoints: "GVP ಪಾಯಿಂಟ್‌ಗಳು",
+    },
+
+    errors: {
+      loadWardMap:
+        "ಆಯ್ಕೆ ಮಾಡಿದ ವಾರ್ಡ್ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    },
+
+    tooltip: {
+      collectionVehicle: "ಸಂಗ್ರಹಣಾ ವಾಹನ",
+      gvpPoint: "GVP ಪಾಯಿಂಟ್",
+      vehicle: "ವಾಹನ",
+      table: "ಟೇಬಲ್",
+      iot: "IoT",
+      unit: "ಘಟಕ",
+      remarks: "ಟಿಪ್ಪಣಿಗಳು",
+      gvpWaste: "GVP ತ್ಯಾಜ್ಯ",
+      coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
+    },
+  },
 },
 };
 
