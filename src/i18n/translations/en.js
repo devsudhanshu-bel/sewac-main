@@ -1219,6 +1219,20 @@ cityOverviewMap: {
 },
 
 users: {
+  admin: {
+    title: "Admin Level 1 Users",
+    description: "Manage other Admin Level 1 users who have full access to the system.",
+    searchPlaceholder: "Search by name, email or phone",
+    addButton: "Add Admin",
+  },
+
+  contractor: {
+    title: "Contractor Users",
+    description: "Manage contractor users and their access to the system.",
+    searchPlaceholder: "Search by name, email or phone",
+    addButton: "Add Contractor",
+  },
+
   table: {
     name: "Name",
     email: "Email",
@@ -1226,27 +1240,15 @@ users: {
     lastLogin: "Last Login",
     status: "Status",
     actions: "Actions",
-
-    active: "Active",
-    inactive: "Inactive",
-
-    edit: "Edit",
-    delete: "Delete",
-
-    noUsers: "No users found",
-
     showing: "Showing",
     of: "of",
     users: "users",
-
     rowsPerPage: "Rows per page",
-
-    previousPage: "Previous page",
-    nextPage: "Next page",
-
-    ofPage: "of",
+    previous: "Previous",
+    next: "Next",
+    noUsers: "No users found",
   },
-},
+}
 };
 
 export default en;
