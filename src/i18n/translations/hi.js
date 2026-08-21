@@ -701,11 +701,35 @@ users: {
 },
 
 complaints: {
-
+  table: {
     title: "शिकायतें",
+    complaint: "शिकायत",
+    complaints: "शिकायतें",
+    found: "मिलीं",
 
-  description:
-    "नागरिकों की शिकायतों को प्रबंधित और ट्रैक करें",
+    updating: "अपडेट किया जा रहा है...",
+    loading: "शिकायतें लोड हो रही हैं...",
+    empty: "कोई शिकायत नहीं मिली।",
+
+    ticketNumber: "टिकट नंबर",
+    category: "श्रेणी",
+    titleColumn: "शीर्षक",
+    citizen: "नागरिक",
+    phone: "(फोन)",
+    location: "स्थान",
+    status: "स्थिति",
+    createdAt: "बनाने की तारीख",
+    action: "कार्रवाई",
+
+    view: "शिकायत देखें",
+
+    showing: "दिखाया जा रहा है",
+    to: "से",
+    of: "में",
+
+    previousPage: "पिछला पृष्ठ",
+    nextPage: "अगला पृष्ठ",
+  },
 
   details: {
     empty: {
@@ -724,23 +748,27 @@ complaints: {
     imageAlt: "शिकायत",
     noImage: "शिकायत की कोई तस्वीर नहीं है",
     description: "विवरण",
-    noDescription: "कोई विवरण उपलब्ध नहीं है।",
+    noDescription:
+      "कोई विवरण उपलब्ध नहीं है।",
     status: "स्थिति",
     remarks: "टिप्पणियाँ",
 
-    closedVerified: "बंद — नागरिक द्वारा सत्यापित",
+    closedVerified:
+      "बंद — नागरिक द्वारा सत्यापित",
 
     verificationOtpSent:
-      "सत्यापन OTP भेज दिया गया है",
+      "सत्यापन OTP भेजा गया",
 
-    enterOtp: "सत्यापन OTP दर्ज करें",
+    enterOtp:
+      "सत्यापन OTP दर्ज करें",
 
     closedMessage:
       "नागरिक के सफल सत्यापन के बाद शिकायत बंद कर दी गई।",
 
     statusOptions: {
       pending: "लंबित",
-      readyForVerification: "सत्यापन के लिए तैयार",
+      readyForVerification:
+        "सत्यापन के लिए तैयार",
       otpSent: "OTP भेजा गया",
       inProgress: "प्रगति में",
       assigned: "सौंपा गया",
@@ -748,76 +776,41 @@ complaints: {
     },
 
     placeholders: {
-      addRemarks: "टिप्पणियाँ जोड़ें...",
-      selectComplaint: "पहले एक शिकायत चुनें...",
+      addRemarks:
+        "टिप्पणियाँ जोड़ें...",
+      selectComplaint:
+        "पहले एक शिकायत चुनें...",
       otp: "6 अंकों का OTP दर्ज करें",
     },
 
     actions: {
-      callCitizen: "नागरिक को कॉल करें",
-      viewOnMap: "निर्देशांक मानचित्र पर देखें",
-      expandImage: "शिकायत की तस्वीर बड़ा करें",
+      callCitizen:
+        "नागरिक को कॉल करें",
+      viewOnMap:
+        "निर्देशांक मानचित्र पर देखें",
+      expandImage:
+        "शिकायत की तस्वीर बड़ा करें",
       cancel: "रद्द करें",
       saving: "सहेजा जा रहा है...",
-      saveChanges: "परिवर्तन सहेजें",
-      requestVerification: "सत्यापन OTP का अनुरोध करें",
-      verifyOtp: "OTP सत्यापित करें और शिकायत बंद करें",
+      saveChanges:
+        "बदलाव सहेजें",
+      requestVerification:
+        "सत्यापन OTP का अनुरोध करें",
+      verifyOtp:
+        "OTP सत्यापित करें और शिकायत बंद करें",
     },
 
-
-  },
-
-      kpis: {
-    total: "कुल शिकायतें",
-    allComplaints: "सभी शिकायतें",
-    pending: "लंबित",
-    readyForVerification: "सत्यापन के लिए तैयार",
-    closed: "बंद",
-    citizenVerified: "नागरिक द्वारा सत्यापित",
-  },
-  filters: {
-    searchPlaceholder:
-      "टिकट, फोन, शीर्षक, पता द्वारा खोजें...",
-
-    category: "श्रेणी",
-
-    all: "सभी",
-
-    to: "से",
-
-    reset: "फ़िल्टर रीसेट करें",
-
-    categories: {
-      missedCollection: "कचरा संग्रह नहीं हुआ",
-      overflowingBin: "कूड़ेदान भरा हुआ",
-      illegalDumping: "अवैध कचरा फेंकना",
-      streetLitter: "सड़क पर कचरा",
-      damagedBin: "क्षतिग्रस्त कूड़ेदान",
-      other: "अन्य",
+    kpis: {
+      total: "कुल शिकायतें",
+      allComplaints: "सभी शिकायतें",
+      pending: "लंबित",
+      readyForVerification:
+        "सत्यापन के लिए तैयार",
+      closed: "बंद",
+      citizenVerified:
+        "नागरिक द्वारा सत्यापित",
     },
   },
-
-  table: {
-    title: "शिकायतें",
-    complaint: "शिकायत",
-    found: "मिलीं",
-    updating: "अपडेट किया जा रहा है...",
-
-    location: "स्थान",
-    createdAt: "बनाने की तारीख",
-
-    loading: "शिकायतें लोड हो रही हैं...",
-    empty: "कोई शिकायत नहीं मिली।",
-
-    showing: "दिखा रहे हैं",
-    to: "से",
-    of: "में से",
-    complaints: "शिकायतें",
-
-    previousPage: "पिछला पृष्ठ",
-    nextPage: "अगला पृष्ठ",
-  },
-  
 },
 
 };

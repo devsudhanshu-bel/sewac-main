@@ -805,28 +805,31 @@ users: {
 },
 
 complaints: {
-
-    title: "ದೂರುಗಳು",
-
-  description:
-    "ನಾಗರಿಕರ ದೂರುಗಳನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ",
-
-    table: {
+  table: {
     title: "ದೂರುಗಳು",
     complaint: "ದೂರು",
+    complaints: "ದೂರುಗಳು",
     found: "ಕಂಡುಬಂದಿವೆ",
+
     updating: "ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
-
-    location: "ಸ್ಥಳ",
-    createdAt: "ರಚಿಸಿದ ದಿನಾಂಕ",
-
     loading: "ದೂರುಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
     empty: "ಯಾವುದೇ ದೂರುಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+
+    ticketNumber: "ಟಿಕೆಟ್ ಸಂಖ್ಯೆ",
+    category: "ವರ್ಗ",
+    titleColumn: "ಶೀರ್ಷಿಕೆ",
+    citizen: "ನಾಗರಿಕ",
+    phone: "(ಫೋನ್)",
+    location: "ಸ್ಥಳ",
+    status: "ಸ್ಥಿತಿ",
+    createdAt: "ರಚಿಸಿದ ದಿನಾಂಕ",
+    action: "ಕ್ರಿಯೆ",
+
+    view: "ದೂರು ವೀಕ್ಷಿಸಿ",
 
     showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
     to: "ರಿಂದ",
     of: "ರಲ್ಲಿ",
-    complaints: "ದೂರುಗಳು",
 
     previousPage: "ಹಿಂದಿನ ಪುಟ",
     nextPage: "ಮುಂದಿನ ಪುಟ",
@@ -849,23 +852,27 @@ complaints: {
     imageAlt: "ದೂರು",
     noImage: "ದೂರಿನ ಯಾವುದೇ ಚಿತ್ರವಿಲ್ಲ",
     description: "ವಿವರಣೆ",
-    noDescription: "ಯಾವುದೇ ವಿವರಣೆ ಲಭ್ಯವಿಲ್ಲ.",
+    noDescription:
+      "ಯಾವುದೇ ವಿವರಣೆ ಲಭ್ಯವಿಲ್ಲ.",
     status: "ಸ್ಥಿತಿ",
     remarks: "ಟಿಪ್ಪಣಿಗಳು",
 
-    closedVerified: "ಮುಚ್ಚಲಾಗಿದೆ — ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
+    closedVerified:
+      "ಮುಚ್ಚಲಾಗಿದೆ — ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
 
     verificationOtpSent:
       "ಪರಿಶೀಲನೆ OTP ಕಳುಹಿಸಲಾಗಿದೆ",
 
-    enterOtp: "ಪರಿಶೀಲನೆ OTP ನಮೂದಿಸಿ",
+    enterOtp:
+      "ಪರಿಶೀಲನೆ OTP ನಮೂದಿಸಿ",
 
     closedMessage:
       "ನಾಗರಿಕರ ಯಶಸ್ವಿ ಪರಿಶೀಲನೆಯ ನಂತರ ದೂರು ಮುಚ್ಚಲಾಗಿದೆ.",
 
     statusOptions: {
-      pending: "ಬಾಕಿಯಿದೆ",
-      readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧವಾಗಿದೆ",
+      pending: "ಬಾಕಿ",
+      readyForVerification:
+        "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
       otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
       inProgress: "ಪ್ರಗತಿಯಲ್ಲಿದೆ",
       assigned: "ನಿಯೋಜಿಸಲಾಗಿದೆ",
@@ -873,53 +880,38 @@ complaints: {
     },
 
     placeholders: {
-      addRemarks: "ಟಿಪ್ಪಣಿಗಳನ್ನು ಸೇರಿಸಿ...",
-      selectComplaint: "ಮೊದಲು ದೂರನ್ನು ಆಯ್ಕೆಮಾಡಿ...",
+      addRemarks:
+        "ಟಿಪ್ಪಣಿಗಳನ್ನು ಸೇರಿಸಿ...",
+      selectComplaint:
+        "ಮೊದಲು ಒಂದು ದೂರು ಆಯ್ಕೆಮಾಡಿ...",
       otp: "6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ",
     },
 
     actions: {
-      callCitizen: "ನಾಗರಿಕರಿಗೆ ಕರೆ ಮಾಡಿ",
-      viewOnMap: "ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ನಕ್ಷೆಯಲ್ಲಿ ನೋಡಿ",
-      expandImage: "ದೂರಿನ ಚಿತ್ರವನ್ನು ವಿಸ್ತರಿಸಿ",
+      callCitizen:
+        "ನಾಗರಿಕರಿಗೆ ಕರೆ ಮಾಡಿ",
+      viewOnMap:
+        "ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ನಕ್ಷೆಯಲ್ಲಿ ವೀಕ್ಷಿಸಿ",
+      expandImage:
+        "ದೂರಿನ ಚಿತ್ರವನ್ನು ವಿಸ್ತರಿಸಿ",
       cancel: "ರದ್ದುಮಾಡಿ",
       saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
       saveChanges: "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
-      requestVerification: "ಪರಿಶೀಲನೆ OTP ವಿನಂತಿಸಿ",
-      verifyOtp: "OTP ಪರಿಶೀಲಿಸಿ ಮತ್ತು ದೂರನ್ನು ಮುಚ್ಚಿ",
+      requestVerification:
+        "ಪರಿಶೀಲನೆ OTP ವಿನಂತಿಸಿ",
+      verifyOtp:
+        "OTP ಪರಿಶೀಲಿಸಿ ಮತ್ತು ದೂರು ಮುಚ್ಚಿ",
     },
 
-
-  },
-
-      kpis: {
-    total: "ಒಟ್ಟು ದೂರುಗಳು",
-    allComplaints: "ಎಲ್ಲಾ ದೂರುಗಳು",
-    pending: "ಬಾಕಿ",
-    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
-    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
-    citizenVerified: "ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
-  },
-
-  filters: {
-    searchPlaceholder:
-      "ಟಿಕೆಟ್, ಫೋನ್, ಶೀರ್ಷಿಕೆ, ವಿಳಾಸದ ಮೂಲಕ ಹುಡುಕಿ...",
-
-    category: "ವರ್ಗ",
-
-    all: "ಎಲ್ಲಾ",
-
-    to: "ಗೆ",
-
-    reset: "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ಮರುಹೊಂದಿಸಿ",
-
-    categories: {
-      missedCollection: "ಸಂಗ್ರಹಣೆ ತಪ್ಪಿದೆ",
-      overflowingBin: "ತುಂಬಿ ಹರಿಯುತ್ತಿರುವ ಬಿನ್",
-      illegalDumping: "ಅಕ್ರಮ ಕಸ ಸುರಿತ",
-      streetLitter: "ರಸ್ತೆ ಕಸ",
-      damagedBin: "ಹಾನಿಗೊಳಗಾದ ಬಿನ್",
-      other: "ಇತರೆ",
+    kpis: {
+      total: "ಒಟ್ಟು ದೂರುಗಳು",
+      allComplaints: "ಎಲ್ಲಾ ದೂರುಗಳು",
+      pending: "ಬಾಕಿ",
+      readyForVerification:
+        "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
+      closed: "ಮುಚ್ಚಲಾಗಿದೆ",
+      citizenVerified:
+        "ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
     },
   },
 },

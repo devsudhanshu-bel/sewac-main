@@ -4,7 +4,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n";
 
 /* =========================================================
    STATUS CONFIG
@@ -56,10 +56,21 @@ export default function ComplaintTable({
 }) {
   const { t } = useLanguage();
 
-  const currentPage = Number(pagination.page) || 1;
-  const limit = Number(pagination.limit) || 10;
-  const total = Number(pagination.total) || 0;
-  const totalPages = Number(pagination.totalPages) || 0;
+  /* =======================================================
+     PAGINATION
+  ======================================================= */
+
+  const currentPage =
+    Number(pagination.page) || 1;
+
+  const limit =
+    Number(pagination.limit) || 10;
+
+  const total =
+    Number(pagination.total) || 0;
+
+  const totalPages =
+    Number(pagination.totalPages) || 0;
 
   const startItem =
     total === 0
@@ -69,7 +80,38 @@ export default function ComplaintTable({
   const endItem =
     total === 0
       ? 0
-      : Math.min(currentPage * limit, total);
+      : Math.min(
+          currentPage * limit,
+          total
+        );
+
+  /* =======================================================
+     TRANSLATIONS
+  ======================================================= */
+
+  const tableTitle = t(
+    "complaints.table.title",
+    "Complaints"
+  );
+
+  const complaintWord = t(
+    "complaints.table.complaint",
+    "complaint"
+  );
+
+  const complaintsWord = t(
+    "complaints.table.complaints",
+    "complaints"
+  );
+
+  const foundWord = t(
+    "complaints.table.found",
+    "found"
+  );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div
@@ -111,10 +153,7 @@ export default function ComplaintTable({
               sm:text-[14px]
             "
           >
-            {t(
-              "complaints.table.title",
-              "Complaints"
-            )}
+            {tableTitle}
           </h2>
 
           <p
@@ -126,15 +165,10 @@ export default function ComplaintTable({
             "
           >
             {total}{" "}
-            {t(
-              "complaints.table.complaint",
-              "complaint"
-            )}
-            {total === 1 ? "" : "s"}{" "}
-            {t(
-              "complaints.table.found",
-              "found"
-            )}
+            {total === 1
+              ? complaintWord
+              : complaintsWord}{" "}
+            {foundWord}
           </p>
         </div>
 
@@ -200,7 +234,7 @@ export default function ComplaintTable({
                 "
               >
                 {t(
-                  "complaints.details.ticketNumber",
+                  "complaints.table.ticketNumber",
                   "Ticket Number"
                 )}
               </th>
@@ -219,7 +253,7 @@ export default function ComplaintTable({
                 "
               >
                 {t(
-                  "complaints.details.category",
+                  "complaints.table.category",
                   "Category"
                 )}
               </th>
@@ -237,7 +271,7 @@ export default function ComplaintTable({
                 "
               >
                 {t(
-                  "complaints.details.title",
+                  "complaints.table.titleColumn",
                   "Title"
                 )}
               </th>
@@ -257,13 +291,16 @@ export default function ComplaintTable({
               >
                 <span className="block">
                   {t(
-                    "complaints.details.citizenPhone",
+                    "complaints.table.citizen",
                     "Citizen"
                   )}
                 </span>
 
                 <span className="block">
-                  (Phone)
+                  {t(
+                    "complaints.table.phone",
+                    "(Phone)"
+                  )}
                 </span>
               </th>
 
@@ -299,7 +336,7 @@ export default function ComplaintTable({
                 "
               >
                 {t(
-                  "complaints.details.status",
+                  "complaints.table.status",
                   "Status"
                 )}
               </th>
@@ -336,8 +373,8 @@ export default function ComplaintTable({
                 "
               >
                 {t(
-                  "common.actions",
-                  "Actions"
+                  "complaints.table.action",
+                  "Action"
                 )}
               </th>
             </tr>
@@ -362,7 +399,15 @@ export default function ComplaintTable({
                     text-gray-500
                   "
                 >
-                  <div className="flex flex-col items-center justify-center gap-2">
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      items-center
+                      justify-center
+                      gap-2
+                    "
+                  >
                     <div
                       className="
                         h-5
@@ -426,7 +471,9 @@ export default function ComplaintTable({
 
               complaints.map((complaint) => {
                 const status =
-                  statusConfig[complaint.status];
+                  statusConfig[
+                    complaint.status
+                  ];
 
                 const statusLabel = status
                   ? t(
@@ -437,7 +484,9 @@ export default function ComplaintTable({
 
                 return (
                   <tr
-                    key={complaint.ticket_number}
+                    key={
+                      complaint.ticket_number
+                    }
                     className="
                       min-h-[58px]
                       border-b
@@ -486,7 +535,8 @@ export default function ComplaintTable({
                           text-gray-700
                         "
                         title={
-                          complaint.category || ""
+                          complaint.category ||
+                          ""
                         }
                       >
                         {complaint.category ||
@@ -513,7 +563,8 @@ export default function ComplaintTable({
                           complaint.title || ""
                         }
                       >
-                        {complaint.title || "—"}
+                        {complaint.title ||
+                          "—"}
                       </span>
                     </td>
 
@@ -548,10 +599,12 @@ export default function ComplaintTable({
                           text-[#16295A]
                         "
                         title={
-                          complaint.address || ""
+                          complaint.address ||
+                          ""
                         }
                       >
-                        {complaint.address || "—"}
+                        {complaint.address ||
+                          "—"}
                       </span>
                     </td>
 
@@ -625,11 +678,11 @@ export default function ComplaintTable({
                           )
                         }
                         title={t(
-                          "complaints.details.actions.viewComplaint",
+                          "complaints.table.view",
                           "View complaint"
                         )}
                         aria-label={t(
-                          "complaints.details.actions.viewComplaint",
+                          "complaints.table.view",
                           "View complaint"
                         )}
                         className="
@@ -711,10 +764,7 @@ export default function ComplaintTable({
           <span className="font-medium text-[#16295A]">
             {total}
           </span>{" "}
-          {t(
-            "complaints.table.complaints",
-            "complaints"
-          )}
+          {complaintsWord}
         </p>
 
         {/* ================= PAGINATION CONTROLS ================= */}
@@ -731,7 +781,9 @@ export default function ComplaintTable({
 
           <button
             type="button"
-            disabled={currentPage <= 1}
+            disabled={
+              currentPage <= 1
+            }
             onClick={() =>
               onPageChange?.(
                 currentPage - 1
@@ -741,7 +793,30 @@ export default function ComplaintTable({
               "complaints.table.previousPage",
               "Previous page"
             )}
-            className={`...`}
+            title={t(
+              "complaints.table.previousPage",
+              "Previous page"
+            )}
+            className={`
+              flex
+              h-7
+              w-7
+              items-center
+              justify-center
+              rounded-lg
+              transition
+              ${
+                currentPage <= 1
+                  ? `
+                    cursor-not-allowed
+                    text-gray-300
+                  `
+                  : `
+                    text-[#16295A]
+                    hover:bg-violet-50
+                  `
+              }
+            `}
           >
             <ChevronLeft size={14} />
           </button>
@@ -785,7 +860,31 @@ export default function ComplaintTable({
               "complaints.table.nextPage",
               "Next page"
             )}
-            className={`...`}
+            title={t(
+              "complaints.table.nextPage",
+              "Next page"
+            )}
+            className={`
+              flex
+              h-7
+              w-7
+              items-center
+              justify-center
+              rounded-lg
+              transition
+              ${
+                totalPages === 0 ||
+                currentPage >= totalPages
+                  ? `
+                    cursor-not-allowed
+                    text-gray-300
+                  `
+                  : `
+                    text-[#16295A]
+                    hover:bg-violet-50
+                  `
+              }
+            `}
           >
             <ChevronRight size={14} />
           </button>

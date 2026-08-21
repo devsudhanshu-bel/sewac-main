@@ -715,11 +715,35 @@ users: {
 },
 
 complaints: {
-
+  table: {
     title: "Complaints",
+    complaint: "complaint",
+    complaints: "complaints",
+    found: "found",
 
-  description:
-    "Manage and track citizen complaints",
+    updating: "Updating...",
+    loading: "Loading complaints...",
+    empty: "No complaints found.",
+
+    ticketNumber: "Ticket Number",
+    category: "Category",
+    titleColumn: "Title",
+    citizen: "Citizen",
+    phone: "(Phone)",
+    location: "Location",
+    status: "Status",
+    createdAt: "Created At",
+    action: "Action",
+
+    view: "View complaint",
+
+    showing: "Showing",
+    to: "to",
+    of: "of",
+
+    previousPage: "Previous page",
+    nextPage: "Next page",
+  },
 
   details: {
     empty: {
@@ -742,18 +766,22 @@ complaints: {
     status: "Status",
     remarks: "Remarks",
 
-    closedVerified: "Closed — Citizen Verified",
+    closedVerified:
+      "Closed — Citizen Verified",
 
-    verificationOtpSent: "Verification OTP Sent",
+    verificationOtpSent:
+      "Verification OTP Sent",
 
-    enterOtp: "Enter Verification OTP",
+    enterOtp:
+      "Enter Verification OTP",
 
     closedMessage:
       "Complaint closed after successful citizen verification.",
 
     statusOptions: {
       pending: "Pending",
-      readyForVerification: "Ready for Verification",
+      readyForVerification:
+        "Ready for Verification",
       otpSent: "OTP Sent",
       inProgress: "In Progress",
       assigned: "Assigned",
@@ -762,72 +790,37 @@ complaints: {
 
     placeholders: {
       addRemarks: "Add remarks...",
-      selectComplaint: "Select a complaint first...",
+      selectComplaint:
+        "Select a complaint first...",
       otp: "Enter 6-digit OTP",
     },
 
     actions: {
       callCitizen: "Call citizen",
-      viewOnMap: "View coordinates on map",
-      expandImage: "Expand complaint image",
+      viewOnMap:
+        "View coordinates on map",
+      expandImage:
+        "Expand complaint image",
       cancel: "Cancel",
       saving: "Saving...",
       saveChanges: "Save Changes",
-      requestVerification: "Request Verification OTP",
-      verifyOtp: "Verify OTP & Close Complaint",
+      requestVerification:
+        "Request Verification OTP",
+      verifyOtp:
+        "Verify OTP & Close Complaint",
+    },
+
+    kpis: {
+      total: "Total Complaints",
+      allComplaints: "All complaints",
+      pending: "Pending",
+      readyForVerification:
+        "Ready for Verification",
+      closed: "Closed",
+      citizenVerified:
+        "Citizen verified",
     },
   },
-  kpis: {
-    total: "Total Complaints",
-    allComplaints: "All Complaints",
-    pending: "Pending",
-    readyForVerification: "Ready for Verification",
-    closed: "Closed",
-    citizenVerified: "Citizen Verified",
-  },
-
-    filters: {
-    searchPlaceholder:
-      "Search by ticket, phone, title, address...",
-
-    category: "Category",
-
-    all: "All",
-
-    to: "to",
-
-    reset: "Reset Filters",
-
-    categories: {
-      missedCollection: "Missed Collection",
-      overflowingBin: "Overflowing Bin",
-      illegalDumping: "Illegal Dumping",
-      streetLitter: "Street Litter",
-      damagedBin: "Damaged Bin",
-      other: "Other",
-    },
-  },
-
-  table: {
-  title: "Complaints",
-  complaint: "complaint",
-  found: "found",
-  updating: "Updating...",
-
-  location: "Location",
-  createdAt: "Created At",
-
-  loading: "Loading complaints...",
-  empty: "No complaints found.",
-
-  showing: "Showing",
-  to: "to",
-  of: "of",
-  complaints: "complaints",
-
-  previousPage: "Previous page",
-  nextPage: "Next page",
-},
 },
 };
 
