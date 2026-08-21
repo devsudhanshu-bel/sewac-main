@@ -37,19 +37,36 @@ export default function WasteGeneratorDirectory({
 }) {
   /*
   |--------------------------------------------------------------------------
+  | SAFE VALUES
+  |--------------------------------------------------------------------------
+  */
+
+  const safePage =
+    Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+
+  const safePageSize = [10, 20, 50].includes(Number(pageSize))
+    ? Number(pageSize)
+    : 10;
+
+  const safeTotal = Number(total) >= 0 ? Number(total) : 0;
+
+  const safeTotalPages = Number(totalPages) >= 0 ? Number(totalPages) : 0;
+
+  /*
+  |--------------------------------------------------------------------------
   | PAGE NUMBERS
   |--------------------------------------------------------------------------
   */
 
   const pageNumbers = useMemo(() => {
-    if (totalPages <= 0) {
+    if (safeTotalPages <= 0) {
       return [];
     }
 
-    if (totalPages <= 7) {
+    if (safeTotalPages <= 7) {
       return Array.from(
         {
-          length: totalPages,
+          length: safeTotalPages,
         },
         (_, index) => index + 1,
       );
@@ -59,33 +76,26 @@ export default function WasteGeneratorDirectory({
 
     pages.push(1);
 
-    if (page > 4) {
+    if (safePage > 4) {
       pages.push("...");
     }
 
-    const start = Math.max(2, page - 1);
+    const start = Math.max(2, safePage - 1);
 
-    const end = Math.min(
-      totalPages - 1,
-      page + 1,
-    );
+    const end = Math.min(safeTotalPages - 1, safePage + 1);
 
-    for (
-      let number = start;
-      number <= end;
-      number++
-    ) {
+    for (let number = start; number <= end; number++) {
       pages.push(number);
     }
 
-    if (page < totalPages - 3) {
+    if (safePage < safeTotalPages - 3) {
       pages.push("...");
     }
 
-    pages.push(totalPages);
+    pages.push(safeTotalPages);
 
     return pages;
-  }, [page, totalPages]);
+  }, [safePage, safeTotalPages]);
 
   /*
   |--------------------------------------------------------------------------
@@ -93,18 +103,116 @@ export default function WasteGeneratorDirectory({
   |--------------------------------------------------------------------------
   */
 
-  const startRecord =
-    total === 0
-      ? 0
-      : (page - 1) * pageSize + 1;
+  const startRecord = safeTotal === 0 ? 0 : (safePage - 1) * safePageSize + 1;
 
   const endRecord =
-    total === 0
-      ? 0
-      : Math.min(
-          page * pageSize,
-          total,
-        );
+    safeTotal === 0 ? 0 : Math.min(safePage * safePageSize, safeTotal);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ACTUAL MASTER-CITIZEN FIELD HELPERS
+  |--------------------------------------------------------------------------
+  |
+  | These correspond directly to the actual data:
+  |
+  | personName
+  | phoneNumber
+  | contactNumber
+  | wetRFID
+  | dryRFID
+  | ward
+  | area
+  | zoneName (response-only)
+  | totalWaste (calculated response field)
+  | averageWaste (calculated response field)
+  |--------------------------------------------------------------------------
+  */
+
+  const getName = (citizen) => citizen?.personName || "N/A";
+
+  const getPhone = (citizen) =>
+    citizen?.phoneNumber || citizen?.contactNumber || "N/A";
+
+  const getWetRFID = (citizen) => citizen?.wetRFID || "Not Assigned";
+
+  const getDryRFID = (citizen) => citizen?.dryRFID || "Not Assigned";
+
+  const getWard = (citizen) => {
+    if (citizen?.wardName) {
+      return citizen.wardName;
+    }
+
+    if (
+      citizen?.wardNo !== null &&
+      citizen?.wardNo !== undefined &&
+      String(citizen.wardNo).trim() !== ""
+    ) {
+      return `Ward ${citizen.wardNo}`;
+    }
+
+    if (
+      citizen?.ward !== null &&
+      citizen?.ward !== undefined &&
+      String(citizen.ward).trim() !== ""
+    ) {
+      return `Ward ${citizen.ward}`;
+    }
+
+    return "N/A";
+  };
+
+  const getArea = (citizen) => citizen?.area || "N/A";
+
+  const getZone = (citizen) => citizen?.zoneName || "N/A";
+
+  /*
+  |--------------------------------------------------------------------------
+  | WASTE VALUE HELPERS
+  |--------------------------------------------------------------------------
+  |
+  | Directory does NOT invent waste values.
+  |
+  | If backend has calculated them:
+  |
+  | totalWaste
+  | totalWasteCollected
+  |
+  | averageWaste
+  | avgWaste
+  |
+  | display them.
+  |
+  | Otherwise:
+  | N/A
+  |--------------------------------------------------------------------------
+  */
+
+  const getTotalWaste = (citizen) => {
+    if (citizen?.totalWaste !== null && citizen?.totalWaste !== undefined) {
+      return citizen.totalWaste;
+    }
+
+    if (
+      citizen?.totalWasteCollected !== null &&
+      citizen?.totalWasteCollected !== undefined
+    ) {
+      return citizen.totalWasteCollected;
+    }
+
+    return null;
+  };
+
+  const getAverageWaste = (citizen) => {
+    if (citizen?.averageWaste !== null && citizen?.averageWaste !== undefined) {
+      return citizen.averageWaste;
+    }
+
+    if (citizen?.avgWaste !== null && citizen?.avgWaste !== undefined) {
+      return citizen.avgWaste;
+    }
+
+    return null;
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -213,8 +321,8 @@ export default function WasteGeneratorDirectory({
                 max-w-[720px]
               "
             >
-              View and manage waste generators based on
-              registered citizen information.
+              View and manage waste generators based on registered citizen
+              information.
             </p>
           </div>
 
@@ -276,11 +384,7 @@ export default function WasteGeneratorDirectory({
               <input
                 type="text"
                 value={search}
-                onChange={(event) =>
-                  onSearch?.(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => onSearch?.(event.target.value)}
                 placeholder="Search by name, phone number, Wet RFID"
                 className="
                   w-full
@@ -326,7 +430,7 @@ export default function WasteGeneratorDirectory({
             <button
               type="button"
               onClick={onSync}
-              disabled={syncing}
+              disabled={syncing || loading}
               className="
                 h-[44px]
                 sm:h-[48px]
@@ -370,18 +474,9 @@ export default function WasteGeneratorDirectory({
                 shrink-0
               "
             >
-              <RefreshCw
-                size={17}
-                className={
-                  syncing
-                    ? "animate-spin"
-                    : ""
-                }
-              />
+              <RefreshCw size={17} className={syncing ? "animate-spin" : ""} />
 
-              {syncing
-                ? "Syncing..."
-                : "Sync"}
+              {syncing ? "Syncing..." : "Sync"}
             </button>
           </div>
         </div>
@@ -426,7 +521,6 @@ export default function WasteGeneratorDirectory({
                 className="
                   px-4
                   sm:px-5
-
                   py-3
                   sm:py-4
 
@@ -703,313 +797,296 @@ export default function WasteGeneratorDirectory({
                 </td>
               </tr>
             ) : (
-              citizens.map(
-                (citizen, index) => (
+              citizens.map((citizen, index) => {
+                const totalWaste = getTotalWaste(citizen);
+
+                const averageWaste = getAverageWaste(citizen);
+
+                return (
                   <tr
                     key={
                       citizen.id ??
                       citizen.phoneNumber ??
-                      `${citizen.wardNo}-${index}`
+                      `${citizen.ward}-${index}`
                     }
                     className="
-                      border-b
-                      border-gray-100
+                        border-b
+                        border-gray-100
 
-                      hover:bg-[#FAFAFF]
+                        hover:bg-[#FAFAFF]
 
-                      transition
-                    "
+                        transition
+                      "
                   >
                     {/* ==================================================
-                        #
-                    ================================================== */}
+                          #
+                      ================================================== */}
 
                     <td
                       className="
-                        px-4
-                        sm:px-5
+                          px-4
+                          sm:px-5
 
-                        py-4
-                        sm:py-5
+                          py-4
+                          sm:py-5
 
-                        text-[12px]
-                        sm:text-[13px]
-
-                        text-gray-600
-
-                        whitespace-nowrap
-                      "
-                    >
-                      {(page - 1) *
-                        pageSize +
-                        index +
-                        1}
-                    </td>
-
-                    {/* ==================================================
-                        NAME
-                    ================================================== */}
-
-                    <td
-                      className="
-                        px-4
-                        sm:px-5
-
-                        py-4
-                        sm:py-5
-                      "
-                    >
-                      <span
-                        className="
                           text-[12px]
-                          sm:text-[14px]
+                          sm:text-[13px]
 
-                          font-semibold
-
-                          text-gray-800
+                          text-gray-600
 
                           whitespace-nowrap
                         "
-                      >
-                        {citizen.personName ||
-                          "N/A"}
-                      </span>
-                    </td>
-
-                    {/* ==================================================
-                        PHONE
-                    ================================================== */}
-
-                    <td
-                      className="
-                        px-4
-                        sm:px-5
-
-                        py-4
-                        sm:py-5
-
-                        text-[12px]
-                        sm:text-[13px]
-
-                        text-gray-600
-
-                        whitespace-nowrap
-                      "
                     >
-                      {citizen.phoneNumber ||
-                        citizen.contactNumber ||
-                        "N/A"}
+                      {(safePage - 1) * safePageSize + index + 1}
                     </td>
 
                     {/* ==================================================
-                        WET RFID
-                    ================================================== */}
+                          NAME
+                      ================================================== */}
 
                     <td
                       className="
-                        px-4
-                        sm:px-5
+                          px-4
+                          sm:px-5
 
-                        py-4
-                        sm:py-5
-                      "
+                          py-4
+                          sm:py-5
+                        "
                     >
                       <span
                         className="
-                          inline-flex
-
-                          px-2.5
-                          sm:px-3
-
-                          py-1
-
-                          rounded-lg
-
-                          bg-blue-50
-
-                          text-blue-600
-
-                          text-[10px]
-                          sm:text-[12px]
-
-                          font-medium
-
-                          whitespace-nowrap
-                        "
-                      >
-                        {citizen.wetRFID ||
-                          "Not Assigned"}
-                      </span>
-                    </td>
-
-                    {/* ==================================================
-                        DRY RFID
-                    ================================================== */}
-
-                    <td
-                      className="
-                        px-4
-                        sm:px-5
-
-                        py-4
-                        sm:py-5
-                      "
-                    >
-                      <span
-                        className="
-                          inline-flex
-
-                          px-2.5
-                          sm:px-3
-
-                          py-1
-
-                          rounded-lg
-
-                          bg-orange-50
-
-                          text-orange-600
-
-                          text-[10px]
-                          sm:text-[12px]
-
-                          font-medium
-
-                          whitespace-nowrap
-                        "
-                      >
-                        {citizen.dryRFID ||
-                          "Not Assigned"}
-                      </span>
-                    </td>
-
-                    {/* ==================================================
-                        WARD / AREA
-                    ================================================== */}
-
-                    <td
-                      className="
-                        px-4
-                        sm:px-5
-
-                        py-4
-                        sm:py-5
-                      "
-                    >
-                      <div
-                        className="
-                          flex
-                          flex-col
-
-                          min-w-[120px]
-                        "
-                      >
-                        <span
-                          className="
                             text-[12px]
-                            sm:text-[13px]
+                            sm:text-[14px]
 
-                            font-medium
+                            font-semibold
 
-                            text-gray-700
+                            text-gray-800
 
                             whitespace-nowrap
                           "
+                      >
+                        {getName(citizen)}
+                      </span>
+                    </td>
+
+                    {/* ==================================================
+                          PHONE NUMBER
+                      ================================================== */}
+
+                    <td
+                      className="
+                          px-4
+                          sm:px-5
+
+                          py-4
+                          sm:py-5
+
+                          text-[12px]
+                          sm:text-[13px]
+
+                          text-gray-600
+
+                          whitespace-nowrap
+                        "
+                    >
+                      {getPhone(citizen)}
+                    </td>
+
+                    {/* ==================================================
+                          WET RFID
+                      ================================================== */}
+
+                    <td
+                      className="
+                          px-4
+                          sm:px-5
+
+                          py-4
+                          sm:py-5
+                        "
+                    >
+                      <span
+                        className="
+                            inline-flex
+
+                            px-2.5
+                            sm:px-3
+
+                            py-1
+
+                            rounded-lg
+
+                            bg-blue-50
+
+                            text-blue-600
+
+                            text-[10px]
+                            sm:text-[12px]
+
+                            font-medium
+
+                            whitespace-nowrap
+                          "
+                      >
+                        {getWetRFID(citizen)}
+                      </span>
+                    </td>
+
+                    {/* ==================================================
+                          DRY RFID
+                      ================================================== */}
+
+                    <td
+                      className="
+                          px-4
+                          sm:px-5
+
+                          py-4
+                          sm:py-5
+                        "
+                    >
+                      <span
+                        className="
+                            inline-flex
+
+                            px-2.5
+                            sm:px-3
+
+                            py-1
+
+                            rounded-lg
+
+                            bg-orange-50
+
+                            text-orange-600
+
+                            text-[10px]
+                            sm:text-[12px]
+
+                            font-medium
+
+                            whitespace-nowrap
+                          "
+                      >
+                        {getDryRFID(citizen)}
+                      </span>
+                    </td>
+
+                    {/* ==================================================
+                          WARD / AREA
+                      ================================================== */}
+
+                    <td
+                      className="
+                          px-4
+                          sm:px-5
+
+                          py-4
+                          sm:py-5
+                        "
+                    >
+                      <div
+                        className="
+                            flex
+                            flex-col
+
+                            min-w-[120px]
+                          "
+                      >
+                        <span
+                          className="
+                              text-[12px]
+                              sm:text-[13px]
+
+                              font-medium
+
+                              text-gray-700
+
+                              whitespace-nowrap
+                            "
                         >
-                          {citizen.wardName ||
-                            (citizen.wardNo !==
-                              null &&
-                            citizen.wardNo !==
-                              undefined
-                              ? `Ward ${citizen.wardNo}`
-                              : "N/A")}
+                          {getWard(citizen)}
                         </span>
 
                         <span
                           className="
-                            text-[10px]
-                            sm:text-[12px]
+                              text-[10px]
+                              sm:text-[12px]
 
-                            text-gray-400
+                              text-gray-400
 
-                            whitespace-nowrap
-                          "
+                              whitespace-nowrap
+                            "
                         >
-                          {citizen.area ||
-                            "N/A"}
+                          {getArea(citizen)}
                         </span>
                       </div>
                     </td>
 
                     {/* ==================================================
-                        ZONE
-                    ================================================== */}
+                          ZONE
+                      ================================================== */}
 
                     <td
                       className="
-                        px-4
-                        sm:px-5
+                          px-4
+                          sm:px-5
 
-                        py-4
-                        sm:py-5
+                          py-4
+                          sm:py-5
 
-                        text-[12px]
-                        sm:text-[13px]
-
-                        text-gray-600
-
-                        whitespace-nowrap
-                      "
-                    >
-                      {citizen.zoneName ||
-                        "N/A"}
-                    </td>
-
-                    {/* ==================================================
-                        TOTAL WASTE
-                    ================================================== */}
-
-                    <td
-                      className="
-                        px-4
-                        sm:px-5
-
-                        py-4
-                        sm:py-5
-                      "
-                    >
-                      <span
-                        className="
                           text-[12px]
-                          sm:text-[14px]
+                          sm:text-[13px]
 
-                          font-semibold
-
-                          text-gray-800
+                          text-gray-600
 
                           whitespace-nowrap
                         "
+                    >
+                      {getZone(citizen)}
+                    </td>
+
+                    {/* ==================================================
+                          TOTAL WASTE
+                      ================================================== */}
+
+                    <td
+                      className="
+                          px-4
+                          sm:px-5
+
+                          py-4
+                          sm:py-5
+                        "
+                    >
+                      <span
+                        className="
+                            text-[12px]
+                            sm:text-[14px]
+
+                            font-semibold
+
+                            text-gray-800
+
+                            whitespace-nowrap
+                          "
                       >
-                        {citizen.totalWaste ??
-                          citizen.totalWasteCollected ??
-                          "N/A"}
+                        {totalWaste !== null
+                          ? Number(totalWaste).toFixed(2)
+                          : "N/A"}
                       </span>
 
-                      {(
-                        citizen.totalWaste !==
-                          undefined ||
-                        citizen.totalWasteCollected !==
-                          undefined
-                      ) && (
+                      {totalWaste !== null && (
                         <span
                           className="
-                            ml-1
+                              ml-1
 
-                            text-[9px]
-                            sm:text-[11px]
+                              text-[9px]
+                              sm:text-[11px]
 
-                            text-gray-400
-                          "
+                              text-gray-400
+                            "
                         >
                           kg
                         </span>
@@ -1017,50 +1094,45 @@ export default function WasteGeneratorDirectory({
                     </td>
 
                     {/* ==================================================
-                        AVERAGE WASTE
-                    ================================================== */}
+                          AVERAGE WASTE
+                      ================================================== */}
 
                     <td
                       className="
-                        px-4
-                        sm:px-5
+                          px-4
+                          sm:px-5
 
-                        py-4
-                        sm:py-5
-                      "
+                          py-4
+                          sm:py-5
+                        "
                     >
                       <span
                         className="
-                          text-[12px]
-                          sm:text-[14px]
+                            text-[12px]
+                            sm:text-[14px]
 
-                          font-semibold
+                            font-semibold
 
-                          text-gray-800
+                            text-gray-800
 
-                          whitespace-nowrap
-                        "
+                            whitespace-nowrap
+                          "
                       >
-                        {citizen.averageWaste ??
-                          citizen.avgWaste ??
-                          "N/A"}
+                        {averageWaste !== null
+                          ? Number(averageWaste).toFixed(2)
+                          : "N/A"}
                       </span>
 
-                      {(
-                        citizen.averageWaste !==
-                          undefined ||
-                        citizen.avgWaste !==
-                          undefined
-                      ) && (
+                      {averageWaste !== null && (
                         <span
                           className="
-                            ml-1
+                              ml-1
 
-                            text-[9px]
-                            sm:text-[11px]
+                              text-[9px]
+                              sm:text-[11px]
 
-                            text-gray-400
-                          "
+                              text-gray-400
+                            "
                         >
                           kg
                         </span>
@@ -1068,57 +1140,51 @@ export default function WasteGeneratorDirectory({
                     </td>
 
                     {/* ==================================================
-                        UPDATE
-                    ================================================== */}
+                          ACTION
+                      ================================================== */}
 
                     <td
                       className="
-                        px-4
-                        sm:px-5
+                          px-4
+                          sm:px-5
 
-                        py-4
-                        sm:py-5
+                          py-4
+                          sm:py-5
 
-                        text-center
-                      "
+                          text-center
+                        "
                     >
                       <button
                         type="button"
-                        onClick={() =>
-                          onUpdate?.(
-                            citizen,
-                          )
-                        }
+                        onClick={() => onUpdate?.(citizen)}
                         className="
-                          w-8
-                          h-8
-                          sm:w-9
-                          sm:h-9
+                            w-8
+                            h-8
+                            sm:w-9
+                            sm:h-9
 
-                          rounded-lg
+                            rounded-lg
 
-                          flex
-                          items-center
-                          justify-center
+                            flex
+                            items-center
+                            justify-center
 
-                          mx-auto
+                            mx-auto
 
-                          text-violet-600
+                            text-violet-600
 
-                          hover:bg-violet-50
+                            hover:bg-violet-50
 
-                          transition
-                        "
+                            transition
+                          "
                         title="Update Waste Generator"
                       >
-                        <Pencil
-                          size={16}
-                        />
+                        <Pencil size={16} />
                       </button>
                     </td>
                   </tr>
-                ),
-              )
+                );
+              })
             )}
           </tbody>
         </table>
@@ -1192,7 +1258,7 @@ export default function WasteGeneratorDirectory({
               text-gray-700
             "
           >
-            {total}
+            {safeTotal}
           </span>{" "}
           waste generators
         </p>
@@ -1239,13 +1305,9 @@ export default function WasteGeneratorDirectory({
             </span>
 
             <select
-              value={pageSize}
+              value={safePageSize}
               onChange={(event) =>
-                onPageSizeChange?.(
-                  Number(
-                    event.target.value,
-                  ),
-                )
+                onPageSizeChange?.(Number(event.target.value))
               }
               className="
                 h-8
@@ -1271,17 +1333,11 @@ export default function WasteGeneratorDirectory({
                 focus:border-violet-400
               "
             >
-              <option value={10}>
-                10
-              </option>
+              <option value={10}>10</option>
 
-              <option value={20}>
-                20
-              </option>
+              <option value={20}>20</option>
 
-              <option value={50}>
-                50
-              </option>
+              <option value={50}>50</option>
             </select>
           </div>
 
@@ -1291,15 +1347,8 @@ export default function WasteGeneratorDirectory({
 
           <button
             type="button"
-            disabled={
-              page <= 1 ||
-              loading
-            }
-            onClick={() =>
-              onPageChange?.(
-                page - 1,
-              )
-            }
+            disabled={safePage <= 1 || loading}
+            onClick={() => onPageChange?.(safePage - 1)}
             className="
               w-8
               h-8
@@ -1326,9 +1375,7 @@ export default function WasteGeneratorDirectory({
             "
             title="Previous page"
           >
-            <ChevronLeft
-              size={16}
-            />
+            <ChevronLeft size={16} />
           </button>
 
           {/* ========================================================== */}
@@ -1348,16 +1395,11 @@ export default function WasteGeneratorDirectory({
               scrollbar-none
             "
           >
-            {pageNumbers.map(
-              (
-                pageNumber,
-                index,
-              ) =>
-                pageNumber ===
-                "..." ? (
-                  <span
-                    key={`ellipsis-${index}`}
-                    className="
+            {pageNumbers.map((pageNumber, index) =>
+              pageNumber === "..." ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="
                       w-7
                       sm:w-8
 
@@ -1370,24 +1412,16 @@ export default function WasteGeneratorDirectory({
 
                       shrink-0
                     "
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={
-                      pageNumber
-                    }
-                    type="button"
-                    disabled={
-                      loading
-                    }
-                    onClick={() =>
-                      onPageChange?.(
-                        pageNumber,
-                      )
-                    }
-                    className={`
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => onPageChange?.(pageNumber)}
+                  className={`
                       w-8
                       h-8
                       sm:w-9
@@ -1405,18 +1439,15 @@ export default function WasteGeneratorDirectory({
                       shrink-0
 
                       ${
-                        pageNumber ===
-                        page
+                        pageNumber === safePage
                           ? "bg-[#6D28D9] text-white"
                           : "text-gray-600 hover:bg-gray-50"
                       }
                     `}
-                  >
-                    {
-                      pageNumber
-                    }
-                  </button>
-                ),
+                >
+                  {pageNumber}
+                </button>
+              ),
             )}
           </div>
 
@@ -1427,17 +1458,9 @@ export default function WasteGeneratorDirectory({
           <button
             type="button"
             disabled={
-              page >=
-                totalPages ||
-              loading ||
-              totalPages ===
-                0
+              safePage >= safeTotalPages || loading || safeTotalPages === 0
             }
-            onClick={() =>
-              onPageChange?.(
-                page + 1,
-              )
-            }
+            onClick={() => onPageChange?.(safePage + 1)}
             className="
               w-8
               h-8
@@ -1464,9 +1487,7 @@ export default function WasteGeneratorDirectory({
             "
             title="Next page"
           >
-            <ChevronRight
-              size={16}
-            />
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
