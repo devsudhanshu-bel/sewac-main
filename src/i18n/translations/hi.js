@@ -769,28 +769,28 @@ complaints: {
     closed: "बंद",
     citizenVerified: "नागरिक द्वारा सत्यापित",
   },
-
-    filters: {
+  filters: {
     searchPlaceholder:
-      "Search by ticket, phone, title, address...",
+      "टिकट, फोन, शीर्षक, पता द्वारा खोजें...",
 
-    category: "Category",
+    category: "श्रेणी",
 
-    all: "All",
+    all: "सभी",
 
-    to: "to",
+    to: "से",
 
-    reset: "Reset Filters",
+    reset: "फ़िल्टर रीसेट करें",
 
     categories: {
-      missedCollection: "Missed Collection",
-      overflowingBin: "Overflowing Bin",
-      illegalDumping: "Illegal Dumping",
-      streetLitter: "Street Litter",
-      damagedBin: "Damaged Bin",
-      other: "Other",
+      missedCollection: "कचरा संग्रह नहीं हुआ",
+      overflowingBin: "कूड़ेदान भरा हुआ",
+      illegalDumping: "अवैध कचरा फेंकना",
+      streetLitter: "सड़क पर कचरा",
+      damagedBin: "क्षतिग्रस्त कूड़ेदान",
+      other: "अन्य",
     },
   },
+  
 },
 
 };
