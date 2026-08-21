@@ -1224,6 +1224,10 @@ users: {
   description:
     "Create and manage users in the system.",
 
+  // =========================================================
+  // ADMIN LEVEL 1
+  // =========================================================
+
   admin: {
     title: "Admin Level 1 Users",
 
@@ -1248,6 +1252,7 @@ users: {
     },
 
     table: {
+      slNo: "SL.No",
       name: "Admin Name",
       email: "Email",
       phone: "Phone Number",
@@ -1265,7 +1270,6 @@ users: {
       showing: "Showing",
       of: "of",
       entries: "entries",
-      rowsPerPage: "Rows per page:",
       previous: "Previous page",
       next: "Next page",
     },
@@ -1275,6 +1279,10 @@ users: {
       editTitle: "Edit Admin",
     },
   },
+
+  // =========================================================
+  // CONTRACTOR
+  // =========================================================
 
   contractor: {
     title: "Contractor Users",
@@ -1300,7 +1308,26 @@ users: {
     },
 
     table: {
+      slNo: "SL.No",
       name: "Name",
+      email: "Email",
+      phone: "Phone Number",
+      status: "Status",
+      createdAt: "Created At",
+      actions: "Actions",
+    },
+
+    actions: {
+      edit: "Edit user",
+      delete: "Delete user",
+    },
+
+    pagination: {
+      showing: "Showing",
+      of: "of",
+      entries: "entries",
+      previous: "Previous page",
+      next: "Next page",
     },
 
     modals: {
@@ -1308,6 +1335,10 @@ users: {
       editTitle: "Edit Contractor",
     },
   },
+
+  // =========================================================
+  // COMMON USER TABLE
+  // =========================================================
 
   table: {
     slNo: "SL.No",
@@ -1320,16 +1351,27 @@ users: {
     createdAt: "Created At",
     active: "Active",
     inactive: "Inactive",
+    pending: "Pending",
+    blocked: "Blocked",
     actions: "Actions",
+
     showing: "Showing",
     of: "of",
     entries: "entries",
+
     users: "users",
+
     rowsPerPage: "Rows per page",
+
     previous: "Previous",
     next: "Next",
+
     noUsers: "No users found",
   },
+
+  // =========================================================
+  // COMMON ACTIONS
+  // =========================================================
 
   actions: {
     edit: "Edit user",

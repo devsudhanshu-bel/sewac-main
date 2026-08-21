@@ -42,6 +42,7 @@ const AdminUsers = () => {
   // =========================================================
   // PAGINATION
   // Fixed 10 users per page
+  // No rows-per-page dropdown
   // =========================================================
 
   const ROWS_PER_PAGE = 10;
@@ -65,23 +66,31 @@ const AdminUsers = () => {
 
       const users = response?.data?.users || [];
 
-      setAdminUsers(users);
+      setAdminUsers(Array.isArray(users) ? users : []);
     } catch (err) {
       console.error("Fetch Admin Layer 1 users error:", err);
 
-      const backendMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+      /*
+       * IMPORTANT:
+       * Do NOT display the backend message directly.
+       *
+       * Backend may return a message in another language.
+       * Always use the frontend translation here.
+       */
+      setError(
         t(
           "users.admin.errors.fetchFailed",
-          "Failed to fetch Admin Layer 1 users."
-        );
-
-      setError(backendMessage);
+          "Failed to fetch Admin Level 1 users."
+        )
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  // =========================================================
+  // INITIAL FETCH
+  // =========================================================
 
   useEffect(() => {
     fetchAdmins();
@@ -143,9 +152,13 @@ const AdminUsers = () => {
 
     return adminUsers.filter((user) => {
       return (
-        (user.full_name || "").toLowerCase().includes(value) ||
-        (user.email || "").toLowerCase().includes(value) ||
-        String(user.phone_number || "")
+        String(user?.full_name || "")
+          .toLowerCase()
+          .includes(value) ||
+        String(user?.email || "")
+          .toLowerCase()
+          .includes(value) ||
+        String(user?.phone_number || "")
           .toLowerCase()
           .includes(value)
       );
@@ -183,9 +196,7 @@ const AdminUsers = () => {
   );
 
   const showingFrom =
-    filteredAdmins.length === 0
-      ? 0
-      : startIndex + 1;
+    filteredAdmins.length === 0 ? 0 : startIndex + 1;
 
   const showingTo = Math.min(
     startIndex + ROWS_PER_PAGE,
@@ -201,35 +212,59 @@ const AdminUsers = () => {
       return "-";
     }
 
-    const normalizedStatus = String(status).toLowerCase();
+    const normalizedStatus = String(status)
+      .trim()
+      .toLowerCase();
 
     switch (normalizedStatus) {
       case "active":
         return t(
-          "users.status.active",
+          "users.table.active",
           "Active"
         );
 
       case "inactive":
         return t(
-          "users.status.inactive",
+          "users.table.inactive",
           "Inactive"
         );
 
       case "pending":
         return t(
-          "users.status.pending",
+          "users.table.pending",
           "Pending"
         );
 
       case "blocked":
         return t(
-          "users.status.blocked",
+          "users.table.blocked",
           "Blocked"
         );
 
       default:
         return status;
+    }
+  };
+
+  // =========================================================
+  // DATE FORMAT
+  // =========================================================
+
+  const formatCreatedAt = (date) => {
+    if (!date) {
+      return "-";
+    }
+
+    try {
+      return new Date(date).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "-";
     }
   };
 
@@ -263,13 +298,9 @@ const AdminUsers = () => {
           sm:py-5
         "
       >
-        {/* ===================================================
-            TITLE
-        =================================================== */}
+        {/* TITLE */}
 
         <div className="flex min-w-0 items-start gap-3">
-          {/* ICON */}
-
           <div
             className="
               flex
@@ -284,8 +315,6 @@ const AdminUsers = () => {
           >
             <ShieldCheck className="h-4 w-4 text-violet-600" />
           </div>
-
-          {/* TITLE + DESCRIPTION */}
 
           <div className="min-w-0 flex-1">
             <h2
@@ -322,9 +351,7 @@ const AdminUsers = () => {
           </div>
         </div>
 
-        {/* ===================================================
-            SEARCH + ADD BUTTON
-        =================================================== */}
+        {/* SEARCH + ADD */}
 
         <div
           className="
@@ -609,7 +636,7 @@ const AdminUsers = () => {
             {loading && (
               <tr>
                 <td
-                  colSpan="7"
+                  colSpan={7}
                   className="
                     px-5
                     py-10
@@ -621,13 +648,13 @@ const AdminUsers = () => {
                 >
                   {t(
                     "users.admin.loading",
-                    "Loading Admin Layer 1 users..."
+                    "Loading Admin Level 1 users..."
                   )}
                 </td>
               </tr>
             )}
 
-            {/* USERS */}
+            {/* DATA */}
 
             {!loading &&
               paginatedAdmins.map((user, index) => (
@@ -734,25 +761,13 @@ const AdminUsers = () => {
                       sm:text-[13px]
                     "
                   >
-                    {user.created_at
-                      ? new Date(
-                          user.created_at
-                        ).toLocaleString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "-"}
+                    {formatCreatedAt(user.created_at)}
                   </td>
 
                   {/* ACTIONS */}
 
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-center gap-4">
-                      {/* EDIT */}
-
                       <button
                         type="button"
                         onClick={() =>
@@ -774,8 +789,6 @@ const AdminUsers = () => {
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
-
-                      {/* DELETE */}
 
                       <button
                         type="button"
@@ -809,7 +822,7 @@ const AdminUsers = () => {
               filteredAdmins.length === 0 && (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan={7}
                     className="
                       px-5
                       py-10
@@ -821,7 +834,7 @@ const AdminUsers = () => {
                   >
                     {t(
                       "users.admin.empty",
-                      "No Admin Layer 1 users found."
+                      "No Admin Level 1 users found."
                     )}
                   </td>
                 </tr>
@@ -832,7 +845,8 @@ const AdminUsers = () => {
 
       {/* =====================================================
           FOOTER / PAGINATION
-          NO ROWS-PER-PAGE DROPDOWN
+          Fixed 10 rows
+          Previous / Current / Next only
       ===================================================== */}
 
       <div
@@ -871,7 +885,7 @@ const AdminUsers = () => {
           )}
         </p>
 
-        {/* PAGINATION BUTTONS */}
+        {/* PAGINATION */}
 
         <div className="flex items-center gap-1.5">
           {/* PREVIOUS */}
@@ -879,11 +893,11 @@ const AdminUsers = () => {
           <button
             type="button"
             disabled={currentPage === 1}
-            onClick={() =>
+            onClick={() => {
               setCurrentPage((page) =>
                 Math.max(1, page - 1)
-              )
-            }
+              );
+            }}
             className="
               flex
               h-9
@@ -938,12 +952,17 @@ const AdminUsers = () => {
 
           <button
             type="button"
-            disabled={currentPage >= totalPages}
-            onClick={() =>
-              setCurrentPage((page) =>
-                Math.min(totalPages, page + 1)
-              )
+            disabled={
+              currentPage >= totalPages
             }
+            onClick={() => {
+              setCurrentPage((page) =>
+                Math.min(
+                  totalPages,
+                  page + 1
+                )
+              );
+            }}
             className="
               flex
               h-9
