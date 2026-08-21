@@ -145,6 +145,44 @@ const en = {
   ward: "Ward",
 },
 
+gvpOverviewMap: {
+  title: "GVP Overview Map",
+  subtitle: "Overview of GVP points across Bengaluru",
+
+  filters: {
+    cityOverview: "City Overview",
+    routeMaps: "Route Maps",
+    gvpPoints: "GVP Points",
+    plants: "Plants",
+    wardBoundaries: "Ward Boundaries",
+  },
+
+  map: {
+    loading: "Loading map...",
+    noData: "No GVP points found.",
+    gvpPoint: "GVP Point",
+    name: "Name",
+    location: "Location",
+    status: "Status",
+    coordinates: "Coordinates",
+    latitude: "Latitude",
+    longitude: "Longitude",
+  },
+
+  status: {
+    active: "Active",
+    inactive: "Inactive",
+    pending: "Pending",
+  },
+
+  legend: {
+    gvpPoints: "GVP Points",
+    plants: "Plants",
+    wardBoundary: "Ward Boundary",
+    route: "Route",
+  },
+},
+
 wasteGenerators: {
   /* =========================================================
      PAGE

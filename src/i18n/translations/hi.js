@@ -1222,6 +1222,44 @@ cityOverviewMap: {
   loading:
     "शहर का मैप लोड हो रहा है...",
 },
+
+gvpOverviewMap: {
+  title: "जीवीपी अवलोकन मानचित्र",
+  subtitle: "बेंगलुरु शहर के जीवीपी पॉइंट्स का अवलोकन",
+
+  filters: {
+    cityOverview: "शहर का अवलोकन",
+    routeMaps: "मार्ग मानचित्र",
+    gvpPoints: "जीवीपी पॉइंट्स",
+    plants: "प्रसंस्करण संयंत्र",
+    wardBoundaries: "वार्ड सीमाएँ",
+  },
+
+  map: {
+    loading: "मानचित्र लोड हो रहा है...",
+    noData: "कोई जीवीपी पॉइंट नहीं मिला।",
+    gvpPoint: "जीवीपी पॉइंट",
+    name: "नाम",
+    location: "स्थान",
+    status: "स्थिति",
+    coordinates: "निर्देशांक",
+    latitude: "अक्षांश",
+    longitude: "देशांतर",
+  },
+
+  status: {
+    active: "सक्रिय",
+    inactive: "निष्क्रिय",
+    pending: "लंबित",
+  },
+
+  legend: {
+    gvpPoints: "जीवीपी पॉइंट्स",
+    plants: "प्रसंस्करण संयंत्र",
+    wardBoundary: "वार्ड सीमा",
+    route: "मार्ग",
+  },
+},
 };
 
 export default hi;

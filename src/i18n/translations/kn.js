@@ -1318,6 +1318,44 @@ cityOverviewMap: {
   loading:
     "ನಗರದ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
 },
+
+gvpOverviewMap: {
+  title: "ಜಿವಿಪಿ ಅವಲೋಕನ ನಕ್ಷೆ",
+  subtitle: "ಬೆಂಗಳೂರು ನಗರದ ಜಿವಿಪಿ ಪಾಯಿಂಟ್‌ಗಳ ಅವಲೋಕನ",
+
+  filters: {
+    cityOverview: "ನಗರ ಅವಲೋಕನ",
+    routeMaps: "ಮಾರ್ಗ ನಕ್ಷೆಗಳು",
+    gvpPoints: "ಜಿವಿಪಿ ಪಾಯಿಂಟ್‌ಗಳು",
+    plants: "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳು",
+    wardBoundaries: "ವಾರ್ಡ್ ಗಡಿಗಳು",
+  },
+
+  map: {
+    loading: "ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+    noData: "ಯಾವುದೇ ಜಿವಿಪಿ ಪಾಯಿಂಟ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+    gvpPoint: "ಜಿವಿಪಿ ಪಾಯಿಂಟ್",
+    name: "ಹೆಸರು",
+    location: "ಸ್ಥಳ",
+    status: "ಸ್ಥಿತಿ",
+    coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
+    latitude: "ಅಕ್ಷಾಂಶ",
+    longitude: "ರೇಖಾಂಶ",
+  },
+
+  status: {
+    active: "ಸಕ್ರಿಯ",
+    inactive: "ನಿಷ್ಕ್ರಿಯ",
+    pending: "ಬಾಕಿಯಿದೆ",
+  },
+
+  legend: {
+    gvpPoints: "ಜಿವಿಪಿ ಪಾಯಿಂಟ್‌ಗಳು",
+    plants: "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳು",
+    wardBoundary: "ವಾರ್ಡ್ ಗಡಿ",
+    route: "ಮಾರ್ಗ",
+  },
+},
 };
 
 export default kn;
