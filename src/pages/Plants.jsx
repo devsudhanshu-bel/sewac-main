@@ -37,17 +37,11 @@ export default function Plants() {
      MODAL STATE
   =========================================================== */
 
-  const [showCreateModal, setShowCreateModal] =
-    useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const [showEditModal, setShowEditModal] =
-    useState(false);
-
-  const [showDeleteModal, setShowDeleteModal] =
-    useState(false);
-
-  const [selectedPlant, setSelectedPlant] =
-    useState(null);
+  const [selectedPlant, setSelectedPlant] = useState(null);
 
   /* ===========================================================
      FETCH DASHBOARD DATA
@@ -73,9 +67,7 @@ export default function Plants() {
       ===================================================== */
 
       if (dashboardResponse?.data?.success) {
-        setDashboardData(
-          dashboardResponse.data.data
-        );
+        setDashboardData(dashboardResponse.data.data);
       }
 
       /* =====================================================
@@ -83,16 +75,10 @@ export default function Plants() {
       ===================================================== */
 
       if (plantsResponse?.data?.success) {
-        const plantData =
-          plantsResponse.data.data;
+        const plantData = plantsResponse.data.data;
 
-        setPlants(
-          plantData?.plants || []
-        );
-
-        setPagination(
-          plantData?.pagination || {}
-        );
+        setPlants(plantData?.plants || []);
+        setPagination(plantData?.pagination || {});
       } else {
         setPlants([]);
         setPagination({});
@@ -103,17 +89,12 @@ export default function Plants() {
       ===================================================== */
 
       if (locationsResponse?.data?.success) {
-        setPlantLocations(
-          locationsResponse.data.data || []
-        );
+        setPlantLocations(locationsResponse.data.data || []);
       } else {
         setPlantLocations([]);
       }
     } catch (err) {
-      console.error(
-        "Plants Dashboard Error:",
-        err
-      );
+      console.error("Plants Dashboard Error:", err);
 
       setError(
         err?.response?.data?.message ||
@@ -192,8 +173,8 @@ export default function Plants() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FD]">
-        <p className="text-[14px] font-medium text-gray-500">
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#F8F9FD] px-4">
+        <p className="text-center text-[14px] font-medium text-gray-500">
           {t(
             "plants.loading",
             "Loading Plant Dashboard..."
@@ -209,9 +190,8 @@ export default function Plants() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FD]">
-        <div className="text-center">
-
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#F8F9FD] px-4">
+        <div className="w-full max-w-md text-center">
           <p className="text-[15px] font-semibold text-red-500">
             {error}
           </p>
@@ -237,18 +217,51 @@ export default function Plants() {
               "Retry"
             )}
           </button>
-
         </div>
       </div>
     );
   }
 
   /* ===========================================================
+     PREPARE LOCATION DATA
+  =========================================================== */
+
+  const formattedPlantLocations = plantLocations.map(
+    (location) => {
+      const plant = plants.find(
+        (p) => p.id === location.id
+      );
+
+      return {
+        ...location,
+
+        plant_manager:
+          plant?.plant_manager ??
+          location?.plant_manager ??
+          "Not Assigned",
+
+        vehicles_enrolled:
+          plant?.vehicles_enrolled ??
+          location?.vehicles_enrolled ??
+          0,
+
+        capacity_ton_per_day:
+          plant?.capacity_ton_per_day ??
+          location?.capacity_ton_per_day ??
+          "N/A",
+
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+    }
+  );
+
+  /* ===========================================================
      RENDER
   =========================================================== */
 
   return (
-    <div className="flex-1 min-h-screen bg-[#F8F9FD]">
+    <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col bg-[#F8F9FD]">
 
       {/* =====================================================
           HEADER
@@ -260,163 +273,171 @@ export default function Plants() {
           PAGE CONTENT
       ===================================================== */}
 
-      <main className="px-6 py-6">
+      <main
+        className="
+          w-full
+          min-w-0
+          flex-1
+          px-3
+          py-4
+          sm:px-4
+          sm:py-5
+          md:px-6
+          md:py-6
+          lg:px-7
+          xl:px-8
+        "
+      >
 
         {/* =================================================
-            PAGE HEADING
+            PAGE CONTAINER
         ================================================= */}
 
-        <div className="mb-6">
+        <div className="mx-auto w-full max-w-[1800px] min-w-0">
 
-          <h1
-            className="
-              text-[28px]
-              font-bold
-              leading-tight
-              text-[#16295A]
-            "
-          >
-            {t(
-              "plants.title",
-              "Plant Overview"
-            )}
-          </h1>
+          {/* =================================================
+              PAGE HEADING
+          ================================================= */}
 
-          <p
-            className="
-              mt-1.5
-              text-[14px]
-              leading-6
-              text-[#667085]
-            "
-          >
-            {t(
-              "plants.description",
-              "Monitor all waste processing plants and their operations."
-            )}
-          </p>
+          <div className="mb-5 sm:mb-6">
+
+            <h1
+              className="
+                text-[22px]
+                font-bold
+                leading-tight
+                text-[#16295A]
+                sm:text-[24px]
+                md:text-[26px]
+                lg:text-[28px]
+              "
+            >
+              {t(
+                "plants.title",
+                "Plant Overview"
+              )}
+            </h1>
+
+            <p
+              className="
+                mt-1
+                max-w-2xl
+                text-[12px]
+                leading-5
+                text-[#667085]
+                sm:text-[13px]
+                md:text-[14px]
+                md:leading-6
+              "
+            >
+              {t(
+                "plants.description",
+                "Monitor all waste processing plants and their operations."
+              )}
+            </p>
+
+          </div>
+
+          {/* =================================================
+              KPI CARDS
+          ================================================= */}
+
+          <div className="w-full min-w-0">
+            <PlantKPICards
+              data={dashboardData}
+            />
+          </div>
+
+          {/* =================================================
+              PLANT LOCATIONS / MAP
+          ================================================= */}
+
+          <div className="w-full min-w-0">
+            <PlantLocations
+              plants={formattedPlantLocations}
+            />
+          </div>
+
+          {/* =================================================
+              PLANT DIRECTORY
+          ================================================= */}
+
+          <div className="w-full min-w-0">
+            <PlantDirectory
+              plants={plants}
+              pagination={pagination}
+              onCreatePlant={handleCreatePlant}
+              onEditPlant={handleEditPlant}
+              onDeletePlant={handleDeletePlant}
+            />
+          </div>
 
         </div>
 
-        {/* =================================================
-            KPI CARDS
-        ================================================= */}
-
-        <PlantKPICards
-          data={dashboardData}
-        />
-
-        {/* =================================================
-            PLANT LOCATIONS / MAP
-        ================================================= */}
-
-        <PlantLocations
-          plants={plantLocations.map(
-            (location) => {
-
-              const plant =
-                plants.find(
-                  (p) =>
-                    p.id === location.id
-                );
-
-              return {
-                ...location,
-
-                plant_manager:
-                  plant?.plant_manager,
-
-                vehicles_enrolled:
-                  plant?.vehicles_enrolled,
-
-                capacity_ton_per_day:
-                  plant?.capacity_ton_per_day,
-
-                latitude:
-                  location.latitude,
-
-                longitude:
-                  location.longitude,
-              };
-            }
-          )}
-        />
-
-        {/* =================================================
-            PLANT DIRECTORY
-        ================================================= */}
-
-        <PlantDirectory
-          plants={plants}
-          pagination={pagination}
-          onCreatePlant={handleCreatePlant}
-          onEditPlant={handleEditPlant}
-          onDeletePlant={handleDeletePlant}
-        />
-
-        {/* =================================================
-            CREATE PLANT MODAL
-        ================================================= */}
-
-        {showCreateModal &&
-          createPortal(
-            <CreatePlantModal
-              onClose={() =>
-                setShowCreateModal(false)
-              }
-              onSuccess={() => {
-                setShowCreateModal(false);
-                fetchDashboard();
-              }}
-            />,
-            document.body
-          )}
-
-        {/* =================================================
-            EDIT PLANT MODAL
-        ================================================= */}
-
-        {showEditModal &&
-          selectedPlant &&
-          createPortal(
-            <EditPlantModal
-              plant={selectedPlant}
-              onClose={() => {
-                setShowEditModal(false);
-                setSelectedPlant(null);
-              }}
-              onSuccess={() => {
-                setShowEditModal(false);
-                setSelectedPlant(null);
-                fetchDashboard();
-              }}
-            />,
-            document.body
-          )}
-
-        {/* =================================================
-            DELETE PLANT MODAL
-        ================================================= */}
-
-        {showDeleteModal &&
-          selectedPlant &&
-          createPortal(
-            <DeletePlantModal
-              plant={selectedPlant}
-              onClose={() => {
-                setShowDeleteModal(false);
-                setSelectedPlant(null);
-              }}
-              onSuccess={() => {
-                setShowDeleteModal(false);
-                setSelectedPlant(null);
-                fetchDashboard();
-              }}
-            />,
-            document.body
-          )}
-
       </main>
+
+      {/* =====================================================
+          CREATE PLANT MODAL
+      ===================================================== */}
+
+      {showCreateModal &&
+        createPortal(
+          <CreatePlantModal
+            onClose={() => {
+              setShowCreateModal(false);
+            }}
+            onSuccess={() => {
+              setShowCreateModal(false);
+              fetchDashboard();
+            }}
+          />,
+          document.body
+        )}
+
+      {/* =====================================================
+          EDIT PLANT MODAL
+      ===================================================== */}
+
+      {showEditModal &&
+        selectedPlant &&
+        createPortal(
+          <EditPlantModal
+            plant={selectedPlant}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedPlant(null);
+            }}
+            onSuccess={() => {
+              setShowEditModal(false);
+              setSelectedPlant(null);
+              fetchDashboard();
+            }}
+          />,
+          document.body
+        )}
+
+      {/* =====================================================
+          DELETE PLANT MODAL
+      ===================================================== */}
+
+      {showDeleteModal &&
+        selectedPlant &&
+        createPortal(
+          <DeletePlantModal
+            plant={selectedPlant}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setSelectedPlant(null);
+            }}
+            onSuccess={() => {
+              setShowDeleteModal(false);
+              setSelectedPlant(null);
+              fetchDashboard();
+            }}
+          />,
+          document.body
+        )}
+
     </div>
   );
 }
