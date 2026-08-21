@@ -7,129 +7,158 @@ const logEdit = require("../utils/editLogger");
 exports.getUsers = async (req, res) => {
   try {
     const { role, id } = req.user;
-    const { type, search, page = 1, limit = 10 } = req.query;
-    const currentPage = Number(page);
-    const pageSize = Number(limit);
+
+    const {
+      type,
+      search = "",
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const pageSize = Math.min(Math.max(Number(limit) || 10, 1), 100);
+
     const skip = (currentPage - 1) * pageSize;
 
-    let users = [];
+    const normalizedSearch = String(search).trim();
 
-    // ===============================
+    let where = {};
+
+    // =========================================================
     // ADMIN LAYER 1
-    // ===============================
+    // =========================================================
     if (role === "ADMIN_LAYER_1") {
       const targetRole =
-        type === "ADMIN_LAYER_1" ? "ADMIN_LAYER_1" : "ADMIN_LAYER_2";
+        type === "ADMIN_LAYER_1"
+          ? "ADMIN_LAYER_1"
+          : "ADMIN_LAYER_2";
 
-      users = await prisma.admins.findMany({
-        where: {
-          role: targetRole,
-          status: "ACTIVE",
+      where = {
+        role: targetRole,
+        status: "ACTIVE",
+      };
 
-          ...(search && {
-            OR: [
-              {
-                full_name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                email: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone_number: {
-                  contains: search,
-                },
-              },
-            ],
-          }),
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          full_name: true,
-          email: true,
-          phone_number: true,
-          role: true,
-          status: true,
-          created_at: true,
-        },
-      });
+      if (normalizedSearch) {
+        where.OR = [
+          {
+            full_name: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            phone_number: {
+              contains: normalizedSearch,
+            },
+          },
+        ];
+      }
     }
 
-    // ===============================
+    // =========================================================
     // ADMIN LAYER 2
-    // ===============================
+    // =========================================================
     else if (role === "ADMIN_LAYER_2") {
-      users = await prisma.admins.findMany({
-        where: {
-          role: "WORKER",
-          parent_admin_id: id,
-          status: "ACTIVE",
+      where = {
+        role: "WORKER",
+        parent_admin_id: id,
+        status: "ACTIVE",
+      };
 
-          ...(search && {
-            OR: [
-              {
-                full_name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                email: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone_number: {
-                  contains: search,
-                },
-              },
-            ],
-          }),
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          full_name: true,
-          email: true,
-          phone_number: true,
-          role: true,
-          status: true,
-          created_at: true,
-        },
-      });
-    } else {
+      if (normalizedSearch) {
+        where.OR = [
+          {
+            full_name: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            phone_number: {
+              contains: normalizedSearch,
+            },
+          },
+        ];
+      }
+    }
+
+    // =========================================================
+    // OTHER ROLES
+    // =========================================================
+    else {
       return res.status(403).json({
-        error: "Unauthorized",
+        success: false,
+        error: "Unauthorized.",
       });
     }
+
+    // =========================================================
+    // TOTAL COUNT
+    // =========================================================
+    const total = await prisma.admins.count({
+      where,
+    });
+
+    // =========================================================
+    // FETCH USERS
+    // =========================================================
+    const users = await prisma.admins.findMany({
+      where,
+
+      orderBy: {
+        created_at: "desc",
+      },
+
+      skip,
+      take: pageSize,
+
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        phone_number: true,
+        role: true,
+        status: true,
+        created_at: true,
+      },
+    });
+
+    const totalPages =
+      total === 0 ? 0 : Math.ceil(total / pageSize);
 
     return res.status(200).json({
       success: true,
+
       page: currentPage,
+
       limit: pageSize,
+
       count: users.length,
+
+      total,
+
+      totalPages,
+
       users,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get Users Error:", error);
 
     return res.status(500).json({
-      error: "Failed to fetch users",
+      success: false,
+      error: "Failed to fetch users.",
     });
   }
 };
