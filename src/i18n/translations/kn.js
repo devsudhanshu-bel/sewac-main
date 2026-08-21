@@ -803,6 +803,102 @@ users: {
   footer:
     "© 2025 SEWAC. ಎಲ್ಲಾ ಹಕ್ಕುಗಳನ್ನು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ.",
 },
+
+complaints: {
+  title: "ದೂರುಗಳು",
+  subtitle: "ನಾಗರಿಕರ ದೂರುಗಳನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ",
+
+  filters: {
+    search: "ದೂರುಗಳನ್ನು ಹುಡುಕಿ",
+    status: "ಸ್ಥಿತಿ",
+    category: "ವರ್ಗ",
+    dateFrom: "ದಿನಾಂಕದಿಂದ",
+    dateTo: "ದಿನಾಂಕದವರೆಗೆ",
+    reset: "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ಮರುಹೊಂದಿಸಿ",
+    allStatuses: "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
+    allCategories: "ಎಲ್ಲಾ ವರ್ಗಗಳು",
+  },
+
+  kpis: {
+    total: "ಒಟ್ಟು ದೂರುಗಳು",
+    pending: "ಬಾಕಿ",
+    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
+    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
+    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
+  },
+
+  table: {
+    ticketNumber: "ಟಿಕೆಟ್ ಸಂಖ್ಯೆ",
+    citizen: "ನಾಗರಿಕ",
+    category: "ವರ್ಗ",
+    status: "ಸ್ಥಿತಿ",
+    date: "ದಿನಾಂಕ",
+    actions: "ಕ್ರಿಯೆಗಳು",
+    view: "ವೀಕ್ಷಿಸಿ",
+    noComplaints: "ಯಾವುದೇ ದೂರುಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+    loading: "ದೂರುಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+    previous: "ಹಿಂದಿನ",
+    next: "ಮುಂದಿನ",
+    page: "ಪುಟ",
+    of: "ರಲ್ಲಿ",
+  },
+
+  details: {
+    title: "ದೂರು ವಿವರಗಳು",
+    close: "ಮುಚ್ಚಿ",
+    complaintInformation: "ದೂರು ಮಾಹಿತಿ",
+    ticketNumber: "ಟಿಕೆಟ್ ಸಂಖ್ಯೆ",
+    citizen: "ನಾಗರಿಕ",
+    phone: "ದೂರವಾಣಿ",
+    category: "ವರ್ಗ",
+    description: "ವಿವರಣೆ",
+    location: "ಸ್ಥಳ",
+    status: "ಸ್ಥಿತಿ",
+    remarks: "ಟಿಪ್ಪಣಿಗಳು",
+    update: "ದೂರು ನವೀಕರಿಸಿ",
+    save: "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
+    saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
+    requestVerification: "ಪರಿಶೀಲನೆಗಾಗಿ ವಿನಂತಿಸಿ",
+    verifyOtp: "OTP ಪರಿಶೀಲಿಸಿ",
+    enterOtp: "6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ",
+    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
+    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
+    pending: "ಬಾಕಿ",
+    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
+    noComplaint: "ವಿವರಗಳನ್ನು ನೋಡಲು ದೂರು ಆಯ್ಕೆಮಾಡಿ.",
+  },
+
+  status: {
+    pending: "ಬಾಕಿ",
+    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
+    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
+    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
+    assigned: "ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    inProgress: "ಪ್ರಗತಿಯಲ್ಲಿದೆ",
+  },
+
+  messages: {
+    updated: "ದೂರು ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ.",
+    otpSent: "ನಾಗರಿಕರಿಗೆ OTP ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ.",
+    closed: "ದೂರು ಯಶಸ್ವಿಯಾಗಿ ಮುಚ್ಚಲಾಗಿದೆ.",
+  },
+
+  errors: {
+    authToken: "ನಿರ್ವಾಹಕರ ದೃಢೀಕರಣ ಟೋಕನ್ ಕಂಡುಬಂದಿಲ್ಲ.",
+    fetch: "ದೂರುಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ.",
+    fetchUnable: "ದೂರುಗಳನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    fetchKpis: "ದೂರುಗಳ KPIಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ.",
+    update: "ದೂರು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    updateUnable: "ದೂರು ನವೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    verification: "ಪರಿಶೀಲನೆಗಾಗಿ ವಿನಂತಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    verificationUnable:
+      "ಪರಿಶೀಲನೆ OTP ವಿನಂತಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    noComplaint: "ಯಾವುದೇ ದೂರು ಆಯ್ಕೆಮಾಡಿಲ್ಲ.",
+    invalidOtp: "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ 6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ.",
+    verifyOtp: "OTP ಪರಿಶೀಲಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    verifyOtpUnable: "OTP ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+  },
+},
 };
 
 export default kn;

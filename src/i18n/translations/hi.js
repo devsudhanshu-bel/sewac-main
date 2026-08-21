@@ -699,6 +699,103 @@ users: {
   footer:
     "© 2025 SEWAC. सर्वाधिकार सुरक्षित।",
 },
+
+complaints: {
+  title: "शिकायतें",
+  subtitle: "नागरिकों की शिकायतों को प्रबंधित और ट्रैक करें",
+
+  filters: {
+    search: "शिकायतें खोजें",
+    status: "स्थिति",
+    category: "श्रेणी",
+    dateFrom: "तारीख से",
+    dateTo: "तारीख तक",
+    reset: "फ़िल्टर रीसेट करें",
+    allStatuses: "सभी स्थितियाँ",
+    allCategories: "सभी श्रेणियाँ",
+  },
+
+  kpis: {
+    total: "कुल शिकायतें",
+    pending: "लंबित",
+    readyForVerification: "सत्यापन के लिए तैयार",
+    otpSent: "OTP भेजा गया",
+    closed: "बंद",
+  },
+
+  table: {
+    ticketNumber: "टिकट नंबर",
+    citizen: "नागरिक",
+    category: "श्रेणी",
+    status: "स्थिति",
+    date: "तारीख",
+    actions: "कार्रवाई",
+    view: "देखें",
+    noComplaints: "कोई शिकायत नहीं मिली।",
+    loading: "शिकायतें लोड हो रही हैं...",
+    previous: "पिछला",
+    next: "अगला",
+    page: "पृष्ठ",
+    of: "का",
+  },
+
+  details: {
+    title: "शिकायत विवरण",
+    close: "बंद करें",
+    complaintInformation: "शिकायत की जानकारी",
+    ticketNumber: "टिकट नंबर",
+    citizen: "नागरिक",
+    phone: "फ़ोन",
+    category: "श्रेणी",
+    description: "विवरण",
+    location: "स्थान",
+    status: "स्थिति",
+    remarks: "टिप्पणियाँ",
+    update: "शिकायत अपडेट करें",
+    save: "बदलाव सहेजें",
+    saving: "सहेजा जा रहा है...",
+    requestVerification: "सत्यापन का अनुरोध करें",
+    verifyOtp: "OTP सत्यापित करें",
+    enterOtp: "6 अंकों का OTP दर्ज करें",
+    otpSent: "OTP भेजा गया",
+    readyForVerification: "सत्यापन के लिए तैयार",
+    pending: "लंबित",
+    closed: "बंद",
+    noComplaint: "विवरण देखने के लिए शिकायत चुनें।",
+  },
+
+  status: {
+    pending: "लंबित",
+    readyForVerification: "सत्यापन के लिए तैयार",
+    otpSent: "OTP भेजा गया",
+    closed: "बंद",
+    assigned: "सौंपा गया",
+    inProgress: "प्रगति पर",
+  },
+
+  messages: {
+    updated: "शिकायत सफलतापूर्वक अपडेट की गई।",
+    otpSent: "नागरिक को OTP सफलतापूर्वक भेजा गया।",
+    closed: "शिकायत सफलतापूर्वक बंद की गई।",
+  },
+
+  errors: {
+    authToken: "एडमिन प्रमाणीकरण टोकन नहीं मिला।",
+    fetch: "शिकायतें प्राप्त करने में विफल।",
+    fetchUnable: "शिकायतें प्राप्त नहीं की जा सकीं।",
+    fetchKpis: "शिकायत KPI प्राप्त करने में विफल।",
+    update: "शिकायत अपडेट करने में विफल।",
+    updateUnable: "शिकायत अपडेट नहीं की जा सकी।",
+    verification: "सत्यापन का अनुरोध करने में विफल।",
+    verificationUnable:
+      "सत्यापन OTP का अनुरोध नहीं किया जा सका।",
+    noComplaint: "कोई शिकायत चयनित नहीं है।",
+    invalidOtp: "कृपया मान्य 6 अंकों का OTP दर्ज करें।",
+    verifyOtp: "OTP सत्यापित करने में विफल।",
+    verifyOtpUnable: "OTP सत्यापित नहीं किया जा सका।",
+  },
+},
+
 };
 
 export default hi;
