@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
+
+import { useLanguage } from "../../i18n";
 
 export default function WasteGeneratorDirectory({
   citizens = [],
@@ -36,7 +37,13 @@ export default function WasteGeneratorDirectory({
 
   onPageSizeChange,
 }) {
-  const { t } = useTranslation();
+  /*
+  |--------------------------------------------------------------------------
+  | LANGUAGE
+  |--------------------------------------------------------------------------
+  */
+
+  const { t } = useLanguage();
 
   /*
   |--------------------------------------------------------------------------
@@ -108,7 +115,10 @@ export default function WasteGeneratorDirectory({
     pages.push(safeTotalPages);
 
     return pages;
-  }, [safePage, safeTotalPages]);
+  }, [
+    safePage,
+    safeTotalPages,
+  ]);
 
   /*
   |--------------------------------------------------------------------------
@@ -137,29 +147,31 @@ export default function WasteGeneratorDirectory({
 
   const getName = (citizen) =>
     citizen?.personName ||
-    "N/A";
+    t(
+      "wasteGenerators.directory.notAvailable",
+      "N/A",
+    );
 
   const getPhone = (citizen) =>
     citizen?.phoneNumber ||
     citizen?.contactNumber ||
-    "N/A";
+    t(
+      "wasteGenerators.directory.notAvailable",
+      "N/A",
+    );
 
   const getWetRFID = (citizen) =>
     citizen?.wetRFID ||
     t(
       "wasteGenerators.directory.notAssigned",
-      {
-        defaultValue: "Not Assigned",
-      },
+      "Not Assigned",
     );
 
   const getDryRFID = (citizen) =>
     citizen?.dryRFID ||
     t(
       "wasteGenerators.directory.notAssigned",
-      {
-        defaultValue: "Not Assigned",
-      },
+      "Not Assigned",
     );
 
   const getWard = (citizen) => {
@@ -174,9 +186,7 @@ export default function WasteGeneratorDirectory({
     ) {
       return `${t(
         "wasteGenerators.directory.ward",
-        {
-          defaultValue: "Ward",
-        },
+        "Ward",
       )} ${citizen.wardNo}`;
     }
 
@@ -187,20 +197,29 @@ export default function WasteGeneratorDirectory({
     ) {
       return `${t(
         "wasteGenerators.directory.ward",
-        {
-          defaultValue: "Ward",
-        },
+        "Ward",
       )} ${citizen.ward}`;
     }
 
-    return "N/A";
+    return t(
+      "wasteGenerators.directory.notAvailable",
+      "N/A",
+    );
   };
 
   const getArea = (citizen) =>
-    citizen?.area || "N/A";
+    citizen?.area ||
+    t(
+      "wasteGenerators.directory.notAvailable",
+      "N/A",
+    );
 
   const getZone = (citizen) =>
-    citizen?.zoneName || "N/A";
+    citizen?.zoneName ||
+    t(
+      "wasteGenerators.directory.notAvailable",
+      "N/A",
+    );
 
   const getStatus = (citizen) => {
     return citizen?.status === "ACTIVE"
@@ -341,10 +360,7 @@ export default function WasteGeneratorDirectory({
             >
               {t(
                 "wasteGenerators.directory.title",
-                {
-                  defaultValue:
-                    "Waste Generators Directory",
-                },
+                "Waste Generators Directory",
               )}
             </h2>
 
@@ -365,10 +381,7 @@ export default function WasteGeneratorDirectory({
             >
               {t(
                 "wasteGenerators.directory.description",
-                {
-                  defaultValue:
-                    "View and manage waste generators based on registered citizen information.",
-                },
+                "View and manage waste generators based on registered citizen information.",
               )}
             </p>
           </div>
@@ -432,16 +445,11 @@ export default function WasteGeneratorDirectory({
                 type="text"
                 value={search}
                 onChange={(event) =>
-                  onSearch?.(
-                    event.target.value,
-                  )
+                  onSearch?.(event.target.value)
                 }
                 placeholder={t(
                   "wasteGenerators.directory.searchPlaceholder",
-                  {
-                    defaultValue:
-                      "Search by name, phone number, Wet RFID",
-                  },
+                  "Search by name, phone number, Wet RFID",
                 )}
                 className="
                   w-full
@@ -487,9 +495,7 @@ export default function WasteGeneratorDirectory({
             <button
               type="button"
               onClick={onSync}
-              disabled={
-                syncing || loading
-              }
+              disabled={syncing || loading}
               className="
                 h-[44px]
                 sm:h-[48px]
@@ -545,17 +551,11 @@ export default function WasteGeneratorDirectory({
               {syncing
                 ? t(
                     "wasteGenerators.directory.syncing",
-                    {
-                      defaultValue:
-                        "Syncing...",
-                    },
+                    "Syncing...",
                   )
                 : t(
                     "wasteGenerators.directory.sync",
-                    {
-                      defaultValue:
-                        "Sync",
-                    },
+                    "Sync",
                   )}
             </button>
           </div>
@@ -642,9 +642,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.name",
-                  {
-                    defaultValue: "Name",
-                  },
+                  "Name",
                 )}
               </th>
 
@@ -669,11 +667,8 @@ export default function WasteGeneratorDirectory({
                 "
               >
                 {t(
-                  "wasteGenerators.directory.phone",
-                  {
-                    defaultValue:
-                      "Phone Number",
-                  },
+                  "wasteGenerators.directory.phoneNumber",
+                  "Phone Number",
                 )}
               </th>
 
@@ -699,10 +694,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.wetRFID",
-                  {
-                    defaultValue:
-                      "Wet RFID",
-                  },
+                  "Wet RFID",
                 )}
               </th>
 
@@ -728,10 +720,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.dryRFID",
-                  {
-                    defaultValue:
-                      "Dry RFID",
-                  },
+                  "Dry RFID",
                 )}
               </th>
 
@@ -757,10 +746,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.wardArea",
-                  {
-                    defaultValue:
-                      "Ward / Area",
-                  },
+                  "Ward / Area",
                 )}
               </th>
 
@@ -786,10 +772,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.zone",
-                  {
-                    defaultValue:
-                      "Zone",
-                  },
+                  "Zone",
                 )}
               </th>
 
@@ -815,10 +798,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.status",
-                  {
-                    defaultValue:
-                      "Status",
-                  },
+                  "Status",
                 )}
               </th>
 
@@ -844,10 +824,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.totalWaste",
-                  {
-                    defaultValue:
-                      "Total Waste",
-                  },
+                  "Total Waste",
                 )}
               </th>
 
@@ -873,10 +850,7 @@ export default function WasteGeneratorDirectory({
               >
                 {t(
                   "wasteGenerators.directory.averageWaste",
-                  {
-                    defaultValue:
-                      "Average Waste",
-                  },
+                  "Average Waste",
                 )}
               </th>
 
@@ -901,11 +875,8 @@ export default function WasteGeneratorDirectory({
                 "
               >
                 {t(
-                  "common.actions",
-                  {
-                    defaultValue:
-                      "Action",
-                  },
+                  "wasteGenerators.directory.action",
+                  "Action",
                 )}
               </th>
             </tr>
@@ -935,10 +906,7 @@ export default function WasteGeneratorDirectory({
                 >
                   {t(
                     "wasteGenerators.directory.loading",
-                    {
-                      defaultValue:
-                        "Loading waste generators...",
-                    },
+                    "Loading waste generators...",
                   )}
                 </td>
               </tr>
@@ -962,26 +930,17 @@ export default function WasteGeneratorDirectory({
                   {search.trim()
                     ? t(
                         "wasteGenerators.directory.noSearchResults",
-                        {
-                          defaultValue:
-                            "No waste generators found for this search.",
-                        },
+                        "No waste generators found for this search.",
                       )
                     : t(
-                        "wasteGenerators.directory.empty",
-                        {
-                          defaultValue:
-                            "No waste generators found.",
-                        },
+                        "wasteGenerators.directory.noGenerators",
+                        "No waste generators found.",
                       )}
                 </td>
               </tr>
             ) : (
               citizens.map(
-                (
-                  citizen,
-                  index,
-                ) => {
+                (citizen, index) => {
                   const totalWaste =
                     getTotalWaste(
                       citizen,
@@ -1066,7 +1025,7 @@ export default function WasteGeneratorDirectory({
                       </td>
 
                       {/* ==================================================
-                          PHONE
+                          PHONE NUMBER
                       ================================================== */}
 
                       <td
@@ -1293,11 +1252,8 @@ export default function WasteGeneratorDirectory({
                             "
                           >
                             {t(
-                              "common.active",
-                              {
-                                defaultValue:
-                                  "Active",
-                              },
+                              "wasteGenerators.directory.active",
+                              "Active",
                             )}
                           </span>
                         ) : (
@@ -1323,11 +1279,8 @@ export default function WasteGeneratorDirectory({
                             "
                           >
                             {t(
-                              "common.inactive",
-                              {
-                                defaultValue:
-                                  "Inactive",
-                              },
+                              "wasteGenerators.directory.inactive",
+                              "Inactive",
                             )}
                           </span>
                         )}
@@ -1365,7 +1318,10 @@ export default function WasteGeneratorDirectory({
                               ).toFixed(
                                 2,
                               )
-                            : "N/A"}
+                            : t(
+                                "wasteGenerators.directory.notAvailable",
+                                "N/A",
+                              )}
                         </span>
 
                         {totalWaste !==
@@ -1380,7 +1336,10 @@ export default function WasteGeneratorDirectory({
                               text-gray-400
                             "
                           >
-                            kg
+                            {t(
+                              "wasteGenerators.directory.kg",
+                              "kg",
+                            )}
                           </span>
                         )}
                       </td>
@@ -1417,7 +1376,10 @@ export default function WasteGeneratorDirectory({
                               ).toFixed(
                                 2,
                               )
-                            : "N/A"}
+                            : t(
+                                "wasteGenerators.directory.notAvailable",
+                                "N/A",
+                              )}
                         </span>
 
                         {averageWaste !==
@@ -1432,7 +1394,10 @@ export default function WasteGeneratorDirectory({
                               text-gray-400
                             "
                           >
-                            kg
+                            {t(
+                              "wasteGenerators.directory.kg",
+                              "kg",
+                            )}
                           </span>
                         )}
                       </td>
@@ -1481,10 +1446,7 @@ export default function WasteGeneratorDirectory({
                           "
                           title={t(
                             "wasteGenerators.directory.update",
-                            {
-                              defaultValue:
-                                "Update Waste Generator",
-                            },
+                            "Update Waste Generator",
                           )}
                         >
                           <Pencil
@@ -1546,10 +1508,7 @@ export default function WasteGeneratorDirectory({
         >
           {t(
             "wasteGenerators.directory.showing",
-            {
-              defaultValue:
-                "Showing",
-            },
+            "Showing",
           )}{" "}
           <span
             className="
@@ -1571,10 +1530,7 @@ export default function WasteGeneratorDirectory({
           {" "}
           {t(
             "wasteGenerators.directory.of",
-            {
-              defaultValue:
-                "of",
-            },
+            "of",
           )}{" "}
           <span
             className="
@@ -1586,10 +1542,7 @@ export default function WasteGeneratorDirectory({
           </span>{" "}
           {t(
             "wasteGenerators.directory.wasteGenerators",
-            {
-              defaultValue:
-                "waste generators",
-            },
+            "waste generators",
           )}
         </p>
 
@@ -1633,10 +1586,7 @@ export default function WasteGeneratorDirectory({
             >
               {t(
                 "wasteGenerators.directory.rows",
-                {
-                  defaultValue:
-                    "Rows:",
-                },
+                "Rows:",
               )}
             </span>
 
@@ -1728,10 +1678,7 @@ export default function WasteGeneratorDirectory({
             "
             title={t(
               "wasteGenerators.directory.previous",
-              {
-                defaultValue:
-                  "Previous page",
-              },
+              "Previous page",
             )}
           >
             <ChevronLeft
@@ -1783,7 +1730,9 @@ export default function WasteGeneratorDirectory({
                   </span>
                 ) : (
                   <button
-                    key={pageNumber}
+                    key={
+                      pageNumber
+                    }
                     type="button"
                     disabled={loading}
                     onClick={() =>
@@ -1816,7 +1765,9 @@ export default function WasteGeneratorDirectory({
                       }
                     `}
                   >
-                    {pageNumber}
+                    {
+                      pageNumber
+                    }
                   </button>
                 ),
             )}
@@ -1865,10 +1816,7 @@ export default function WasteGeneratorDirectory({
             "
             title={t(
               "wasteGenerators.directory.next",
-              {
-                defaultValue:
-                  "Next page",
-              },
+              "Next page",
             )}
           >
             <ChevronRight
