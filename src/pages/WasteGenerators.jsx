@@ -18,8 +18,12 @@ export default function WasteGenerators() {
     new Date().toISOString().split("T")[0],
   );
 
-  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
-    useFilters();
+  const {
+    selectedCity,
+    selectedZone,
+    selectedDivision,
+    selectedWard,
+  } = useFilters();
 
   const { t } = useLanguage();
 
@@ -44,7 +48,10 @@ export default function WasteGenerators() {
       }
 
       if (selectedDivision?.division_id) {
-        params.set("divisionId", selectedDivision.division_id);
+        params.set(
+          "divisionId",
+          selectedDivision.division_id,
+        );
       }
 
       if (selectedWard?.ward_id) {
@@ -57,7 +64,10 @@ export default function WasteGenerators() {
 
       setSummary(response?.data?.data || null);
     } catch (error) {
-      console.error("Waste Generator Summary Error:", error);
+      console.error(
+        "Waste Generator Summary Error:",
+        error,
+      );
 
       setSummary(null);
     }
@@ -82,7 +92,16 @@ export default function WasteGenerators() {
   ========================================================= */
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
+    <div
+      className="
+        flex-1
+        min-h-screen
+        min-w-0
+        overflow-y-auto
+        overflow-x-hidden
+        bg-[#FAFAFC]
+      "
+    >
       {/* =====================================================
           HEADER
       ===================================================== */}
@@ -92,20 +111,67 @@ export default function WasteGenerators() {
         setSelectedDate={setSelectedDate}
       />
 
-      <div className="w-full px-8 py-7 overflow-x-hidden">
+      {/* =====================================================
+          PAGE CONTENT
+      ===================================================== */}
+
+      <main
+        className="
+          w-full
+          min-w-0
+          overflow-x-hidden
+
+          px-4
+          py-5
+
+          sm:px-5
+          sm:py-6
+
+          md:px-6
+          md:py-7
+
+          lg:px-8
+          lg:py-7
+
+          xl:px-8
+        "
+      >
         {/* ===================================================
             PAGE TITLE
         =================================================== */}
 
-        <div>
-          <h1 className="text-[34px] font-bold tracking-tight text-[#16295A]">
+        <div className="min-w-0">
+          <h1
+            className="
+              text-[28px]
+              leading-tight
+              font-bold
+              tracking-tight
+              text-[#16295A]
+
+              sm:text-[30px]
+              md:text-[32px]
+              lg:text-[34px]
+            "
+          >
             {t(
               "wasteGenerators.title",
               "Waste Generators",
             )}
           </h1>
 
-          <p className="mt-1 text-[14px] text-slate-500">
+          <p
+            className="
+              mt-1
+              max-w-[1100px]
+              text-[13px]
+              leading-5
+              text-slate-500
+
+              sm:text-[14px]
+              sm:leading-6
+            "
+          >
             {t(
               "wasteGenerators.description",
               "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance.",
@@ -117,8 +183,18 @@ export default function WasteGenerators() {
             WASTE GENERATOR KPIs
         =================================================== */}
 
-        <section className="mt-6">
-          <WasteGenKPIs summary={summary} />
+        <section
+          className="
+            mt-5
+            w-full
+            min-w-0
+
+            sm:mt-6
+          "
+        >
+          <div className="w-full min-w-0">
+            <WasteGenKPIs summary={summary} />
+          </div>
         </section>
 
         {/* ===================================================
@@ -127,23 +203,47 @@ export default function WasteGenerators() {
 
         <section
           className="
-            grid
-            grid-cols-1
-            lg:grid-cols-2
-            gap-5
             mt-5
+            grid
+            w-full
+            min-w-0
+            grid-cols-1
+            gap-5
             items-stretch
+
+            lg:grid-cols-2
+            lg:gap-5
           "
         >
-          {/* ================= COLLECTION MAP ================= */}
+          {/* =================================================
+              COLLECTION MAP
+          ================================================= */}
 
-          <div className="min-w-0 h-full">
-            <WasteGenMap selectedDate={selectedDate} />
+          <div
+            className="
+              min-w-0
+              w-full
+              max-w-full
+              overflow-hidden
+            "
+          >
+            <WasteGenMap
+              selectedDate={selectedDate}
+            />
           </div>
 
-          {/* ================= GVP GENERATION ================= */}
+          {/* =================================================
+              GVP GENERATION TREND
+          ================================================= */}
 
-          <div className="min-w-0 h-full">
+          <div
+            className="
+              min-w-0
+              w-full
+              max-w-full
+              overflow-hidden
+            "
+          >
             <GVPGen
               selectedDate={selectedDate}
               selectedCity={selectedCity}
@@ -158,10 +258,22 @@ export default function WasteGenerators() {
             WASTE GENERATOR DIRECTORY
         =================================================== */}
 
-        <section className="mt-5 mb-8">
-          <WasteGenDir />
+        <section
+          className="
+            mt-5
+            mb-6
+            w-full
+            min-w-0
+
+            sm:mb-7
+            md:mb-8
+          "
+        >
+          <div className="w-full min-w-0 max-w-full">
+            <WasteGenDir />
+          </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

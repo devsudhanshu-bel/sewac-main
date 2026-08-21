@@ -188,10 +188,12 @@ export default function WasteGenKPIs({ summary }) {
       className="
         grid
         grid-cols-1
-        md:grid-cols-2
-        xl:grid-cols-4
-        gap-6
+        sm:grid-cols-2
+        lg:grid-cols-4
+        gap-4
+        lg:gap-5
         mt-6
+        w-full
       "
     >
       {/* ================================================================
@@ -200,6 +202,8 @@ export default function WasteGenKPIs({ summary }) {
 
       <div
         className="
+          min-w-0
+          w-full
           bg-white
           rounded-3xl
           border
@@ -225,15 +229,15 @@ export default function WasteGenKPIs({ summary }) {
             ACTIVE
         ============================================================ */}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <UserRound
             size={20}
-            className="text-green-600"
+            className="text-green-600 shrink-0"
             fill="currentColor"
           />
 
-          <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-slate-600 truncate">
               {t(
                 "wasteGenerators.kpis.activeGenerators",
                 "Active Waste Generators"
@@ -272,15 +276,15 @@ export default function WasteGenKPIs({ summary }) {
             INACTIVE
         ============================================================ */}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <UserRound
             size={20}
-            className="text-orange-500"
+            className="text-orange-500 shrink-0"
             fill="currentColor"
           />
 
-          <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-slate-600 truncate">
               {t(
                 "wasteGenerators.kpis.inactiveGenerators",
                 "Inactive Waste Generators"
@@ -320,6 +324,8 @@ export default function WasteGenKPIs({ summary }) {
 
       <div
         className="
+          min-w-0
+          w-full
           bg-white
           rounded-3xl
           border
@@ -336,7 +342,7 @@ export default function WasteGenKPIs({ summary }) {
       >
         {/* ================= HEADER ================= */}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div
             className="
               w-10
@@ -355,7 +361,7 @@ export default function WasteGenKPIs({ summary }) {
             />
           </div>
 
-          <p className="text-[12px] font-semibold leading-5 text-slate-800">
+          <p className="text-[12px] font-semibold leading-5 text-slate-800 truncate">
             {t(
               "wasteGenerators.kpis.totalWasteGenerated",
               "Total Waste Generated"
@@ -365,14 +371,15 @@ export default function WasteGenKPIs({ summary }) {
 
         {/* ================= VALUE ================= */}
 
-        <div className="flex justify-center items-center h-[95px]">
-          <div className="flex items-end gap-2">
+        <div className="flex justify-center items-center h-[95px] min-w-0">
+          <div className="flex items-end gap-2 min-w-0">
             <h2
               className="
                 text-[32px]
                 font-bold
                 tracking-tight
                 text-[#18214D]
+                leading-none
               "
             >
               {totalWaste.value}
@@ -383,7 +390,8 @@ export default function WasteGenKPIs({ summary }) {
                 text-sm
                 font-semibold
                 text-slate-600
-                mb-2
+                mb-1
+                whitespace-nowrap
               "
             >
               {translatedTotalWasteUnit}
@@ -398,6 +406,8 @@ export default function WasteGenKPIs({ summary }) {
 
       <div
         className="
+          min-w-0
+          w-full
           bg-white
           rounded-3xl
           border
@@ -414,7 +424,7 @@ export default function WasteGenKPIs({ summary }) {
       >
         {/* ================= HEADER ================= */}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <div
             className="
               w-10
@@ -424,6 +434,7 @@ export default function WasteGenKPIs({ summary }) {
               flex
               items-center
               justify-center
+              shrink-0
             "
           >
             <Scale
@@ -432,8 +443,8 @@ export default function WasteGenKPIs({ summary }) {
             />
           </div>
 
-          <div>
-            <p className="text-[13px] font-semibold text-slate-800">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-slate-800 truncate">
               {t(
                 "wasteGenerators.kpis.averageWaste",
                 "Average Waste"
@@ -444,14 +455,15 @@ export default function WasteGenKPIs({ summary }) {
 
         {/* ================= VALUE ================= */}
 
-        <div className="flex flex-col justify-center items-center h-[95px]">
-          <div className="flex items-end gap-2">
+        <div className="flex flex-col justify-center items-center h-[95px] min-w-0">
+          <div className="flex items-end gap-2 min-w-0">
             <h2
               className="
                 text-[32px]
                 font-bold
                 tracking-tight
                 text-[#18214D]
+                leading-none
               "
             >
               {averageWaste.value}
@@ -462,7 +474,8 @@ export default function WasteGenKPIs({ summary }) {
                 text-lg
                 font-semibold
                 text-slate-600
-                mb-2
+                mb-1
+                whitespace-nowrap
               "
             >
               {translatedAverageWasteUnit}
@@ -484,6 +497,8 @@ export default function WasteGenKPIs({ summary }) {
 
       <div
         className="
+          min-w-0
+          w-full
           bg-white
           rounded-3xl
           border
@@ -498,7 +513,7 @@ export default function WasteGenKPIs({ summary }) {
           min-h-[185px]
         "
       >
-        <h3 className="text-[11px] font-semibold text-slate-800 mb-5">
+        <h3 className="text-[11px] font-semibold text-slate-800 mb-5 truncate">
           {t(
             "wasteGenerators.kpis.classification",
             "Waste Generator Classification"
@@ -509,11 +524,11 @@ export default function WasteGenKPIs({ summary }) {
             ABOVE AVERAGE
         ============================================================ */}
 
-        <div className="flex items-center gap-3">
-          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-3 h-3 rounded-full bg-green-500 shrink-0"></span>
 
-          <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-slate-600 truncate">
               {t(
                 "wasteGenerators.kpis.aboveAverage",
                 "Above Average"
@@ -552,11 +567,11 @@ export default function WasteGenKPIs({ summary }) {
             BELOW AVERAGE
         ============================================================ */}
 
-        <div className="flex items-center gap-3">
-          <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-3 h-3 rounded-full bg-orange-500 shrink-0"></span>
 
-          <div className="flex-1">
-            <p className="text-[12px] text-slate-600">
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-slate-600 truncate">
               {t(
                 "wasteGenerators.kpis.belowAverage",
                 "Below Average"
