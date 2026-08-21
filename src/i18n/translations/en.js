@@ -714,101 +714,64 @@ users: {
     "© 2025 SEWAC. All rights reserved.",
 },
 
-  complaints: {
-    title: "Complaints",
-    subtitle: "Manage and track citizen complaints",
-
-    filters: {
-      search: "Search complaints",
-      status: "Status",
-      category: "Category",
-      dateFrom: "Date From",
-      dateTo: "Date To",
-      reset: "Reset Filters",
-      allStatuses: "All Statuses",
-      allCategories: "All Categories",
+complaints: {
+  details: {
+    empty: {
+      title: "Select a complaint",
+      description:
+        "Select a complaint from the table to view its details.",
     },
 
-    kpis: {
-      total: "Total Complaints",
+    ticketNumber: "Ticket Number",
+    title: "Title",
+    category: "Category",
+    citizenPhone: "Citizen (Phone)",
+    address: "Address",
+    coordinates: "Coordinates",
+    complaintImage: "Complaint Image",
+    imageAlt: "Complaint",
+    noImage: "No complaint image",
+    description: "Description",
+    noDescription: "No description provided.",
+    status: "Status",
+    remarks: "Remarks",
+
+    closedVerified: "Closed — Citizen Verified",
+
+    verificationOtpSent: "Verification OTP Sent",
+
+    enterOtp: "Enter Verification OTP",
+
+    closedMessage:
+      "Complaint closed after successful citizen verification.",
+
+    statusOptions: {
       pending: "Pending",
       readyForVerification: "Ready for Verification",
       otpSent: "OTP Sent",
-      closed: "Closed",
-    },
-
-    table: {
-      ticketNumber: "Ticket Number",
-      citizen: "Citizen",
-      category: "Category",
-      status: "Status",
-      date: "Date",
-      actions: "Actions",
-      view: "View",
-      noComplaints: "No complaints found.",
-      loading: "Loading complaints...",
-      previous: "Previous",
-      next: "Next",
-      page: "Page",
-      of: "of",
-    },
-
-    details: {
-      title: "Complaint Details",
-      close: "Close",
-      complaintInformation: "Complaint Information",
-      ticketNumber: "Ticket Number",
-      citizen: "Citizen",
-      phone: "Phone",
-      category: "Category",
-      description: "Description",
-      location: "Location",
-      status: "Status",
-      remarks: "Remarks",
-      update: "Update Complaint",
-      save: "Save Changes",
-      saving: "Saving...",
-      requestVerification: "Request Verification",
-      verifyOtp: "Verify OTP",
-      enterOtp: "Enter 6-digit OTP",
-      otpSent: "OTP Sent",
-      readyForVerification: "Ready for Verification",
-      pending: "Pending",
-      closed: "Closed",
-      noComplaint: "Select a complaint to view details.",
-    },
-
-    status: {
-      pending: "Pending",
-      readyForVerification: "Ready for Verification",
-      otpSent: "OTP Sent",
-      closed: "Closed",
-      assigned: "Assigned",
       inProgress: "In Progress",
+      assigned: "Assigned",
+      closed: "Closed",
     },
 
-    messages: {
-      updated: "Complaint updated successfully.",
-      otpSent: "OTP sent successfully to the citizen.",
-      closed: "Complaint closed successfully.",
+    placeholders: {
+      addRemarks: "Add remarks...",
+      selectComplaint: "Select a complaint first...",
+      otp: "Enter 6-digit OTP",
     },
 
-    errors: {
-      authToken: "Admin authentication token not found.",
-      fetch: "Failed to fetch complaints.",
-      fetchUnable: "Unable to fetch complaints.",
-      fetchKpis: "Failed to fetch complaint KPIs.",
-      update: "Failed to update complaint.",
-      updateUnable: "Unable to update complaint.",
-      verification: "Failed to request verification.",
-      verificationUnable:
-        "Unable to request verification OTP.",
-      noComplaint: "No complaint selected.",
-      invalidOtp: "Please enter a valid 6-digit OTP.",
-      verifyOtp: "Failed to verify OTP.",
-      verifyOtpUnable: "Unable to verify OTP.",
+    actions: {
+      callCitizen: "Call citizen",
+      viewOnMap: "View coordinates on map",
+      expandImage: "Expand complaint image",
+      cancel: "Cancel",
+      saving: "Saving...",
+      saveChanges: "Save Changes",
+      requestVerification: "Request Verification OTP",
+      verifyOtp: "Verify OTP & Close Complaint",
     },
   },
+},
 };
 
 export default en;

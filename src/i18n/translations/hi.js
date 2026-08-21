@@ -701,98 +701,62 @@ users: {
 },
 
 complaints: {
-  title: "शिकायतें",
-  subtitle: "नागरिकों की शिकायतों को प्रबंधित और ट्रैक करें",
-
-  filters: {
-    search: "शिकायतें खोजें",
-    status: "स्थिति",
-    category: "श्रेणी",
-    dateFrom: "तारीख से",
-    dateTo: "तारीख तक",
-    reset: "फ़िल्टर रीसेट करें",
-    allStatuses: "सभी स्थितियाँ",
-    allCategories: "सभी श्रेणियाँ",
-  },
-
-  kpis: {
-    total: "कुल शिकायतें",
-    pending: "लंबित",
-    readyForVerification: "सत्यापन के लिए तैयार",
-    otpSent: "OTP भेजा गया",
-    closed: "बंद",
-  },
-
-  table: {
-    ticketNumber: "टिकट नंबर",
-    citizen: "नागरिक",
-    category: "श्रेणी",
-    status: "स्थिति",
-    date: "तारीख",
-    actions: "कार्रवाई",
-    view: "देखें",
-    noComplaints: "कोई शिकायत नहीं मिली।",
-    loading: "शिकायतें लोड हो रही हैं...",
-    previous: "पिछला",
-    next: "अगला",
-    page: "पृष्ठ",
-    of: "का",
-  },
-
   details: {
-    title: "शिकायत विवरण",
-    close: "बंद करें",
-    complaintInformation: "शिकायत की जानकारी",
+    empty: {
+      title: "शिकायत चुनें",
+      description:
+        "विवरण देखने के लिए तालिका से एक शिकायत चुनें।",
+    },
+
     ticketNumber: "टिकट नंबर",
-    citizen: "नागरिक",
-    phone: "फ़ोन",
+    title: "शीर्षक",
     category: "श्रेणी",
+    citizenPhone: "नागरिक (फोन)",
+    address: "पता",
+    coordinates: "निर्देशांक",
+    complaintImage: "शिकायत की तस्वीर",
+    imageAlt: "शिकायत",
+    noImage: "शिकायत की कोई तस्वीर नहीं है",
     description: "विवरण",
-    location: "स्थान",
+    noDescription: "कोई विवरण उपलब्ध नहीं है।",
     status: "स्थिति",
     remarks: "टिप्पणियाँ",
-    update: "शिकायत अपडेट करें",
-    save: "बदलाव सहेजें",
-    saving: "सहेजा जा रहा है...",
-    requestVerification: "सत्यापन का अनुरोध करें",
-    verifyOtp: "OTP सत्यापित करें",
-    enterOtp: "6 अंकों का OTP दर्ज करें",
-    otpSent: "OTP भेजा गया",
-    readyForVerification: "सत्यापन के लिए तैयार",
-    pending: "लंबित",
-    closed: "बंद",
-    noComplaint: "विवरण देखने के लिए शिकायत चुनें।",
-  },
 
-  status: {
-    pending: "लंबित",
-    readyForVerification: "सत्यापन के लिए तैयार",
-    otpSent: "OTP भेजा गया",
-    closed: "बंद",
-    assigned: "सौंपा गया",
-    inProgress: "प्रगति पर",
-  },
+    closedVerified: "बंद — नागरिक द्वारा सत्यापित",
 
-  messages: {
-    updated: "शिकायत सफलतापूर्वक अपडेट की गई।",
-    otpSent: "नागरिक को OTP सफलतापूर्वक भेजा गया।",
-    closed: "शिकायत सफलतापूर्वक बंद की गई।",
-  },
+    verificationOtpSent:
+      "सत्यापन OTP भेज दिया गया है",
 
-  errors: {
-    authToken: "एडमिन प्रमाणीकरण टोकन नहीं मिला।",
-    fetch: "शिकायतें प्राप्त करने में विफल।",
-    fetchUnable: "शिकायतें प्राप्त नहीं की जा सकीं।",
-    fetchKpis: "शिकायत KPI प्राप्त करने में विफल।",
-    update: "शिकायत अपडेट करने में विफल।",
-    updateUnable: "शिकायत अपडेट नहीं की जा सकी।",
-    verification: "सत्यापन का अनुरोध करने में विफल।",
-    verificationUnable:
-      "सत्यापन OTP का अनुरोध नहीं किया जा सका।",
-    noComplaint: "कोई शिकायत चयनित नहीं है।",
-    invalidOtp: "कृपया मान्य 6 अंकों का OTP दर्ज करें।",
-    verifyOtp: "OTP सत्यापित करने में विफल।",
-    verifyOtpUnable: "OTP सत्यापित नहीं किया जा सका।",
+    enterOtp: "सत्यापन OTP दर्ज करें",
+
+    closedMessage:
+      "नागरिक के सफल सत्यापन के बाद शिकायत बंद कर दी गई।",
+
+    statusOptions: {
+      pending: "लंबित",
+      readyForVerification: "सत्यापन के लिए तैयार",
+      otpSent: "OTP भेजा गया",
+      inProgress: "प्रगति में",
+      assigned: "सौंपा गया",
+      closed: "बंद",
+    },
+
+    placeholders: {
+      addRemarks: "टिप्पणियाँ जोड़ें...",
+      selectComplaint: "पहले एक शिकायत चुनें...",
+      otp: "6 अंकों का OTP दर्ज करें",
+    },
+
+    actions: {
+      callCitizen: "नागरिक को कॉल करें",
+      viewOnMap: "निर्देशांक मानचित्र पर देखें",
+      expandImage: "शिकायत की तस्वीर बड़ा करें",
+      cancel: "रद्द करें",
+      saving: "सहेजा जा रहा है...",
+      saveChanges: "परिवर्तन सहेजें",
+      requestVerification: "सत्यापन OTP का अनुरोध करें",
+      verifyOtp: "OTP सत्यापित करें और शिकायत बंद करें",
+    },
   },
 },
 

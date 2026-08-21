@@ -805,98 +805,62 @@ users: {
 },
 
 complaints: {
-  title: "ದೂರುಗಳು",
-  subtitle: "ನಾಗರಿಕರ ದೂರುಗಳನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ",
-
-  filters: {
-    search: "ದೂರುಗಳನ್ನು ಹುಡುಕಿ",
-    status: "ಸ್ಥಿತಿ",
-    category: "ವರ್ಗ",
-    dateFrom: "ದಿನಾಂಕದಿಂದ",
-    dateTo: "ದಿನಾಂಕದವರೆಗೆ",
-    reset: "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ಮರುಹೊಂದಿಸಿ",
-    allStatuses: "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
-    allCategories: "ಎಲ್ಲಾ ವರ್ಗಗಳು",
-  },
-
-  kpis: {
-    total: "ಒಟ್ಟು ದೂರುಗಳು",
-    pending: "ಬಾಕಿ",
-    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
-    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
-    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
-  },
-
-  table: {
-    ticketNumber: "ಟಿಕೆಟ್ ಸಂಖ್ಯೆ",
-    citizen: "ನಾಗರಿಕ",
-    category: "ವರ್ಗ",
-    status: "ಸ್ಥಿತಿ",
-    date: "ದಿನಾಂಕ",
-    actions: "ಕ್ರಿಯೆಗಳು",
-    view: "ವೀಕ್ಷಿಸಿ",
-    noComplaints: "ಯಾವುದೇ ದೂರುಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
-    loading: "ದೂರುಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-    previous: "ಹಿಂದಿನ",
-    next: "ಮುಂದಿನ",
-    page: "ಪುಟ",
-    of: "ರಲ್ಲಿ",
-  },
-
   details: {
-    title: "ದೂರು ವಿವರಗಳು",
-    close: "ಮುಚ್ಚಿ",
-    complaintInformation: "ದೂರು ಮಾಹಿತಿ",
+    empty: {
+      title: "ದೂರು ಆಯ್ಕೆಮಾಡಿ",
+      description:
+        "ವಿವರಗಳನ್ನು ನೋಡಲು ಪಟ್ಟಿಯಿಂದ ಒಂದು ದೂರನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    },
+
     ticketNumber: "ಟಿಕೆಟ್ ಸಂಖ್ಯೆ",
-    citizen: "ನಾಗರಿಕ",
-    phone: "ದೂರವಾಣಿ",
+    title: "ಶೀರ್ಷಿಕೆ",
     category: "ವರ್ಗ",
+    citizenPhone: "ನಾಗರಿಕ (ಫೋನ್)",
+    address: "ವಿಳಾಸ",
+    coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
+    complaintImage: "ದೂರಿನ ಚಿತ್ರ",
+    imageAlt: "ದೂರು",
+    noImage: "ದೂರಿನ ಯಾವುದೇ ಚಿತ್ರವಿಲ್ಲ",
     description: "ವಿವರಣೆ",
-    location: "ಸ್ಥಳ",
+    noDescription: "ಯಾವುದೇ ವಿವರಣೆ ಲಭ್ಯವಿಲ್ಲ.",
     status: "ಸ್ಥಿತಿ",
     remarks: "ಟಿಪ್ಪಣಿಗಳು",
-    update: "ದೂರು ನವೀಕರಿಸಿ",
-    save: "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
-    saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
-    requestVerification: "ಪರಿಶೀಲನೆಗಾಗಿ ವಿನಂತಿಸಿ",
-    verifyOtp: "OTP ಪರಿಶೀಲಿಸಿ",
-    enterOtp: "6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ",
-    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
-    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
-    pending: "ಬಾಕಿ",
-    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
-    noComplaint: "ವಿವರಗಳನ್ನು ನೋಡಲು ದೂರು ಆಯ್ಕೆಮಾಡಿ.",
-  },
 
-  status: {
-    pending: "ಬಾಕಿ",
-    readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
-    otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
-    closed: "ಮುಚ್ಚಲಾಗಿದೆ",
-    assigned: "ನಿಯೋಜಿಸಲಾಗಿದೆ",
-    inProgress: "ಪ್ರಗತಿಯಲ್ಲಿದೆ",
-  },
+    closedVerified: "ಮುಚ್ಚಲಾಗಿದೆ — ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
 
-  messages: {
-    updated: "ದೂರು ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ.",
-    otpSent: "ನಾಗರಿಕರಿಗೆ OTP ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ.",
-    closed: "ದೂರು ಯಶಸ್ವಿಯಾಗಿ ಮುಚ್ಚಲಾಗಿದೆ.",
-  },
+    verificationOtpSent:
+      "ಪರಿಶೀಲನೆ OTP ಕಳುಹಿಸಲಾಗಿದೆ",
 
-  errors: {
-    authToken: "ನಿರ್ವಾಹಕರ ದೃಢೀಕರಣ ಟೋಕನ್ ಕಂಡುಬಂದಿಲ್ಲ.",
-    fetch: "ದೂರುಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ.",
-    fetchUnable: "ದೂರುಗಳನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-    fetchKpis: "ದೂರುಗಳ KPIಗಳನ್ನು ಪಡೆಯಲು ವಿಫಲವಾಗಿದೆ.",
-    update: "ದೂರು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ.",
-    updateUnable: "ದೂರು ನವೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-    verification: "ಪರಿಶೀಲನೆಗಾಗಿ ವಿನಂತಿಸಲು ವಿಫಲವಾಗಿದೆ.",
-    verificationUnable:
-      "ಪರಿಶೀಲನೆ OTP ವಿನಂತಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-    noComplaint: "ಯಾವುದೇ ದೂರು ಆಯ್ಕೆಮಾಡಿಲ್ಲ.",
-    invalidOtp: "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ 6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ.",
-    verifyOtp: "OTP ಪರಿಶೀಲಿಸಲು ವಿಫಲವಾಗಿದೆ.",
-    verifyOtpUnable: "OTP ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    enterOtp: "ಪರಿಶೀಲನೆ OTP ನಮೂದಿಸಿ",
+
+    closedMessage:
+      "ನಾಗರಿಕರ ಯಶಸ್ವಿ ಪರಿಶೀಲನೆಯ ನಂತರ ದೂರು ಮುಚ್ಚಲಾಗಿದೆ.",
+
+    statusOptions: {
+      pending: "ಬಾಕಿಯಿದೆ",
+      readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧವಾಗಿದೆ",
+      otpSent: "OTP ಕಳುಹಿಸಲಾಗಿದೆ",
+      inProgress: "ಪ್ರಗತಿಯಲ್ಲಿದೆ",
+      assigned: "ನಿಯೋಜಿಸಲಾಗಿದೆ",
+      closed: "ಮುಚ್ಚಲಾಗಿದೆ",
+    },
+
+    placeholders: {
+      addRemarks: "ಟಿಪ್ಪಣಿಗಳನ್ನು ಸೇರಿಸಿ...",
+      selectComplaint: "ಮೊದಲು ದೂರನ್ನು ಆಯ್ಕೆಮಾಡಿ...",
+      otp: "6 ಅಂಕಿಯ OTP ನಮೂದಿಸಿ",
+    },
+
+    actions: {
+      callCitizen: "ನಾಗರಿಕರಿಗೆ ಕರೆ ಮಾಡಿ",
+      viewOnMap: "ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ನಕ್ಷೆಯಲ್ಲಿ ನೋಡಿ",
+      expandImage: "ದೂರಿನ ಚಿತ್ರವನ್ನು ವಿಸ್ತರಿಸಿ",
+      cancel: "ರದ್ದುಮಾಡಿ",
+      saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
+      saveChanges: "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
+      requestVerification: "ಪರಿಶೀಲನೆ OTP ವಿನಂತಿಸಿ",
+      verifyOtp: "OTP ಪರಿಶೀಲಿಸಿ ಮತ್ತು ದೂರನ್ನು ಮುಚ್ಚಿ",
+    },
   },
 },
 };
