@@ -1248,7 +1248,6 @@ users: {
     },
 
     table: {
-      slNo: "SL.No",
       name: "Admin Name",
       email: "Email",
       phone: "Phone Number",
@@ -1278,64 +1277,63 @@ users: {
   },
 
   contractor: {
-    title:
-      "Contractor Users",
+    title: "Contractor Users",
 
     description:
-      "Manage contractor users and their access to the system.",
+      "Manage contractor accounts and permissions.",
 
     searchPlaceholder:
-      "Search by name, email or phone...",
+      "Search contractors...",
 
     addButton:
       "Add Contractor",
+
+    loading:
+      "Loading Contractor users...",
+
+    empty:
+      "No contractor users found.",
+
+    errors: {
+      fetchFailed:
+        "Failed to fetch Contractor users.",
+    },
+
+    table: {
+      name: "Name",
+    },
+
+    modals: {
+      addTitle: "Add Contractor",
+      editTitle: "Edit Contractor",
+    },
   },
 
   table: {
-    name:
-      "Name",
+    slNo: "SL.No",
+    name: "Name",
+    email: "Email",
+    phone: "Phone Number",
+    role: "Role",
+    lastLogin: "Last Login",
+    status: "Status",
+    createdAt: "Created At",
+    active: "Active",
+    inactive: "Inactive",
+    actions: "Actions",
+    showing: "Showing",
+    of: "of",
+    entries: "entries",
+    users: "users",
+    rowsPerPage: "Rows per page",
+    previous: "Previous",
+    next: "Next",
+    noUsers: "No users found",
+  },
 
-    email:
-      "Email",
-
-    role:
-      "Role",
-
-    lastLogin:
-      "Last Login",
-
-    status:
-      "Status",
-
-    active:
-      "Active",
-
-    inactive:
-      "Inactive",
-
-    actions:
-      "Actions",
-
-    showing:
-      "Showing",
-
-    of:
-      "of",
-
-    users:
-      "users",
-
-    rowsPerPage:
-      "Rows per page",
-
-    previous:
-      "Previous",
-
-    next:
-      "Next",
-
-    noUsers:
-      "No users found",
+  actions: {
+    edit: "Edit user",
+    delete: "Delete user",
   },
 },
 };
