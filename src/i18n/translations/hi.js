@@ -1427,47 +1427,69 @@ users: {
   // ADD / EDIT USER MODAL
   // =========================================================
 
-  modal: {
-    fullName: "पूरा नाम",
+modal: {
+  fullName: "पूरा नाम",
+  email: "ईमेल",
+  password: "पासवर्ड",
+  phoneNumber: "फोन नंबर",
 
-    email: "ईमेल",
+  fullNamePlaceholder:
+    "पूरा नाम दर्ज करें",
 
-    password: "पासवर्ड",
+  emailPlaceholder:
+    "ईमेल दर्ज करें",
 
-    phoneNumber: "फोन नंबर",
+  passwordPlaceholder:
+    "पासवर्ड दर्ज करें",
 
-    fullNamePlaceholder:
-      "पूरा नाम दर्ज करें",
+  phoneNumberPlaceholder:
+    "फोन नंबर दर्ज करें",
 
-    emailPlaceholder:
-      "ईमेल दर्ज करें",
+  cancel: "रद्द करें",
+  save: "सहेजें",
+  saving: "सहेजा जा रहा है...",
 
-    passwordPlaceholder:
-      "पासवर्ड दर्ज करें",
+  // Edit
+  update: "अपडेट करें",
+  updating: "अपडेट किया जा रहा है...",
+  emailCannotChange:
+    "ईमेल बदला नहीं जा सकता।",
 
-    phoneNumberPlaceholder:
-      "फोन नंबर दर्ज करें",
+  // Delete
+  deleteTitle: "उपयोगकर्ता हटाएँ",
+  delete: "हटाएँ",
+  deleting: "हटाया जा रहा है...",
+  close: "बंद करें",
 
-    cancel: "रद्द करें",
+  deleteConfirmation:
+    "क्या आप वाकई इस उपयोगकर्ता को स्थायी रूप से हटाना चाहते हैं",
 
-    save: "सहेजें",
+  deleteWarning:
+    "यह कार्रवाई उपयोगकर्ता को सिस्टम से स्थायी रूप से हटा देगी और इसे वापस नहीं किया जा सकता।",
 
-    saving: "सहेजा जा रहा है...",
+  userFallback:
+    "इस उपयोगकर्ता",
 
-    errors: {
-      fillAllFields:
-        "कृपया सभी फ़ील्ड भरें।",
+  errors: {
+    fillAllFields:
+      "कृपया सभी फ़ील्ड भरें।",
 
-      roleMissing:
-        "उपयोगकर्ता की भूमिका उपलब्ध नहीं है।",
+    roleMissing:
+      "उपयोगकर्ता की भूमिका उपलब्ध नहीं है।",
 
-      createFailed:
-        "उपयोगकर्ता बनाने में विफल।",
+    createFailed:
+      "उपयोगकर्ता बनाने में विफल।",
 
-      updateFailed:
-        "उपयोगकर्ता को अपडेट करने में विफल।",
-    },
+    updateFailed:
+      "उपयोगकर्ता अपडेट करने में विफल।",
+
+    userIdMissing:
+      "उपयोगकर्ता ID उपलब्ध नहीं है।",
+
+    deleteFailed:
+      "उपयोगकर्ता हटाने में विफल।",
   },
+},
 },
 };
 

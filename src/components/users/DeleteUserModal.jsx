@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Trash2, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
 
 const DeleteUserModal = ({
@@ -8,6 +9,8 @@ const DeleteUserModal = ({
   user,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,7 +20,7 @@ const DeleteUserModal = ({
     if (loading) return;
 
     if (!user.id) {
-      setError("User ID is missing.");
+      setError(t("users.modal.errors.userIdMissing"));
       return;
     }
 
@@ -39,7 +42,7 @@ const DeleteUserModal = ({
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        "Failed to delete user.";
+        t("users.modal.errors.deleteFailed");
 
       setError(backendMessage);
     } finally {
@@ -54,117 +57,257 @@ const DeleteUserModal = ({
     onClose();
   };
 
+  const userName =
+    user.full_name ||
+    user.name ||
+    t("users.modal.userFallback");
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-      <div className="w-[440px] rounded-[24px] bg-white shadow-2xl">
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+        flex
+        items-center
+        justify-center
+        bg-black/40
+        px-4
+        py-6
+        backdrop-blur-sm
+        sm:px-6
+      "
+    >
+      <div
+        className="
+          w-full
+          max-w-[440px]
+          overflow-hidden
+          rounded-[20px]
+          bg-white
+          shadow-2xl
+          sm:rounded-[24px]
+        "
+      >
+        {/* =====================================================
+            HEADER
+        ===================================================== */}
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 pt-6">
-
-          <div className="flex items-center gap-3">
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            gap-4
+            border-b
+            border-gray-100
+            px-5
+            py-5
+            sm:px-7
+            sm:pt-6
+            sm:pb-5
+          "
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-red-100
+                sm:h-11
+                sm:w-11
+              "
+            >
+              <AlertTriangle
+                className="
+                  h-5
+                  w-5
+                  text-red-600
+                "
+              />
             </div>
 
-            <h2 className="text-[22px] font-semibold text-[#1F3768]">
-              Delete User
+            <h2
+              className="
+                truncate
+                text-[19px]
+                font-semibold
+                text-[#1F3768]
+                sm:text-[22px]
+              "
+            >
+              {t("users.modal.deleteTitle")}
             </h2>
-
           </div>
 
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
-            className="text-gray-500 hover:text-gray-800 transition disabled:opacity-50"
+            aria-label={t("users.modal.close")}
+            className="
+              shrink-0
+              rounded-lg
+              p-1
+              text-gray-500
+              transition
+              hover:bg-gray-100
+              hover:text-gray-800
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
-
         </div>
 
-        {/* Body */}
-        <div className="px-7 py-6">
+        {/* =====================================================
+            BODY
+        ===================================================== */}
 
+        <div
+          className="
+            px-5
+            py-5
+            sm:px-7
+            sm:py-6
+          "
+        >
           {/* Backend Error */}
           {error && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+            <div
+              className="
+                mb-4
+                rounded-xl
+                border
+                border-red-200
+                bg-red-50
+                px-4
+                py-3
+                text-[12px]
+                leading-5
+                text-red-600
+                sm:text-[13px]
+              "
+            >
               {error}
             </div>
           )}
 
-          <p className="text-[14px] leading-6 text-gray-600">
-            Are you sure you want to permanently delete{" "}
-            <span className="font-semibold text-gray-900">
-              {user.full_name || user.name}
+          <p
+            className="
+              text-[13px]
+              leading-6
+              text-gray-600
+              sm:text-[14px]
+            "
+          >
+            {t("users.modal.deleteConfirmation")}{" "}
+            <span className="break-words font-semibold text-gray-900">
+              {userName}
             </span>
             ?
           </p>
 
-          <p className="mt-2 text-[12px] text-gray-400">
-            This action will permanently remove this user from the system
-            and cannot be undone.
+          <p
+            className="
+              mt-2
+              text-[11px]
+              leading-5
+              text-gray-400
+              sm:text-[12px]
+            "
+          >
+            {t("users.modal.deleteWarning")}
           </p>
-
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-7 pb-7">
+        {/* =====================================================
+            FOOTER
+        ===================================================== */}
 
+        <div
+          className="
+            flex
+            flex-col-reverse
+            gap-3
+            border-t
+            border-gray-100
+            px-5
+            py-5
+            sm:flex-row
+            sm:justify-end
+            sm:px-7
+            sm:pb-7
+            sm:pt-5
+          "
+        >
+          {/* Cancel */}
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
             className="
               h-11
+              w-full
               rounded-xl
               border
               border-gray-200
               px-6
-              text-[14px]
+              text-[13px]
               font-medium
               text-[#1F3768]
-              hover:bg-gray-50
               transition
-              disabled:opacity-50
+              hover:bg-gray-50
               disabled:cursor-not-allowed
+              disabled:opacity-50
+              sm:w-auto
+              sm:min-w-[100px]
+              sm:text-[14px]
             "
           >
-            Cancel
+            {t("users.modal.cancel")}
           </button>
 
+          {/* Delete */}
           <button
             type="button"
             onClick={handleDelete}
             disabled={loading}
             className="
-              h-11
-              min-w-[120px]
-              rounded-xl
-              bg-red-600
-              px-6
-              text-[14px]
-              font-medium
-              text-white
-              hover:bg-red-700
-              transition
-              disabled:opacity-60
-              disabled:cursor-not-allowed
               flex
+              h-11
+              w-full
               items-center
               justify-center
               gap-2
+              rounded-xl
+              bg-red-600
+              px-6
+              text-[13px]
+              font-medium
+              text-white
+              transition
+              hover:bg-red-700
+              disabled:cursor-not-allowed
+              disabled:opacity-60
+              sm:w-auto
+              sm:min-w-[120px]
+              sm:text-[14px]
             "
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4 shrink-0" />
 
-            {loading ? "Deleting..." : "Delete"}
-
+            {loading
+              ? t("users.modal.deleting")
+              : t("users.modal.delete")}
           </button>
-
         </div>
-
       </div>
     </div>
   );

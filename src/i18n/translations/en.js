@@ -1384,47 +1384,60 @@ users: {
   // ADD / EDIT USER MODAL
   // =========================================================
 
-  modal: {
-    fullName: "Full Name",
+modal: {
+  fullName: "Full Name",
+  email: "Email",
+  password: "Password",
+  phoneNumber: "Phone Number",
 
-    email: "Email",
+  fullNamePlaceholder: "Enter full name",
+  emailPlaceholder: "Enter email",
+  passwordPlaceholder: "Enter password",
+  phoneNumberPlaceholder: "Enter phone number",
 
-    password: "Password",
+  cancel: "Cancel",
+  save: "Save",
+  saving: "Saving...",
 
-    phoneNumber: "Phone Number",
+  // Edit
+  update: "Update",
+  updating: "Updating...",
+  emailCannotChange: "Email cannot be changed.",
 
-    fullNamePlaceholder:
-      "Enter full name",
+  // Delete
+  deleteTitle: "Delete User",
+  delete: "Delete",
+  deleting: "Deleting...",
+  close: "Close",
 
-    emailPlaceholder:
-      "Enter email",
+  deleteConfirmation:
+    "Are you sure you want to permanently delete",
 
-    passwordPlaceholder:
-      "Enter password",
+  deleteWarning:
+    "This action will permanently remove this user from the system and cannot be undone.",
 
-    phoneNumberPlaceholder:
-      "Enter phone number",
+  userFallback: "this user",
 
-    cancel: "Cancel",
+  errors: {
+    fillAllFields:
+      "Please fill in all fields.",
 
-    save: "Save",
+    roleMissing:
+      "User role is missing.",
 
-    saving: "Saving...",
+    createFailed:
+      "Failed to create user.",
 
-    errors: {
-      fillAllFields:
-        "Please fill in all fields.",
+    updateFailed:
+      "Failed to update user.",
 
-      roleMissing:
-        "User role is missing.",
+    userIdMissing:
+      "User ID is missing.",
 
-      createFailed:
-        "Failed to create user.",
-
-      updateFailed:
-        "Failed to update user.",
-    },
+    deleteFailed:
+      "Failed to delete user.",
   },
+},
 },
 };
 

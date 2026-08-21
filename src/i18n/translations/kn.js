@@ -1523,47 +1523,69 @@ users: {
   // ADD / EDIT USER MODAL
   // =========================================================
 
-  modal: {
-    fullName: "ಪೂರ್ಣ ಹೆಸರು",
+modal: {
+  fullName: "ಪೂರ್ಣ ಹೆಸರು",
+  email: "ಇಮೇಲ್",
+  password: "ಪಾಸ್‌ವರ್ಡ್",
+  phoneNumber: "ಫೋನ್ ಸಂಖ್ಯೆ",
 
-    email: "ಇಮೇಲ್",
+  fullNamePlaceholder:
+    "ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
 
-    password: "ಪಾಸ್‌ವರ್ಡ್",
+  emailPlaceholder:
+    "ಇಮೇಲ್ ನಮೂದಿಸಿ",
 
-    phoneNumber: "ಫೋನ್ ಸಂಖ್ಯೆ",
+  passwordPlaceholder:
+    "ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ",
 
-    fullNamePlaceholder:
-      "ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
+  phoneNumberPlaceholder:
+    "ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
 
-    emailPlaceholder:
-      "ಇಮೇಲ್ ನಮೂದಿಸಿ",
+  cancel: "ರದ್ದುಮಾಡಿ",
+  save: "ಉಳಿಸಿ",
+  saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
 
-    passwordPlaceholder:
-      "ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ",
+  // Edit
+  update: "ನವೀಕರಿಸಿ",
+  updating: "ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
+  emailCannotChange:
+    "ಇಮೇಲ್ ಅನ್ನು ಬದಲಾಯಿಸಲಾಗುವುದಿಲ್ಲ.",
 
-    phoneNumberPlaceholder:
-      "ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+  // Delete
+  deleteTitle: "ಬಳಕೆದಾರರನ್ನು ಅಳಿಸಿ",
+  delete: "ಅಳಿಸಿ",
+  deleting: "ಅಳಿಸಲಾಗುತ್ತಿದೆ...",
+  close: "ಮುಚ್ಚಿ",
 
-    cancel: "ರದ್ದುಮಾಡಿ",
+  deleteConfirmation:
+    "ಈ ಬಳಕೆದಾರರನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ",
 
-    save: "ಉಳಿಸಿ",
+  deleteWarning:
+    "ಈ ಕ್ರಿಯೆಯು ಬಳಕೆದಾರರನ್ನು ಸಿಸ್ಟಮ್‌ನಿಂದ ಶಾಶ್ವತವಾಗಿ ತೆಗೆದುಹಾಕುತ್ತದೆ ಮತ್ತು ಇದನ್ನು ಮರುಸ್ಥಾಪಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.",
 
-    saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
+  userFallback:
+    "ಈ ಬಳಕೆದಾರರನ್ನು",
 
-    errors: {
-      fillAllFields:
-        "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
+  errors: {
+    fillAllFields:
+      "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.",
 
-      roleMissing:
-        "ಬಳಕೆದಾರರ ಪಾತ್ರ ಲಭ್ಯವಿಲ್ಲ.",
+    roleMissing:
+      "ಬಳಕೆದಾರರ ಪಾತ್ರ ಲಭ್ಯವಿಲ್ಲ.",
 
-      createFailed:
-        "ಬಳಕೆದಾರರನ್ನು ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+    createFailed:
+      "ಬಳಕೆದಾರರನ್ನು ರಚಿಸಲು ವಿಫಲವಾಗಿದೆ.",
 
-      updateFailed:
-        "ಬಳಕೆದಾರರನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ.",
-    },
+    updateFailed:
+      "ಬಳಕೆದಾರರನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ.",
+
+    userIdMissing:
+      "ಬಳಕೆದಾರ ID ಲಭ್ಯವಿಲ್ಲ.",
+
+    deleteFailed:
+      "ಬಳಕೆದಾರರನ್ನು ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ.",
   },
+},
 },
 };
 
