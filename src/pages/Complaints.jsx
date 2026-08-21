@@ -1,5 +1,5 @@
 import Header from "../components/layouts/Header";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
@@ -10,6 +10,20 @@ import ComplaintDetails from "../components/complaints/ComplaintDetails";
 import { useLanguage } from "../i18n";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const parseApiResponse = async (response) => {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return await response.json();
+  }
+
+  const text = await response.text();
+
+  return {
+    success: response.ok,
+    message: text || `Request failed with status ${response.status}`,
+  };
+};
 
 /* =========================================================
    DEFAULT FILTERS
@@ -77,30 +91,26 @@ export default function Complaints() {
      SELECTED COMPLAINT
   ======================================================= */
 
-  const [selectedComplaint, setSelectedComplaint] =
-    useState(null);
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
 
   /* =======================================================
      SAVE STATE
   ======================================================= */
 
-  const [savingComplaint, setSavingComplaint] =
-    useState(false);
+  const [savingComplaint, setSavingComplaint] = useState(false);
 
   /* =======================================================
      PAGINATION
   ======================================================= */
 
-  const [pagination, setPagination] = useState(
-    DEFAULT_PAGINATION
-  );
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
   /* =======================================================
      FILTERS
   ======================================================= */
 
-  const [filters, setFilters] =
-    useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const searchTimerRef = useRef(null);
 
   /* =======================================================
      ADMIN TOKEN
@@ -114,10 +124,7 @@ export default function Complaints() {
      FETCH COMPLAINTS
   ======================================================= */
 
-  const fetchComplaints = async (
-    page = 1,
-    activeFilters = filters
-  ) => {
+  const fetchComplaints = async (page = 1, activeFilters = filters) => {
     try {
       setLoading(true);
       setError("");
@@ -128,8 +135,8 @@ export default function Complaints() {
         throw new Error(
           t(
             "complaints.errors.authToken",
-            "Admin authentication token not found."
-          )
+            "Admin authentication token not found.",
+          ),
         );
       }
 
@@ -143,10 +150,7 @@ export default function Complaints() {
       =================================================== */
 
       if (activeFilters.search?.trim()) {
-        params.set(
-          "search",
-          activeFilters.search.trim()
-        );
+        params.set("search", activeFilters.search.trim());
       }
 
       /* ===================================================
@@ -154,10 +158,7 @@ export default function Complaints() {
       =================================================== */
 
       if (activeFilters.status) {
-        params.set(
-          "status",
-          activeFilters.status
-        );
+        params.set("status", activeFilters.status);
       }
 
       /* ===================================================
@@ -165,10 +166,7 @@ export default function Complaints() {
       =================================================== */
 
       if (activeFilters.category) {
-        params.set(
-          "category",
-          activeFilters.category
-        );
+        params.set("category", activeFilters.category);
       }
 
       /* ===================================================
@@ -176,10 +174,7 @@ export default function Complaints() {
       =================================================== */
 
       if (activeFilters.dateFrom) {
-        params.set(
-          "dateFrom",
-          activeFilters.dateFrom
-        );
+        params.set("dateFrom", activeFilters.dateFrom);
       }
 
       /* ===================================================
@@ -187,10 +182,7 @@ export default function Complaints() {
       =================================================== */
 
       if (activeFilters.dateTo) {
-        params.set(
-          "dateTo",
-          activeFilters.dateTo
-        );
+        params.set("dateTo", activeFilters.dateTo);
       }
 
       const response = await fetch(
@@ -202,21 +194,15 @@ export default function Complaints() {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
-      const result = await response.json();
+      const result = await parseApiResponse(response);
 
-      if (
-        !response.ok ||
-        result.success !== true
-      ) {
+      if (!response.ok || result.success !== true) {
         throw new Error(
           result.message ||
-            t(
-              "complaints.errors.fetch",
-              "Failed to fetch complaints."
-            )
+            t("complaints.errors.fetch", "Failed to fetch complaints."),
         );
       }
 
@@ -224,30 +210,19 @@ export default function Complaints() {
          UPDATE COMPLAINTS
       =================================================== */
 
-      setComplaints(
-        result.data?.items || []
-      );
+      setComplaints(result.data?.items || []);
 
       /* ===================================================
          UPDATE PAGINATION
       =================================================== */
 
-      setPagination(
-        result.data?.pagination ||
-          DEFAULT_PAGINATION
-      );
+      setPagination(result.data?.pagination || DEFAULT_PAGINATION);
     } catch (err) {
-      console.error(
-        "Fetch complaints error:",
-        err
-      );
+      console.error("Fetch complaints error:", err);
 
       setError(
         err?.message ||
-          t(
-            "complaints.errors.fetchUnable",
-            "Unable to fetch complaints."
-          )
+          t("complaints.errors.fetchUnable", "Unable to fetch complaints."),
       );
     } finally {
       setLoading(false);
@@ -266,46 +241,32 @@ export default function Complaints() {
         throw new Error(
           t(
             "complaints.errors.authToken",
-            "Admin authentication token not found."
-          )
+            "Admin authentication token not found.",
+          ),
         );
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/complaints/kpis`,
-        {
-          method: "GET",
+      const response = await fetch(`${API_BASE_URL}/api/complaints/kpis`, {
+        method: "GET",
 
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const result = await response.json();
+      const result = await parseApiResponse.json(response);
 
-      if (
-        !response.ok ||
-        result.success !== true
-      ) {
+      if (!response.ok || result.success !== true) {
         throw new Error(
           result.message ||
-            t(
-              "complaints.errors.fetchKpis",
-              "Failed to fetch complaint KPIs."
-            )
+            t("complaints.errors.fetchKpis", "Failed to fetch complaint KPIs."),
         );
       }
 
-      setKpis(
-        result.data || DEFAULT_KPIS
-      );
+      setKpis(result.data || DEFAULT_KPIS);
     } catch (err) {
-      console.error(
-        "Fetch complaint KPIs error:",
-        err
-      );
+      console.error("Fetch complaint KPIs error:", err);
     }
   };
 
@@ -313,12 +274,8 @@ export default function Complaints() {
      SAVE COMPLAINT CHANGES
   ======================================================= */
 
-  const saveComplaintChanges = async (
-    updates
-  ) => {
-    if (
-      !selectedComplaint?.ticket_number
-    ) {
+  const saveComplaintChanges = async (updates) => {
+    if (!selectedComplaint?.ticket_number) {
       return;
     }
 
@@ -331,22 +288,21 @@ export default function Complaints() {
         throw new Error(
           t(
             "complaints.errors.authToken",
-            "Admin authentication token not found."
-          )
+            "Admin authentication token not found.",
+          ),
         );
       }
 
       const response = await fetch(
         `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number
+          selectedComplaint.ticket_number,
         )}`,
         {
           method: "PATCH",
 
           headers: {
             Accept: "application/json",
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
 
@@ -354,22 +310,15 @@ export default function Complaints() {
             status: updates.status,
             remarks: updates.remarks,
           }),
-        }
+        },
       );
 
-      const result =
-        await response.json();
+      const result = await parseApiResponse.json(response);
 
-      if (
-        !response.ok ||
-        result.success !== true
-      ) {
+      if (!response.ok || result.success !== true) {
         throw new Error(
           result.message ||
-            t(
-              "complaints.errors.update",
-              "Failed to update complaint."
-            )
+            t("complaints.errors.update", "Failed to update complaint."),
         );
       }
 
@@ -377,18 +326,13 @@ export default function Complaints() {
          UPDATE SELECTED COMPLAINT
       ================================================= */
 
-      setSelectedComplaint(
-        result.data
-      );
+      setSelectedComplaint(result.data);
 
       /* =================================================
          REFRESH TABLE
       ================================================= */
 
-      await fetchComplaints(
-        pagination.page,
-        filters
-      );
+      await fetchComplaints(pagination.page, filters);
 
       /* =================================================
          REFRESH KPIs
@@ -397,23 +341,14 @@ export default function Complaints() {
       await fetchKPIs();
 
       alert(
-        t(
-          "complaints.messages.updated",
-          "Complaint updated successfully."
-        )
+        t("complaints.messages.updated", "Complaint updated successfully."),
       );
     } catch (err) {
-      console.error(
-        "Save complaint changes error:",
-        err
-      );
+      console.error("Save complaint changes error:", err);
 
       alert(
         err?.message ||
-          t(
-            "complaints.errors.updateUnable",
-            "Unable to update complaint."
-          )
+          t("complaints.errors.updateUnable", "Unable to update complaint."),
       );
     } finally {
       setSavingComplaint(false);
@@ -424,159 +359,122 @@ export default function Complaints() {
      REQUEST VERIFICATION OTP
   ======================================================= */
 
-  const requestVerification =
-    async () => {
-      if (
-        !selectedComplaint?.ticket_number
-      ) {
-        return;
+  const requestVerification = async () => {
+    if (!selectedComplaint?.ticket_number) {
+      return;
+    }
+
+    try {
+      const token = getAdminToken();
+
+      if (!token) {
+        throw new Error(
+          t(
+            "complaints.errors.authToken",
+            "Admin authentication token not found.",
+          ),
+        );
       }
 
-      try {
-        const token = getAdminToken();
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+          selectedComplaint.ticket_number,
+        )}/request-verification`,
+        {
+          method: "POST",
 
-        if (!token) {
-          throw new Error(
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(
+          result.message ||
             t(
-              "complaints.errors.authToken",
-              "Admin authentication token not found."
-            )
-          );
-        }
+              "complaints.errors.verification",
+              "Failed to request verification.",
+            ),
+        );
+      }
 
-        const response =
-          await fetch(
-            `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-              selectedComplaint.ticket_number
-            )}/request-verification`,
-            {
-              method: "POST",
-
-              headers: {
-                Accept:
-                  "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-        const result =
-          await response.json();
-
-        if (
-          !response.ok ||
-          result.success !== true
-        ) {
-          throw new Error(
-            result.message ||
-              t(
-                "complaints.errors.verification",
-                "Failed to request verification."
-              )
-          );
-        }
-
-        /* =================================================
+      /* =================================================
            REFRESH TABLE
         ================================================= */
 
-        await fetchComplaints(
-          pagination.page,
-          filters
-        );
+      await fetchComplaints(pagination.page, filters);
 
-        /* =================================================
+      /* =================================================
            REFRESH KPIs
         ================================================= */
 
-        await fetchKPIs();
+      await fetchKPIs();
 
-        /* =================================================
+      /* =================================================
            REFRESH SELECTED COMPLAINT
         ================================================= */
 
-        try {
-          const detailResponse =
-            await fetch(
-              `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-                selectedComplaint.ticket_number
-              )}`,
-              {
-                method: "GET",
+      try {
+        const detailResponse = await fetch(
+          `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+            selectedComplaint.ticket_number,
+          )}`,
+          {
+            method: "GET",
 
-                headers: {
-                  Accept:
-                    "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
 
-          const detailResult =
-            await detailResponse.json();
+        const detailResult = await parseApiResponse.json(detailResponse);
 
-          if (
-            detailResponse.ok &&
-            detailResult.success === true
-          ) {
-            setSelectedComplaint(
-              detailResult.data
-            );
-          }
-        } catch (detailError) {
-          console.error(
-            "Refresh complaint details error:",
-            detailError
-          );
+        if (detailResponse.ok && detailResult.success === true) {
+          setSelectedComplaint(detailResult.data);
         }
-
-        alert(
-          t(
-            "complaints.messages.otpSent",
-            "OTP sent successfully to the citizen."
-          )
-        );
-      } catch (err) {
-        console.error(
-          "Request verification error:",
-          err
-        );
-
-        alert(
-          err?.message ||
-            t(
-              "complaints.errors.verificationUnable",
-              "Unable to request verification OTP."
-            )
-        );
+      } catch (detailError) {
+        console.error("Refresh complaint details error:", detailError);
       }
-    };
+
+      alert(
+        t(
+          "complaints.messages.otpSent",
+          "OTP sent successfully to the citizen.",
+        ),
+      );
+    } catch (err) {
+      console.error("Request verification error:", err);
+
+      alert(
+        err?.message ||
+          t(
+            "complaints.errors.verificationUnable",
+            "Unable to request verification OTP.",
+          ),
+      );
+    }
+  };
 
   /* =======================================================
      VERIFY OTP
   ======================================================= */
 
   const verifyOTP = async (otp) => {
-    if (
-      !selectedComplaint?.ticket_number
-    ) {
+    if (!selectedComplaint?.ticket_number) {
       throw new Error(
-        t(
-          "complaints.errors.noComplaint",
-          "No complaint selected."
-        )
+        t("complaints.errors.noComplaint", "No complaint selected."),
       );
     }
 
-    if (
-      !otp ||
-      otp.length !== 6
-    ) {
+    if (!otp || otp.length !== 6) {
       throw new Error(
-        t(
-          "complaints.errors.invalidOtp",
-          "Please enter a valid 6-digit OTP."
-        )
+        t("complaints.errors.invalidOtp", "Please enter a valid 6-digit OTP."),
       );
     }
 
@@ -587,62 +485,46 @@ export default function Complaints() {
         throw new Error(
           t(
             "complaints.errors.authToken",
-            "Admin authentication token not found."
-          )
+            "Admin authentication token not found.",
+          ),
         );
       }
 
       const response = await fetch(
         `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number
+          selectedComplaint.ticket_number,
         )}/verify`,
         {
           method: "POST",
 
           headers: {
             Accept: "application/json",
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify({
             otp,
           }),
-        }
+        },
       );
 
-      const result =
-        await response.json();
+      const result = await parseApiResponse.json(response);
 
-      if (
-        !response.ok ||
-        result.success !== true
-      ) {
+      if (!response.ok || result.success !== true) {
         throw new Error(
           result.message ||
-            t(
-              "complaints.errors.verifyOtp",
-              "Failed to verify OTP."
-            )
+            t("complaints.errors.verifyOtp", "Failed to verify OTP."),
         );
       }
 
-      alert(
-        t(
-          "complaints.messages.closed",
-          "Complaint closed successfully."
-        )
-      );
+      alert(t("complaints.messages.closed", "Complaint closed successfully."));
 
       /* =================================================
          REFRESH TABLE
       ================================================= */
 
-      await fetchComplaints(
-        pagination.page,
-        filters
-      );
+      await fetchComplaints(pagination.page, filters);
 
       /* =================================================
          REFRESH KPIs
@@ -658,17 +540,11 @@ export default function Complaints() {
 
       return result;
     } catch (err) {
-      console.error(
-        "Verify OTP error:",
-        err
-      );
+      console.error("Verify OTP error:", err);
 
       alert(
         err?.message ||
-          t(
-            "complaints.errors.verifyOtpUnable",
-            "Unable to verify OTP."
-          )
+          t("complaints.errors.verifyOtpUnable", "Unable to verify OTP."),
       );
 
       throw err;
@@ -679,10 +555,7 @@ export default function Complaints() {
      FILTER CHANGE
   ======================================================= */
 
-  const handleFilterChange = (
-    key,
-    value
-  ) => {
+  const handleFilterChange = (key, value) => {
     const nextFilters = {
       ...filters,
       [key]: value,
@@ -690,10 +563,21 @@ export default function Complaints() {
 
     setFilters(nextFilters);
 
-    fetchComplaints(
-      1,
-      nextFilters
-    );
+    // Search input: wait until the user stops typing
+    if (key === "search") {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+
+      searchTimerRef.current = setTimeout(() => {
+        fetchComplaints(1, nextFilters);
+      }, 500);
+
+      return;
+    }
+
+    // Dropdown/date filters can fetch immediately
+    fetchComplaints(1, nextFilters);
   };
 
   /* =======================================================
@@ -707,22 +591,15 @@ export default function Complaints() {
 
     setFilters(nextFilters);
 
-    fetchComplaints(
-      1,
-      nextFilters
-    );
+    fetchComplaints(1, nextFilters);
   };
 
   /* =======================================================
      SELECT COMPLAINT
   ======================================================= */
 
-  const handleSelectComplaint = (
-    complaint
-  ) => {
-    setSelectedComplaint(
-      complaint
-    );
+  const handleSelectComplaint = (complaint) => {
+    setSelectedComplaint(complaint);
   };
 
   /* =======================================================
@@ -742,14 +619,19 @@ export default function Complaints() {
   ======================================================= */
 
   useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const initialFilters = {
       ...DEFAULT_FILTERS,
     };
 
-    fetchComplaints(
-      1,
-      initialFilters
-    );
+    fetchComplaints(1, initialFilters);
 
     fetchKPIs();
   }, []);
@@ -763,21 +645,15 @@ export default function Complaints() {
       return;
     }
 
-    const mediaQuery =
-      window.matchMedia(
-        "(max-width: 1023px)"
-      );
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
 
     if (mediaQuery.matches) {
-      const previousOverflow =
-        document.body.style.overflow;
+      const previousOverflow = document.body.style.overflow;
 
-      document.body.style.overflow =
-        "hidden";
+      document.body.style.overflow = "hidden";
 
       return () => {
-        document.body.style.overflow =
-          previousOverflow;
+        document.body.style.overflow = previousOverflow;
       };
     }
   }, [selectedComplaint]);
@@ -860,9 +736,7 @@ export default function Complaints() {
             =============================================== */}
 
             <div className="mt-5">
-              <ComplaintKPIs
-                kpis={kpis}
-              />
+              <ComplaintKPIs kpis={kpis} />
             </div>
 
             {/* ===============================================
@@ -872,12 +746,8 @@ export default function Complaints() {
             <div className="mt-5">
               <ComplaintFilters
                 filters={filters}
-                onFilterChange={
-                  handleFilterChange
-                }
-                onReset={
-                  resetFilters
-                }
+                onFilterChange={handleFilterChange}
+                onReset={resetFilters}
               />
             </div>
 
@@ -887,25 +757,12 @@ export default function Complaints() {
 
             <div className="mt-5 min-w-0">
               <ComplaintTable
-                complaints={
-                  complaints
-                }
+                complaints={complaints}
                 loading={loading}
                 error={error}
-                pagination={
-                  pagination
-                }
-                onPageChange={(
-                  page
-                ) =>
-                  fetchComplaints(
-                    page,
-                    filters
-                  )
-                }
-                onSelectComplaint={
-                  handleSelectComplaint
-                }
+                pagination={pagination}
+                onPageChange={(page) => fetchComplaints(page, filters)}
+                onSelectComplaint={handleSelectComplaint}
               />
             </div>
           </section>
@@ -923,21 +780,11 @@ export default function Complaints() {
             "
           >
             <ComplaintDetails
-              complaint={
-                selectedComplaint
-              }
-              saving={
-                savingComplaint
-              }
-              onRequestVerification={
-                requestVerification
-              }
-              onVerifyOTP={
-                verifyOTP
-              }
-              onSaveChanges={
-                saveComplaintChanges
-              }
+              complaint={selectedComplaint}
+              saving={savingComplaint}
+              onRequestVerification={requestVerification}
+              onVerifyOTP={verifyOTP}
+              onSaveChanges={saveComplaintChanges}
             />
           </aside>
         </div>
@@ -964,14 +811,10 @@ export default function Complaints() {
             type="button"
             aria-label={t(
               "complaints.details.close",
-              "Close complaint details"
+              "Close complaint details",
             )}
-            onClick={
-              closeComplaintDetails
-            }
-            disabled={
-              savingComplaint
-            }
+            onClick={closeComplaintDetails}
+            disabled={savingComplaint}
             className="
               absolute
               inset-0
@@ -1031,10 +874,7 @@ export default function Complaints() {
                     text-[#16295A]
                   "
                 >
-                  {t(
-                    "complaints.details.title",
-                    "Complaint Details"
-                  )}
+                  {t("complaints.details.title", "Complaint Details")}
                 </p>
 
                 <p
@@ -1045,24 +885,15 @@ export default function Complaints() {
                     text-gray-400
                   "
                 >
-                  {
-                    selectedComplaint.ticket_number
-                  }
+                  {selectedComplaint.ticket_number}
                 </p>
               </div>
 
               <button
                 type="button"
-                aria-label={t(
-                  "complaints.details.close",
-                  "Close"
-                )}
-                onClick={
-                  closeComplaintDetails
-                }
-                disabled={
-                  savingComplaint
-                }
+                aria-label={t("complaints.details.close", "Close")}
+                onClick={closeComplaintDetails}
+                disabled={savingComplaint}
                 className="
                   ml-3
                   shrink-0
@@ -1086,19 +917,9 @@ export default function Complaints() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <line
-                    x1="18"
-                    y1="6"
-                    x2="6"
-                    y2="18"
-                  />
+                  <line x1="18" y1="6" x2="6" y2="18" />
 
-                  <line
-                    x1="6"
-                    y1="6"
-                    x2="18"
-                    y2="18"
-                  />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
@@ -1117,21 +938,11 @@ export default function Complaints() {
               "
             >
               <ComplaintDetails
-                complaint={
-                  selectedComplaint
-                }
-                saving={
-                  savingComplaint
-                }
-                onRequestVerification={
-                  requestVerification
-                }
-                onVerifyOTP={
-                  verifyOTP
-                }
-                onSaveChanges={
-                  saveComplaintChanges
-                }
+                complaint={selectedComplaint}
+                saving={savingComplaint}
+                onRequestVerification={requestVerification}
+                onVerifyOTP={verifyOTP}
+                onSaveChanges={saveComplaintChanges}
               />
             </div>
           </aside>
