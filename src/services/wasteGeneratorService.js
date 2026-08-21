@@ -690,6 +690,14 @@ const getAllWasteGenerators = async (query = {}) => {
 
   /*
   |--------------------------------------------------------------------------
+  | DATE
+  |--------------------------------------------------------------------------
+  */
+
+  const { value: selectedDate } = validateDate(query.date);
+
+  /*
+  |--------------------------------------------------------------------------
   | HEADER FILTERS
   |--------------------------------------------------------------------------
   */
@@ -705,14 +713,6 @@ const getAllWasteGenerators = async (query = {}) => {
   /*
   |--------------------------------------------------------------------------
   | REQUIRE COMPLETE HEADER
-  |--------------------------------------------------------------------------
-  |
-  | City
-  | Zone
-  | Division
-  | Ward
-  |
-  | must all be selected.
   |--------------------------------------------------------------------------
   */
 
@@ -848,11 +848,63 @@ const getAllWasteGenerators = async (query = {}) => {
 
   /*
   |--------------------------------------------------------------------------
+  | WASTE METRICS
+  |--------------------------------------------------------------------------
+  |
+  | Calculate BEFORE pagination so that the
+  | directory receives the correct values.
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  const wasteMetrics = await getDirectoryWasteMetrics({
+    citizens,
+    wards,
+    selectedDate,
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | ATTACH METRICS TO CITIZENS
+  |--------------------------------------------------------------------------
+  */
+
+  const citizensWithWaste = citizens.map((citizen) => {
+    const citizenId =
+      citizen?.id === null || citizen?.id === undefined
+        ? null
+        : String(citizen.id).trim();
+
+    const metric = citizenId ? wasteMetrics.get(citizenId) : null;
+
+    return {
+      ...citizen,
+
+      /*
+          |--------------------------------------------------------------------------
+          | SELECTED DAY WASTE
+          |--------------------------------------------------------------------------
+          */
+
+      totalWaste: metric ? Number(metric.totalWaste || 0) : 0,
+
+      /*
+          |--------------------------------------------------------------------------
+          | HISTORICAL AVERAGE
+          |--------------------------------------------------------------------------
+          */
+
+      averageWaste: metric ? Number(metric.averageWaste || 0) : 0,
+    };
+  });
+
+  /*
+  |--------------------------------------------------------------------------
   | TOTAL
   |--------------------------------------------------------------------------
   */
 
-  const total = citizens.length;
+  const total = citizensWithWaste.length;
 
   /*
   |--------------------------------------------------------------------------
@@ -878,7 +930,7 @@ const getAllWasteGenerators = async (query = {}) => {
 
   const start = (safePage - 1) * limit;
 
-  const paginatedCitizens = citizens.slice(start, start + limit);
+  const paginatedCitizens = citizensWithWaste.slice(start, start + limit);
 
   /*
   |--------------------------------------------------------------------------
@@ -910,7 +962,369 @@ const getAllWasteGenerators = async (query = {}) => {
 
       wardNo: Number(wardNo),
     },
+
+    date: selectedDate,
   };
+};
+
+/*
+|--------------------------------------------------------------------------
+| DIRECTORY WASTE CALCULATION
+|--------------------------------------------------------------------------
+|
+| Calculates waste for individual citizens.
+|
+| Total Waste:
+|
+|     selected day's
+|     wetWeight + dryWeight + otherWeight
+|
+| Average Waste:
+|
+|     historical waste
+|     ----------------
+|     distinct collection days
+|
+| Historical data is considered only up to the selected date.
+|
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| GET HISTORICAL DAY TABLES
+|--------------------------------------------------------------------------
+*/
+
+const getHistoricalDayTables = async (selectedDate) => {
+  try {
+    const rows = await telemetryDb.$queryRawUnsafe(
+      `
+        SELECT
+          table_name
+        FROM information_schema.tables
+        WHERE
+          table_schema = 'public'
+          AND table_name LIKE 'day_%'
+        ORDER BY
+          table_name ASC
+      `,
+    );
+
+    const result = [];
+
+    for (const row of rows) {
+      const tableName = row.table_name;
+
+      if (
+        !tableName ||
+        typeof tableName !== "string" ||
+        !/^day_\d{8}$/.test(tableName)
+      ) {
+        continue;
+      }
+
+      const match = tableName.match(/^day_(\d{2})(\d{2})(\d{4})$/);
+
+      if (!match) {
+        continue;
+      }
+
+      const [, dd, mm, yyyy] = match;
+
+      const tableDate = `${yyyy}-${mm}-${dd}`;
+
+      if (tableDate <= selectedDate) {
+        result.push({
+          tableName,
+          date: tableDate,
+        });
+      }
+    }
+
+    return result.sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error("Historical day table lookup error:", error);
+
+    return [];
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET VEHICLE TABLES FOR HISTORICAL DAY
+|--------------------------------------------------------------------------
+*/
+
+const getHistoricalVehicleTables = async (dayTableName, wardNos) => {
+  if (!dayTableName || !Array.isArray(wardNos) || wardNos.length === 0) {
+    return [];
+  }
+
+  const dayIdentifier = quoteIdentifier(dayTableName);
+
+  try {
+    const rows = await telemetryDb.$queryRawUnsafe(
+      `
+          SELECT
+            vehicle_number,
+            vehicle_table_name,
+            ward_no
+          FROM ${dayIdentifier}
+          WHERE
+            ward_no = ANY($1::integer[])
+          ORDER BY
+            vehicle_number ASC
+        `,
+      wardNos,
+    );
+
+    return rows
+      .filter(
+        (row) =>
+          row.vehicle_table_name &&
+          IDENTIFIER_REGEX.test(row.vehicle_table_name),
+      )
+      .map((row) => ({
+        vehicleNumber:
+          row.vehicle_number === null || row.vehicle_number === undefined
+            ? null
+            : String(row.vehicle_number).trim(),
+
+        vehicleTableName: row.vehicle_table_name,
+
+        wardNo:
+          row.ward_no === null || row.ward_no === undefined
+            ? null
+            : Number(row.ward_no),
+      }));
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET CITIZEN WASTE FOR ONE DAY
+|--------------------------------------------------------------------------
+*/
+
+const getCitizenWasteForDay = async (vehicleTables, selectedDate) => {
+  if (!Array.isArray(vehicleTables) || vehicleTables.length === 0) {
+    return new Map();
+  }
+
+  const rows = await getTelemetryRows(vehicleTables, selectedDate);
+
+  const citizenWaste = new Map();
+
+  for (const row of rows) {
+    if (row.citizenId === null || row.citizenId === undefined) {
+      continue;
+    }
+
+    const citizenId = String(row.citizenId).trim();
+
+    if (!citizenId) {
+      continue;
+    }
+
+    const wet = Number(row.wetWeight || 0);
+
+    const dry = Number(row.dryWeight || 0);
+
+    const other = Number(row.otherWeight || 0);
+
+    const waste = wet + dry + other;
+
+    if (!Number.isFinite(waste)) {
+      continue;
+    }
+
+    const previous = citizenWaste.get(citizenId) || 0;
+
+    citizenWaste.set(citizenId, previous + waste);
+  }
+
+  return citizenWaste;
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET DIRECTORY WASTE METRICS
+|--------------------------------------------------------------------------
+*/
+
+const getDirectoryWasteMetrics = async ({ citizens, wards, selectedDate }) => {
+  /*
+  |--------------------------------------------------------------------------
+  | INITIALIZE EVERY CITIZEN
+  |--------------------------------------------------------------------------
+  |
+  | This guarantees:
+  |
+  | no day table
+  |     ↓
+  | totalWaste = 0
+  |
+  | no historical collection
+  |     ↓
+  | averageWaste = 0
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  const metrics = new Map();
+
+  for (const citizen of citizens) {
+    const citizenId =
+      citizen?.id === null || citizen?.id === undefined
+        ? null
+        : String(citizen.id).trim();
+
+    if (!citizenId) {
+      continue;
+    }
+
+    metrics.set(citizenId, {
+      totalWaste: 0,
+
+      historicalWaste: 0,
+
+      collectionDays: 0,
+    });
+  }
+
+  if (metrics.size === 0 || !Array.isArray(wards) || wards.length === 0) {
+    return metrics;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | WARD NUMBERS
+  |--------------------------------------------------------------------------
+  */
+
+  const wardNos = wards
+    .map((ward) => Number(ward.wardNo))
+    .filter((wardNo) => Number.isInteger(wardNo));
+
+  if (wardNos.length === 0) {
+    return metrics;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ALL EXISTING DAY TABLES
+  |--------------------------------------------------------------------------
+  */
+
+  const dayTables = await getHistoricalDayTables(selectedDate);
+
+  if (dayTables.length === 0) {
+    return metrics;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROCESS EACH DAY
+  |--------------------------------------------------------------------------
+  */
+
+  for (const day of dayTables) {
+    const vehicleTables = await getHistoricalVehicleTables(
+      day.tableName,
+      wardNos,
+    );
+
+    if (vehicleTables.length === 0) {
+      continue;
+    }
+
+    const dayWaste = await getCitizenWasteForDay(vehicleTables, day.date);
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD EACH CITIZEN'S WASTE
+    |--------------------------------------------------------------------------
+    */
+
+    for (const [citizenId, waste] of dayWaste.entries()) {
+      const metric = metrics.get(citizenId);
+
+      /*
+      |--------------------------------------------------------------------------
+      | IMPORTANT
+      |--------------------------------------------------------------------------
+      |
+      | Telemetry can contain a citizen that is
+      | not present in the current master directory.
+      |
+      | Ignore it.
+      |
+      |--------------------------------------------------------------------------
+      */
+
+      if (!metric) {
+        continue;
+      }
+
+      const safeWaste = Number(waste || 0);
+
+      if (!Number.isFinite(safeWaste) || safeWaste <= 0) {
+        continue;
+      }
+
+      /*
+      |--------------------------------------------------------------------------
+      | HISTORICAL TOTAL
+      |--------------------------------------------------------------------------
+      */
+
+      metric.historicalWaste += safeWaste;
+
+      /*
+      |--------------------------------------------------------------------------
+      | DISTINCT COLLECTION DAY
+      |--------------------------------------------------------------------------
+      */
+
+      metric.collectionDays += 1;
+
+      /*
+      |--------------------------------------------------------------------------
+      | SELECTED DAY TOTAL
+      |--------------------------------------------------------------------------
+      */
+
+      if (day.date === selectedDate) {
+        metric.totalWaste += safeWaste;
+      }
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CALCULATE AVERAGE
+  |--------------------------------------------------------------------------
+  */
+
+  for (const metric of metrics.values()) {
+    metric.totalWaste = Number(metric.totalWaste.toFixed(2));
+
+    metric.historicalWaste = Number(metric.historicalWaste.toFixed(2));
+
+    metric.averageWaste =
+      metric.collectionDays > 0
+        ? Number((metric.historicalWaste / metric.collectionDays).toFixed(2))
+        : 0;
+  }
+
+  return metrics;
 };
 
 /*
