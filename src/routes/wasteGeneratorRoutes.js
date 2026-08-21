@@ -7,6 +7,7 @@ const wasteGeneratorController = require("../controllers/wasteGeneratorControlle
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
 const checkTemporaryPermission = require("../middlewares/checkTemporaryPermission");
+const checkActionPermission = require("../middlewares/checkActionPermission");
 
 /*
 ============================================================
@@ -86,33 +87,15 @@ router.get("/:phoneNumber", wasteGeneratorController.getWasteGeneratorByPhone);
 
 /*
 ============================================================
-CREATE
-============================================================
-*/
-router.post("/", authMiddleware, wasteGeneratorController.createWasteGenerator);
-
-/*
-============================================================
 UPDATE
 ============================================================
 */
 router.put(
   "/:phoneNumber",
   authMiddleware,
-  checkTemporaryPermission("waste-generators"),
+  checkPermission("waste_generators"),
+  checkActionPermission("EDIT"),
   wasteGeneratorController.updateWasteGenerator,
-);
-
-/*
-============================================================
-DELETE
-============================================================
-*/
-router.delete(
-  "/:phoneNumber",
-  authMiddleware,
-  checkTemporaryPermission("waste-generators"),
-  wasteGeneratorController.deleteWasteGenerator,
 );
 
 module.exports = router;

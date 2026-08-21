@@ -6,6 +6,10 @@ const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
+const checkPermission = require("../middlewares/checkPermission");
+
+const checkActionPermission = require("../middlewares/checkActionPermission");
+
 /*
  * =========================================================
  * GET ALL COMPLAINTS
@@ -34,7 +38,7 @@ router.get("/", authMiddleware, complaintController.getComplaints);
  * /kpis must come before /:ticketNumber
  *
  */
-router.get("/kpis", authMiddleware, complaintController.getComplaintKPIs);
+router.get("/kpis", authMiddleware, checkPermission("complaints"), complaintController.getComplaintKPIs);
 
 /*
  * =========================================================
@@ -47,6 +51,7 @@ router.get("/kpis", authMiddleware, complaintController.getComplaintKPIs);
 router.get(
   "/:ticketNumber",
   authMiddleware,
+  checkPermission("complaints"),
   complaintController.getComplaintByTicket,
 );
 
@@ -67,6 +72,8 @@ router.get(
 router.patch(
   "/:ticketNumber",
   authMiddleware,
+  checkPermission("complaints"),
+  checkActionPermission("EDIT"),
   complaintController.updateComplaint,
 );
 
@@ -85,6 +92,7 @@ router.patch(
 router.post(
   "/:ticketNumber/request-verification",
   authMiddleware,
+  checkPermission("complaints"),
   complaintController.requestVerification,
 );
 
@@ -99,6 +107,7 @@ router.post(
 router.post(
   "/:ticketNumber/verify",
   authMiddleware,
+  checkPermission("complaints"),
   complaintController.verifyOTP,
 );
 

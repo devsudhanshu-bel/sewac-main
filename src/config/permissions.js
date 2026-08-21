@@ -20,8 +20,8 @@ const ROLE_ACCESS = {
     complaints: true,
     users: true,
 
-    canEdit: false,
-    canDelete: false,
+    canEdit: true,
+    canDelete: true,
     sensitiveAccess: false
   },
 
