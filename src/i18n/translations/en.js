@@ -1217,6 +1217,36 @@ cityOverviewMap: {
   loading:
     "Loading city map...",
 },
+
+users: {
+  table: {
+    name: "Name",
+    email: "Email",
+    role: "Role",
+    lastLogin: "Last Login",
+    status: "Status",
+    actions: "Actions",
+
+    active: "Active",
+    inactive: "Inactive",
+
+    edit: "Edit",
+    delete: "Delete",
+
+    noUsers: "No users found",
+
+    showing: "Showing",
+    of: "of",
+    users: "users",
+
+    rowsPerPage: "Rows per page",
+
+    previousPage: "Previous page",
+    nextPage: "Next page",
+
+    ofPage: "of",
+  },
+},
 };
 
 export default en;

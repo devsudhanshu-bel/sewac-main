@@ -1356,6 +1356,36 @@ gvpOverviewMap: {
     route: "ಮಾರ್ಗ",
   },
 },
+
+users: {
+  table: {
+    name: "ಹೆಸರು",
+    email: "ಇಮೇಲ್",
+    role: "ಪಾತ್ರ",
+    lastLogin: "ಕೊನೆಯ ಲಾಗಿನ್",
+    status: "ಸ್ಥಿತಿ",
+    actions: "ಕ್ರಿಯೆಗಳು",
+
+    active: "ಸಕ್ರಿಯ",
+    inactive: "ನಿಷ್ಕ್ರಿಯ",
+
+    edit: "ತಿದ್ದುಪಡಿ",
+    delete: "ಅಳಿಸಿ",
+
+    noUsers: "ಯಾವುದೇ ಬಳಕೆದಾರರು ಕಂಡುಬಂದಿಲ್ಲ",
+
+    showing: "ತೋರಿಸಲಾಗುತ್ತಿದೆ",
+    of: "ರಲ್ಲಿ",
+    users: "ಬಳಕೆದಾರರು",
+
+    rowsPerPage: "ಪ್ರತಿ ಪುಟದ ಸಾಲುಗಳು",
+
+    previousPage: "ಹಿಂದಿನ ಪುಟ",
+    nextPage: "ಮುಂದಿನ ಪುಟ",
+
+    ofPage: "ರಲ್ಲಿ",
+  },
+},
 };
 
 export default kn;

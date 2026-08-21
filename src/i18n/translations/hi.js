@@ -1260,6 +1260,36 @@ gvpOverviewMap: {
     route: "मार्ग",
   },
 },
+
+users: {
+  table: {
+    name: "नाम",
+    email: "ईमेल",
+    role: "भूमिका",
+    lastLogin: "अंतिम लॉगिन",
+    status: "स्थिति",
+    actions: "क्रियाएँ",
+
+    active: "सक्रिय",
+    inactive: "निष्क्रिय",
+
+    edit: "संपादित करें",
+    delete: "हटाएँ",
+
+    noUsers: "कोई उपयोगकर्ता नहीं मिला",
+
+    showing: "दिखाया जा रहा है",
+    of: "में से",
+    users: "उपयोगकर्ता",
+
+    rowsPerPage: "प्रति पृष्ठ पंक्तियाँ",
+
+    previousPage: "पिछला पृष्ठ",
+    nextPage: "अगला पृष्ठ",
+
+    ofPage: "में से",
+  },
+},
 };
 
 export default hi;
