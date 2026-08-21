@@ -1,8 +1,15 @@
-import React from "react";
-import { ShieldCheck, Plus, Search, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+import {
+  ShieldCheck,
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+
 import AddUserModal from "./AddUserModal";
-const adminUsers = [
+
+const initialAdminUsers = [
   {
     id: 1,
     name: "Super Admin",
@@ -39,58 +46,137 @@ const adminUsers = [
 
 const AdminUsers = () => {
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
+  const [search, setSearch] = useState("");
+
+  const handleAdminCreated = (createdUser) => {
+    const newAdmin = {
+      id: createdUser.id,
+      name: createdUser.full_name,
+      email: createdUser.email,
+      phone: createdUser.phone_number,
+      status: createdUser.status || "ACTIVE",
+      createdAt: createdUser.created_at
+        ? new Date(createdUser.created_at).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : new Date().toLocaleString("en-IN"),
+    };
+
+    setAdminUsers((prev) => [newAdmin, ...prev]);
+  };
+
+  const filteredAdmins = adminUsers.filter((user) => {
+    const value = search.toLowerCase().trim();
+
+    if (!value) return true;
+
+    return (
+      user.name.toLowerCase().includes(value) ||
+      user.email.toLowerCase().includes(value) ||
+      user.phone.includes(value)
+    );
+  });
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-100">
+
         <div className="flex items-center justify-between">
+
           <div className="flex items-center gap-2">
+
             <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4 text-violet-600" />
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-[16px] font-semibold text-gray-900">
-                  Admin Level 1 Users
-                </h2>
-              </div>
+
+              <h2 className="text-[16px] font-semibold text-gray-900">
+                Admin Level 1 Users
+              </h2>
 
               <p className="mt-0.5 text-[12px] text-gray-500">
                 Manage other Admin Level 1 users who have full access to the
                 system.
               </p>
+
             </div>
+
           </div>
+
         </div>
 
         {/* Search + Button */}
         <div className="mt-4 flex items-center justify-between">
+
           <div className="relative w-[340px]">
+
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-600" />
 
             <input
               type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email or phone..."
-              className="w-full h-10 rounded-lg border border-gray-200 pl-4 pr-10 text-[13px] outline-none focus:border-violet-500"
+              className="
+                w-full
+                h-10
+                rounded-lg
+                border
+                border-gray-200
+                pl-4
+                pr-10
+                text-[13px]
+                outline-none
+                focus:border-violet-500
+              "
             />
+
           </div>
 
-<button
-  onClick={() => setShowAddAdminModal(true)}
-  className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2">
-                <Plus className="w-4 h-4" />
+          <button
+            onClick={() => setShowAddAdminModal(true)}
+            className="
+              h-10
+              px-5
+              rounded-lg
+              border
+              border-violet-600
+              text-violet-700
+              hover:bg-violet-600
+              hover:text-white
+              transition
+              text-[13px]
+              font-medium
+              flex
+              items-center
+              gap-2
+            "
+          >
+            <Plus className="w-4 h-4" />
             Add Admin
           </button>
+
         </div>
+
       </div>
 
       {/* Table */}
-
       <div className="overflow-x-auto">
+
         <table className="w-full">
+
           <thead className="bg-[#F7F5FF]">
+
             <tr>
+
               <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
                 SL.No
               </th>
@@ -118,16 +204,23 @@ const AdminUsers = () => {
               <th className="px-5 py-3 text-center text-[12px] font-semibold text-violet-700">
                 Actions
               </th>
+
             </tr>
+
           </thead>
 
           <tbody>
-            {adminUsers.map((user, index) => (
+
+            {filteredAdmins.map((user, index) => (
+
               <tr
                 key={user.id}
                 className="border-b border-gray-100 hover:bg-gray-50"
               >
-                <td className="px-5 py-4 text-[13px]">{index + 1}</td>
+
+                <td className="px-5 py-4 text-[13px]">
+                  {index + 1}
+                </td>
 
                 <td className="px-5 py-4 text-[13px] font-medium">
                   {user.name}
@@ -142,9 +235,11 @@ const AdminUsers = () => {
                 </td>
 
                 <td className="px-5 py-4">
+
                   <span className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-[11px] font-medium">
                     {user.status}
                   </span>
+
                 </td>
 
                 <td className="px-5 py-4 text-[13px] text-gray-600">
@@ -152,44 +247,88 @@ const AdminUsers = () => {
                 </td>
 
                 <td className="px-5 py-4">
+
                   <div className="flex justify-center items-center gap-4">
-                    <button className="text-violet-600 hover:text-violet-800">
+
+                    <button
+                      type="button"
+                      className="text-violet-600 hover:text-violet-800"
+                      disabled
+                      title="Edit will be wired next"
+                    >
                       <Pencil className="w-4 h-4" />
                     </button>
 
-                    <button className="text-red-500 hover:text-red-700">
+                    <button
+                      type="button"
+                      className="text-red-500 hover:text-red-700"
+                      disabled
+                      title="Delete will be wired next"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
+
                   </div>
+
                 </td>
+
               </tr>
+
             ))}
+
+            {filteredAdmins.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="7"
+                  className="px-5 py-10 text-center text-[13px] text-gray-500"
+                >
+                  No Admin Layer 1 users found.
+                </td>
+
+              </tr>
+
+            )}
+
           </tbody>
+
         </table>
+
       </div>
 
       {/* Footer */}
-
       <div className="flex items-center justify-between px-5 py-4 text-[12px]">
+
         <p className="text-violet-700 font-medium">
-          Showing 1 to 4 of 4 entries
+          Showing {filteredAdmins.length} of {adminUsers.length} entries
         </p>
 
         <div className="flex items-center gap-2">
-          <span className="text-gray-600">Rows per page:</span>
+
+          <span className="text-gray-600">
+            Rows per page:
+          </span>
 
           <select className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none">
             <option>10</option>
             <option>25</option>
             <option>50</option>
           </select>
+
         </div>
+
       </div>
-            <AddUserModal
+
+      {/* Add Admin Modal */}
+      <AddUserModal
         open={showAddAdminModal}
         onClose={() => setShowAddAdminModal(false)}
         title="Add Admin"
+        role="ADMIN_LAYER_1"
+        onSuccess={handleAdminCreated}
       />
+
     </div>
   );
 };

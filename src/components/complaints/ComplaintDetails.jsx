@@ -16,21 +16,19 @@ import {
 export default function ComplaintDetails({
   complaint,
   otpSent,
+  onClose,
   onRequestVerification,
   onVerifyOTP,
   onSaveChanges,
   saving = false,
 }) {
   const [otp, setOtp] = useState("");
-
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  /*
-   * =========================================================
-   * SYNC FORM WITH SELECTED COMPLAINT
-   * =========================================================
-   */
+  /* =========================================================
+     SYNC FORM WITH SELECTED COMPLAINT
+  ========================================================= */
 
   useEffect(() => {
     if (!complaint) {
@@ -45,46 +43,28 @@ export default function ComplaintDetails({
     setOtp("");
   }, [complaint]);
 
-  /*
-   * =========================================================
-   * CURRENT STATUS
-   * =========================================================
-   */
+  /* =========================================================
+     CURRENT STATUS
+  ========================================================= */
 
   const currentStatus = complaint?.status || "";
 
-  /*
-   * =========================================================
-   * STATUS FLAGS
-   * =========================================================
-   */
+  /* =========================================================
+     STATUS FLAGS
+  ========================================================= */
 
   const isPending = currentStatus === "PENDING";
 
-  const isReadyForVerification = currentStatus === "READY_FOR_VERIFICATION";
+  const isReadyForVerification =
+    currentStatus === "READY_FOR_VERIFICATION";
 
   const isOtpSent = currentStatus === "OTP_SENT";
 
   const isClosed = currentStatus === "CLOSED";
 
-  /*
-   * =========================================================
-   * ADMIN-EDITABLE STATUS OPTIONS
-   * =========================================================
-   *
-   * IMPORTANT:
-   *
-   * We deliberately DO NOT expose:
-   *
-   * ASSIGNED
-   * IN_PROGRESS
-   * OTP_SENT
-   * CLOSED
-   *
-   * to the admin status dropdown.
-   *
-   * The backend/system controls those states.
-   */
+  /* =========================================================
+     ADMIN STATUS OPTIONS
+  ========================================================= */
 
   const adminStatusOptions = [
     {
@@ -97,27 +77,14 @@ export default function ComplaintDetails({
     },
   ];
 
-  /*
-   * =========================================================
-   * SAVE CHANGES
-   * =========================================================
-   */
+  /* =========================================================
+     SAVE CHANGES
+  ========================================================= */
 
   const handleSave = () => {
     if (!complaint?.ticket_number) {
       return;
     }
-
-    /*
-     * Only allow the actual workflow transition:
-     *
-     * PENDING
-     *    ↓
-     * READY_FOR_VERIFICATION
-     *
-     * If the complaint is already in another system-controlled
-     * state, don't send a status mutation.
-     */
 
     const nextStatus = isPending ? status : currentStatus;
 
@@ -127,23 +94,21 @@ export default function ComplaintDetails({
     });
   };
 
-  /*
-   * =========================================================
-   * OTP INPUT
-   * =========================================================
-   */
+  /* =========================================================
+     OTP INPUT
+  ========================================================= */
 
   const handleOTPChange = (event) => {
-    const value = event.target.value.replace(/\D/g, "").slice(0, 6);
+    const value = event.target.value
+      .replace(/\D/g, "")
+      .slice(0, 6);
 
     setOtp(value);
   };
 
-  /*
-   * =========================================================
-   * STATUS BADGE CLASS
-   * =========================================================
-   */
+  /* =========================================================
+     STATUS BADGE
+  ========================================================= */
 
   const getStatusBadgeClass = () => {
     if (currentStatus === "CLOSED") {
@@ -169,16 +134,160 @@ export default function ComplaintDetails({
     return "bg-[#FFF5D9] text-[#D99100]";
   };
 
+  /* =========================================================
+     EMPTY STATE
+  ========================================================= */
+
+  if (!complaint) {
+    return (
+      <div
+        className="
+          flex
+          h-full
+          min-h-[420px]
+          w-full
+          flex-col
+          overflow-hidden
+          rounded-2xl
+          border
+          border-gray-100
+          bg-white
+          shadow-[0_8px_25px_rgba(15,23,42,0.05)]
+        "
+      >
+        {/* HEADER */}
+
+        <div
+          className="
+            flex
+            shrink-0
+            items-center
+            justify-between
+            border-b
+            border-gray-100
+            px-4
+            py-4
+
+            sm:px-5
+          "
+        >
+          <h2
+            className="
+              text-[14px]
+              font-bold
+              text-[#16295A]
+
+              sm:text-[15px]
+            "
+          >
+            Complaint Details
+          </h2>
+
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            className="
+              flex
+              h-7
+              w-7
+              shrink-0
+              items-center
+              justify-center
+              rounded-lg
+              text-gray-400
+              transition
+              hover:bg-gray-50
+              hover:text-gray-700
+            "
+          >
+            <X size={17} />
+          </button>
+        </div>
+
+        {/* EMPTY CONTENT */}
+
+        <div
+          className="
+            flex
+            flex-1
+            items-center
+            justify-center
+            px-6
+            py-10
+          "
+        >
+          <div className="text-center">
+            <div
+              className="
+                mx-auto
+                mb-3
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-2xl
+                bg-[#F4ECFF]
+                text-[#8B3DFF]
+              "
+            >
+              <ClipboardList size={22} />
+            </div>
+
+            <p
+              className="
+                text-[12px]
+                font-semibold
+                text-[#16295A]
+
+                sm:text-[13px]
+              "
+            >
+              Select a complaint
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-[10px]
+                leading-5
+                text-gray-400
+
+                sm:text-[11px]
+              "
+            >
+              Select a complaint from the table
+              to view its details.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* =========================================================
+     MAIN
+  ========================================================= */
+
   return (
     <div
       className="
+        flex
         w-full
-        h-[calc(100vh-104px)]
-        bg-white
+        flex-col
+        overflow-hidden
+        rounded-2xl
         border
         border-gray-100
+        bg-white
         shadow-[0_8px_25px_rgba(15,23,42,0.05)]
-        overflow-hidden
+
+        h-full
+        min-h-0
+
+        max-h-[calc(100vh-120px)]
+
+        lg:max-h-[calc(100vh-104px)]
       "
     >
       {/* =====================================================
@@ -188,32 +297,51 @@ export default function ComplaintDetails({
       <div
         className="
           flex
+          shrink-0
           items-center
           justify-between
-          px-5
-          py-4
           border-b
           border-gray-100
+          px-4
+          py-3.5
+
+          sm:px-5
+          sm:py-4
         "
       >
-        <h2 className="text-[15px] font-bold text-[#16295A]">
-          Complaint Details
-        </h2>
+        <div className="min-w-0">
+          <h2
+            className="
+              truncate
+              text-[14px]
+              font-bold
+              text-[#16295A]
+
+              sm:text-[15px]
+            "
+          >
+            Complaint Details
+          </h2>
+        </div>
 
         <button
           type="button"
+          onClick={() => onClose?.()}
           className="
-            w-7
-            h-7
-            rounded-lg
+            ml-3
             flex
+            h-7
+            w-7
+            shrink-0
             items-center
             justify-center
+            rounded-lg
             text-gray-400
+            transition
             hover:bg-gray-50
             hover:text-gray-700
-            transition
           "
+          aria-label="Close complaint details"
         >
           <X size={17} />
         </button>
@@ -225,10 +353,17 @@ export default function ComplaintDetails({
 
       <div
         className="
-          h-[calc(100%-65px)]
+          min-h-0
+          flex-1
           overflow-y-auto
-          px-5
+          overscroll-contain
+          px-4
           py-4
+
+          sm:px-5
+          sm:py-4
+
+          [scrollbar-width:thin]
         "
       >
         {/* ===================================================
@@ -238,37 +373,55 @@ export default function ComplaintDetails({
         <div className="mb-4">
           <p
             className="
+              mb-1.5
               text-[10px]
               font-semibold
               text-gray-500
-              mb-1.5
             "
           >
             Ticket Number
           </p>
 
-          <div className="flex items-center justify-between">
+          <div
+            className="
+              flex
+              min-w-0
+              items-center
+              justify-between
+              gap-2
+            "
+          >
             <span
               className="
-                px-2.5
-                py-1
+                min-w-0
+                max-w-[70%]
+                truncate
                 rounded-lg
                 bg-[#F4ECFF]
-                text-[11px]
+                px-2.5
+                py-1
+                text-[10px]
                 font-semibold
                 text-violet-700
+
+                sm:text-[11px]
               "
+              title={complaint.ticket_number}
             >
-              {complaint?.ticket_number || "—"}
+              {complaint.ticket_number || "—"}
             </span>
 
             <span
               className={`
+                shrink-0
+                rounded-full
                 px-2.5
                 py-1
-                rounded-full
-                text-[10px]
+                text-[9px]
                 font-semibold
+
+                sm:text-[10px]
+
                 ${getStatusBadgeClass()}
               `}
             >
@@ -277,20 +430,36 @@ export default function ComplaintDetails({
           </div>
         </div>
 
-        <div className="border-b border-gray-100 mb-4" />
+        <div className="mb-4 border-b border-gray-100" />
 
         {/* ===================================================
             TITLE
         =================================================== */}
 
-        <div className="flex gap-2.5 mb-4">
-          <Tag size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex gap-2.5">
+          <Tag
+            size={14}
+            className="mt-0.5 shrink-0 text-gray-500"
+          />
 
-          <div>
-            <p className="text-[10px] font-semibold text-gray-500">Title</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-gray-500">
+              Title
+            </p>
 
-            <p className="text-[12px] font-medium text-[#16295A] mt-1">
-              {complaint?.title || "—"}
+            <p
+              className="
+                mt-1
+                break-words
+                text-[11px]
+                font-medium
+                leading-5
+                text-[#16295A]
+
+                sm:text-[12px]
+              "
+            >
+              {complaint.title || "—"}
             </p>
           </div>
         </div>
@@ -299,14 +468,28 @@ export default function ComplaintDetails({
             CATEGORY
         =================================================== */}
 
-        <div className="flex gap-2.5 mb-4">
-          <FolderOpen size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex gap-2.5">
+          <FolderOpen
+            size={14}
+            className="mt-0.5 shrink-0 text-gray-500"
+          />
 
-          <div>
-            <p className="text-[10px] font-semibold text-gray-500">Category</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-gray-500">
+              Category
+            </p>
 
-            <p className="text-[12px] text-[#16295A] mt-1">
-              {complaint?.category || "—"}
+            <p
+              className="
+                mt-1
+                break-words
+                text-[11px]
+                text-[#16295A]
+
+                sm:text-[12px]
+              "
+            >
+              {complaint.category || "—"}
             </p>
           </div>
         </div>
@@ -315,17 +498,29 @@ export default function ComplaintDetails({
             PHONE
         =================================================== */}
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2.5">
-            <Phone size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 gap-2.5">
+            <Phone
+              size={14}
+              className="mt-0.5 shrink-0 text-gray-500"
+            />
 
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
                 Citizen (Phone)
               </p>
 
-              <p className="text-[12px] text-[#16295A] mt-1">
-                {complaint?.phone_number || "—"}
+              <p
+                className="
+                  mt-1
+                  truncate
+                  text-[11px]
+                  text-[#16295A]
+
+                  sm:text-[12px]
+                "
+              >
+                {complaint.phone_number || "—"}
               </p>
             </div>
           </div>
@@ -333,18 +528,20 @@ export default function ComplaintDetails({
           <button
             type="button"
             className="
-              w-8
+              flex
               h-8
+              w-8
+              shrink-0
+              items-center
+              justify-center
               rounded-lg
               border
               border-violet-200
-              flex
-              items-center
-              justify-center
               text-violet-600
-              hover:bg-violet-50
               transition
+              hover:bg-violet-50
             "
+            aria-label="Call citizen"
           >
             <Phone size={14} />
           </button>
@@ -354,14 +551,29 @@ export default function ComplaintDetails({
             ADDRESS
         =================================================== */}
 
-        <div className="flex gap-2.5 mb-4">
-          <MapPin size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex gap-2.5">
+          <MapPin
+            size={14}
+            className="mt-0.5 shrink-0 text-gray-500"
+          />
 
-          <div>
-            <p className="text-[10px] font-semibold text-gray-500">Address</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-gray-500">
+              Address
+            </p>
 
-            <p className="text-[12px] leading-5 text-[#16295A] mt-1">
-              {complaint?.address || "—"}
+            <p
+              className="
+                mt-1
+                break-words
+                text-[11px]
+                leading-5
+                text-[#16295A]
+
+                sm:text-[12px]
+              "
+            >
+              {complaint.address || "—"}
             </p>
           </div>
         </div>
@@ -370,17 +582,30 @@ export default function ComplaintDetails({
             COORDINATES
         =================================================== */}
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2.5">
-            <Map size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 gap-2.5">
+            <Map
+              size={14}
+              className="mt-0.5 shrink-0 text-gray-500"
+            />
 
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
                 Coordinates
               </p>
 
-              <p className="text-[12px] text-[#16295A] mt-1">
-                {complaint?.latitude ?? "—"}, {complaint?.longitude ?? "—"}
+              <p
+                className="
+                  mt-1
+                  truncate
+                  text-[11px]
+                  text-[#16295A]
+
+                  sm:text-[12px]
+                "
+              >
+                {complaint.latitude ?? "—"},{" "}
+                {complaint.longitude ?? "—"}
               </p>
             </div>
           </div>
@@ -388,18 +613,20 @@ export default function ComplaintDetails({
           <button
             type="button"
             className="
-              w-8
+              flex
               h-8
+              w-8
+              shrink-0
+              items-center
+              justify-center
               rounded-lg
               border
               border-violet-200
-              flex
-              items-center
-              justify-center
               text-violet-600
-              hover:bg-violet-50
               transition
+              hover:bg-violet-50
             "
+            aria-label="View coordinates on map"
           >
             <Map size={14} />
           </button>
@@ -410,65 +637,74 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4">
-          <div className="flex items-center gap-2.5 mb-2">
-            <ImageIcon size={14} className="text-gray-500" />
+          <div className="mb-2 flex items-center gap-2.5">
+            <ImageIcon
+              size={14}
+              className="shrink-0 text-gray-500"
+            />
 
             <p className="text-[10px] font-semibold text-gray-500">
               Complaint Image
             </p>
           </div>
 
-          <div className="relative">
-            {complaint?.image_url ? (
+          <div className="relative overflow-hidden">
+            {complaint.image_url ? (
               <img
                 src={complaint.image_url}
-                alt={complaint?.title || "Complaint"}
+                alt={complaint.title || "Complaint"}
                 className="
+                  h-[130px]
                   w-full
-                  h-[145px]
                   rounded-xl
                   object-cover
+
+                  sm:h-[145px]
                 "
               />
             ) : (
               <div
                 className="
-                  w-full
-                  h-[145px]
-                  rounded-xl
-                  bg-gray-50
-                  border
-                  border-gray-100
                   flex
+                  h-[130px]
+                  w-full
                   items-center
                   justify-center
-                  text-[11px]
+                  rounded-xl
+                  border
+                  border-gray-100
+                  bg-gray-50
+                  text-[10px]
                   text-gray-400
+
+                  sm:h-[145px]
+                  sm:text-[11px]
                 "
               >
                 No complaint image
               </div>
             )}
 
-            {complaint?.image_url && (
+            {complaint.image_url && (
               <button
                 type="button"
                 className="
                   absolute
                   bottom-2
                   right-2
-                  w-8
-                  h-8
-                  rounded-lg
-                  bg-white
-                  shadow-md
                   flex
+                  h-8
+                  w-8
                   items-center
                   justify-center
+                  rounded-lg
+                  bg-white
                   text-violet-600
-                  hover:scale-105
+                  shadow-md
                   transition
+                  hover:scale-105
                 "
+                aria-label="Expand complaint image"
               >
                 <Expand size={14} />
               </button>
@@ -480,16 +716,30 @@ export default function ComplaintDetails({
             DESCRIPTION
         =================================================== */}
 
-        <div className="flex gap-2.5 mb-4">
-          <FileText size={14} className="text-gray-500 mt-0.5 shrink-0" />
+        <div className="mb-4 flex gap-2.5">
+          <FileText
+            size={14}
+            className="mt-0.5 shrink-0 text-gray-500"
+          />
 
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
               Description
             </p>
 
-            <p className="text-[12px] leading-5 text-[#16295A] mt-1">
-              {complaint?.description || "No description provided."}
+            <p
+              className="
+                mt-1
+                break-words
+                text-[11px]
+                leading-5
+                text-[#16295A]
+
+                sm:text-[12px]
+              "
+            >
+              {complaint.description ||
+                "No description provided."}
             </p>
           </div>
         </div>
@@ -499,87 +749,104 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <ClipboardList size={14} className="text-gray-500" />
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <ClipboardList
+              size={14}
+              className="shrink-0 text-gray-500"
+            />
 
-            <p className="text-[10px] font-semibold text-gray-500">Status</p>
+            <p className="text-[10px] font-semibold text-gray-500">
+              Status
+            </p>
           </div>
 
-          {/* ===============================================
-              CLOSED
-          =============================================== */}
+          {/* CLOSED */}
 
           {isClosed ? (
             <div
               className="
+                flex
+                min-h-9
                 w-full
-                h-9
+                items-center
                 rounded-lg
                 border
                 border-green-200
                 bg-green-50
                 px-3
-                flex
-                items-center
-                text-[11px]
+                py-2
+                text-[10px]
                 font-semibold
                 text-green-700
+
+                sm:text-[11px]
               "
             >
               Closed — Citizen Verified
             </div>
           ) : isOtpSent ? (
-            /* =============================================
-               OTP SENT
-            ============================================= */
+            /* OTP SENT */
 
             <div
               className="
+                flex
+                min-h-9
                 w-full
-                h-9
+                items-center
                 rounded-lg
                 border
                 border-violet-200
                 bg-violet-50
                 px-3
-                flex
-                items-center
-                text-[11px]
+                py-2
+                text-[10px]
                 font-semibold
                 text-violet-700
+
+                sm:text-[11px]
               "
             >
               Verification OTP Sent
             </div>
           ) : (
-            /* =============================================
-               ADMIN STATUS SELECT
-            ============================================= */
+            /* ADMIN STATUS SELECT */
 
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              disabled={!complaint || saving || !isPending}
+              onChange={(event) =>
+                setStatus(event.target.value)
+              }
+              disabled={
+                !complaint ||
+                saving ||
+                !isPending
+              }
               className="
-                w-full
                 h-9
+                w-full
                 rounded-lg
                 border
                 border-gray-200
                 bg-white
                 px-3
-                text-[11px]
+                text-[10px]
                 text-[#16295A]
                 outline-none
+                transition
                 focus:border-violet-400
                 focus:ring-2
                 focus:ring-violet-100
                 disabled:bg-gray-50
                 disabled:text-gray-400
+
+                sm:text-[11px]
               "
             >
               {adminStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
                   {option.label}
                 </option>
               ))}
@@ -592,29 +859,44 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <FileText size={14} className="text-gray-500" />
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <FileText
+              size={14}
+              className="shrink-0 text-gray-500"
+            />
 
-            <p className="text-[10px] font-semibold text-gray-500">Remarks</p>
+            <p className="text-[10px] font-semibold text-gray-500">
+              Remarks
+            </p>
           </div>
 
           <textarea
             value={remarks}
-            onChange={(event) => setRemarks(event.target.value)}
-            disabled={!complaint || saving || isClosed || isOtpSent}
+            onChange={(event) =>
+              setRemarks(event.target.value)
+            }
+            disabled={
+              !complaint ||
+              saving ||
+              isClosed ||
+              isOtpSent
+            }
             placeholder={
-              complaint ? "Add remarks..." : "Select a complaint first..."
+              complaint
+                ? "Add remarks..."
+                : "Select a complaint first..."
             }
             className="
+              min-h-[58px]
               w-full
-              h-[58px]
               resize-none
               rounded-lg
               border
               border-gray-200
               px-3
               py-2
-              text-[11px]
+              text-[10px]
+              leading-5
               text-[#16295A]
               outline-none
               placeholder:text-gray-400
@@ -623,6 +905,8 @@ export default function ComplaintDetails({
               focus:ring-violet-100
               disabled:bg-gray-50
               disabled:text-gray-400
+
+              sm:text-[11px]
             "
           />
         </div>
@@ -632,7 +916,18 @@ export default function ComplaintDetails({
         =================================================== */}
 
         {!isClosed && !isOtpSent && (
-          <div className="flex justify-end gap-2 pt-1 pb-2">
+          <div
+            className="
+              flex
+              flex-col
+              gap-2
+              pt-1
+              pb-2
+
+              min-[420px]:flex-row
+              min-[420px]:justify-end
+            "
+          >
             <button
               type="button"
               disabled={!complaint || saving}
@@ -641,25 +936,33 @@ export default function ComplaintDetails({
                   return;
                 }
 
-                setStatus(complaint.status || "PENDING");
+                setStatus(
+                  complaint.status || "PENDING"
+                );
 
-                setRemarks(complaint.remarks || "");
+                setRemarks(
+                  complaint.remarks || ""
+                );
               }}
               className="
-                  h-8
-                  px-4
-                  rounded-lg
-                  border
-                  border-gray-200
-                  bg-white
-                  text-[11px]
-                  font-semibold
-                  text-gray-600
-                  hover:bg-gray-50
-                  transition
-                  disabled:opacity-50
-                  disabled:cursor-not-allowed
-                "
+                h-9
+                w-full
+                rounded-lg
+                border
+                border-gray-200
+                bg-white
+                px-4
+                text-[10px]
+                font-semibold
+                text-gray-600
+                transition
+                hover:bg-gray-50
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+
+                min-[420px]:w-auto
+                sm:text-[11px]
+              "
             >
               Cancel
             </button>
@@ -669,21 +972,25 @@ export default function ComplaintDetails({
               disabled={!complaint || saving}
               onClick={handleSave}
               className="
-                  h-8
-                  px-4
-                  rounded-lg
-                  bg-gradient-to-r
-                  from-violet-600
-                  to-fuchsia-600
-                  text-white
-                  text-[11px]
-                  font-semibold
-                  shadow-sm
-                  hover:opacity-95
-                  transition
-                  disabled:opacity-50
-                  disabled:cursor-not-allowed
-                "
+                h-9
+                w-full
+                rounded-lg
+                bg-gradient-to-r
+                from-violet-600
+                to-fuchsia-600
+                px-4
+                text-[10px]
+                font-semibold
+                text-white
+                shadow-sm
+                transition
+                hover:opacity-95
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+
+                min-[420px]:w-auto
+                sm:text-[11px]
+              "
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
@@ -696,49 +1003,56 @@ export default function ComplaintDetails({
 
         <div
           className="
+            mt-2
             border-t
             border-gray-100
-            mt-2
             pt-4
           "
         >
-          {/* ===============================================
-              READY → REQUEST OTP
-          =============================================== */}
+          {/* READY → REQUEST OTP */}
 
           {isReadyForVerification && !otpSent && (
             <button
               type="button"
               disabled={!complaint || saving}
-              onClick={() => onRequestVerification?.()}
+              onClick={() =>
+                onRequestVerification?.()
+              }
               className="
-                  w-full
-                  h-9
-                  rounded-lg
-                  bg-gradient-to-r
-                  from-violet-600
-                  to-fuchsia-600
-                  text-white
-                  text-[11px]
-                  font-semibold
-                  shadow-sm
-                  hover:opacity-95
-                  transition
-                  disabled:opacity-50
-                  disabled:cursor-not-allowed
-                "
+                h-9
+                w-full
+                rounded-lg
+                bg-gradient-to-r
+                from-violet-600
+                to-fuchsia-600
+                text-[10px]
+                font-semibold
+                text-white
+                shadow-sm
+                transition
+                hover:opacity-95
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+
+                sm:text-[11px]
+              "
             >
               Request Verification OTP
             </button>
           )}
 
-          {/* ===============================================
-              OTP INPUT
-          =============================================== */}
+          {/* OTP INPUT */}
 
           {isOtpSent && (
             <div className="mt-1">
-              <p className="text-[10px] font-semibold text-gray-500 mb-1.5">
+              <p
+                className="
+                  mb-1.5
+                  text-[10px]
+                  font-semibold
+                  text-gray-500
+                "
+              >
                 Enter Verification OTP
               </p>
 
@@ -750,14 +1064,14 @@ export default function ComplaintDetails({
                 onChange={handleOTPChange}
                 placeholder="Enter 6-digit OTP"
                 className="
-                  w-full
                   h-9
+                  w-full
                   rounded-lg
                   border
                   border-gray-200
                   bg-white
                   px-3
-                  text-[12px]
+                  text-[11px]
                   tracking-[0.25em]
                   text-[#16295A]
                   outline-none
@@ -766,28 +1080,37 @@ export default function ComplaintDetails({
                   focus:border-violet-400
                   focus:ring-2
                   focus:ring-violet-100
+
+                  sm:text-[12px]
                 "
               />
 
               <button
                 type="button"
-                disabled={!complaint || otp.length !== 6}
-                onClick={() => onVerifyOTP?.(otp)}
+                disabled={
+                  !complaint ||
+                  otp.length !== 6
+                }
+                onClick={() =>
+                  onVerifyOTP?.(otp)
+                }
                 className="
-                  w-full
-                  h-9
                   mt-2
+                  h-9
+                  w-full
                   rounded-lg
                   border
                   border-violet-200
                   bg-violet-50
-                  text-violet-700
-                  text-[11px]
+                  text-[10px]
                   font-semibold
-                  hover:bg-violet-100
+                  text-violet-700
                   transition
-                  disabled:opacity-50
+                  hover:bg-violet-100
                   disabled:cursor-not-allowed
+                  disabled:opacity-50
+
+                  sm:text-[11px]
                 "
               >
                 Verify OTP & Close Complaint
@@ -795,29 +1118,33 @@ export default function ComplaintDetails({
             </div>
           )}
 
-          {/* ===============================================
-              CLOSED MESSAGE
-          =============================================== */}
+          {/* CLOSED MESSAGE */}
 
           {isClosed && (
             <div
               className="
                 rounded-lg
-                bg-green-50
                 border
                 border-green-100
+                bg-green-50
                 px-3
                 py-2.5
+                text-center
                 text-[10px]
                 font-semibold
+                leading-5
                 text-green-700
-                text-center
               "
             >
-              Complaint closed after successful citizen verification.
+              Complaint closed after successful
+              citizen verification.
             </div>
           )}
         </div>
+
+        {/* Bottom spacing */}
+
+        <div className="h-2" />
       </div>
     </div>
   );

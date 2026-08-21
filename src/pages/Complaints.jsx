@@ -9,10 +9,49 @@ import ComplaintDetails from "../components/complaints/ComplaintDetails";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/* =========================================================
+   DEFAULT FILTERS
+========================================================= */
+
+const DEFAULT_FILTERS = {
+  search: "",
+  status: "",
+  category: "",
+  dateFrom: "",
+  dateTo: "",
+};
+
+/* =========================================================
+   DEFAULT PAGINATION
+========================================================= */
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+};
+
+/* =========================================================
+   DEFAULT KPIs
+========================================================= */
+
+const DEFAULT_KPIS = {
+  total: 0,
+  pending: 0,
+  readyForVerification: 0,
+  otpSent: 0,
+  closed: 0,
+};
+
+/* =========================================================
+   COMPLAINTS PAGE
+========================================================= */
+
 export default function Complaints() {
-  /* =========================================================
+  /* =======================================================
      COMPLAINT DATA
-  ========================================================= */
+  ======================================================= */
 
   const [complaints, setComplaints] = useState([]);
 
@@ -20,66 +59,57 @@ export default function Complaints() {
 
   const [error, setError] = useState("");
 
-  /* =========================================================
+  /* =======================================================
      KPI DATA
-  ========================================================= */
+  ======================================================= */
 
-  const [kpis, setKpis] = useState({
-    total: 0,
-    pending: 0,
-    readyForVerification: 0,
-    otpSent: 0,
-    closed: 0,
-  });
+  const [kpis, setKpis] = useState(DEFAULT_KPIS);
 
-  /* =========================================================
+  /* =======================================================
      SELECTED COMPLAINT
-  ========================================================= */
+  ======================================================= */
 
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [selectedComplaint, setSelectedComplaint] =
+    useState(null);
 
-  /* =========================================================
+  /* =======================================================
      SAVE STATE
-  ========================================================= */
+  ======================================================= */
 
-  const [savingComplaint, setSavingComplaint] = useState(false);
+  const [savingComplaint, setSavingComplaint] =
+    useState(false);
 
-  /* =========================================================
+  /* =======================================================
      PAGINATION
-  ========================================================= */
+  ======================================================= */
 
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
 
-  /* =========================================================
+  /* =======================================================
      FILTERS
-  ========================================================= */
+  ======================================================= */
 
-  const [filters, setFilters] = useState({
-    search: "",
-    status: "",
-    category: "",
-    dateFrom: "",
-    dateTo: "",
-  });
+  const [filters, setFilters] =
+    useState(DEFAULT_FILTERS);
 
-  /* =========================================================
+  /* =======================================================
      ADMIN TOKEN
-  ========================================================= */
+  ======================================================= */
 
   const getAdminToken = () => {
     return sessionStorage.getItem("token");
   };
 
-  /* =========================================================
+  /* =======================================================
      FETCH COMPLAINTS
-  ========================================================= */
+  ======================================================= */
 
-  const fetchComplaints = async (page = 1, activeFilters = filters) => {
+  const fetchComplaints = async (
+    page = 1,
+    activeFilters = filters
+  ) => {
     try {
       setLoading(true);
       setError("");
@@ -87,7 +117,9 @@ export default function Complaints() {
       const token = getAdminToken();
 
       if (!token) {
-        throw new Error("Admin authentication token not found.");
+        throw new Error(
+          "Admin authentication token not found."
+        );
       }
 
       const params = new URLSearchParams();
@@ -95,34 +127,59 @@ export default function Complaints() {
       params.set("page", page);
       params.set("limit", 10);
 
-      /* SEARCH */
+      /* ===================================================
+         SEARCH
+      =================================================== */
 
       if (activeFilters.search?.trim()) {
-        params.set("search", activeFilters.search.trim());
+        params.set(
+          "search",
+          activeFilters.search.trim()
+        );
       }
 
-      /* STATUS */
+      /* ===================================================
+         STATUS
+      =================================================== */
 
       if (activeFilters.status) {
-        params.set("status", activeFilters.status);
+        params.set(
+          "status",
+          activeFilters.status
+        );
       }
 
-      /* CATEGORY */
+      /* ===================================================
+         CATEGORY
+      =================================================== */
 
       if (activeFilters.category) {
-        params.set("category", activeFilters.category);
+        params.set(
+          "category",
+          activeFilters.category
+        );
       }
 
-      /* DATE FROM */
+      /* ===================================================
+         DATE FROM
+      =================================================== */
 
       if (activeFilters.dateFrom) {
-        params.set("dateFrom", activeFilters.dateFrom);
+        params.set(
+          "dateFrom",
+          activeFilters.dateFrom
+        );
       }
 
-      /* DATE TO */
+      /* ===================================================
+         DATE TO
+      =================================================== */
 
       if (activeFilters.dateTo) {
-        params.set("dateTo", activeFilters.dateTo);
+        params.set(
+          "dateTo",
+          activeFilters.dateTo
+        );
       }
 
       const response = await fetch(
@@ -134,81 +191,111 @@ export default function Complaints() {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       const result = await response.json();
 
-      if (!response.ok || result.success !== true) {
-        throw new Error(result.message || "Failed to fetch complaints.");
+      if (
+        !response.ok ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to fetch complaints."
+        );
       }
 
-      setComplaints(result.data?.items || []);
+      /* ===================================================
+         UPDATE COMPLAINTS
+      =================================================== */
+
+      setComplaints(
+        result.data?.items || []
+      );
+
+      /* ===================================================
+         UPDATE PAGINATION
+      =================================================== */
 
       setPagination(
-        result.data?.pagination || {
-          page: 1,
-          limit: 10,
-          total: 0,
-          totalPages: 0,
-        },
+        result.data?.pagination ||
+          DEFAULT_PAGINATION
       );
     } catch (err) {
-      console.error("Fetch complaints error:", err);
+      console.error(
+        "Fetch complaints error:",
+        err
+      );
 
-      setError(err.message || "Unable to fetch complaints.");
+      setError(
+        err?.message ||
+          "Unable to fetch complaints."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================================================
+  /* =======================================================
      FETCH KPIs
-  ========================================================= */
+  ======================================================= */
 
   const fetchKPIs = async () => {
     try {
       const token = getAdminToken();
 
       if (!token) {
-        throw new Error("Admin authentication token not found.");
+        throw new Error(
+          "Admin authentication token not found."
+        );
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/complaints/kpis`, {
-        method: "GET",
+      const response = await fetch(
+        `${API_BASE_URL}/api/complaints/kpis`,
+        {
+          method: "GET",
 
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const result = await response.json();
 
-      if (!response.ok || result.success !== true) {
-        throw new Error(result.message || "Failed to fetch complaint KPIs.");
+      if (
+        !response.ok ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to fetch complaint KPIs."
+        );
       }
 
       setKpis(
-        result.data || {
-          total: 0,
-          pending: 0,
-          readyForVerification: 0,
-          otpSent: 0,
-          closed: 0,
-        },
+        result.data || DEFAULT_KPIS
       );
     } catch (err) {
-      console.error("Fetch complaint KPIs error:", err);
+      console.error(
+        "Fetch complaint KPIs error:",
+        err
+      );
     }
   };
 
-  /* =========================================================
-     SAVE COMPLAINT
-  ========================================================= */
+  /* =======================================================
+     SAVE COMPLAINT CHANGES
+  ======================================================= */
 
-  const saveComplaintChanges = async (updates) => {
-    if (!selectedComplaint?.ticket_number) {
+  const saveComplaintChanges = async (
+    updates
+  ) => {
+    if (
+      !selectedComplaint?.ticket_number
+    ) {
       return;
     }
 
@@ -218,19 +305,22 @@ export default function Complaints() {
       const token = getAdminToken();
 
       if (!token) {
-        throw new Error("Admin authentication token not found.");
+        throw new Error(
+          "Admin authentication token not found."
+        );
       }
 
       const response = await fetch(
         `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number,
+          selectedComplaint.ticket_number
         )}`,
         {
           method: "PATCH",
 
           headers: {
             Accept: "application/json",
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
             Authorization: `Bearer ${token}`,
           },
 
@@ -238,201 +328,296 @@ export default function Complaints() {
             status: updates.status,
             remarks: updates.remarks,
           }),
-        },
+        }
       );
 
-      const result = await response.json();
+      const result =
+        await response.json();
 
-      if (!response.ok || result.success !== true) {
-        throw new Error(result.message || "Failed to update complaint.");
+      if (
+        !response.ok ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to update complaint."
+        );
       }
 
-      /* Update selected complaint */
+      /* =================================================
+         UPDATE SELECTED COMPLAINT
+      ================================================= */
 
-      setSelectedComplaint(result.data);
+      setSelectedComplaint(
+        result.data
+      );
 
-      /* Refresh table */
+      /* =================================================
+         REFRESH TABLE
+      ================================================= */
 
-      await fetchComplaints(pagination.page, filters);
+      await fetchComplaints(
+        pagination.page,
+        filters
+      );
 
-      /* Refresh KPI cards */
+      /* =================================================
+         REFRESH KPIs
+      ================================================= */
 
       await fetchKPIs();
 
-      alert("Complaint updated successfully.");
+      alert(
+        "Complaint updated successfully."
+      );
     } catch (err) {
-      console.error("Save complaint changes error:", err);
+      console.error(
+        "Save complaint changes error:",
+        err
+      );
 
-      alert(err.message || "Unable to update complaint.");
+      alert(
+        err?.message ||
+          "Unable to update complaint."
+      );
     } finally {
       setSavingComplaint(false);
     }
   };
 
-  /* =========================================================
+  /* =======================================================
      REQUEST VERIFICATION OTP
-  ========================================================= */
+  ======================================================= */
 
-  const requestVerification = async () => {
-    if (!selectedComplaint?.ticket_number) {
-      return;
-    }
-
-    try {
-      const token = getAdminToken();
-
-      if (!token) {
-        throw new Error("Admin authentication token not found.");
+  const requestVerification =
+    async () => {
+      if (
+        !selectedComplaint?.ticket_number
+      ) {
+        return;
       }
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number,
-        )}/request-verification`,
-        {
-          method: "POST",
-
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || result.success !== true) {
-        throw new Error(result.message || "Failed to request verification.");
-      }
-
-      /*
-       * IMPORTANT:
-       *
-       * We intentionally DO NOT store or expose
-       * the OTP here.
-       *
-       * Backend generates it and sends/stores it
-       * on the citizen side.
-       *
-       * Admin only knows that OTP was sent.
-       */
-
-      /* Refresh table */
-
-      await fetchComplaints(pagination.page, filters);
-
-      /* Refresh KPI cards */
-
-      await fetchKPIs();
-
-      /* Refresh selected complaint */
 
       try {
-        const detailResponse = await fetch(
-          `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-            selectedComplaint.ticket_number,
-          )}`,
-          {
-            method: "GET",
+        const token = getAdminToken();
 
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          },
+        if (!token) {
+          throw new Error(
+            "Admin authentication token not found."
+          );
+        }
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+              selectedComplaint.ticket_number
+            )}/request-verification`,
+            {
+              method: "POST",
+
+              headers: {
+                Accept:
+                  "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (
+          !response.ok ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result.message ||
+              "Failed to request verification."
+          );
+        }
+
+        /* =================================================
+           REFRESH TABLE
+        ================================================= */
+
+        await fetchComplaints(
+          pagination.page,
+          filters
         );
 
-        const detailResult = await detailResponse.json();
+        /* =================================================
+           REFRESH KPIs
+        ================================================= */
 
-        if (detailResponse.ok && detailResult.success === true) {
-          setSelectedComplaint(detailResult.data);
+        await fetchKPIs();
+
+        /* =================================================
+           REFRESH SELECTED COMPLAINT
+        ================================================= */
+
+        try {
+          const detailResponse =
+            await fetch(
+              `${API_BASE_URL}/api/complaints/${encodeURIComponent(
+                selectedComplaint.ticket_number
+              )}`,
+              {
+                method: "GET",
+
+                headers: {
+                  Accept:
+                    "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+          const detailResult =
+            await detailResponse.json();
+
+          if (
+            detailResponse.ok &&
+            detailResult.success === true
+          ) {
+            setSelectedComplaint(
+              detailResult.data
+            );
+          }
+        } catch (detailError) {
+          console.error(
+            "Refresh complaint details error:",
+            detailError
+          );
         }
-      } catch (detailError) {
-        console.error("Refresh complaint details error:", detailError);
+
+        alert(
+          "OTP sent successfully to the citizen."
+        );
+      } catch (err) {
+        console.error(
+          "Request verification error:",
+          err
+        );
+
+        alert(
+          err?.message ||
+            "Unable to request verification OTP."
+        );
       }
+    };
 
-      alert("OTP sent successfully to the citizen.");
-    } catch (err) {
-      console.error("Request verification error:", err);
-
-      alert(err.message || "Unable to request verification OTP.");
-    }
-  };
-
-  /* =========================================================
+  /* =======================================================
      VERIFY OTP
-  ========================================================= */
+  ======================================================= */
 
   const verifyOTP = async (otp) => {
-    if (!selectedComplaint?.ticket_number) {
-      throw new Error("No complaint selected.");
+    if (
+      !selectedComplaint?.ticket_number
+    ) {
+      throw new Error(
+        "No complaint selected."
+      );
     }
 
-    if (!otp || otp.length !== 6) {
-      throw new Error("Please enter a valid 6-digit OTP.");
+    if (
+      !otp ||
+      otp.length !== 6
+    ) {
+      throw new Error(
+        "Please enter a valid 6-digit OTP."
+      );
     }
 
     try {
       const token = getAdminToken();
 
       if (!token) {
-        throw new Error("Admin authentication token not found.");
+        throw new Error(
+          "Admin authentication token not found."
+        );
       }
 
       const response = await fetch(
         `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number,
+          selectedComplaint.ticket_number
         )}/verify`,
         {
           method: "POST",
 
           headers: {
             Accept: "application/json",
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
             Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify({
             otp,
           }),
-        },
+        }
       );
 
-      const result = await response.json();
+      const result =
+        await response.json();
 
-      if (!response.ok || result.success !== true) {
-        throw new Error(result.message || "Failed to verify OTP.");
+      if (
+        !response.ok ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result.message ||
+            "Failed to verify OTP."
+        );
       }
 
-      alert("Complaint closed successfully.");
+      alert(
+        "Complaint closed successfully."
+      );
 
-      /* Refresh table */
+      /* =================================================
+         REFRESH TABLE
+      ================================================= */
 
-      await fetchComplaints(pagination.page, filters);
+      await fetchComplaints(
+        pagination.page,
+        filters
+      );
 
-      /* Refresh KPI cards */
+      /* =================================================
+         REFRESH KPIs
+      ================================================= */
 
       await fetchKPIs();
 
-      /* Close details */
+      /* =================================================
+         CLOSE DETAILS
+      ================================================= */
 
       setSelectedComplaint(null);
 
       return result;
     } catch (err) {
-      console.error("Verify OTP error:", err);
+      console.error(
+        "Verify OTP error:",
+        err
+      );
 
-      alert(err.message || "Unable to verify OTP.");
+      alert(
+        err?.message ||
+          "Unable to verify OTP."
+      );
 
       throw err;
     }
   };
 
-  /* =========================================================
+  /* =======================================================
      FILTER CHANGE
-  ========================================================= */
+  ======================================================= */
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (
+    key,
+    value
+  ) => {
     const nextFilters = {
       ...filters,
       [key]: value,
@@ -440,99 +625,454 @@ export default function Complaints() {
 
     setFilters(nextFilters);
 
-    fetchComplaints(1, nextFilters);
+    fetchComplaints(
+      1,
+      nextFilters
+    );
   };
 
-  /* =========================================================
+  /* =======================================================
      RESET FILTERS
-  ========================================================= */
+  ======================================================= */
 
   const resetFilters = () => {
     const nextFilters = {
-      search: "",
-      status: "",
-      category: "",
-      dateFrom: "",
-      dateTo: "",
+      ...DEFAULT_FILTERS,
     };
 
     setFilters(nextFilters);
 
-    fetchComplaints(1, nextFilters);
+    fetchComplaints(
+      1,
+      nextFilters
+    );
   };
 
-  /* =========================================================
+  /* =======================================================
+     SELECT COMPLAINT
+  ======================================================= */
+
+  const handleSelectComplaint = (
+    complaint
+  ) => {
+    setSelectedComplaint(
+      complaint
+    );
+  };
+
+  /* =======================================================
+     CLOSE COMPLAINT DETAILS
+  ======================================================= */
+
+  const closeComplaintDetails = () => {
+    if (savingComplaint) {
+      return;
+    }
+
+    setSelectedComplaint(null);
+  };
+
+  /* =======================================================
      INITIAL LOAD
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
-    fetchComplaints(1, {
-      search: "",
-      status: "",
-      category: "",
-      dateFrom: "",
-      dateTo: "",
-    });
+    const initialFilters = {
+      ...DEFAULT_FILTERS,
+    };
+
+    fetchComplaints(
+      1,
+      initialFilters
+    );
 
     fetchKPIs();
   }, []);
 
-  /* =========================================================
+  /* =======================================================
+     LOCK BACKGROUND SCROLL ON MOBILE DETAILS
+  ======================================================= */
+
+  useEffect(() => {
+    if (!selectedComplaint) {
+      return;
+    }
+
+    /*
+     * We only need to lock the body while the
+     * mobile details drawer is open.
+     *
+     * Desktop keeps its normal page scrolling.
+     */
+
+    const mediaQuery =
+      window.matchMedia(
+        "(max-width: 1023px)"
+      );
+
+    if (mediaQuery.matches) {
+      const previousOverflow =
+        document.body.style.overflow;
+
+      document.body.style.overflow =
+        "hidden";
+
+      return () => {
+        document.body.style.overflow =
+          previousOverflow;
+      };
+    }
+  }, [selectedComplaint]);
+
+  /* =======================================================
      RENDER
-  ========================================================= */
+  ======================================================= */
 
   return (
-    <div className="flex flex-col h-full bg-[#F8F9FC]">
+    <div
+      className="
+        flex
+        min-h-screen
+        w-full
+        min-w-0
+        flex-col
+        overflow-x-hidden
+        bg-[#F8F9FC]
+      "
+    >
+      {/* ===================================================
+          HEADER
+      =================================================== */}
+
       <Header variant="default" />
 
-      <div className="flex gap-6 px-8 py-6">
-        {/* ===================================================
-            MAIN CONTENT
-        =================================================== */}
+      {/* ===================================================
+          PAGE BODY
+      =================================================== */}
 
-        <div className="flex-1 min-w-0 space-y-5">
-          <ComplaintHeader />
+      <main
+        className="
+          flex
+          min-w-0
+          flex-1
+          flex-col
+        "
+      >
+        {/* =================================================
+            RESPONSIVE CONTENT WRAPPER
+        ================================================= */}
 
-          {/* KPIs */}
+        <div
+          className="
+            flex
+            min-w-0
+            flex-1
+            flex-col
+            gap-5
+            px-4
+            py-5
 
-          <ComplaintKPIs kpis={kpis} />
+            sm:px-5
+            sm:py-6
 
-          {/* FILTERS */}
+            lg:flex-row
+            lg:gap-6
+            lg:px-8
+            lg:py-6
+          "
+        >
+          {/* =================================================
+              MAIN CONTENT
+          ================================================= */}
 
-          <ComplaintFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onReset={resetFilters}
-          />
+          <section
+            className="
+              min-w-0
+              flex-1
+            "
+          >
+            {/* ===============================================
+                PAGE HEADER
+            =============================================== */}
 
-          {/* TABLE */}
+            <ComplaintHeader />
 
-          <ComplaintTable
-            complaints={complaints}
-            loading={loading}
-            error={error}
-            pagination={pagination}
-            onPageChange={(page) => fetchComplaints(page, filters)}
-            onSelectComplaint={(complaint) => {
-              setSelectedComplaint(complaint);
-            }}
-          />
+            {/* ===============================================
+                KPI CARDS
+            =============================================== */}
+
+            <div className="mt-5">
+              <ComplaintKPIs
+                kpis={kpis}
+              />
+            </div>
+
+            {/* ===============================================
+                FILTERS
+            =============================================== */}
+
+            <div className="mt-5">
+              <ComplaintFilters
+                filters={filters}
+                onFilterChange={
+                  handleFilterChange
+                }
+                onReset={
+                  resetFilters
+                }
+              />
+            </div>
+
+            {/* ===============================================
+                COMPLAINT TABLE
+            =============================================== */}
+
+            <div className="mt-5 min-w-0">
+              <ComplaintTable
+                complaints={
+                  complaints
+                }
+                loading={loading}
+                error={error}
+                pagination={
+                  pagination
+                }
+                onPageChange={(
+                  page
+                ) =>
+                  fetchComplaints(
+                    page,
+                    filters
+                  )
+                }
+                onSelectComplaint={
+                  handleSelectComplaint
+                }
+              />
+            </div>
+          </section>
+
+          {/* =================================================
+              DESKTOP COMPLAINT DETAILS
+              
+              >= 1024px
+          ================================================= */}
+
+          <aside
+            className="
+              hidden
+              w-[370px]
+              shrink-0
+              lg:block
+            "
+          >
+            <ComplaintDetails
+              complaint={
+                selectedComplaint
+              }
+              saving={
+                savingComplaint
+              }
+              onRequestVerification={
+                requestVerification
+              }
+              onVerifyOTP={
+                verifyOTP
+              }
+              onSaveChanges={
+                saveComplaintChanges
+              }
+            />
+          </aside>
         </div>
+      </main>
 
-        {/* ===================================================
-            DETAILS
-        =================================================== */}
+      {/* =====================================================
+          MOBILE COMPLAINT DETAILS DRAWER
 
-        <div className="w-[370px] shrink-0">
-          <ComplaintDetails
-            complaint={selectedComplaint}
-            saving={savingComplaint}
-            onRequestVerification={requestVerification}
-            onVerifyOTP={verifyOTP}
-            onSaveChanges={saveComplaintChanges}
+          < 1024px
+      ===================================================== */}
+
+      {selectedComplaint && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[9999]
+            lg:hidden
+          "
+        >
+          {/* ===============================================
+              BACKDROP
+          =============================================== */}
+
+          <button
+            type="button"
+            aria-label="Close complaint details"
+            onClick={
+              closeComplaintDetails
+            }
+            disabled={
+              savingComplaint
+            }
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              cursor-default
+              bg-black/35
+              backdrop-blur-[2px]
+            "
           />
+
+          {/* ===============================================
+              MOBILE DRAWER
+          =============================================== */}
+
+          <aside
+            className="
+              absolute
+              right-0
+              top-0
+              flex
+              h-full
+              w-full
+              max-w-[430px]
+              flex-col
+              overflow-hidden
+              bg-white
+              shadow-2xl
+
+              sm:max-w-[460px]
+            "
+          >
+            {/* =============================================
+                MOBILE DRAWER HEADER
+            ============================================= */}
+
+            <div
+              className="
+                flex
+                shrink-0
+                items-center
+                justify-between
+                border-b
+                border-gray-100
+                bg-white
+                px-4
+                py-3
+                sm:px-5
+              "
+            >
+              <div className="min-w-0">
+                <p
+                  className="
+                    truncate
+                    text-[16px]
+                    font-semibold
+                    text-[#16295A]
+                  "
+                >
+                  Complaint Details
+                </p>
+
+                <p
+                  className="
+                    mt-0.5
+                    truncate
+                    text-[11px]
+                    text-gray-400
+                  "
+                >
+                  {
+                    selectedComplaint.ticket_number
+                  }
+                </p>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={
+                  closeComplaintDetails
+                }
+                disabled={
+                  savingComplaint
+                }
+                className="
+                  ml-3
+                  shrink-0
+                  rounded-lg
+                  p-2
+                  text-gray-400
+                  transition
+                  hover:bg-gray-100
+                  hover:text-gray-700
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* =============================================
+                MOBILE DETAILS CONTENT
+            ============================================= */}
+
+            <div
+              className="
+                min-h-0
+                flex-1
+                overflow-y-auto
+                overflow-x-hidden
+                bg-white
+              "
+            >
+              <ComplaintDetails
+                complaint={
+                  selectedComplaint
+                }
+                saving={
+                  savingComplaint
+                }
+                onRequestVerification={
+                  requestVerification
+                }
+                onVerifyOTP={
+                  verifyOTP
+                }
+                onSaveChanges={
+                  saveComplaintChanges
+                }
+              />
+            </div>
+          </aside>
         </div>
-      </div>
+      )}
     </div>
   );
 }

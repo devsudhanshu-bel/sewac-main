@@ -1,4 +1,8 @@
-import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 /* =========================================================
    STATUS CONFIG
@@ -38,24 +42,108 @@ export default function ComplaintTable({
   onPageChange,
   onSelectComplaint,
 }) {
+  const currentPage = Number(pagination.page) || 1;
+  const limit = Number(pagination.limit) || 10;
+  const total = Number(pagination.total) || 0;
+  const totalPages = Number(pagination.totalPages) || 0;
+
+  const startItem =
+    total === 0
+      ? 0
+      : (currentPage - 1) * limit + 1;
+
+  const endItem =
+    total === 0
+      ? 0
+      : Math.min(currentPage * limit, total);
+
   return (
     <div
       className="
         w-full
-        bg-white
+        min-w-0
+        overflow-hidden
         rounded-2xl
         border
         border-gray-100
+        bg-white
         shadow-[0_6px_20px_rgba(15,23,42,0.04)]
-        overflow-hidden
       "
     >
       {/* =====================================================
-          TABLE
+          TABLE HEADER
       ===================================================== */}
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-3
+          border-b
+          border-gray-100
+          px-4
+          py-3
+          sm:px-5
+        "
+      >
+        <div className="min-w-0">
+          <h2
+            className="
+              truncate
+              text-[13px]
+              font-bold
+              text-[#16295A]
+              sm:text-[14px]
+            "
+          >
+            Complaints
+          </h2>
+
+          <p
+            className="
+              mt-0.5
+              text-[9px]
+              text-gray-400
+              sm:text-[10px]
+            "
+          >
+            {total} complaint{total === 1 ? "" : "s"} found
+          </p>
+        </div>
+
+        {loading && (
+          <span
+            className="
+              shrink-0
+              text-[9px]
+              font-medium
+              text-violet-500
+            "
+          >
+            Updating...
+          </span>
+        )}
+      </div>
+
+      {/* =====================================================
+          TABLE SCROLL AREA
+      ===================================================== */}
+
+      <div
+        className="
+          w-full
+          overflow-x-auto
+          overscroll-x-contain
+        "
+      >
+        <table
+          className="
+            w-full
+            min-w-[900px]
+            border-collapse
+          "
+        >
           {/* =================================================
               HEADER
           ================================================= */}
@@ -64,21 +152,22 @@ export default function ComplaintTable({
             <tr
               className="
                 h-[42px]
-                bg-[#FAFBFD]
                 border-b
                 border-gray-100
+                bg-[#FAFBFD]
               "
             >
               {/* Ticket Number */}
 
               <th
                 className="
+                  w-[115px]
+                  whitespace-nowrap
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Ticket Number
@@ -88,12 +177,13 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[135px]
+                  whitespace-nowrap
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Category
@@ -103,12 +193,12 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[160px]
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Title
@@ -118,29 +208,34 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[120px]
+                  whitespace-nowrap
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
-                <span className="block">Citizen</span>
+                <span className="block">
+                  Citizen
+                </span>
 
-                <span className="block">(Phone)</span>
+                <span className="block">
+                  (Phone)
+                </span>
               </th>
 
               {/* Location */}
 
               <th
                 className="
+                  w-[190px]
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Location
@@ -150,12 +245,13 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[150px]
+                  whitespace-nowrap
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Status
@@ -165,12 +261,13 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[110px]
+                  whitespace-nowrap
                   px-3
                   text-left
                   text-[10px]
                   font-semibold
                   text-gray-500
-                  whitespace-nowrap
                 "
               >
                 Created At
@@ -180,6 +277,7 @@ export default function ComplaintTable({
 
               <th
                 className="
+                  w-[70px]
                   px-3
                   text-center
                   text-[10px]
@@ -204,13 +302,30 @@ export default function ComplaintTable({
                 <td
                   colSpan={8}
                   className="
-                    py-10
+                    h-[180px]
+                    px-4
                     text-center
                     text-[11px]
                     text-gray-500
                   "
                 >
-                  Loading complaints...
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div
+                      className="
+                        h-5
+                        w-5
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-violet-200
+                        border-t-violet-600
+                      "
+                    />
+
+                    <span>
+                      Loading complaints...
+                    </span>
+                  </div>
                 </td>
               </tr>
             ) : error ? (
@@ -220,7 +335,8 @@ export default function ComplaintTable({
                 <td
                   colSpan={8}
                   className="
-                    py-10
+                    h-[180px]
+                    px-4
                     text-center
                     text-[11px]
                     text-red-500
@@ -236,7 +352,8 @@ export default function ComplaintTable({
                 <td
                   colSpan={8}
                   className="
-                    py-10
+                    h-[180px]
+                    px-4
                     text-center
                     text-[11px]
                     text-gray-500
@@ -249,33 +366,35 @@ export default function ComplaintTable({
               /* ================= DATA ================= */
 
               complaints.map((complaint) => {
-                const status = statusConfig[complaint.status];
+                const status =
+                  statusConfig[complaint.status];
 
                 return (
                   <tr
                     key={complaint.ticket_number}
                     className="
-                      h-[58px]
+                      min-h-[58px]
                       border-b
                       border-gray-100
-                      hover:bg-[#FAF8FF]
                       transition-colors
+                      hover:bg-[#FAF8FF]
                     "
                   >
                     {/* =====================================
                         TICKET
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <span
                         className="
+                          whitespace-nowrap
                           text-[10px]
                           font-semibold
                           text-[#16295A]
-                          whitespace-nowrap
                         "
                       >
-                        {complaint.ticket_number}
+                        {complaint.ticket_number ||
+                          "—"}
                       </span>
                     </td>
 
@@ -283,22 +402,29 @@ export default function ComplaintTable({
                         CATEGORY
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <span
                         className="
                           inline-flex
+                          max-w-[120px]
                           items-center
+                          overflow-hidden
+                          text-ellipsis
+                          whitespace-nowrap
+                          rounded-md
+                          bg-gray-100
                           px-2
                           py-1
-                          rounded-md
                           text-[9px]
                           font-semibold
-                          whitespace-nowrap
-                          bg-gray-100
                           text-gray-700
                         "
+                        title={
+                          complaint.category || ""
+                        }
                       >
-                        {complaint.category || "—"}
+                        {complaint.category ||
+                          "—"}
                       </span>
                     </td>
 
@@ -306,16 +432,20 @@ export default function ComplaintTable({
                         TITLE
                     ===================================== */}
 
-                    <td className="px-3 max-w-[150px]">
+                    <td className="px-3 py-3">
                       <span
                         className="
                           block
+                          max-w-[145px]
+                          truncate
                           text-[10px]
                           font-medium
                           leading-4
                           text-[#16295A]
                         "
-                        title={complaint.title || ""}
+                        title={
+                          complaint.title || ""
+                        }
                       >
                         {complaint.title || "—"}
                       </span>
@@ -325,15 +455,16 @@ export default function ComplaintTable({
                         PHONE
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <span
                         className="
+                          whitespace-nowrap
                           text-[10px]
                           text-[#16295A]
-                          whitespace-nowrap
                         "
                       >
-                        {complaint.phone_number || "—"}
+                        {complaint.phone_number ||
+                          "—"}
                       </span>
                     </td>
 
@@ -341,16 +472,18 @@ export default function ComplaintTable({
                         LOCATION
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <span
                         className="
+                          block
+                          max-w-[175px]
+                          truncate
                           text-[10px]
                           text-[#16295A]
-                          block
-                          max-w-[180px]
-                          truncate
                         "
-                        title={complaint.address || ""}
+                        title={
+                          complaint.address || ""
+                        }
                       >
                         {complaint.address || "—"}
                       </span>
@@ -360,21 +493,34 @@ export default function ComplaintTable({
                         STATUS
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <span
                         className={`
                           inline-flex
+                          max-w-[140px]
                           items-center
+                          overflow-hidden
+                          text-ellipsis
+                          whitespace-nowrap
+                          rounded-md
                           px-2
                           py-1
-                          rounded-md
                           text-[9px]
                           font-semibold
-                          whitespace-nowrap
-                          ${status?.className || "bg-gray-100 text-gray-700"}
+                          ${
+                            status?.className ||
+                            "bg-gray-100 text-gray-700"
+                          }
                         `}
+                        title={
+                          status?.label ||
+                          complaint.status ||
+                          ""
+                        }
                       >
-                        {status?.label || complaint.status || "—"}
+                        {status?.label ||
+                          complaint.status ||
+                          "—"}
                       </span>
                     </td>
 
@@ -382,17 +528,19 @@ export default function ComplaintTable({
                         CREATED AT
                     ===================================== */}
 
-                    <td className="px-3">
+                    <td className="px-3 py-3">
                       <div
                         className="
-                          text-[10px]
-                          text-[#16295A]
-                          leading-4
                           whitespace-nowrap
+                          text-[10px]
+                          leading-4
+                          text-[#16295A]
                         "
                       >
                         {complaint.created_at
-                          ? new Date(complaint.created_at).toLocaleDateString(
+                          ? new Date(
+                              complaint.created_at,
+                            ).toLocaleDateString(
                               "en-IN",
                               {
                                 day: "2-digit",
@@ -408,29 +556,36 @@ export default function ComplaintTable({
                         ACTION
                     ===================================== */}
 
-                    <td className="px-3 text-center">
+                    <td className="px-3 py-3 text-center">
                       <button
                         type="button"
-                        onClick={() => onSelectComplaint?.(complaint)}
+                        onClick={() =>
+                          onSelectComplaint?.(
+                            complaint,
+                          )
+                        }
                         title="View complaint"
                         className="
-                          w-7
+                          mx-auto
+                          flex
                           h-7
+                          w-7
+                          items-center
+                          justify-center
                           rounded-lg
                           border
                           border-violet-200
                           bg-white
                           text-violet-600
-                          flex
-                          items-center
-                          justify-center
-                          mx-auto
-                          hover:bg-violet-50
-                          hover:border-violet-300
                           transition
+                          hover:border-violet-300
+                          hover:bg-violet-50
                         "
                       >
-                        <Eye size={14} strokeWidth={2} />
+                        <Eye
+                          size={14}
+                          strokeWidth={2}
+                        />
                       </button>
                     </td>
                   </tr>
@@ -447,49 +602,38 @@ export default function ComplaintTable({
 
       <div
         className="
-          h-[58px]
-          px-4
           flex
+          min-h-[58px]
+          flex-col
           items-center
           justify-between
+          gap-3
+          px-4
+          py-3
+          sm:flex-row
         "
       >
         {/* ================= RESULT COUNT ================= */}
 
         <p
           className="
+            text-center
             text-[10px]
             text-gray-500
+            sm:text-left
           "
         >
           Showing{" "}
-          <span
-            className="
-              font-medium
-              text-[#16295A]
-            "
-          >
-            {pagination.total === 0
-              ? 0
-              : (pagination.page - 1) * pagination.limit + 1}
+          <span className="font-medium text-[#16295A]">
+            {startItem}
           </span>{" "}
           to{" "}
-          <span
-            className="
-              font-medium
-              text-[#16295A]
-            "
-          >
-            {Math.min(pagination.page * pagination.limit, pagination.total)}
+          <span className="font-medium text-[#16295A]">
+            {endItem}
           </span>{" "}
           of{" "}
-          <span
-            className="
-              font-medium
-              text-[#16295A]
-            "
-          >
-            {pagination.total}
+          <span className="font-medium text-[#16295A]">
+            {total}
           </span>{" "}
           complaints
         </p>
@@ -499,6 +643,7 @@ export default function ComplaintTable({
         <div
           className="
             flex
+            shrink-0
             items-center
             gap-1.5
           "
@@ -507,22 +652,26 @@ export default function ComplaintTable({
 
           <button
             type="button"
-            disabled={pagination.page <= 1}
-            onClick={() => onPageChange?.(pagination.page - 1)}
+            disabled={currentPage <= 1}
+            onClick={() =>
+              onPageChange?.(
+                currentPage - 1,
+              )
+            }
+            aria-label="Previous page"
             className={`
-              w-7
-              h-7
-              rounded-lg
               flex
+              h-7
+              w-7
               items-center
               justify-center
+              rounded-lg
               transition
-
               ${
-                pagination.page <= 1
+                currentPage <= 1
                   ? `
-                    text-gray-300
                     cursor-not-allowed
+                    text-gray-300
                   `
                   : `
                     text-[#16295A]
@@ -536,45 +685,54 @@ export default function ComplaintTable({
 
           {/* Current Page */}
 
-          <button
-            type="button"
-            disabled
+          <div
             className="
-              w-7
+              flex
               h-7
+              min-w-7
+              items-center
+              justify-center
               rounded-lg
               bg-gradient-to-r
               from-violet-600
               to-fuchsia-600
-              text-white
+              px-2
               text-[10px]
               font-semibold
-              cursor-default
+              text-white
             "
           >
-            {pagination.page || 1}
-          </button>
+            {currentPage}
+          </div>
 
           {/* Next */}
 
           <button
             type="button"
-            disabled={pagination.page >= pagination.totalPages}
-            onClick={() => onPageChange?.(pagination.page + 1)}
+            disabled={
+              totalPages === 0 ||
+              currentPage >= totalPages
+            }
+            onClick={() =>
+              onPageChange?.(
+                currentPage + 1,
+              )
+            }
+            aria-label="Next page"
             className={`
-              w-7
-              h-7
-              rounded-lg
               flex
+              h-7
+              w-7
               items-center
               justify-center
+              rounded-lg
               transition
-
               ${
-                pagination.page >= pagination.totalPages
+                totalPages === 0 ||
+                currentPage >= totalPages
                   ? `
-                    text-gray-300
                     cursor-not-allowed
+                    text-gray-300
                   `
                   : `
                     text-[#16295A]
