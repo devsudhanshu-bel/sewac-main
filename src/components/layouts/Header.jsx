@@ -99,7 +99,6 @@ function Dropdown({
   const [open, setOpen] = useState(false);
 
   const wrapperRef = useRef(null);
-
   const menuRef = useRef(null);
 
   /* =======================================================
@@ -228,8 +227,11 @@ function Dropdown({
             border
             border-gray-100
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-            overflow-hidden
             z-[10000]
+
+            scrollbar-thin
+            scrollbar-thumb-violet-300
+            scrollbar-track-transparent
           "
         >
           {options.length === 0 ? (
@@ -246,9 +248,7 @@ function Dropdown({
           ) : (
             options.map((item, index) => {
               const label = getOptionLabel(item);
-
               const key = getOptionKey(item, index);
-
               const isSelected = label === value;
 
               return (
@@ -260,18 +260,18 @@ function Dropdown({
                     setOpen(false);
                   }}
                   className="
-                      w-full
-                      px-4
-                      py-2.5
-                      flex
-                      items-center
-                      justify-between
-                      text-left
-                      text-[12px]
-                      text-[#16295A]
-                      hover:bg-violet-50
-                      transition
-                    "
+                    w-full
+                    px-4
+                    py-2.5
+                    flex
+                    items-center
+                    justify-between
+                    text-left
+                    text-[12px]
+                    text-[#16295A]
+                    hover:bg-violet-50
+                    transition
+                  "
                 >
                   <span className="truncate">{label}</span>
 
@@ -279,9 +279,9 @@ function Dropdown({
                     <Check
                       size={14}
                       className="
-                          shrink-0
-                          text-violet-600
-                        "
+                        shrink-0
+                        text-violet-600
+                      "
                     />
                   )}
                 </button>
@@ -542,6 +542,42 @@ export default function Header({
   };
 
   /* =========================================================
+     DATE FORMAT
+  ========================================================= */
+
+  /*
+   * IMPORTANT:
+   * Use local date values instead of toISOString()
+   * when sending the selected date back to the parent.
+   *
+   * This prevents timezone-related one-day shifts.
+   */
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  /* =========================================================
+     DATE CHANGE HANDLER
+  ========================================================= */
+
+  const handleDateChange = (date) => {
+    if (!date) {
+      return;
+    }
+
+    const formattedDate = formatLocalDate(date);
+
+    setSelectedDate(formattedDate);
+  };
+
+  /* =========================================================
      LANGUAGE HANDLER
   ========================================================= */
 
@@ -574,10 +610,10 @@ export default function Header({
           sm:w-[155px]
           2xl:w-[118px]
         "
-        value={selectedCity?.city_name || t("filters.city")}
+        value={selectedCity?.city_name || t("filters.city", "Select City")}
         options={cities}
         onChange={setSelectedCity}
-        placeholder={t("filters.city")}
+        placeholder={t("filters.city", "Select City")}
         getLabel={(city) => city?.city_name || ""}
         getKey={(city) => city?.city_id}
       />
@@ -592,10 +628,10 @@ export default function Header({
           sm:w-[235px]
           2xl:w-[200px]
         "
-        value={selectedZone?.zone_name || t("filters.zone")}
+        value={selectedZone?.zone_name || t("filters.zone", "Select Zone")}
         options={zones}
         onChange={setSelectedZone}
-        placeholder={t("filters.zone")}
+        placeholder={t("filters.zone", "Select Zone")}
         getLabel={(zone) => zone?.zone_name || ""}
         getKey={(zone) => zone?.zone_id}
       />
@@ -840,11 +876,8 @@ export default function Header({
               DATE
           ================================================= */}
 
-          <div className="relative">
-            <Calendar
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-            />
+          <div className="relative shrink-0">
+            <Calendar value={selectedDateObj} onChange={handleDateChange} />
           </div>
 
           {/* =================================================
@@ -862,6 +895,7 @@ export default function Header({
                 rounded-xl
                 border
                 border-gray-200
+                shrink-0
               "
             >
               {/* =============================================
@@ -924,7 +958,13 @@ export default function Header({
               LANGUAGE
           ================================================= */}
 
-          <div ref={languageRef} className="relative">
+          <div
+            ref={languageRef}
+            className="
+              relative
+              shrink-0
+            "
+          >
             <button
               type="button"
               onClick={() => setLanguageOpen(!languageOpen)}
@@ -991,17 +1031,17 @@ export default function Header({
                     key={item.code}
                     onClick={() => handleLanguageChange(item.code)}
                     className="
-                        w-full
-                        px-4
-                        py-3
-                        flex
-                        items-center
-                        justify-between
-                        text-[12px]
-                        text-[#16295A]
-                        hover:bg-violet-50
-                        transition
-                      "
+                      w-full
+                      px-4
+                      py-3
+                      flex
+                      items-center
+                      justify-between
+                      text-[12px]
+                      text-[#16295A]
+                      hover:bg-violet-50
+                      transition
+                    "
                   >
                     {t(item.translationKey)}
 
