@@ -30,7 +30,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n";
 
 
 /* ============================================================
@@ -56,104 +56,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-
-
-/* ============================================================
-   TRANSLATIONS
-============================================================ */
-
-const translations = {
-  en: {
-    title: "Plant Locations",
-    subtitle: "Waste processing plants",
-    maximize: "Maximize map",
-
-    loading: "Loading plant locations...",
-    error: "Unable to load plants.",
-    empty: "No plant locations available",
-
-    unnamedPlant: "Unnamed Plant",
-    notAssigned: "Not Assigned",
-    zoneUnavailable: "N/A",
-    unknownStatus: "UNKNOWN",
-
-    vehicles: "Vehicles",
-    tonPerDay: "Ton/Day",
-
-    active: "ACTIVE",
-    inactive: "INACTIVE",
-  },
-
-  kn: {
-    title: "ಸಸ್ಯ ಸ್ಥಳಗಳು",
-    subtitle: "ತ್ಯಾಜ್ಯ ಸಂಸ್ಕರಣಾ ಘಟಕಗಳು",
-    maximize: "ನಕ್ಷೆಯನ್ನು ದೊಡ್ಡದಾಗಿಸಿ",
-
-    loading: "ಸಸ್ಯ ಸ್ಥಳಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-    error: "ಸಸ್ಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-    empty: "ಯಾವುದೇ ಸಸ್ಯ ಸ್ಥಳಗಳು ಲಭ್ಯವಿಲ್ಲ",
-
-    unnamedPlant: "ಹೆಸರಿಲ್ಲದ ಸಸ್ಯ",
-    notAssigned: "ನಿಯೋಜಿಸಲಾಗಿಲ್ಲ",
-    zoneUnavailable: "ಲಭ್ಯವಿಲ್ಲ",
-    unknownStatus: "ಅಜ್ಞಾತ",
-
-    vehicles: "ವಾಹನಗಳು",
-    tonPerDay: "ಟನ್/ದಿನ",
-
-    active: "ಸಕ್ರಿಯ",
-    inactive: "ನಿಷ್ಕ್ರಿಯ",
-  },
-
-  hi: {
-    title: "प्लांट स्थान",
-    subtitle: "कचरा प्रसंस्करण संयंत्र",
-    maximize: "मानचित्र बड़ा करें",
-
-    loading: "प्लांट स्थान लोड हो रहे हैं...",
-    error: "प्लांट लोड नहीं हो सके।",
-    empty: "कोई प्लांट स्थान उपलब्ध नहीं है",
-
-    unnamedPlant: "अनाम प्लांट",
-    notAssigned: "नियुक्त नहीं",
-    zoneUnavailable: "उपलब्ध नहीं",
-    unknownStatus: "अज्ञात",
-
-    vehicles: "वाहन",
-    tonPerDay: "टन/दिन",
-
-    active: "सक्रिय",
-    inactive: "निष्क्रिय",
-  },
-};
-
-
-/* ============================================================
-   LANGUAGE HELPER
-============================================================ */
-
-function normalizeLanguage(language) {
-  const value =
-    String(language || "en")
-      .toLowerCase()
-      .trim();
-
-  if (
-    value === "kn" ||
-    value === "kannada"
-  ) {
-    return "kn";
-  }
-
-  if (
-    value === "hi" ||
-    value === "hindi"
-  ) {
-    return "hi";
-  }
-
-  return "en";
-}
 
 
 /* ============================================================
@@ -229,7 +131,9 @@ function getLongitude(plant) {
    FIT MAP TO PLANTS
 ============================================================ */
 
-function FitBounds({ plants }) {
+function FitBounds({
+  plants,
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -246,11 +150,13 @@ function FitBounds({ plants }) {
       return;
     }
 
-    const bounds = L.latLngBounds(
-      plants.map(
-        (plant) => plant.position
-      )
-    );
+    const bounds =
+      L.latLngBounds(
+        plants.map(
+          (plant) =>
+            plant.position
+        )
+      );
 
     if (!bounds.isValid()) {
       return;
@@ -335,45 +241,39 @@ export default function Plants({
 }) {
 
   /* ==========================================================
-     GLOBAL LANGUAGE
+     LANGUAGE
   ========================================================== */
 
-  const languageContext =
-    useLanguage();
-
-  const currentLanguage =
-    normalizeLanguage(
-      languageContext?.language ??
-      languageContext?.lang ??
-      "en"
-    );
-
-  const t =
-    translations[
-      currentLanguage
-    ] || translations.en;
+  const {
+    t,
+  } = useLanguage();
 
 
   /* ==========================================================
      STATE
   ========================================================== */
 
-  const [fetchedPlants, setFetchedPlants] =
-    useState([]);
+  const [
+    fetchedPlants,
+    setFetchedPlants,
+  ] = useState([]);
 
-  const [plantsLoading, setPlantsLoading] =
-    useState(false);
+  const [
+    plantsLoading,
+    setPlantsLoading,
+  ] = useState(false);
 
-  const [plantsError, setPlantsError] =
-    useState("");
+  const [
+    plantsError,
+    setPlantsError,
+  ] = useState("");
 
   const abortRef =
     useRef(null);
 
 
   /* ==========================================================
-     USE PARENT DATA WHEN AVAILABLE.
-     OTHERWISE FETCH DIRECTLY.
+     FETCH PLANTS WHEN PARENT DATA IS NOT PROVIDED
   ========================================================== */
 
   useEffect(() => {
@@ -384,11 +284,16 @@ export default function Plants({
      */
 
     if (
-      Array.isArray(incomingPlants) &&
+      Array.isArray(
+        incomingPlants
+      ) &&
       incomingPlants.length > 0
     ) {
+
       setFetchedPlants([]);
+
       setPlantsError("");
+
       setPlantsLoading(false);
 
       return;
@@ -397,7 +302,7 @@ export default function Plants({
 
     /*
      * Parent supplied no plant data.
-     * Fetch the same endpoint used by the Plants page.
+     * Fetch directly from the plants endpoint.
      */
 
     abortRef.current?.abort();
@@ -408,18 +313,22 @@ export default function Plants({
     abortRef.current =
       controller;
 
+
     const loadPlants =
       async () => {
 
         try {
 
           setPlantsLoading(true);
+
           setPlantsError("");
+
 
           console.log(
             "🌱 PLANTS MAP REQUEST:",
             PLANTS_ENDPOINT
           );
+
 
           const response =
             await fetch(
@@ -438,48 +347,67 @@ export default function Plants({
               }
             );
 
-          if (!response.ok) {
+
+          if (
+            !response.ok
+          ) {
+
             throw new Error(
               `Plants request failed with status ${response.status}`
             );
+
           }
+
 
           const result =
             await response.json();
+
 
           console.log(
             "🌱 PLANTS MAP RESPONSE:",
             result
           );
 
+
           if (
             result?.success ===
             false
           ) {
+
             throw new Error(
               result.message ||
-                t.error
+                t(
+                  "plants.errors.serverConnection",
+                  "Unable to fetch plants."
+                )
             );
+
           }
+
 
           const loadedPlants =
             extractPlants(
               result
             );
 
+
           console.log(
             "🌱 PLANTS MAP LOADED:",
             loadedPlants.length
           );
 
+
           if (
             loadedPlants.length > 0
           ) {
+
             console.log(
               "🌱 FIRST PLANT:",
               loadedPlants[0]
             );
+
           }
+
 
           setFetchedPlants(
             loadedPlants
@@ -496,18 +424,24 @@ export default function Plants({
             return;
           }
 
+
           console.error(
             "❌ PLANTS MAP ERROR:",
             requestError
           );
 
+
           setFetchedPlants(
             []
           );
 
+
           setPlantsError(
             requestError?.message ||
-              t.error
+              t(
+                "plants.errors.serverConnection",
+                "Unable to load plants."
+              )
           );
 
         } finally {
@@ -515,12 +449,15 @@ export default function Plants({
           if (
             !controller.signal.aborted
           ) {
+
             setPlantsLoading(
               false
             );
+
           }
 
         }
+
       };
 
 
@@ -533,7 +470,7 @@ export default function Plants({
 
   }, [
     incomingPlants,
-    t.error,
+    t,
   ]);
 
 
@@ -542,7 +479,9 @@ export default function Plants({
   ========================================================== */
 
   const plants =
-    Array.isArray(incomingPlants) &&
+    Array.isArray(
+      incomingPlants
+    ) &&
     incomingPlants.length > 0
       ? incomingPlants
       : fetchedPlants;
@@ -594,7 +533,10 @@ export default function Plants({
         )
 
         .map(
-          (plant, index) => {
+          (
+            plant,
+            index
+          ) => {
 
             const latitude =
               Number(
@@ -610,6 +552,7 @@ export default function Plants({
                 )
               );
 
+
             return {
 
               id:
@@ -620,25 +563,31 @@ export default function Plants({
                 plant?.plant_name ||
                 plant?.plantName ||
                 plant?.name ||
-                t.unnamedPlant,
+                t(
+                  "plants.map.unnamedPlant",
+                  "Unnamed Plant"
+                ),
 
               zone:
                 plant?.zone ||
                 plant?.zone_name ||
                 plant?.zoneName ||
-                t.zoneUnavailable,
+                "N/A",
 
               manager:
                 plant?.plant_manager ||
                 plant?.plantManager ||
                 plant?.manager ||
-                t.notAssigned,
+                t(
+                  "plants.map.notAssigned",
+                  "Not Assigned"
+                ),
 
               capacity:
                 plant?.capacity_ton_per_day ??
                 plant?.capacityTonPerDay ??
                 plant?.capacity ??
-                t.zoneUnavailable,
+                "N/A",
 
               vehicles:
                 plant?.vehicles_enrolled ??
@@ -648,7 +597,7 @@ export default function Plants({
 
               status:
                 plant?.status ||
-                t.unknownStatus,
+                "UNKNOWN",
 
               position: [
                 latitude,
@@ -656,8 +605,8 @@ export default function Plants({
               ],
 
               latitude,
-              longitude,
 
+              longitude,
             };
           }
         );
@@ -669,79 +618,126 @@ export default function Plants({
 
 
   /* ==========================================================
+     STATUS HELPER
+  ========================================================== */
+
+  const getStatusLabel =
+    (status) => {
+
+      const normalized =
+        String(
+          status || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      if (
+        normalized ===
+        "ACTIVE"
+      ) {
+
+        return t(
+          "common.active",
+          "Active"
+        );
+
+      }
+
+
+      if (
+        normalized ===
+        "INACTIVE"
+      ) {
+
+        return t(
+          "common.inactive",
+          "Inactive"
+        );
+
+      }
+
+
+      return status ||
+        t(
+          "plants.map.unknown",
+          "Unknown"
+        );
+    };
+
+
+  /* ==========================================================
      RENDER
   ========================================================== */
 
   return (
+
     <section
       className="
+        mt-8
         w-full
-        box-border
-        rounded-[14px]
-        sm:rounded-[16px]
-        md:rounded-[18px]
+        overflow-hidden
+        rounded-2xl
         border
-        border-[#dce4ec]
+        border-[#DCE4EC]
         bg-white
-        p-2
-        sm:p-3
-        md:p-[14px]
-        shadow-[0_4px_18px_rgba(31,45,61,0.05)]
+        shadow-sm
+        box-border
       "
     >
 
-      {/* ====================================================
+      {/* =====================================================
           HEADER
-      ==================================================== */}
+      ===================================================== */}
 
       <div
         className="
-          mb-2
-          sm:mb-3
           flex
-          min-w-0
+          min-h-[76px]
+          w-full
           items-center
           justify-between
-          gap-2
-          sm:gap-3
+          gap-4
+          px-4
+          py-3
+          sm:px-5
+          md:px-6
         "
       >
 
-        {/* LEFT SIDE */}
+        {/* LEFT */}
 
         <div
           className="
             flex
             min-w-0
             items-center
-            gap-2
-            sm:gap-3
+            gap-3
           "
         >
 
           <div
             className="
               flex
-              h-9
-              w-9
+              h-10
+              w-10
               shrink-0
               items-center
               justify-center
-              rounded-lg
-              bg-[#f4f7fa]
-              sm:h-10
-              sm:w-10
-              sm:rounded-xl
+              rounded-xl
+              bg-[#F2F6FA]
+              sm:h-11
+              sm:w-11
             "
           >
 
             <Factory
               className="
-                h-5
-                w-5
-                text-[#617b98]
-                sm:h-[23px]
-                sm:w-[23px]
+                h-6
+                w-6
+                text-[#617B98]
+                sm:h-7
+                sm:w-7
               "
               strokeWidth={1.8}
             />
@@ -758,31 +754,40 @@ export default function Plants({
             <div
               className="
                 truncate
-                text-[15px]
+                text-[16px]
                 font-bold
                 leading-tight
-                text-[#34475b]
-                sm:text-[17px]
+                text-[#34475B]
+                sm:text-[18px]
                 md:text-[19px]
               "
             >
-              {t.title}
+
+              {t(
+                "plants.map.title",
+                "Plant Locations"
+              )}
+
             </div>
 
 
             <div
               className="
-                mt-[2px]
+                mt-1
                 truncate
-                text-[9px]
+                text-[10px]
                 font-semibold
                 leading-tight
-                text-[#8aa1bb]
-                sm:text-[10px]
-                md:text-[11px]
+                text-[#8AA1BB]
+                sm:text-[11px]
               "
             >
-              {t.subtitle}
+
+              {t(
+                "plants.map.subtitle",
+                "Waste processing plants"
+              )}
+
             </div>
 
           </div>
@@ -790,49 +795,46 @@ export default function Plants({
         </div>
 
 
-        {/* MAXIMIZE BUTTON */}
+        {/* MAXIMIZE */}
 
         <button
           type="button"
           className="
             flex
-            h-8
-            w-8
+            h-9
+            w-9
             shrink-0
             items-center
             justify-center
             rounded-lg
             border
-            border-[#dce4ec]
+            border-[#DCE4EC]
             bg-white
-            text-[#52677c]
+            text-[#52677C]
             transition
-            duration-200
-            hover:border-[#b8c9d9]
-            hover:bg-[#f6f9fb]
+            hover:border-[#B8C9D9]
+            hover:bg-[#F6F9FB]
             active:scale-95
-            sm:h-9
-            sm:w-9
-            sm:rounded-[10px]
-            md:h-[38px]
-            md:w-[38px]
+            sm:h-10
+            sm:w-10
           "
           onClick={() => {
             /*
-             * Fullscreen behaviour can be added here later.
+             * Fullscreen behaviour can be added later.
              */
           }}
-          title={t.maximize}
-          aria-label={t.maximize}
+          title={t(
+            "plants.map.maximize",
+            "Maximize map"
+          )}
+          aria-label={t(
+            "plants.map.maximize",
+            "Maximize map"
+          )}
         >
 
           <Maximize2
-            className="
-              h-[15px]
-              w-[15px]
-              sm:h-[17px]
-              sm:w-[17px]
-            "
+            size={17}
           />
 
         </button>
@@ -840,21 +842,23 @@ export default function Plants({
       </div>
 
 
-      {/* ====================================================
+      {/* =====================================================
           MAP
-      ==================================================== */}
+      ===================================================== */}
 
       <div
         className="
           relative
+          h-[430px]
           w-full
           overflow-hidden
-          rounded-[12px]
-          border
-          border-[#dce4ec]
-          bg-[#eef1f3]
-          sm:rounded-[15px]
-          md:rounded-[18px]
+          rounded-b-2xl
+          border-t
+          border-[#DCE4EC]
+          bg-[#EEF1F3]
+          sm:h-[500px]
+          md:h-[560px]
+          lg:h-[600px]
         "
       >
 
@@ -866,44 +870,10 @@ export default function Plants({
           zoom={13}
           zoomControl={false}
           className="
-            !h-[380px]
+            !h-full
             !w-full
-            sm:!h-[450px]
-            md:!h-[520px]
-            lg:!h-[600px]
-
-            [&_.leaflet-tile-pane]:[filter:saturate(.42)_brightness(1.05)]
-
-            [&_.leaflet-control-zoom]:!ml-2
-            [&_.leaflet-control-zoom]:!mt-2
-            [&_.leaflet-control-zoom]:overflow-hidden
-            [&_.leaflet-control-zoom]:rounded-lg
-            [&_.leaflet-control-zoom]:border
-            [&_.leaflet-control-zoom]:!border-[#d8e1ea]
-            [&_.leaflet-control-zoom]:shadow-[0_3px_12px_rgba(36,53,72,0.08)]
-
-            sm:[&_.leaflet-control-zoom]:!ml-3
-            sm:[&_.leaflet-control-zoom]:!mt-3
-
-            [&_.leaflet-control-zoom_a]:!h-7
-            [&_.leaflet-control-zoom_a]:!w-7
-            [&_.leaflet-control-zoom_a]:!leading-7
-            [&_.leaflet-control-zoom_a]:!bg-white
-            [&_.leaflet-control-zoom_a]:!text-[16px]
-            [&_.leaflet-control-zoom_a]:!text-[#34475b]
-
-            sm:[&_.leaflet-control-zoom_a]:!h-[30px]
-            sm:[&_.leaflet-control-zoom_a]:!w-[30px]
-            sm:[&_.leaflet-control-zoom_a]:!leading-[30px]
-            sm:[&_.leaflet-control-zoom_a]:!text-[17px]
-
-            [&_.leaflet-control-attribution]:!text-[8px]
-            sm:[&_.leaflet-control-attribution]:!text-[9px]
-            [&_.leaflet-control-attribution]:!bg-white/80
           "
         >
-
-          {/* TILE LAYER */}
 
           <TileLayer
             attribution="&copy; OpenStreetMap contributors &copy; CARTO"
@@ -918,19 +888,13 @@ export default function Plants({
           />
 
 
-          {/* MAP SIZE */}
-
           <MapSizeController />
 
-
-          {/* ZOOM */}
 
           <ZoomControl
             position="bottomright"
           />
 
-
-          {/* FIT MAP */}
 
           <FitBounds
             plants={
@@ -939,9 +903,9 @@ export default function Plants({
           />
 
 
-          {/* ==================================================
+          {/* =================================================
               PLANT MARKERS
-          ================================================== */}
+          ================================================= */}
 
           {formattedPlants.map(
             (plant) => (
@@ -956,57 +920,48 @@ export default function Plants({
               >
 
                 <Popup
-                  maxWidth={300}
-                  minWidth={250}
-                  className="plants-popup"
+                  maxWidth={320}
+                  minWidth={260}
                 >
 
                   <div
                     className="
                       w-full
-                      min-w-[220px]
+                      max-w-[290px]
                       p-1
-                      sm:min-w-[250px]
-                      sm:p-2
                     "
                   >
 
-                    {/* POPUP HEADER */}
+                    {/* =======================================
+                        POPUP HEADER
+                    ======================================== */}
 
                     <div
                       className="
-                        mb-3
+                        mb-4
                         flex
                         items-center
-                        gap-2
-                        sm:mb-4
-                        sm:gap-3
+                        gap-3
                       "
                     >
 
                       <div
                         className="
                           flex
-                          h-10
-                          w-10
+                          h-11
+                          w-11
                           shrink-0
                           items-center
                           justify-center
-                          rounded-lg
+                          rounded-xl
                           bg-violet-100
-                          sm:h-12
-                          sm:w-12
-                          sm:rounded-xl
                         "
                       >
 
                         <Factory
+                          size={23}
                           className="
-                            h-5
-                            w-5
                             text-violet-600
-                            sm:h-6
-                            sm:w-6
                           "
                         />
 
@@ -1021,24 +976,24 @@ export default function Plants({
 
                         <h3
                           className="
-                            max-w-[180px]
                             truncate
-                            text-[14px]
+                            text-[15px]
                             font-bold
-                            text-[#1f2937]
-                            sm:max-w-[210px]
-                            sm:text-[16px]
+                            text-[#172033]
                           "
                         >
-                          {plant.name}
+
+                          {
+                            plant.name
+                          }
+
                         </h3>
 
 
                         <span
                           className={`
-                            text-[10px]
+                            text-xs
                             font-semibold
-                            sm:text-xs
                             ${
                               String(
                                 plant.status
@@ -1053,12 +1008,9 @@ export default function Plants({
                           ●{" "}
 
                           {
-                            String(
+                            getStatusLabel(
                               plant.status
-                            ).toUpperCase() ===
-                            "ACTIVE"
-                              ? t.active
-                              : t.inactive
+                            )
                           }
 
                         </span>
@@ -1068,14 +1020,14 @@ export default function Plants({
                     </div>
 
 
-                    {/* POPUP DETAILS */}
+                    {/* =======================================
+                        POPUP DETAILS
+                    ======================================== */}
 
                     <div
                       className="
-                        space-y-2
-                        text-[11px]
-                        text-[#34475b]
-                        sm:space-y-3
+                        space-y-3
+                        text-[12px]
                         sm:text-[13px]
                       "
                     >
@@ -1085,29 +1037,32 @@ export default function Plants({
                       <div
                         className="
                           flex
+                          min-w-0
                           items-center
                           gap-2
                         "
                       >
 
                         <MapPinned
+                          size={16}
                           className="
-                            h-[14px]
-                            w-[14px]
                             shrink-0
                             text-violet-600
-                            sm:h-4
-                            sm:w-4
                           "
                         />
 
                         <span
                           className="
                             min-w-0
-                            break-words
+                            truncate
+                            text-[#34475B]
                           "
                         >
-                          {plant.zone}
+
+                          {
+                            plant.zone
+                          }
+
                         </span>
 
                       </div>
@@ -1118,29 +1073,32 @@ export default function Plants({
                       <div
                         className="
                           flex
+                          min-w-0
                           items-center
                           gap-2
                         "
                       >
 
                         <User
+                          size={16}
                           className="
-                            h-[14px]
-                            w-[14px]
                             shrink-0
                             text-violet-600
-                            sm:h-4
-                            sm:w-4
                           "
                         />
 
                         <span
                           className="
                             min-w-0
-                            break-words
+                            truncate
+                            text-[#34475B]
                           "
                         >
-                          {plant.manager}
+
+                          {
+                            plant.manager
+                          }
+
                         </span>
 
                       </div>
@@ -1151,25 +1109,37 @@ export default function Plants({
                       <div
                         className="
                           flex
+                          min-w-0
                           items-center
                           gap-2
                         "
                       >
 
                         <Truck
+                          size={16}
                           className="
-                            h-[14px]
-                            w-[14px]
                             shrink-0
                             text-violet-600
-                            sm:h-4
-                            sm:w-4
                           "
                         />
 
-                        <span>
-                          {plant.vehicles}{" "}
-                          {t.vehicles}
+                        <span
+                          className="
+                            min-w-0
+                            truncate
+                            text-[#34475B]
+                          "
+                        >
+
+                          {
+                            plant.vehicles
+                          }{" "}
+
+                          {t(
+                            "plants.map.vehicles",
+                            "Vehicles"
+                          )}
+
                         </span>
 
                       </div>
@@ -1180,25 +1150,37 @@ export default function Plants({
                       <div
                         className="
                           flex
+                          min-w-0
                           items-center
                           gap-2
                         "
                       >
 
                         <Factory
+                          size={16}
                           className="
-                            h-[14px]
-                            w-[14px]
                             shrink-0
                             text-violet-600
-                            sm:h-4
-                            sm:w-4
                           "
                         />
 
-                        <span>
-                          {plant.capacity}{" "}
-                          {t.tonPerDay}
+                        <span
+                          className="
+                            min-w-0
+                            truncate
+                            text-[#34475B]
+                          "
+                        >
+
+                          {
+                            plant.capacity
+                          }{" "}
+
+                          {t(
+                            "plants.map.tonPerDay",
+                            "Ton/Day"
+                          )}
+
                         </span>
 
                       </div>
@@ -1209,30 +1191,36 @@ export default function Plants({
                       <div
                         className="
                           flex
+                          min-w-0
                           items-start
                           gap-2
                         "
                       >
 
                         <MapPinned
+                          size={16}
                           className="
-                            mt-[1px]
-                            h-[14px]
-                            w-[14px]
+                            mt-0.5
                             shrink-0
                             text-violet-600
-                            sm:h-4
-                            sm:w-4
                           "
                         />
 
                         <span
                           className="
                             break-all
+                            text-[#34475B]
                           "
                         >
-                          {plant.latitude},{" "}
-                          {plant.longitude}
+
+                          {
+                            plant.latitude
+                          }
+                          ,{" "}
+                          {
+                            plant.longitude
+                          }
+
                         </span>
 
                       </div>
@@ -1251,118 +1239,152 @@ export default function Plants({
         </MapContainer>
 
 
-        {/* ====================================================
+        {/* =====================================================
             LOADING
-        ==================================================== */}
+        ===================================================== */}
 
         {plantsLoading &&
-          formattedPlants.length ===
-            0 && (
+          formattedPlants.length === 0 && (
 
-          <div
-            className="
-              absolute
-              left-1/2
-              top-1/2
-              z-[2000]
-              max-w-[calc(100%-32px)]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-xl
-              border
-              border-[#dce4ec]
-              bg-white/95
-              px-4
-              py-3
-              text-center
-              text-[11px]
-              font-semibold
-              text-[#667b91]
-              shadow-[0_10px_30px_rgba(30,45,60,0.10)]
-              sm:px-5
-              sm:text-xs
-            "
-          >
-            {t.loading}
-          </div>
+            <div
+              className="
+                absolute
+                inset-0
+                z-[2000]
+                flex
+                items-center
+                justify-center
+                bg-white/40
+                p-4
+              "
+            >
+
+              <div
+                className="
+                  max-w-[calc(100%-32px)]
+                  rounded-xl
+                  border
+                  border-[#DCE4EC]
+                  bg-white/95
+                  px-4
+                  py-3
+                  text-center
+                  text-[11px]
+                  font-semibold
+                  text-[#667B91]
+                  shadow-[0_10px_30px_rgba(30,45,60,0.10)]
+                  sm:px-5
+                  sm:text-xs
+                "
+              >
+
+                {t(
+                  "plants.map.loading",
+                  "Loading plant locations..."
+                )}
+
+              </div>
+
+            </div>
 
         )}
 
 
-        {/* ====================================================
+        {/* =====================================================
             ERROR
-        ==================================================== */}
+        ===================================================== */}
 
         {!plantsLoading &&
           plantsError &&
-          formattedPlants.length ===
-            0 && (
+          formattedPlants.length === 0 && (
 
-          <div
-            className="
-              absolute
-              left-1/2
-              top-1/2
-              z-[2000]
-              max-w-[calc(100%-32px)]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-xl
-              border
-              border-[#dce4ec]
-              bg-white/95
-              px-4
-              py-3
-              text-center
-              text-[11px]
-              font-semibold
-              text-[#667b91]
-              shadow-[0_10px_30px_rgba(30,45,60,0.10)]
-              sm:px-5
-              sm:text-xs
-            "
-          >
-            {plantsError}
-          </div>
+            <div
+              className="
+                absolute
+                inset-0
+                z-[2000]
+                flex
+                items-center
+                justify-center
+                p-4
+              "
+            >
+
+              <div
+                className="
+                  max-w-[calc(100%-32px)]
+                  rounded-xl
+                  border
+                  border-[#DCE4EC]
+                  bg-white/95
+                  px-4
+                  py-3
+                  text-center
+                  text-[11px]
+                  font-semibold
+                  text-red-500
+                  shadow-[0_10px_30px_rgba(30,45,60,0.10)]
+                  sm:px-5
+                  sm:text-xs
+                "
+              >
+
+                {plantsError}
+
+              </div>
+
+            </div>
 
         )}
 
 
-        {/* ====================================================
+        {/* =====================================================
             EMPTY STATE
-        ==================================================== */}
+        ===================================================== */}
 
         {!plantsLoading &&
           !plantsError &&
-          formattedPlants.length ===
-            0 && (
+          formattedPlants.length === 0 && (
 
-          <div
-            className="
-              absolute
-              left-1/2
-              top-1/2
-              z-[2000]
-              max-w-[calc(100%-32px)]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-xl
-              border
-              border-[#dce4ec]
-              bg-white/95
-              px-4
-              py-3
-              text-center
-              text-[11px]
-              font-semibold
-              text-[#667b91]
-              shadow-[0_10px_30px_rgba(30,45,60,0.10)]
-              sm:px-5
-              sm:text-xs
-            "
-          >
-            {t.empty}
-          </div>
+            <div
+              className="
+                absolute
+                inset-0
+                z-[1900]
+                flex
+                items-center
+                justify-center
+                p-4
+              "
+            >
+
+              <div
+                className="
+                  max-w-[calc(100%-32px)]
+                  rounded-xl
+                  border
+                  border-[#DCE4EC]
+                  bg-white/95
+                  px-4
+                  py-3
+                  text-center
+                  text-[11px]
+                  font-semibold
+                  text-[#667B91]
+                  shadow-[0_10px_30px_rgba(30,45,60,0.10)]
+                  sm:px-5
+                  sm:text-xs
+                "
+              >
+
+                {t(
+                  "plants.map.empty",
+                  "No plant locations available"
+                )}
+
+              </div>
+
+            </div>
 
         )}
 

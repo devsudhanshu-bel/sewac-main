@@ -491,7 +491,7 @@ plants: {
     "Monitor all waste processing plants and their operations.",
 
   loading:
-    "Loading Plant Dashboard...",
+    "Loading plants dashboard...",
 
   retry:
     "Retry",
@@ -499,6 +499,15 @@ plants: {
   errors: {
     serverConnection:
       "Unable to connect to the server.",
+
+    createFailed:
+      "Unable to create plant.",
+
+    updateFailed:
+      "Unable to update plant.",
+
+    deleteFailed:
+      "Unable to delete plant.",
   },
 
   kpis: {
@@ -518,7 +527,7 @@ plants: {
       "Total Waste Collected",
 
     allTimeCollection:
-      "All time collection",
+      "All-time collection",
   },
 
   directory: {
@@ -609,10 +618,10 @@ plants: {
       "Longitude",
 
     active:
-      "ACTIVE",
+      "Active",
 
     inactive:
-      "INACTIVE",
+      "Inactive",
 
     cancel:
       "Cancel",
@@ -622,7 +631,7 @@ plants: {
 
     errors: {
       createFailed:
-        "Failed to create plant.",
+        "Unable to create plant.",
     },
   },
 
@@ -667,10 +676,10 @@ plants: {
       "Longitude",
 
     active:
-      "ACTIVE",
+      "Active",
 
     inactive:
-      "INACTIVE",
+      "Inactive",
 
     cancel:
       "Cancel",
@@ -680,7 +689,7 @@ plants: {
 
     errors: {
       updateFailed:
-        "Failed to update plant.",
+        "Unable to update plant.",
     },
   },
 
@@ -699,8 +708,46 @@ plants: {
 
     errors: {
       deleteFailed:
-        "Failed to delete plant.",
+        "Unable to delete plant.",
     },
+  },
+
+  /*
+   * =========================================================
+   * PLANT MAP
+   * =========================================================
+   */
+
+  map: {
+    title:
+      "Plant Locations",
+
+    subtitle:
+      "Waste processing plants",
+
+    maximize:
+      "Maximize map",
+
+    loading:
+      "Loading plant locations...",
+
+    empty:
+      "No plant locations available",
+
+    unnamedPlant:
+      "Unnamed Plant",
+
+    notAssigned:
+      "Not Assigned",
+
+    unknown:
+      "Unknown",
+
+    vehicles:
+      "Vehicles",
+
+    tonPerDay:
+      "Ton/Day",
   },
 },
 
