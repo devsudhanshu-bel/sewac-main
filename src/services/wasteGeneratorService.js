@@ -648,40 +648,29 @@ const getMasterCitizensForWard = async (ward) => {
 */
 
 const getAllWasteGenerators = async (query = {}) => {
-  const page = Number(query.page) || 1;
+  const page = Math.max(1, Number.parseInt(query.page, 10) || 1);
 
-  const limit = Number(query.limit) || 10;
+  const requestedLimit = Number.parseInt(query.limit, 10) || 10;
 
-  const safePage = page < 1 ? 1 : Math.floor(page);
-
-  const safeLimit = limit < 1 ? 10 : Math.min(Math.floor(limit), 50);
+  const limit = [10, 20, 50].includes(requestedLimit) ? requestedLimit : 10;
 
   const search = normalizeSearch(query.search);
 
-  /*
-  |--------------------------------------------------------------------------
-  | REQUIRE COMPLETE HEADER HIERARCHY
-  |--------------------------------------------------------------------------
-  */
-
   const cityId = parseId(query.cityId, "cityId");
-
   const zoneId = parseId(query.zoneId, "zoneId");
-
   const divisionId = parseId(query.divisionId, "divisionId");
-
   const wardId = parseId(query.wardId, "wardId");
 
   /*
   |--------------------------------------------------------------------------
-  | DIRECTORY REQUIRES WARD
+  | REQUIRE COMPLETE HEADER SELECTION
   |--------------------------------------------------------------------------
   |
-  | User requirement:
+  | Directory:
   |
   | City → Zone → Division → Ward
   |
-  | Once Ward is selected, show its master citizens.
+  | We only display citizens after Ward is selected.
   |--------------------------------------------------------------------------
   */
 
@@ -690,77 +679,55 @@ const getAllWasteGenerators = async (query = {}) => {
       wasteGenerators: [],
 
       pagination: {
-        page: safePage,
-
-        limit: safeLimit,
-
+        page: 1,
+        limit,
         total: 0,
-
         totalPages: 0,
-      },
-
-      filter: {
-        cityId,
-
-        zoneId,
-
-        divisionId,
-
-        wardId,
       },
     };
   }
 
   /*
   |--------------------------------------------------------------------------
-  | RESOLVE THE SELECTED WARD
+  | RESOLVE HEADER WARD
   |--------------------------------------------------------------------------
   |
-  | This uses the SAME geographic hierarchy already used by the
-  | working maps.
+  | IMPORTANT:
+  |
+  | master_citizen_data does NOT contain:
+  |
+  | zoneId
+  | divisionId
+  | wardId
+  |
+  | It contains:
+  |
+  | city
+  | ward
+  |
+  | Therefore we use the existing geographic hierarchy ONLY to
+  | determine which ward number was selected.
   |--------------------------------------------------------------------------
   */
 
   const wardScope = await getSelectedWardScope({
     cityId,
-
     zoneId,
-
     divisionId,
-
     wardId,
   });
 
-  const wards = wardScope.wards || [];
-
-  /*
-  |--------------------------------------------------------------------------
-  | SAFETY
-  |--------------------------------------------------------------------------
-  */
+  const wards = Array.isArray(wardScope?.wards) ? wardScope.wards : [];
 
   if (wards.length !== 1) {
     return {
       wasteGenerators: [],
 
       pagination: {
-        page: safePage,
-
-        limit: safeLimit,
-
+        page: 1,
+        limit,
         total: 0,
-
         totalPages: 0,
-      },
-
-      filter: {
-        cityId,
-
-        zoneId,
-
-        divisionId,
-
-        wardId,
       },
     };
   }
@@ -769,11 +736,83 @@ const getAllWasteGenerators = async (query = {}) => {
 
   /*
   |--------------------------------------------------------------------------
-  | READ MASTER CITIZENS
+  | ROBUSTLY GET WARD NUMBER
   |--------------------------------------------------------------------------
   */
 
-  let citizens = await getMasterCitizensForWard(selectedWard);
+  const wardNo =
+    selectedWard.wardNo ??
+    selectedWard.ward_no ??
+    selectedWard.wardNumber ??
+    selectedWard.ward_number;
+
+  if (wardNo === null || wardNo === undefined || String(wardNo).trim() === "") {
+    return {
+      wasteGenerators: [],
+
+      pagination: {
+        page: 1,
+        limit,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+  }
+
+  const wardString = String(wardNo).trim();
+
+  /*
+  |--------------------------------------------------------------------------
+  | MASTER CITIZEN DATA
+  |--------------------------------------------------------------------------
+  |
+  | THIS IS READ ONLY.
+  |
+  | The actual table structure from your DB is:
+  |
+  | phoneNumber
+  | city
+  | ward
+  | area
+  | personName
+  | contactNumber
+  | dryRFID
+  | drySlno
+  | wetRFID
+  | wetSlno
+  | lat
+  | lng
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  let citizens = await masterCitizenPrisma.$queryRaw`
+    SELECT
+      id,
+      "phoneNumber",
+      city,
+      ward,
+      area,
+      "wasteGeneratorTypes",
+      "houseNumber",
+      "floorNumber",
+      "householdType",
+      "personName",
+      "contactNumber",
+      "numberOfPeople",
+      "buildingPhoto",
+      "createdAt",
+      "updatedAt",
+      "dryRFID",
+      "drySlno",
+      "wetRFID",
+      "wetSlno",
+      lat,
+      lng
+    FROM "master_citizen_data"
+    WHERE TRIM(ward) = ${wardString}
+    ORDER BY id DESC
+  `;
 
   /*
   |--------------------------------------------------------------------------
@@ -782,29 +821,59 @@ const getAllWasteGenerators = async (query = {}) => {
   */
 
   if (search) {
-    citizens = citizens.filter((citizen) =>
-      citizenMatchesSearch(citizen, search),
-    );
+    citizens = citizens.filter((citizen) => {
+      const fields = [
+        citizen.personName,
+        citizen.phoneNumber,
+        citizen.contactNumber,
+        citizen.area,
+        citizen.houseNumber,
+        citizen.ward,
+        citizen.dryRFID,
+        citizen.drySlno,
+        citizen.wetRFID,
+        citizen.wetSlno,
+      ];
+
+      return fields.some(
+        (value) =>
+          value !== null &&
+          value !== undefined &&
+          String(value).toLowerCase().includes(search.toLowerCase()),
+      );
+    });
   }
 
   /*
   |--------------------------------------------------------------------------
-  | TOTAL
+  | ADD HEADER HIERARCHY TO RESPONSE ONLY
+  |--------------------------------------------------------------------------
+  |
+  | These values are NOT written into master_citizen_data.
   |--------------------------------------------------------------------------
   */
 
-  const total = citizens.length;
+  citizens = citizens.map((citizen) => ({
+    ...citizen,
 
-  const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
+    cityId,
 
-  /*
-  |--------------------------------------------------------------------------
-  | PAGE SAFETY
-  |--------------------------------------------------------------------------
-  */
+    cityName: selectedWard.cityName ?? wardScope.cityName ?? "Bangalore",
 
-  const effectivePage =
-    totalPages > 0 && safePage > totalPages ? totalPages : safePage;
+    zoneId,
+
+    zoneName: selectedWard.zoneName ?? wardScope.zoneName ?? "N/A",
+
+    divisionId,
+
+    divisionName: selectedWard.divisionName ?? wardScope.divisionName ?? "N/A",
+
+    wardId,
+
+    wardNo: wardString,
+
+    wardName: selectedWard.wardName ?? `Ward ${wardString}`,
+  }));
 
   /*
   |--------------------------------------------------------------------------
@@ -812,21 +881,28 @@ const getAllWasteGenerators = async (query = {}) => {
   |--------------------------------------------------------------------------
   */
 
-  const skip = (effectivePage - 1) * safeLimit;
+  const total = citizens.length;
 
-  const paginated = citizens.slice(skip, skip + safeLimit);
+  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+  const safePage = totalPages > 0 ? Math.min(page, totalPages) : 1;
+
+  const start = (safePage - 1) * limit;
+
+  const paginatedCitizens = citizens.slice(start, start + limit);
 
   /*
   |--------------------------------------------------------------------------
-  | RESPONSE
+  | FINAL RESPONSE
   |--------------------------------------------------------------------------
   */
 
   return {
-    wasteGenerators: paginated,
+    wasteGenerators: paginatedCitizens,
+
     pagination: {
-      page: effectivePage,
-      limit: safeLimit,
+      page: safePage,
+      limit,
       total,
       totalPages,
     },
@@ -836,8 +912,7 @@ const getAllWasteGenerators = async (query = {}) => {
       zoneId,
       divisionId,
       wardId,
-      wardNo: selectedWard.wardNo,
-      wardName: selectedWard.wardName,
+      wardNo: wardString,
     },
   };
 };
