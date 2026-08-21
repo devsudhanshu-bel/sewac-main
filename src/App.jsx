@@ -11,8 +11,13 @@ import Plants from "./pages/Plants";
 import AI from "./pages/AI";
 import Users from "./pages/Users";
 import Users2 from "./pages/Users2";
-import Settings from "./pages/Settings";
 import Complaints from "./pages/Complaints";
+
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD LAYOUT
+|--------------------------------------------------------------------------
+*/
 
 function DashboardLayout() {
   return (
@@ -26,16 +31,25 @@ function DashboardLayout() {
   );
 }
 
+/*
+|--------------------------------------------------------------------------
+| APP
+|--------------------------------------------------------------------------
+*/
+
 export default function App() {
   return (
     <Routes>
-      {/* Authentication */}
-      <Route
-        path="/auth/callback"
-        element={<AuthCallback />}
-      />
+      {/* =========================================================
+          AUTH CALLBACK
+      ========================================================= */}
 
-      {/* Protected Dashboard */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
+      {/* =========================================================
+          PROTECTED DASHBOARD
+      ========================================================= */}
+
       <Route
         path="/dashboard"
         element={
@@ -44,74 +58,88 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route
-          index
-          element={<Navigate to="admin/overview" replace />}
-        />
+        {/* =======================================================
+            DEFAULT DASHBOARD
+        ======================================================= */}
 
-        <Route
-          path="admin/overview"
-          element={<Overview />}
-        />
+        <Route index element={<Navigate to="admin/overview" replace />} />
 
-        <Route
-          path="admin/waste-generators"
-          element={<WasteGenerators />}
-        />
+        {/* =======================================================
+            OVERVIEW
+            All roles
+        ======================================================= */}
 
-        <Route
-          path="admin/vehicles"
-          element={<Vehicles />}
-        />
+        <Route path="admin/overview" element={<Overview />} />
 
-        <Route
-          path="admin/plants"
-          element={<Plants />}
-        />
+        {/* =======================================================
+            WASTE GENERATORS
+            Layer 1 + Layer 2
+            Worker blocked by ProtectedRoute
+        ======================================================= */}
 
+        <Route path="admin/waste-generators" element={<WasteGenerators />} />
 
-        <Route
-          path="admin/ai"
-          element={<AI />}
-        />
+        {/* =======================================================
+            VEHICLES
+            All roles
+        ======================================================= */}
 
-        <Route
-          path="admin/users"
-          element={<Users />}
-        />
+        <Route path="admin/vehicles" element={<Vehicles />} />
 
-        <Route
-          path="admin/users2"
-          element={<Users2 />}
-        />
+        {/* =======================================================
+            PLANTS
+            All roles
+        ======================================================= */}
 
-        <Route
-          path="admin/settings"
-          element={<Settings />}
-        />
+        <Route path="admin/plants" element={<Plants />} />
 
-        <Route 
-          path="admin/complaints"
-          element={<Complaints />}
-        />
+        {/* =======================================================
+            AI
+            Existing route preserved
+        ======================================================= */}
 
-        <Route
-          path="*"
-          element={<Navigate to="admin/overview" replace />}
-        />
+        <Route path="admin/ai" element={<AI />} />
+
+        {/* =======================================================
+            USERS — ADMIN LAYER 1
+            ProtectedRoute checks "users"
+        ======================================================= */}
+
+        <Route path="admin/users" element={<Users />} />
+
+        {/* =======================================================
+            USERS — ADMIN LAYER 2
+            ProtectedRoute checks "users"
+        ======================================================= */}
+
+        <Route path="admin/users2" element={<Users2 />} />
+
+        {/* =======================================================
+            COMPLAINTS
+            Layer 1 + Layer 2
+            Worker blocked by ProtectedRoute
+        ======================================================= */}
+
+        <Route path="admin/complaints" element={<Complaints />} />
+
+        {/* =======================================================
+            UNKNOWN DASHBOARD ROUTE
+        ======================================================= */}
+
+        <Route path="*" element={<Navigate to="admin/overview" replace />} />
       </Route>
 
-      {/* Root Redirect */}
-      <Route
-        path="/"
-        element={<Navigate to="/dashboard" replace />}
-      />
+      {/* =========================================================
+          ROOT
+      ========================================================= */}
 
-      {/* Catch All */}
-      <Route
-        path="*"
-        element={<Navigate to="/dashboard" replace />}
-      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* =========================================================
+          GLOBAL CATCH-ALL
+      ========================================================= */}
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

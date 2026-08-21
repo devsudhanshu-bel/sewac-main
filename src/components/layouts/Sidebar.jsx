@@ -8,17 +8,46 @@ import {
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { gsap } from "gsap";
 
 import SewacLogo from "../../assets/sewac_logo.svg";
 import { useLanguage } from "../../i18n";
+
+/* =========================================================
+   ROLE ACCESS
+========================================================= */
+
+const ROLE_ACCESS = {
+  ADMIN_LAYER_1: {
+    overview: true,
+    waste_generators: true,
+    vehicles: true,
+    plants: true,
+    complaints: true,
+    users: true,
+  },
+
+  ADMIN_LAYER_2: {
+    overview: true,
+    waste_generators: true,
+    vehicles: true,
+    plants: true,
+    complaints: true,
+    users: true,
+  },
+
+  WORKER: {
+    overview: true,
+    waste_generators: false,
+    vehicles: true,
+    plants: true,
+    complaints: false,
+    users: false,
+  },
+};
 
 /* =========================================================
    AUTHENTICATED USER ROLE
@@ -39,19 +68,12 @@ function getAuthenticatedRole() {
     }
 
     const decoded = JSON.parse(
-      atob(
-        payload
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
     );
 
-    return decoded.role || null;
+    return decoded.role ? String(decoded.role).trim().toUpperCase() : null;
   } catch (error) {
-    console.error(
-      "Failed to read authenticated user role:",
-      error
-    );
+    console.error("Failed to read authenticated user role:", error);
 
     return null;
   }
@@ -63,8 +85,11 @@ function getAuthenticatedRole() {
 
 export default function Sidebar() {
   const sidebarRef = useRef(null);
+
   const logoRef = useRef(null);
+
   const navRef = useRef(null);
+
   const logoutRef = useRef(null);
 
   /* =======================================================
@@ -85,6 +110,8 @@ export default function Sidebar() {
 
   const role = getAuthenticatedRole();
 
+  const permissions = ROLE_ACCESS[role] || {};
+
   /* =======================================================
      USERS ROUTE
 
@@ -101,9 +128,10 @@ export default function Sidebar() {
      MENU ITEMS
   ======================================================= */
 
-  const menuItems = [
+  const allMenuItems = [
     {
       key: "overview",
+      permission: "overview",
       path: "/dashboard/admin/overview",
       icon: LayoutDashboard,
       label: t("sidebar.overview"),
@@ -111,6 +139,7 @@ export default function Sidebar() {
 
     {
       key: "wasteGenerators",
+      permission: "waste_generators",
       path: "/dashboard/admin/waste-generators",
       icon: Users,
       label: t("sidebar.wasteGenerators"),
@@ -118,6 +147,7 @@ export default function Sidebar() {
 
     {
       key: "vehicles",
+      permission: "vehicles",
       path: "/dashboard/admin/vehicles",
       icon: Truck,
       label: t("sidebar.vehicles"),
@@ -125,6 +155,7 @@ export default function Sidebar() {
 
     {
       key: "plant",
+      permission: "plants",
       path: "/dashboard/admin/plants",
       icon: Factory,
       label: t("sidebar.plant"),
@@ -132,6 +163,7 @@ export default function Sidebar() {
 
     {
       key: "complaints",
+      permission: "complaints",
       path: "/dashboard/admin/complaints",
       icon: MessageCircle,
       label: t("sidebar.complaints"),
@@ -139,11 +171,22 @@ export default function Sidebar() {
 
     {
       key: "users",
+      permission: "users",
       path: usersPath,
       icon: Users,
       label: t("sidebar.users"),
     },
   ];
+
+  /*
+  |--------------------------------------------------------------------------
+  | ONLY SHOW PERMITTED ITEMS
+  |--------------------------------------------------------------------------
+  */
+
+  const menuItems = allMenuItems.filter(
+    (item) => permissions[item.permission] === true,
+  );
 
   /* =======================================================
      LOGOUT
@@ -152,9 +195,7 @@ export default function Sidebar() {
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace(
-      "https://app-authentication-frontend.onrender.com"
-    );
+    window.location.replace("https://app-authentication-frontend.onrender.com");
   };
 
   /* =======================================================
@@ -170,26 +211,14 @@ export default function Sidebar() {
       setMobileOpen(false);
     };
 
-    window.addEventListener(
-      "sewac-toggle-sidebar",
-      handleToggle
-    );
+    window.addEventListener("sewac-toggle-sidebar", handleToggle);
 
-    window.addEventListener(
-      "sewac-close-sidebar",
-      handleClose
-    );
+    window.addEventListener("sewac-close-sidebar", handleClose);
 
     return () => {
-      window.removeEventListener(
-        "sewac-toggle-sidebar",
-        handleToggle
-      );
+      window.removeEventListener("sewac-toggle-sidebar", handleToggle);
 
-      window.removeEventListener(
-        "sewac-close-sidebar",
-        handleClose
-      );
+      window.removeEventListener("sewac-close-sidebar", handleClose);
     };
   }, []);
 
@@ -204,16 +233,10 @@ export default function Sidebar() {
       }
     }
 
-    window.addEventListener(
-      "keydown",
-      handleEscape
-    );
+    window.addEventListener("keydown", handleEscape);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        handleEscape
-      );
+      window.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
@@ -222,10 +245,7 @@ export default function Sidebar() {
   ======================================================= */
 
   useEffect(() => {
-    if (
-      mobileOpen &&
-      window.innerWidth < 768
-    ) {
+    if (mobileOpen && window.innerWidth < 768) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -247,16 +267,10 @@ export default function Sidebar() {
       }
     }
 
-    window.addEventListener(
-      "resize",
-      handleResize
-    );
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        handleResize
-      );
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -270,9 +284,7 @@ export default function Sidebar() {
         return;
       }
 
-      const navItems = Array.from(
-        navRef.current.children
-      );
+      const navItems = Array.from(navRef.current.children);
 
       const tl = gsap.timeline({
         defaults: {
@@ -280,12 +292,9 @@ export default function Sidebar() {
         },
       });
 
-      /*
-        Do not animate X position here.
-
-        Mobile drawer positioning is controlled
-        completely by Tailwind translate classes.
-      */
+      /* =================================================
+           SIDEBAR
+        ================================================= */
 
       if (sidebarRef.current) {
         tl.fromTo(
@@ -296,13 +305,13 @@ export default function Sidebar() {
           {
             opacity: 1,
             duration: 0.28,
-          }
+          },
         );
       }
 
-      /* ===================================================
-         LOGO
-      =================================================== */
+      /* =================================================
+           LOGO
+        ================================================= */
 
       if (logoRef.current) {
         tl.fromTo(
@@ -318,13 +327,13 @@ export default function Sidebar() {
             filter: "blur(0px)",
             duration: 0.45,
           },
-          "-=0.12"
+          "-=0.12",
         );
       }
 
-      /* ===================================================
-         NAVIGATION
-      =================================================== */
+      /* =================================================
+           NAVIGATION
+        ================================================= */
 
       if (navItems.length > 0) {
         tl.fromTo(
@@ -341,13 +350,13 @@ export default function Sidebar() {
             duration: 0.42,
             stagger: 0.045,
           },
-          "-=0.18"
+          "-=0.18",
         );
       }
 
-      /* ===================================================
-         LOGOUT
-      =================================================== */
+      /* =================================================
+           LOGOUT
+        ================================================= */
 
       if (logoutRef.current) {
         tl.fromTo(
@@ -363,7 +372,7 @@ export default function Sidebar() {
             filter: "blur(0px)",
             duration: 0.4,
           },
-          "-=0.18"
+          "-=0.18",
         );
       }
     });
@@ -397,6 +406,7 @@ export default function Sidebar() {
           fixed
           inset-0
           z-[9998]
+
           bg-black/30
           backdrop-blur-[2px]
 
@@ -446,22 +456,16 @@ export default function Sidebar() {
           duration-300
           ease-out
 
-          ${
-            mobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
 
           md:translate-x-0
         `}
       >
-
         {/* =================================================
             DECORATIVE BACKGROUND
         ================================================= */}
 
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-
           <div
             className="
               absolute
@@ -495,7 +499,6 @@ export default function Sidebar() {
               blur-[140px]
             "
           />
-
         </div>
 
         {/* =================================================
@@ -503,7 +506,6 @@ export default function Sidebar() {
         ================================================= */}
 
         <div className="relative z-10 flex flex-col h-full">
-
           {/* =================================================
               LOGO
           ================================================= */}
@@ -561,7 +563,6 @@ export default function Sidebar() {
               gap-2
             "
           >
-
             {menuItems.map((item) => {
               const Icon = item.icon;
 
@@ -573,121 +574,99 @@ export default function Sidebar() {
                   onClick={closeMobileSidebar}
                   className={({ isActive }) =>
                     `
-                    opacity-0
+                      opacity-0
 
-                    group
+                      group
 
-                    flex
-                    items-center
+                      flex
+                      items-center
 
-                    /*
-                      MOBILE:
-                      icon + name
+                      justify-start
 
-                      TABLET:
-                      icon only
+                      md:justify-center
+                      lg:justify-start
 
-                      DESKTOP:
-                      icon + name
-                    */
+                      gap-3
 
-                    justify-start
+                      px-4
+                      md:px-2
+                      lg:px-4
 
-                    md:justify-center
-                    lg:justify-start
+                      py-3
 
-                    gap-3
+                      rounded-2xl
 
-                    px-4
-                    md:px-2
-                    lg:px-4
+                      transition-all
+                      duration-300
 
-                    py-3
+                      ${
+                        isActive
+                          ? `
+                            bg-gradient-to-r
+                            from-fuchsia-500
+                            via-purple-500
+                            to-violet-600
 
-                    rounded-2xl
+                            text-white
 
-                    transition-all
-                    duration-300
+                            shadow-xl
+                            shadow-fuchsia-900/40
 
-                    ${
-                      isActive
-                        ? `
-                          bg-gradient-to-r
-                          from-fuchsia-500
-                          via-purple-500
-                          to-violet-600
+                            scale-[1.02]
+                          `
+                          : `
+                            text-violet-100/85
 
-                          text-white
+                            hover:bg-white/10
+                            hover:text-white
 
-                          shadow-xl
-                          shadow-fuchsia-900/40
+                            hover:translate-x-1
 
-                          scale-[1.02]
-                        `
-                        : `
-                          text-violet-100/85
-
-                          hover:bg-white/10
-                          hover:text-white
-
-                          hover:translate-x-1
-
-                          hover:shadow-lg
-                        `
-                    }
-                  `
+                            hover:shadow-lg
+                          `
+                      }
+                    `
                   }
                 >
-
-                  {/* =================================================
-                      ICON
-                  ================================================= */}
+                  {/* ICON */}
 
                   <Icon
                     size={19}
                     strokeWidth={2}
                     className="
-                      shrink-0
+                        shrink-0
 
-                      transition-transform
-                      duration-300
+                        transition-transform
+                        duration-300
 
-                      group-hover:scale-110
-                    "
+                        group-hover:scale-110
+                      "
                   />
 
-                  {/* =================================================
-                      LABEL
-
-                      Mobile  → visible
-                      Tablet  → hidden
-                      Desktop → visible
-                  ================================================= */}
+                  {/* LABEL */}
 
                   <span
                     className="
-                      inline
-                      md:hidden
-                      lg:inline
+                        inline
+                        md:hidden
+                        lg:inline
 
-                      text-[14px]
+                        text-[14px]
 
-                      font-medium
+                        font-medium
 
-                      tracking-wide
+                        tracking-wide
 
-                      truncate
+                        truncate
 
-                      whitespace-nowrap
-                    "
+                        whitespace-nowrap
+                      "
                   >
                     {item.label}
                   </span>
-
                 </NavLink>
               );
             })}
-
           </nav>
 
           {/* =================================================
@@ -706,7 +685,6 @@ export default function Sidebar() {
               opacity-0
             "
           >
-
             <button
               type="button"
               onClick={handleLogout}
@@ -756,11 +734,6 @@ export default function Sidebar() {
                 hover:shadow-fuchsia-900/20
               "
             >
-
-              {/* =================================================
-                  LOGOUT ICON
-              ================================================= */}
-
               <LogOut
                 size={18}
                 className="
@@ -772,14 +745,6 @@ export default function Sidebar() {
                   group-hover:scale-110
                 "
               />
-
-              {/* =================================================
-                  LOGOUT TEXT
-
-                  Mobile  → visible
-                  Tablet  → hidden
-                  Desktop → visible
-              ================================================= */}
 
               <span
                 className="
@@ -794,11 +759,8 @@ export default function Sidebar() {
               >
                 {t("sidebar.logout")}
               </span>
-
             </button>
-
           </div>
-
         </div>
       </aside>
     </>
