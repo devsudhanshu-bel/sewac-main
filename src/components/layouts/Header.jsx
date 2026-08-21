@@ -2,23 +2,47 @@ import {
   Search,
   Globe,
   ChevronDown,
-  CalendarDays,
-  Settings,
   LogOut,
   Check,
   X,
+  Menu,
 } from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
-import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 
 import Calendar from "../Calendar/Calendar";
 
-const languages = ["English", "Kannada", "Hindi"];
+import { useLanguage } from "../../i18n";
+
+import SewacLogo from "../../assets/sewac_logo.svg";
+
+/* =========================================================
+   LANGUAGE OPTIONS
+========================================================= */
+
+const languages = [
+  {
+    code: "en",
+    translationKey: "language.english",
+  },
+  {
+    code: "kn",
+    translationKey: "language.kannada",
+  },
+  {
+    code: "hi",
+    translationKey: "language.hindi",
+  },
+];
 
 /* =========================================================
    ROLE HELPERS
@@ -51,7 +75,11 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+      atob(
+        payload
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
     );
 
     return {
@@ -59,7 +87,10 @@ function getUserFromToken() {
       role: decoded.role || "ADMIN_LAYER_1",
     };
   } catch (error) {
-    console.error("Failed to decode authentication token:", error);
+    console.error(
+      "Failed to decode authentication token:",
+      error
+    );
 
     return {
       name: "Admin",
@@ -69,35 +100,70 @@ function getUserFromToken() {
 }
 
 function getRoleLabel(role) {
-  return ROLE_LABELS[role] || role || "Admin Layer 1";
+  return (
+    ROLE_LABELS[role] ||
+    role ||
+    "Admin Layer 1"
+  );
 }
 
 /* =========================================================
    DROPDOWN
 ========================================================= */
 
-function Dropdown({ width, value, options, onChange }) {
-  const [open, setOpen] = useState(false);
+function Dropdown({
+  width,
+  value,
+  options,
+  onChange,
+  placeholder = "Select",
+}) {
+  const [open, setOpen] =
+    useState(false);
 
-  const wrapperRef = useRef(null);
-  const menuRef = useRef(null);
+  const wrapperRef =
+    useRef(null);
+
+  const menuRef =
+    useRef(null);
+
+  /* =======================================================
+     CLOSE OUTSIDE
+  ======================================================= */
 
   useEffect(() => {
-    function close(e) {
-      if (!wrapperRef.current?.contains(e.target)) {
+    function close(event) {
+      if (
+        !wrapperRef.current?.contains(
+          event.target
+        )
+      ) {
         setOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
+  /* =======================================================
+     DROPDOWN ANIMATION
+  ======================================================= */
+
   useEffect(() => {
-    if (open && menuRef.current) {
+    if (
+      open &&
+      menuRef.current
+    ) {
       gsap.fromTo(
         menuRef.current,
         {
@@ -111,15 +177,21 @@ function Dropdown({ width, value, options, onChange }) {
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        },
+        }
       );
     }
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className={`relative ${width}`}>
+    <div
+      ref={wrapperRef}
+      className={`relative shrink-0 ${width}`}
+    >
       <button
-        onClick={() => setOpen(!open)}
+        type="button"
+        onClick={() =>
+          setOpen(!open)
+        }
         className="
           w-full
           h-9
@@ -139,14 +211,21 @@ function Dropdown({ width, value, options, onChange }) {
           duration-300
         "
       >
-        <span>{value}</span>
+        <span className="truncate">
+          {value || placeholder}
+        </span>
 
         <ChevronDown
           size={14}
           className={`
+            shrink-0
             transition-transform
             duration-300
-            ${open ? "rotate-180" : ""}
+            ${
+              open
+                ? "rotate-180"
+                : ""
+            }
           `}
         />
       </button>
@@ -159,38 +238,20 @@ function Dropdown({ width, value, options, onChange }) {
             top-11
             left-0
             w-full
-            max-h-[315px]
-            overflow-y-auto
             rounded-2xl
             bg-white
             border
             border-gray-100
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-            z-[9999]
-
-            scrollbar-thin
-            scrollbar-thumb-violet-300
-            scrollbar-track-transparent
+            overflow-hidden
+            z-[10000]
           "
         >
-          {options.map((item) => {
-            const label =
-              item.city_name ||
-              item.zone_name ||
-              item.division_name ||
-              item.ward_name ||
-              item;
-
-            const key =
-              item.city_id ||
-              item.zone_id ||
-              item.division_id ||
-              item.ward_id ||
-              label;
-
-            return (
+          {options.map(
+            (item, index) => (
               <button
-                key={key}
+                type="button"
+                key={`${item}-${index}`}
                 onClick={() => {
                   onChange(item);
                   setOpen(false);
@@ -202,19 +263,29 @@ function Dropdown({ width, value, options, onChange }) {
                   flex
                   items-center
                   justify-between
+                  text-left
                   text-[12px]
+                  text-[#16295A]
                   hover:bg-violet-50
                   transition
                 "
               >
-                {label}
+                <span className="truncate">
+                  {item}
+                </span>
 
-                {label === value && (
-                  <Check size={14} className="text-violet-600" />
+                {item === value && (
+                  <Check
+                    size={14}
+                    className="
+                      shrink-0
+                      text-violet-600
+                    "
+                  />
                 )}
               </button>
-            );
-          })}
+            )
+          )}
         </div>
       )}
     </div>
@@ -227,17 +298,16 @@ function Dropdown({ width, value, options, onChange }) {
 
 export default function Header({
   variant = "dashboard",
-  selectedDate = new Date().toISOString().split("T")[0],
-  setSelectedDate = () => {},
 }) {
-  const navigate = useNavigate();
+  /* =======================================================
+     LANGUAGE
+  ======================================================= */
 
-  const headerRef = useRef(null);
-  const controlsRef = useRef(null);
-  const searchRef = useRef(null);
-  const profileRef = useRef(null);
-  const languageRef = useRef(null);
-  const languageMenuRef = useRef(null);
+  const {
+    language,
+    setLanguage,
+    t,
+  } = useLanguage();
 
   /* =======================================================
      FILTER CONTEXT
@@ -245,88 +315,148 @@ export default function Header({
 
   const {
     selectedCity,
-    setSelectedCity,
-
     selectedZone,
-    setSelectedZone,
-
     selectedDivision,
-    setSelectedDivision,
-
     selectedWard,
-    setSelectedWard,
 
-    cities,
-    zones,
-    divisions,
-    wards,
+    setSelectedCity,
+    setSelectedZone,
+    setSelectedDivision,
+    setSelectedWard,
   } = useFilters();
 
   /* =======================================================
-     USER
+     REFS
   ======================================================= */
 
-  const [user, setUser] = useState(() => getUserFromToken());
+  const headerRef =
+    useRef(null);
 
-  const roleLabel = getRoleLabel(user.role);
+  const controlsRef =
+    useRef(null);
 
-  const userInitial = user.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+  const searchRef =
+    useRef(null);
+
+  const profileRef =
+    useRef(null);
+
+  const bellRef =
+    useRef(null);
+
+  const languageRef =
+    useRef(null);
+
+  const languageMenuRef =
+    useRef(null);
 
   /* =======================================================
      STATE
   ======================================================= */
 
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [selectedDate, setSelectedDate] =
+    useState(new Date());
 
-  const [dayType, setDayType] = useState("wet");
+  const [dayType, setDayType] =
+    useState("dry");
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] =
+    useState(false);
 
-  const [languageOpen, setLanguageOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] =
+    useState(false);
 
-  const isDashboard = variant === "dashboard";
+  const [languageOpen, setLanguageOpen] =
+    useState(false);
 
-  /* =======================================================
-     DATE
-  ======================================================= */
-
-  const selectedDateObj = selectedDate
-    ? new Date(`${selectedDate}T12:00:00`)
-    : new Date();
-
-  const selectedDay = selectedDateObj.getDay();
-
-  // Wednesday = 3
-  // Saturday = 6
-  const isDryDay = selectedDay === 3 || selectedDay === 6;
+  const isDashboard =
+    variant === "dashboard";
 
   /* =======================================================
-     REFRESH USER FROM SESSION
+     USER
   ======================================================= */
 
-  useEffect(() => {
-    setUser(getUserFromToken());
-  }, []);
+  const user =
+    getUserFromToken();
 
-  /* =======================================================
-     HEADER ANIMATION
-  ======================================================= */
+  const roleLabel =
+    getRoleLabel(user.role);
+
+  const userInitial =
+    user?.name
+      ?.trim()
+      ?.charAt(0)
+      ?.toUpperCase() ||
+    "A";
+
+  /* =========================================================
+     LOCATION OPTIONS
+  ========================================================= */
+
+  const cities = [
+    "Bangalore",
+    "Mysore",
+    "Mangalore",
+    "Hubli",
+    "Belgaum",
+  ];
+
+  const zones = [
+    "All Zones",
+    "East Zone",
+    "West Zone",
+    "South Zone",
+    "North Zone",
+    "Mahadevapura",
+    "Bommanahalli",
+    "RR Nagar",
+    "Yelahanka",
+    "Dasarahalli",
+  ];
+
+  const divisions = [
+    "All Divisions",
+    "Division 1",
+    "Division 2",
+    "Division 3",
+  ];
+
+  const wards = [
+    "All Wards",
+    "Ward 1",
+    "Ward 2",
+    "Ward 3",
+  ];
+
+  /* =========================================================
+     GSAP HEADER ANIMATION
+  ========================================================= */
 
   useLayoutEffect(() => {
-    const tl = gsap.timeline();
+    if (!headerRef.current) {
+      return;
+    }
 
-    if (headerRef.current) {
-      tl.from(headerRef.current, {
+    const tl =
+      gsap.timeline();
+
+    tl.from(
+      headerRef.current,
+      {
         y: -24,
         opacity: 0,
         duration: 0.45,
         ease: "power4.out",
-      });
-    }
+      }
+    );
 
-    if (controlsRef.current) {
+    if (
+      controlsRef.current
+        ?.children
+    ) {
       tl.from(
         controlsRef.current.children,
         {
@@ -336,7 +466,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2",
+        "-=0.2"
       );
     }
 
@@ -345,75 +475,324 @@ export default function Header({
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      CLOSE DROPDOWNS
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
-    function close(e) {
-      if (!profileRef.current?.contains(e.target)) {
+    function close(event) {
+      if (
+        !profileRef.current?.contains(
+          event.target
+        )
+      ) {
         setProfileOpen(false);
       }
 
-      if (!languageRef.current?.contains(e.target)) {
+      if (
+        !bellRef.current?.contains(
+          event.target
+        )
+      ) {
+        setNotificationOpen(false);
+      }
+
+      if (
+        !languageRef.current?.contains(
+          event.target
+        )
+      ) {
         setLanguageOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      SEARCH SHORTCUT
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
-    function shortcut(e) {
-      if (e.key === "/" && variant !== "dashboard") {
-        e.preventDefault();
+    function shortcut(event) {
+      if (
+        event.key === "/" &&
+        variant !== "dashboard"
+      ) {
+        event.preventDefault();
 
         searchRef.current?.focus();
       }
     }
 
-    window.addEventListener("keydown", shortcut);
+    window.addEventListener(
+      "keydown",
+      shortcut
+    );
 
     return () => {
-      window.removeEventListener("keydown", shortcut);
+      window.removeEventListener(
+        "keydown",
+        shortcut
+      );
     };
   }, [variant]);
 
-  /* =======================================================
+  /* =========================================================
      LOGOUT
-  ======================================================= */
+  ========================================================= */
 
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace("https://app-authentication-frontend.onrender.com");
+    window.location.replace(
+      "https://app-authentication-frontend.onrender.com"
+    );
   };
 
-  /* =======================================================
+  /* =========================================================
      DATE FORMAT
-  ======================================================= */
+  ========================================================= */
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear();
+  const formatLocalDate = (
+    date
+  ) => {
+    const year =
+      date.getFullYear();
 
-    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const month =
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      );
 
-    const day = String(date.getDate()).padStart(2, "0");
+    const day =
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      );
 
     return `${year}-${month}-${day}`;
   };
 
-  /* =======================================================
+  /* =========================================================
+     LANGUAGE HANDLER
+  ========================================================= */
+
+  const handleLanguageChange =
+    (languageCode) => {
+      setLanguage(
+        languageCode
+      );
+
+      setLanguageOpen(false);
+    };
+
+  /* =========================================================
+     CURRENT LANGUAGE
+  ========================================================= */
+
+  const currentLanguageCode =
+    language === "en"
+      ? "EN"
+      : language === "kn"
+        ? "KN"
+        : "HI";
+
+  /* =========================================================
+     NOTIFICATIONS
+  ========================================================= */
+
+  const notifications = [
+    {
+      title:
+        "Vehicle KA-01 AB 1234 reached destination",
+      time: "2 min ago",
+    },
+    {
+      title:
+        "Plant capacity exceeded 90%",
+      time: "8 min ago",
+    },
+    {
+      title:
+        "AI generated today's report",
+      time: "25 min ago",
+    },
+    {
+      title:
+        "New administrator added",
+      time: "1 hr ago",
+    },
+  ];
+
+  /* =========================================================
+     LOCATION FILTERS
+  ========================================================= */
+
+  const locationFilters = (
+    <>
+      {/* =================================================
+          CITY
+      ================================================= */}
+
+      <Dropdown
+        width="
+          w-[148px]
+          sm:w-[155px]
+          2xl:w-[118px]
+        "
+        value={
+          selectedCity?.city_name ||
+          t("filters.city")
+        }
+        options={cities}
+        onChange={
+          setSelectedCity
+        }
+        placeholder={
+          t("filters.city")
+        }
+      />
+
+      {/* =================================================
+          ZONE
+      ================================================= */}
+
+      <Dropdown
+        width="
+          w-[220px]
+          sm:w-[235px]
+          2xl:w-[200px]
+        "
+        value={
+          selectedZone?.zone_name ||
+          t("filters.zone")
+        }
+        options={zones}
+        onChange={
+          setSelectedZone
+        }
+        placeholder={
+          t("filters.zone")
+        }
+      />
+
+      {/* =================================================
+          DIVISION
+      ================================================= */}
+
+      <Dropdown
+        width="
+          w-[170px]
+          sm:w-[180px]
+          2xl:w-[138px]
+        "
+        value={
+          selectedDivision?.division_name ||
+          "Select Division"
+        }
+        options={divisions}
+        onChange={
+          setSelectedDivision
+        }
+        placeholder="Select Division"
+      />
+
+      {/* =================================================
+          WARD
+      ================================================= */}
+
+      <Dropdown
+        width="
+          w-[155px]
+          sm:w-[165px]
+          2xl:w-[122px]
+        "
+        value={
+          selectedWard
+            ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
+            : "Select Ward"
+        }
+        options={wards}
+        onChange={
+          setSelectedWard
+        }
+        placeholder="Select Ward"
+      />
+    </>
+  );
+
+  /* =========================================================
+     SEARCH INPUT
+  ========================================================= */
+
+  const searchInput = (
+    <div className="relative w-[280px]">
+      <Search
+        size={15}
+        className="
+          absolute
+          left-3
+          top-1/2
+          -translate-y-1/2
+          text-gray-400
+          pointer-events-none
+        "
+      />
+
+      <input
+        ref={searchRef}
+        type="text"
+        value={search}
+        onChange={(event) =>
+          setSearch(
+            event.target.value
+          )
+        }
+        placeholder={t(
+          "header.search",
+          "Search..."
+        )}
+        className="
+          w-full
+          h-9
+          rounded-xl
+          border
+          border-gray-200
+          bg-white
+          pl-9
+          pr-3
+          text-[11px]
+          text-[#16295A]
+          outline-none
+          placeholder:text-gray-400
+          focus:border-violet-400
+          focus:ring-2
+          focus:ring-violet-100
+          transition
+        "
+      />
+    </div>
+  );
+
+  /* =========================================================
      RENDER
-  ======================================================= */
+  ========================================================= */
 
   return (
     <header
@@ -422,167 +801,644 @@ export default function Header({
         sticky
         top-0
         z-[9999]
-        min-h-16
+        w-full
         bg-white
         border-b
         border-gray-100
         px-3
         sm:px-4
-        flex
-        flex-wrap
-        items-center
-        justify-between
-        gap-y-1
+        xl:px-4
+        pt-2
+        pb-2
+        xl:h-16
+        overflow-visible
       "
     >
       {/* ===================================================
-          LEFT
+          PRIMARY HEADER ROW
       =================================================== */}
 
       <div
-        ref={controlsRef}
         className="
           flex
           items-center
-          gap-3
-          min-w-0
-          shrink-0
+          justify-between
+          gap-2
+          min-h-[44px]
+          xl:h-full
         "
       >
-        {isDashboard ? (
+        {/* =================================================
+            LEFT SIDE
+        ================================================= */}
+
+        <div
+          ref={controlsRef}
+          className="
+            flex
+            items-center
+            gap-2
+            min-w-0
+            flex-1
+          "
+        >
+          {/* =================================================
+              MOBILE / TABLET BRAND
+          ================================================= */}
+
           <div
             className="
-              hidden
-              2xl:flex
+              flex
               items-center
               gap-2
-              min-w-0
               shrink-0
+              xl:hidden
             "
           >
-            {/* City */}
-
-            <Dropdown
-              width="w-[118px]"
-              value={selectedCity?.city_name || "Select City"}
-              options={cities}
-              onChange={setSelectedCity}
-            />
-
-            {/* Zone */}
-
-            <Dropdown
-              width="w-[200px]"
-              value={selectedZone?.zone_name || "Select Zone"}
-              options={zones}
-              onChange={setSelectedZone}
-            />
-
-            {/* Division */}
-
-            <Dropdown
-              width="w-[138px]"
-              value={selectedDivision?.division_name || "Select Division"}
-              options={divisions}
-              onChange={setSelectedDivision}
-            />
-
-            {/* Ward */}
-
-            <Dropdown
-              width="w-[122px]"
-              value={
-                selectedWard
-                  ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
-                  : "Select Ward"
-              }
-              options={wards}
-              onChange={setSelectedWard}
-            />
-          </div>
-        ) : (
-          /* Search */
-
-          <div className="relative">
-            <Search
-              size={16}
+            <button
+              type="button"
               className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-gray-400
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-xl
+                bg-violet-50
+                text-violet-600
+                hover:bg-violet-100
+                transition
+                md:hidden
+              "
+            >
+              <Menu size={17} />
+            </button>
+
+            <img
+              src={SewacLogo}
+              alt="SEWAC"
+              draggable={false}
+              className="
+                w-[64px]
+                sm:w-[76px]
+                md:w-[68px]
+                h-auto
+                object-contain
+                select-none
+                shrink-0
               "
             />
+          </div>
 
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
+          {/* =================================================
+              DESKTOP DASHBOARD FILTERS
+
+              >= 1536px
+          ================================================= */}
+
+          {isDashboard ? (
+            <div
               className="
-                w-[240px]
-                sm:w-[280px]
-                xl:w-[330px]
+                hidden
+                2xl:flex
+                items-center
+                gap-2
+                min-w-0
+                shrink-0
+              "
+            >
+              {locationFilters}
+            </div>
+          ) : (
+            <div
+              className="
+                relative
+                hidden
+                xl:block
+              "
+            >
+              {searchInput}
+            </div>
+          )}
+        </div>
+
+        {/* =================================================
+            RIGHT SIDE CONTROLS
+        ================================================= */}
+
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+            shrink-0
+          "
+        >
+          {/* =================================================
+              DATE
+          ================================================= */}
+
+          <div className="relative">
+            <Calendar
+              selectedDate={
+                selectedDate
+              }
+              onDateChange={
+                setSelectedDate
+              }
+            />
+          </div>
+
+          {/* =================================================
+              DAY TYPE
+          ================================================= */}
+
+          {isDashboard && (
+            <div
+              className="
+                hidden
+                md:flex
+                items-center
                 h-9
+                overflow-hidden
+                rounded-xl
+                border
+                border-gray-200
+              "
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setDayType("dry")
+                }
+                className={`
+                  h-9
+                  px-4
+                  text-[11px]
+                  font-semibold
+                  transition-all
+                  duration-300
+
+                  ${
+                    dayType === "dry"
+                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                      : "bg-white text-[#16295A] hover:bg-gray-50"
+                  }
+                `}
+              >
+                {t(
+                  "header.dryDay",
+                  "Dry Day"
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setDayType("wet")
+                }
+                className={`
+                  h-9
+                  px-4
+                  text-[11px]
+                  font-semibold
+                  transition-all
+                  duration-300
+
+                  ${
+                    dayType === "wet"
+                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                      : "bg-white text-[#16295A] hover:bg-gray-50"
+                  }
+                `}
+              >
+                {t(
+                  "header.wetDay",
+                  "Wet Day"
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* =================================================
+              LANGUAGE
+          ================================================= */}
+
+          <div
+            ref={languageRef}
+            className="relative"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setLanguageOpen(
+                  !languageOpen
+                )
+              }
+              className="
+                h-9
+                px-2.5
+                sm:px-3
                 rounded-xl
                 border
                 border-gray-200
                 bg-white
-                pl-10
-                pr-9
-                text-[12px]
-                outline-none
+                flex
+                items-center
+                gap-1.5
+                sm:gap-2
+                hover:border-violet-400
                 transition-all
                 duration-300
-                focus:border-violet-500
-                focus:ring-2
-                focus:ring-violet-100
               "
-            />
+            >
+              <Globe
+                size={15}
+                className="text-violet-600"
+              />
 
-            {search.length > 0 && (
-              <button
-                onClick={() => setSearch("")}
+              <span
                 className="
-                  absolute
-                  right-3
-                  top-1/2
-                  -translate-y-1/2
-                  text-gray-400
-                  hover:text-violet-600
-                  transition
+                  text-[11px]
+                  sm:text-[12px]
+                  font-semibold
+                  text-[#16295A]
                 "
               >
-                <X size={14} />
-              </button>
+                {currentLanguageCode}
+              </span>
+
+              <ChevronDown
+                size={13}
+                className={`
+                  transition-transform
+                  duration-300
+                  ${
+                    languageOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
+
+            {languageOpen && (
+              <div
+                ref={languageMenuRef}
+                className="
+                  absolute
+                  right-0
+                  top-11
+                  w-44
+                  rounded-2xl
+                  bg-white
+                  border
+                  border-gray-100
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  overflow-hidden
+                  z-[10000]
+                "
+              >
+                {languages.map(
+                  (item) => (
+                    <button
+                      type="button"
+                      key={item.code}
+                      onClick={() =>
+                        handleLanguageChange(
+                          item.code
+                        )
+                      }
+                      className="
+                        w-full
+                        px-4
+                        py-3
+                        flex
+                        items-center
+                        justify-between
+                        text-[12px]
+                        text-[#16295A]
+                        hover:bg-violet-50
+                        transition
+                      "
+                    >
+                      {t(
+                        item.translationKey
+                      )}
+
+                      {language ===
+                        item.code && (
+                        <Check
+                          size={14}
+                          className="text-violet-600"
+                        />
+                      )}
+                    </button>
+                  )
+                )}
+              </div>
             )}
           </div>
-        )}
+
+          {/* =================================================
+              PROFILE
+          ================================================= */}
+
+          <div
+            ref={profileRef}
+            className="
+              relative
+              shrink-0
+            "
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setProfileOpen(
+                  !profileOpen
+                )
+              }
+              aria-expanded={
+                profileOpen
+              }
+              className="
+                h-9
+                pl-1
+                pr-1
+                sm:pl-2
+                sm:pr-2
+                xl:pr-3
+                rounded-xl
+                border
+                border-gray-200
+                bg-white
+                flex
+                items-center
+                gap-2
+                hover:border-violet-400
+                transition-all
+                duration-300
+              "
+            >
+              {/* AVATAR */}
+
+              <div
+                className="
+                  w-8
+                  h-8
+                  rounded-full
+                  bg-gradient-to-r
+                  from-violet-600
+                  to-fuchsia-600
+                  text-white
+                  text-[14px]
+                  font-semibold
+                  flex
+                  items-center
+                  justify-center
+                  shrink-0
+                "
+              >
+                {userInitial}
+              </div>
+
+              {/* USER INFO */}
+
+              <div
+                className="
+                  hidden
+                  sm:block
+                  text-left
+                  leading-tight
+                  min-w-0
+                "
+              >
+                <h4
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-[#16295A]
+                    truncate
+                    max-w-[100px]
+                  "
+                >
+                  {user.name}
+                </h4>
+
+                <p
+                  className="
+                    text-[10px]
+                    text-gray-500
+                    truncate
+                    max-w-[100px]
+                  "
+                >
+                  {roleLabel}
+                </p>
+              </div>
+
+              <ChevronDown
+                size={13}
+                className={`
+                  transition-transform
+                  duration-300
+                  ${
+                    profileOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
+
+            {/* =================================================
+                PROFILE DROPDOWN
+
+                SETTINGS REMOVED
+            ================================================= */}
+
+            {profileOpen && (
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-11
+                  w-64
+                  rounded-2xl
+                  bg-white
+                  border
+                  border-gray-100
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  overflow-hidden
+                  z-[10000]
+                "
+                ref={(element) => {
+                  if (element) {
+                    gsap.fromTo(
+                      element,
+                      {
+                        opacity: 0,
+                        scale: 0.96,
+                        y: -8,
+                      },
+                      {
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                        duration: 0.22,
+                        ease: "power3.out",
+                      }
+                    );
+                  }
+                }}
+              >
+                {/* =================================================
+                    PROFILE INFORMATION
+                ================================================= */}
+
+                <div
+                  className="
+                    px-5
+                    py-4
+                    border-b
+                    border-gray-100
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                    "
+                  >
+                    <div
+                      className="
+                        w-9
+                        h-9
+                        rounded-full
+                        bg-gradient-to-r
+                        from-violet-600
+                        to-fuchsia-600
+                        text-white
+                        text-[14px]
+                        font-semibold
+                        flex
+                        items-center
+                        justify-center
+                        shrink-0
+                      "
+                    >
+                      {userInitial}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3
+                        className="
+                          font-semibold
+                          text-[13px]
+                          text-[#16295A]
+                          truncate
+                        "
+                      >
+                        {user.name}
+                      </h3>
+
+                      <p
+                        className="
+                          text-[10px]
+                          text-gray-500
+                          mt-0.5
+                          truncate
+                        "
+                      >
+                        {roleLabel}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* =================================================
+                    LOGOUT ONLY
+
+                    SETTINGS HAS BEEN REMOVED
+                ================================================= */}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(
+                      false
+                    );
+
+                    handleLogout();
+                  }}
+                  className="
+                    w-full
+                    px-5
+                    py-3
+                    flex
+                    items-center
+                    gap-3
+                    text-[12px]
+                    text-red-500
+                    hover:bg-red-50
+                    transition
+                    text-left
+                  "
+                >
+                  <LogOut
+                    size={16}
+                  />
+
+                  {t(
+                    "sidebar.logout"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ===================================================
-          RESPONSIVE FILTER ROW
-          Below 1536px
+          NON-DASHBOARD SMALL SCREEN SEARCH ROW
 
-          IMPORTANT:
-          These are the SAME filter boxes.
-          Their widths, values, options and handlers
-          have NOT been changed.
+          <= 767px
+      =================================================== */}
+
+      {!isDashboard && (
+        <div
+          className="
+            md:hidden
+            w-full
+            mt-2
+            px-0.5
+          "
+        >
+          <div className="w-full">
+            {searchInput}
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================
+          DASHBOARD RESPONSIVE FILTER ROW
+
+          Below 1536px
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
-            order-3
             2xl:hidden
-            basis-full
             w-full
             overflow-x-auto
             overflow-y-visible
-            py-1
             scrollbar-none
+            pt-1
+            pb-1
+            mt-1
+            -mx-0.5
           "
         >
           <div
@@ -591,406 +1447,13 @@ export default function Header({
               items-center
               gap-2
               min-w-max
+              px-0.5
             "
           >
-            {/* City */}
-
-            <Dropdown
-              width="w-[118px]"
-              value={selectedCity?.city_name || "Select City"}
-              options={cities}
-              onChange={setSelectedCity}
-            />
-
-            {/* Zone */}
-
-            <Dropdown
-              width="w-[200px]"
-              value={selectedZone?.zone_name || "Select Zone"}
-              options={zones}
-              onChange={setSelectedZone}
-            />
-
-            {/* Division */}
-
-            <Dropdown
-              width="w-[138px]"
-              value={selectedDivision?.division_name || "Select Division"}
-              options={divisions}
-              onChange={setSelectedDivision}
-            />
-
-            {/* Ward */}
-
-            <Dropdown
-              width="w-[122px]"
-              value={
-                selectedWard
-                  ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
-                  : "Select Ward"
-              }
-              options={wards}
-              onChange={setSelectedWard}
-            />
+            {locationFilters}
           </div>
         </div>
       )}
-
-      {/* ===================================================
-          RIGHT
-      =================================================== */}
-
-      <div className="flex items-center gap-2.5 shrink-0">
-        {/* =================================================
-            CALENDAR
-        ================================================= */}
-
-        <div className="flex items-center justify-center">
-          <Calendar
-            value={selectedDateObj}
-            onChange={(date) => {
-              setSelectedDate(formatLocalDate(date));
-            }}
-          />
-        </div>
-
-        {/* =================================================
-            WET / DRY DAY
-        ================================================= */}
-
-        <div
-          className="
-            flex
-            rounded-xl
-            border
-            border-gray-200
-            overflow-hidden
-          "
-        >
-          {isDryDay && (
-            <button
-              onClick={() => setDayType("dry")}
-              className={`
-                h-9
-                px-4
-                text-[12px]
-                font-semibold
-                transition-all
-                duration-300
-
-                ${
-                  dayType === "dry"
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                    : "bg-white text-[#16295A] hover:bg-gray-50"
-                }
-              `}
-            >
-              Dry Day
-            </button>
-          )}
-
-          <button
-            onClick={() => setDayType("wet")}
-            className={`
-              h-9
-              px-4
-              text-[12px]
-              font-semibold
-              transition-all
-              duration-300
-
-              ${
-                dayType === "wet"
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                  : "bg-white text-[#16295A] hover:bg-gray-50"
-              }
-            `}
-          >
-            Wet Day
-          </button>
-        </div>
-
-        {/* =================================================
-            LANGUAGE
-        ================================================= */}
-
-        <div ref={languageRef} className="relative">
-          <button
-            onClick={() => setLanguageOpen(!languageOpen)}
-            className="
-              h-9
-              px-3
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              flex
-              items-center
-              gap-2
-              hover:border-violet-400
-              transition-all
-              duration-300
-            "
-          >
-            <Globe size={15} className="text-violet-600" />
-
-            <span className="text-[12px] font-semibold text-[#16295A]">
-              {selectedLanguage === "English"
-                ? "EN"
-                : selectedLanguage === "Kannada"
-                  ? "KN"
-                  : "HI"}
-            </span>
-
-            <ChevronDown
-              size={13}
-              className={`
-                transition-transform
-                duration-300
-                ${languageOpen ? "rotate-180" : ""}
-              `}
-            />
-          </button>
-
-          {languageOpen && (
-            <div
-              ref={languageMenuRef}
-              className="
-                absolute
-                right-0
-                top-11
-                w-44
-                rounded-2xl
-                bg-white
-                border
-                border-gray-100
-                shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-                overflow-hidden
-                z-[9999]
-              "
-            >
-              {languages.map((language) => (
-                <button
-                  key={language}
-                  onClick={() => {
-                    setSelectedLanguage(language);
-
-                    setLanguageOpen(false);
-                  }}
-                  className="
-                    w-full
-                    px-4
-                    py-3
-                    flex
-                    items-center
-                    justify-between
-                    text-[12px]
-                    hover:bg-violet-50
-                    transition
-                  "
-                >
-                  {language}
-
-                  {selectedLanguage === language && (
-                    <Check size={14} className="text-violet-600" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* =================================================
-            PROFILE
-        ================================================= */}
-
-        <div ref={profileRef} className="relative">
-          <button
-            onClick={() => setProfileOpen(!profileOpen)}
-            className="
-              h-9
-              pl-2
-              pr-3
-              rounded-xl
-              border
-              border-gray-200
-              bg-white
-              flex
-              items-center
-              gap-2
-              hover:border-violet-400
-              transition-all
-              duration-300
-            "
-          >
-            {/* Avatar */}
-
-            <div
-              className="
-                w-8
-                h-8
-                rounded-full
-                bg-gradient-to-r
-                from-violet-600
-                to-fuchsia-600
-                text-white
-                text-[14px]
-                font-semibold
-                flex
-                items-center
-                justify-center
-              "
-            >
-              {userInitial}
-            </div>
-
-            {/* User info */}
-
-            <div className="text-left leading-tight">
-              <h4 className="text-[12px] font-semibold text-[#16295A]">
-                {user.name}
-              </h4>
-
-              <p className="text-[10px] text-gray-500">{roleLabel}</p>
-            </div>
-
-            <ChevronDown
-              size={13}
-              className={`
-                transition-transform
-                duration-300
-                ${profileOpen ? "rotate-180" : ""}
-              `}
-            />
-          </button>
-
-          {/* =================================================
-              PROFILE DROPDOWN
-          ================================================= */}
-
-          {profileOpen && (
-            <div
-              className="
-                absolute
-                right-0
-                top-11
-                w-56
-                rounded-2xl
-                bg-white
-                border
-                border-gray-100
-                shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-                overflow-hidden
-                z-[9999]
-              "
-              ref={(el) => {
-                if (el) {
-                  gsap.fromTo(
-                    el,
-                    {
-                      opacity: 0,
-                      scale: 0.96,
-                      y: -8,
-                    },
-                    {
-                      opacity: 1,
-                      scale: 1,
-                      y: 0,
-                      duration: 0.22,
-                      ease: "power3.out",
-                    },
-                  );
-                }
-              }}
-            >
-              {/* User information */}
-
-              <div className="px-5 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="
-                      w-9
-                      h-9
-                      rounded-full
-                      bg-gradient-to-r
-                      from-violet-600
-                      to-fuchsia-600
-                      text-white
-                      text-[14px]
-                      font-semibold
-                      flex
-                      items-center
-                      justify-center
-                    "
-                  >
-                    {userInitial}
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-[13px] text-[#16295A]">
-                      {user.name}
-                    </h3>
-
-                    <p className="text-[10px] text-gray-500 mt-0.5">
-                      {roleLabel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Settings */}
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-
-                  navigate("/dashboard/admin/settings");
-                }}
-                className="
-                  w-full
-                  px-5
-                  py-3
-                  flex
-                  items-center
-                  gap-3
-                  text-[12px]
-                  text-[#16295A]
-                  hover:bg-violet-50
-                  transition
-                "
-              >
-                <Settings size={16} />
-                Settings
-              </button>
-
-              {/* Logout */}
-
-              <button
-                onClick={() => {
-                  setProfileOpen(false);
-
-                  handleLogout();
-                }}
-                className="
-                  w-full
-                  px-5
-                  py-3
-                  flex
-                  items-center
-                  gap-3
-                  text-[12px]
-                  text-red-500
-                  hover:bg-red-50
-                  transition
-                "
-              >
-                <LogOut size={16} />
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
     </header>
   );
 }
