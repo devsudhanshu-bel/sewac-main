@@ -119,9 +119,10 @@ const ContractorUsers = () => {
     if (!value) return true;
 
     return (
-      (user.full_name || "").toLowerCase().includes(value) ||
-      (user.email || "").toLowerCase().includes(value)
-    );
+  (user.full_name || "").toLowerCase().includes(value) ||
+  (user.email || "").toLowerCase().includes(value) ||
+  (user.phone_number || "").includes(value)
+);
   });
 
   return (
@@ -232,40 +233,45 @@ const ContractorUsers = () => {
         <table className="w-full">
 
           <thead>
+  <tr className="border-b border-gray-200 bg-gray-50">
 
-            <tr className="border-b border-gray-200 bg-gray-50">
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      SL.No
+    </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
-                Name
-              </th>
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      Name
+    </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
-                Email
-              </th>
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      Email
+    </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
-                Role
-              </th>
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      Phone Number
+    </th>
 
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      Status
+    </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
-                Status
-              </th>
+    <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
+      Created At
+    </th>
 
-              <th className="px-5 py-3 text-center text-[12px] font-semibold text-gray-600">
-                Actions
-              </th>
+    <th className="px-5 py-3 text-center text-[12px] font-semibold text-gray-600">
+      Actions
+    </th>
 
-            </tr>
-
-          </thead>
+  </tr>
+</thead>
 
           <tbody>
 
             {loading && (
               <tr>
                 <td
-                  colSpan="5"
+                  colSpan="7"
                   className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   Loading Contractor users...
@@ -274,75 +280,94 @@ const ContractorUsers = () => {
             )}
 
             {!loading &&
-              filteredContractors.map((user) => (
+  filteredContractors.map((user, index) => (
 
-                <tr
-                  key={user.id}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition"
-                >
+    <tr
+      key={user.id}
+      className="border-b border-gray-100 hover:bg-gray-50 transition"
+    >
 
-                  <td className="px-5 py-4">
+      {/* SL.No */}
+      <td className="px-5 py-4 text-[13px]">
+        {index + 1}
+      </td>
 
-                    <div className="font-medium text-[13px] text-gray-900">
-                      {user.full_name}
-                    </div>
+      {/* Name */}
+      <td className="px-5 py-4">
+        <div className="font-medium text-[13px] text-gray-900">
+          {user.full_name}
+        </div>
+      </td>
 
-                  </td>
+      {/* Email */}
+      <td className="px-5 py-4 text-[13px] text-gray-600">
+        {user.email}
+      </td>
 
-                  <td className="px-5 py-4 text-[13px] text-gray-600">
-                    {user.email}
-                  </td>
+      {/* Phone Number */}
+      <td className="px-5 py-4 text-[13px] text-gray-600">
+        {user.phone_number || "-"}
+      </td>
 
-                  <td className="px-5 py-4 text-[13px] text-gray-600">
-                    Contractor
-                  </td>
+      {/* Status */}
+      <td className="px-5 py-4">
 
-              
+        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">
+          {user.status}
+        </span>
 
-                  <td className="px-5 py-4">
+      </td>
 
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">
-                      {user.status}
-                    </span>
+      {/* Created At */}
+      <td className="px-5 py-4 text-[13px] text-gray-600">
+        {user.created_at
+          ? new Date(user.created_at).toLocaleString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-"}
+      </td>
 
-                  </td>
+      {/* Actions */}
+      <td className="px-5 py-4">
 
-                  <td className="px-5 py-4">
+        <div className="flex items-center justify-center gap-3">
 
-                    <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => handleEditClick(user)}
+            className="text-gray-500 hover:text-violet-600 transition"
+            title="Edit user"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleEditClick(user)}
-                        className="text-gray-500 hover:text-violet-600 transition"
-                        title="Edit user"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+          <button
+            type="button"
+            onClick={() => handleDeleteClick(user)}
+            className="text-gray-500 hover:text-red-600 transition"
+            title="Delete user"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteClick(user)}
-                        className="text-gray-500 hover:text-red-600 transition"
-                        title="Delete user"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+        </div>
 
-                    </div>
+      </td>
 
-                  </td>
+    </tr>
 
-                </tr>
-
-              ))}
+  ))}
 
             {!loading && filteredContractors.length === 0 && (
 
               <tr>
 
                 <td
-                  colSpan="5"
+                  colSpan="7"
                   className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   No contractor users found.
