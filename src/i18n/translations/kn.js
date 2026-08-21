@@ -873,6 +873,28 @@ complaints: {
     closed: "ಮುಚ್ಚಲಾಗಿದೆ",
     citizenVerified: "ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
   },
+
+  filters: {
+    searchPlaceholder:
+      "ಟಿಕೆಟ್, ಫೋನ್, ಶೀರ್ಷಿಕೆ, ವಿಳಾಸದ ಮೂಲಕ ಹುಡುಕಿ...",
+
+    category: "ವರ್ಗ",
+
+    all: "ಎಲ್ಲಾ",
+
+    to: "ಗೆ",
+
+    reset: "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ಮರುಹೊಂದಿಸಿ",
+
+    categories: {
+      missedCollection: "ಸಂಗ್ರಹಣೆ ತಪ್ಪಿದೆ",
+      overflowingBin: "ತುಂಬಿ ಹರಿಯುತ್ತಿರುವ ಬಿನ್",
+      illegalDumping: "ಅಕ್ರಮ ಕಸ ಸುರಿತ",
+      streetLitter: "ರಸ್ತೆ ಕಸ",
+      damagedBin: "ಹಾನಿಗೊಳಗಾದ ಬಿನ್",
+      other: "ಇತರೆ",
+    },
+  },
 },
 };
 

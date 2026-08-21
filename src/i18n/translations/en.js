@@ -779,6 +779,28 @@ complaints: {
     closed: "Closed",
     citizenVerified: "Citizen Verified",
   },
+
+    filters: {
+    searchPlaceholder:
+      "Search by ticket, phone, title, address...",
+
+    category: "Category",
+
+    all: "All",
+
+    to: "to",
+
+    reset: "Reset Filters",
+
+    categories: {
+      missedCollection: "Missed Collection",
+      overflowingBin: "Overflowing Bin",
+      illegalDumping: "Illegal Dumping",
+      streetLitter: "Street Litter",
+      damagedBin: "Damaged Bin",
+      other: "Other",
+    },
+  },
 },
 };
 

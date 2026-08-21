@@ -769,6 +769,28 @@ complaints: {
     closed: "बंद",
     citizenVerified: "नागरिक द्वारा सत्यापित",
   },
+
+    filters: {
+    searchPlaceholder:
+      "Search by ticket, phone, title, address...",
+
+    category: "Category",
+
+    all: "All",
+
+    to: "to",
+
+    reset: "Reset Filters",
+
+    categories: {
+      missedCollection: "Missed Collection",
+      overflowingBin: "Overflowing Bin",
+      illegalDumping: "Illegal Dumping",
+      streetLitter: "Street Litter",
+      damagedBin: "Damaged Bin",
+      other: "Other",
+    },
+  },
 },
 
 };
