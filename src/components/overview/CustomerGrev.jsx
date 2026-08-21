@@ -10,10 +10,18 @@ import {
   Marker,
   Popup,
   Polygon,
+  ZoomControl,
   useMap,
 } from "react-leaflet";
 
 import L from "leaflet";
+
+import {
+  MessageSquareWarning,
+  X,
+} from "lucide-react";
+
+import { useLanguage } from "../../i18n";
 
 import "leaflet/dist/leaflet.css";
 
@@ -22,13 +30,14 @@ import "leaflet/dist/leaflet.css";
 ============================================================ */
 
 const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
   "https://sewac-main.onrender.com";
 
 const COMPLAINTS_ENDPOINT =
   `${API_BASE_URL}/api/complaints-grev/locations`;
 
 /* ============================================================
-   BENGALURU DEFAULT VIEW
+   DEFAULT BENGALURU VIEW
 ============================================================ */
 
 const BENGALURU_CENTER = [
@@ -39,7 +48,17 @@ const BENGALURU_CENTER = [
 const DEFAULT_ZOOM = 11;
 
 /* ============================================================
-   PERSON MARKER
+   CARTO MAP
+============================================================ */
+
+const CARTO_LIGHT_URL =
+  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+
+const CARTO_ATTRIBUTION =
+  "&copy; OpenStreetMap contributors &copy; CARTO";
+
+/* ============================================================
+   PERSON / GRIEVANCE MARKER
 ============================================================ */
 
 const complaintIcon =
@@ -103,21 +122,18 @@ const complaintIcon =
   });
 
 /* ============================================================
-   NUMBER VALIDATION
+   VALIDATE COORDINATE
 ============================================================ */
 
-function isValidCoordinate(
-  value
-) {
+function isValidCoordinate(value) {
   return (
-    typeof value ===
-      "number" &&
+    typeof value === "number" &&
     Number.isFinite(value)
   );
 }
 
 /* ============================================================
-   CONVERT POINT TO LEAFLET [LAT, LNG]
+   NORMALIZE POINT
 ============================================================ */
 
 function normalizePoint(
@@ -146,12 +162,12 @@ function normalizePoint(
     }
 
     /*
-      GeoJSON:
-      [longitude, latitude]
-
-      Normal backend:
-      [latitude, longitude]
-    */
+     * GeoJSON:
+     * [longitude, latitude]
+     *
+     * Normal:
+     * [latitude, longitude]
+     */
 
     if (geoJsonMode) {
       return [
@@ -172,80 +188,31 @@ function normalizePoint(
 
   if (
     point &&
-    typeof point ===
-      "object"
+    typeof point === "object"
   ) {
-    if (
-      point.lat !==
-        undefined &&
-      point.long !==
-        undefined
-    ) {
-      const lat =
-        Number(point.lat);
+    const latitude =
+      Number(
+        point.lat ??
+          point.latitude ??
+          point.y
+      );
 
-      const lng =
-        Number(point.long);
-
-      if (
-        Number.isFinite(lat) &&
-        Number.isFinite(lng)
-      ) {
-        return [
-          lat,
-          lng,
-        ];
-      }
-    }
+    const longitude =
+      Number(
+        point.lng ??
+          point.long ??
+          point.longitude ??
+          point.x
+      );
 
     if (
-      point.latitude !==
-        undefined &&
-      point.longitude !==
-        undefined
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude)
     ) {
-      const lat =
-        Number(
-          point.latitude
-        );
-
-      const lng =
-        Number(
-          point.longitude
-        );
-
-      if (
-        Number.isFinite(lat) &&
-        Number.isFinite(lng)
-      ) {
-        return [
-          lat,
-          lng,
-        ];
-      }
-    }
-
-    if (
-      point.lat !==
-        undefined &&
-      point.lng !==
-        undefined
-    ) {
-      const lat =
-        Number(point.lat);
-
-      const lng =
-        Number(point.lng);
-
-      if (
-        Number.isFinite(lat) &&
-        Number.isFinite(lng)
-      ) {
-        return [
-          lat,
-          lng,
-        ];
-      }
+      return [
+        latitude,
+        longitude,
+      ];
     }
   }
 
@@ -253,43 +220,7 @@ function normalizePoint(
 }
 
 /* ============================================================
-   NORMALIZE SIMPLE BOUNDARY
-============================================================ */
-
-function normalizeBoundary(
-  boundary
-) {
-  if (
-    !Array.isArray(
-      boundary
-    )
-  ) {
-    return [];
-  }
-
-  const points =
-    boundary
-      .map((point) =>
-        normalizePoint(
-          point,
-          false
-        )
-      )
-      .filter(Boolean);
-
-  if (
-    points.length < 3
-  ) {
-    return [];
-  }
-
-  return [
-    points,
-  ];
-}
-
-/* ============================================================
-   GEOJSON → POLYGON PATHS
+   GEOJSON → LEAFLET PATHS
 ============================================================ */
 
 function geoJsonToPaths(
@@ -299,26 +230,26 @@ function geoJsonToPaths(
     return [];
   }
 
-  /* ----------------------------------------------------------
-     FEATURE
-  ---------------------------------------------------------- */
+  /*
+   * Feature
+   */
 
   if (
     geometry.type ===
-      "Feature"
+    "Feature"
   ) {
     return geoJsonToPaths(
       geometry.geometry
     );
   }
 
-  /* ----------------------------------------------------------
-     FEATURE COLLECTION
-  ---------------------------------------------------------- */
+  /*
+   * FeatureCollection
+   */
 
   if (
     geometry.type ===
-      "FeatureCollection"
+    "FeatureCollection"
   ) {
     if (
       !Array.isArray(
@@ -336,31 +267,16 @@ function geoJsonToPaths(
     );
   }
 
-  /* ----------------------------------------------------------
-     POLYGON
-  ---------------------------------------------------------- */
+  /*
+   * Polygon
+   */
 
   if (
     geometry.type ===
-      "Polygon"
+    "Polygon"
   ) {
-    const rings =
-      geometry.coordinates;
-
-    if (
-      !Array.isArray(
-        rings
-      )
-    ) {
-      return [];
-    }
-
-    /*
-      First ring = outer boundary.
-    */
-
     const outerRing =
-      rings[0];
+      geometry.coordinates?.[0];
 
     if (
       !Array.isArray(
@@ -380,19 +296,18 @@ function geoJsonToPaths(
         )
         .filter(Boolean);
 
-    return path.length >=
-      3
+    return path.length >= 3
       ? [path]
       : [];
   }
 
-  /* ----------------------------------------------------------
-     MULTI POLYGON
-  ---------------------------------------------------------- */
+  /*
+   * MultiPolygon
+   */
 
   if (
     geometry.type ===
-      "MultiPolygon"
+    "MultiPolygon"
   ) {
     if (
       !Array.isArray(
@@ -442,7 +357,7 @@ function geoJsonToPaths(
 }
 
 /* ============================================================
-   PARSE POSSIBLE JSON STRING
+   POSSIBLE JSON
 ============================================================ */
 
 function parsePossibleJson(
@@ -458,9 +373,7 @@ function parsePossibleJson(
   const trimmed =
     value.trim();
 
-  if (
-    !trimmed
-  ) {
+  if (!trimmed) {
     return value;
   }
 
@@ -480,14 +393,6 @@ function parsePossibleJson(
 function extractBoundaryPaths(
   payload
 ) {
-  console.log(
-    "🔎 SEARCHING FOR BENGALURU BOUNDARY..."
-  );
-
-  /*
-    Possible backend property names.
-  */
-
   const possibleKeys = [
     "boundary",
     "city_boundary",
@@ -501,21 +406,20 @@ function extractBoundaryPaths(
     "coordinates",
   ];
 
-  /* ----------------------------------------------------------
-     DIRECT SEARCH
-  ---------------------------------------------------------- */
+  const candidates = [];
 
-  const directCandidates = [];
+  /*
+   * Direct payload keys
+   */
 
   possibleKeys.forEach(
     (key) => {
       if (
-        payload &&
-        payload[key] !==
+        payload?.[key] !==
           undefined &&
-        payload[key] !== null
+        payload?.[key] !== null
       ) {
-        directCandidates.push(
+        candidates.push(
           payload[key]
         );
       }
@@ -523,10 +427,8 @@ function extractBoundaryPaths(
   );
 
   /*
-    Check nested objects such as:
-      payload.city.boundary
-      payload.data.boundary
-  */
+   * Nested objects
+   */
 
   const nestedObjects = [
     payload?.city,
@@ -551,10 +453,9 @@ function extractBoundaryPaths(
           if (
             object[key] !==
               undefined &&
-            object[key] !==
-              null
+            object[key] !== null
           ) {
-            directCandidates.push(
+            candidates.push(
               object[key]
             );
           }
@@ -563,9 +464,9 @@ function extractBoundaryPaths(
     }
   );
 
-  /* ----------------------------------------------------------
-     SEARCH ARRAY ITEMS
-  ---------------------------------------------------------- */
+  /*
+   * Data array
+   */
 
   if (
     Array.isArray(
@@ -587,10 +488,9 @@ function extractBoundaryPaths(
             if (
               item[key] !==
                 undefined &&
-              item[key] !==
-                null
+              item[key] !== null
             ) {
-              directCandidates.push(
+              candidates.push(
                 item[key]
               );
             }
@@ -600,27 +500,22 @@ function extractBoundaryPaths(
     );
   }
 
-  /* ----------------------------------------------------------
-     PROCESS CANDIDATES
-  ---------------------------------------------------------- */
+  /*
+   * Process candidates
+   */
 
   for (
-    const candidateRaw of
-      directCandidates
+    const rawCandidate of
+      candidates
   ) {
     const candidate =
       parsePossibleJson(
-        candidateRaw
+        rawCandidate
       );
 
-    console.log(
-      "🔍 BOUNDARY CANDIDATE:",
-      candidate
-    );
-
-    /* --------------------------------------------------------
-       GEOJSON
-    -------------------------------------------------------- */
+    /*
+     * GeoJSON
+     */
 
     if (
       candidate &&
@@ -636,19 +531,13 @@ function extractBoundaryPaths(
       if (
         paths.length > 0
       ) {
-        console.log(
-          "✅ GEOJSON BOUNDARY FOUND:",
-          paths.length,
-          "polygon(s)"
-        );
-
         return paths;
       }
     }
 
-    /* --------------------------------------------------------
-       ARRAY
-    -------------------------------------------------------- */
+    /*
+     * Direct coordinates
+     */
 
     if (
       Array.isArray(
@@ -656,95 +545,76 @@ function extractBoundaryPaths(
       )
     ) {
       /*
-        Direct array of points:
-          [
-            [lat, lng],
-            [lat, lng]
-          ]
-      */
+       * Single polygon:
+       * [
+       *   [lat,lng],
+       *   [lat,lng]
+       * ]
+       */
 
       if (
-        candidate.length >
-          0 &&
-        Array.isArray(
-          candidate[0]
-        ) &&
-        candidate[0].length >=
-          2 &&
-        typeof candidate[0][0] !==
-          "object"
+        candidate.length > 0 &&
+        candidate.every(
+          (item) =>
+            Array.isArray(item) &&
+            item.length >= 2 &&
+            typeof item[0] !==
+              "object"
+        )
       ) {
-        const paths =
-          normalizeBoundary(
-            candidate
-          );
+        const path =
+          candidate
+            .map((point) =>
+              normalizePoint(
+                point
+              )
+            )
+            .filter(Boolean);
 
         if (
-          paths.length > 0
+          path.length >= 3
         ) {
-          console.log(
-            "✅ SIMPLE BOUNDARY FOUND:",
-            paths[0].length,
-            "points"
-          );
-
-          return paths;
+          return [path];
         }
       }
 
       /*
-        Nested arrays:
-          [
-            [
-              [lat,lng],
-              [lat,lng]
-            ]
-          ]
-      */
+       * Multiple polygons
+       */
+
+      const paths =
+        candidate
+          .map((polygon) => {
+            if (
+              !Array.isArray(
+                polygon
+              )
+            ) {
+              return null;
+            }
+
+            const path =
+              polygon
+                .map((point) =>
+                  normalizePoint(
+                    point
+                  )
+                )
+                .filter(Boolean);
+
+            return path.length >= 3
+              ? path
+              : null;
+          })
+          .filter(Boolean);
 
       if (
-        Array.isArray(
-          candidate[0]
-        ) &&
-        Array.isArray(
-          candidate[0][0]
-        )
+        paths.length > 0
       ) {
-        const paths =
-          candidate
-            .map(
-              (ring) =>
-                normalizeBoundary(
-                  ring
-                )
-            )
-            .flat();
-
-        if (
-          paths.length > 0
-        ) {
-          console.log(
-            "✅ NESTED BOUNDARY FOUND:",
-            paths.length,
-            "polygon(s)"
-          );
-
-          return paths;
-        }
+        return paths;
       }
     }
   }
-
-  console.warn(
-    "⚠️ NO BENGALURU BOUNDARY FOUND IN RESPONSE"
-  );
-
-  console.warn(
-    "⚠️ RESPONSE KEYS:",
-    Object.keys(
-      payload || {}
-    )
-  );
 
   return [];
 }
@@ -796,9 +666,7 @@ function isPointInsidePolygon(
           (yj - yi) +
           xi;
 
-    if (
-      intersect
-    ) {
+    if (intersect) {
       inside =
         !inside;
     }
@@ -808,7 +676,61 @@ function isPointInsidePolygon(
 }
 
 /* ============================================================
-   MAP FOCUS COMPONENT
+   MAP SIZE CONTROLLER
+============================================================ */
+
+function MapSizeController() {
+  const map =
+    useMap();
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        100
+      ),
+
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        500
+      ),
+
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        1000
+      ),
+    ];
+
+    const handleResize =
+      () => {
+        map.invalidateSize();
+      };
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
+
+    return () => {
+      timers.forEach(
+        clearTimeout
+      );
+
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+    };
+  }, [map]);
+
+  return null;
+}
+
+/* ============================================================
+   BENGALURU MAP FOCUS
 ============================================================ */
 
 function BengaluruMapFocus({
@@ -845,10 +767,6 @@ function BengaluruMapFocus({
       if (
         bounds.isValid()
       ) {
-        console.log(
-          "🎯 FITTING MAP TO BENGALURU BOUNDARY"
-        );
-
         map.fitBounds(
           bounds,
           {
@@ -863,10 +781,10 @@ function BengaluruMapFocus({
           }
         );
       }
-    } catch (error) {
+    } catch (focusError) {
       console.error(
-        "❌ BENGALURU MAP FOCUS ERROR:",
-        error
+        "BENGALURU MAP FOCUS ERROR:",
+        focusError
       );
 
       map.setView(
@@ -886,10 +804,177 @@ function BengaluruMapFocus({
 }
 
 /* ============================================================
+   FIELD HELPER
+============================================================ */
+
+function getField(
+  object,
+  keys,
+  fallback = ""
+) {
+  for (
+    const key of keys
+  ) {
+    const value =
+      object?.[key];
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
+/* ============================================================
+   DATE FORMATTER
+============================================================ */
+
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  try {
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return String(value);
+    }
+
+    return date.toLocaleString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  } catch {
+    return String(value);
+  }
+}
+
+/* ============================================================
+   STATUS COLOR
+============================================================ */
+
+function getStatusClasses(
+  status
+) {
+  const normalized =
+    String(status || "")
+      .toUpperCase();
+
+  if (
+    normalized ===
+    "CLOSED"
+  ) {
+    return {
+      badge:
+        "bg-emerald-50 text-emerald-600",
+      dot:
+        "bg-emerald-500",
+    };
+  }
+
+  if (
+    normalized ===
+    "PENDING"
+  ) {
+    return {
+      badge:
+        "bg-amber-50 text-amber-600",
+      dot:
+        "bg-amber-500",
+    };
+  }
+
+  if (
+    normalized ===
+    "OTP_SENT"
+  ) {
+    return {
+      badge:
+        "bg-violet-50 text-violet-600",
+      dot:
+        "bg-violet-500",
+    };
+  }
+
+  return {
+    badge:
+      "bg-blue-50 text-blue-600",
+    dot:
+      "bg-blue-500",
+  };
+}
+
+/* ============================================================
+   POPUP ROW
+============================================================ */
+
+function PopupRow({
+  label,
+  value,
+}) {
+  return (
+    <div
+      className="
+        grid
+        grid-cols-[minmax(70px,0.7fr)_minmax(0,1.3fr)]
+        gap-3
+        py-1.5
+        text-[11px]
+        sm:text-[12px]
+      "
+    >
+      <span
+        className="
+          text-[#6E86A0]
+        "
+      >
+        {label}
+      </span>
+
+      <span
+        className="
+          min-w-0
+          break-words
+          text-right
+          font-semibold
+          text-[#24364B]
+        "
+      >
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
+
+/* ============================================================
    MAIN COMPONENT
 ============================================================ */
 
 export default function CustomerGrev() {
+  const {
+    language,
+    t,
+  } = useLanguage();
+
   const [
     complaints,
     setComplaints,
@@ -911,7 +996,97 @@ export default function CustomerGrev() {
   ] = useState("");
 
   /* ==========================================================
-     FETCH COMPLAINTS + BOUNDARY
+     TRANSLATIONS
+  ========================================================== */
+
+  const title =
+    t(
+      "cityOverviewMap.customerGrievances.title",
+      "Customer Grievances"
+    );
+
+  const loadingText =
+    t(
+      "cityOverviewMap.customerGrievances.loading",
+      "Loading customer grievances..."
+    );
+
+  const errorText =
+    t(
+      "cityOverviewMap.customerGrievances.error",
+      "Unable to load customer grievances."
+    );
+
+  const noComplaintsText =
+    t(
+      "cityOverviewMap.customerGrievances.empty",
+      "No customer grievances found."
+    );
+
+  const labels = {
+    ticket:
+      t(
+        "cityOverviewMap.customerGrievances.ticket",
+        "Ticket"
+      ),
+
+    status:
+      t(
+        "cityOverviewMap.customerGrievances.status",
+        "Status"
+      ),
+
+    category:
+      t(
+        "cityOverviewMap.customerGrievances.category",
+        "Category"
+      ),
+
+    phone:
+      t(
+        "cityOverviewMap.customerGrievances.phone",
+        "Phone"
+      ),
+
+    description:
+      t(
+        "cityOverviewMap.customerGrievances.description",
+        "Description"
+      ),
+
+    address:
+      t(
+        "cityOverviewMap.customerGrievances.address",
+        "Address"
+      ),
+
+    latitude:
+      t(
+        "cityOverviewMap.customerGrievances.latitude",
+        "Latitude"
+      ),
+
+    longitude:
+      t(
+        "cityOverviewMap.customerGrievances.longitude",
+        "Longitude"
+      ),
+
+    date:
+      t(
+        "cityOverviewMap.customerGrievances.date",
+        "Date"
+      ),
+
+    complaints:
+      t(
+        "cityOverviewMap.customerGrievances.complaints",
+        "Complaints"
+      ),
+  };
+
+  /* ==========================================================
+     FETCH COMPLAINTS
   ========================================================== */
 
   useEffect(() => {
@@ -923,23 +1098,6 @@ export default function CustomerGrev() {
         try {
           setLoading(true);
           setError("");
-
-          console.log(
-            "=============================================="
-          );
-
-          console.log(
-            "📍 CUSTOMER GRIEVANCES MAP REQUEST"
-          );
-
-          console.log(
-            "ENDPOINT:",
-            COMPLAINTS_ENDPOINT
-          );
-
-          console.log(
-            "=============================================="
-          );
 
           const response =
             await fetch(
@@ -962,26 +1120,16 @@ export default function CustomerGrev() {
           const responseText =
             await response.text();
 
-          /* ------------------------------------------------
-             HTML / WRONG ENDPOINT PROTECTION
-          ------------------------------------------------ */
+          /*
+           * Prevent HTML / wrong endpoint
+           * responses from crashing JSON parsing.
+           */
 
           if (
             !contentType.includes(
               "application/json"
             )
           ) {
-            console.error(
-              "❌ NON JSON RESPONSE:"
-            );
-
-            console.error(
-              responseText.substring(
-                0,
-                500
-              )
-            );
-
             throw new Error(
               `Backend returned ${response.status} ${response.statusText} instead of JSON.`
             );
@@ -994,14 +1142,7 @@ export default function CustomerGrev() {
               JSON.parse(
                 responseText
               );
-          } catch (
-            jsonError
-          ) {
-            console.error(
-              "❌ JSON PARSE ERROR:",
-              jsonError
-            );
-
+          } catch {
             throw new Error(
               "Backend returned invalid JSON."
             );
@@ -1016,20 +1157,14 @@ export default function CustomerGrev() {
             );
           }
 
-          if (
-            cancelled
-          ) {
+          if (cancelled) {
             return;
           }
 
-          console.log(
-            "✅ CUSTOMER GRIEVANCES RESPONSE:",
-            payload
-          );
-
-          /* =================================================
-             COMPLAINT DATA
-          ================================================= */
+          /*
+           * Complaint array can be returned
+           * in different backend shapes.
+           */
 
           let complaintData =
             [];
@@ -1059,40 +1194,23 @@ export default function CustomerGrev() {
                 .complaints;
           }
 
-          /* =================================================
-             BENGALURU BOUNDARY
-          ================================================= */
+          /*
+           * Bengaluru boundary.
+           */
 
           const paths =
             extractBoundaryPaths(
               payload
             );
 
-          console.log(
-            "🟢 BENGALURU BOUNDARY POLYGONS:",
-            paths.length
-          );
-
-          console.log(
-            "🟢 BENGALURU BOUNDARY TOTAL POINTS:",
-            paths.reduce(
-              (
-                total,
-                path
-              ) =>
-                total +
-                path.length,
-              0
-            )
-          );
-
           setBoundaryPaths(
             paths
           );
 
-          /* =================================================
-             CLEAN COMPLAINT DATA
-          ================================================= */
+          /*
+           * Normalize complaint
+           * coordinates.
+           */
 
           const cleanedComplaints =
             complaintData
@@ -1107,7 +1225,8 @@ export default function CustomerGrev() {
                   const long =
                     Number(
                       item?.long ??
-                        item?.longitude
+                        item?.longitude ??
+                        item?.lng
                     );
 
                   return {
@@ -1127,11 +1246,6 @@ export default function CustomerGrev() {
                   )
               );
 
-          console.log(
-            "📍 TOTAL COMPLAINTS:",
-            cleanedComplaints.length
-          );
-
           setComplaints(
             cleanedComplaints
           );
@@ -1139,22 +1253,18 @@ export default function CustomerGrev() {
           fetchError
         ) {
           console.error(
-            "❌ CUSTOMER GRIEVANCES ERROR:",
+            "CUSTOMER GRIEVANCES ERROR:",
             fetchError
           );
 
-          if (
-            !cancelled
-          ) {
+          if (!cancelled) {
             setError(
-              fetchError.message ||
-                "Failed to load customer grievances."
+              fetchError?.message ||
+                errorText
             );
           }
         } finally {
-          if (
-            !cancelled
-          ) {
+          if (!cancelled) {
             setLoading(false);
           }
         }
@@ -1163,13 +1273,12 @@ export default function CustomerGrev() {
     fetchData();
 
     return () => {
-      cancelled =
-        true;
+      cancelled = true;
     };
-  }, []);
+  }, [errorText]);
 
   /* ==========================================================
-     ONLY COMPLAINTS INSIDE BENGALURU
+     ONLY SHOW COMPLAINTS INSIDE BENGALURU
   ========================================================== */
 
   const visibleComplaints =
@@ -1178,11 +1287,6 @@ export default function CustomerGrev() {
         boundaryPaths.length ===
         0
       ) {
-        /*
-          Boundary hasn't arrived.
-          Keep the complaints visible.
-        */
-
         return complaints;
       }
 
@@ -1208,14 +1312,61 @@ export default function CustomerGrev() {
 
   if (loading) {
     return (
-      <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-          <div className="h-7 w-64 animate-pulse rounded-lg bg-slate-100" />
+      <div
+        className="
+          relative
+          flex
+          h-full
+          min-h-[420px]
+          w-full
+          items-center
+          justify-center
+          overflow-hidden
+          rounded-[14px]
+          bg-[#EEF1F3]
+          sm:min-h-[500px]
+          md:min-h-[560px]
+          lg:min-h-[620px]
+        "
+      >
+        <div
+          className="
+            flex
+            flex-col
+            items-center
+            gap-3
+            rounded-2xl
+            border
+            border-white/80
+            bg-white/95
+            px-6
+            py-5
+            text-center
+            shadow-[0_12px_35px_rgba(30,45,60,0.08)]
+          "
+        >
+          <div
+            className="
+              h-8
+              w-8
+              animate-spin
+              rounded-full
+              border-2
+              border-slate-200
+              border-t-blue-600
+            "
+          />
 
-          <div className="h-8 w-28 animate-pulse rounded-full bg-slate-100" />
+          <p
+            className="
+              text-[12px]
+              font-semibold
+              text-[#536B84]
+            "
+          >
+            {loadingText}
+          </p>
         </div>
-
-        <div className="h-[650px] w-full animate-pulse bg-slate-100" />
       </div>
     );
   }
@@ -1226,24 +1377,85 @@ export default function CustomerGrev() {
 
   if (error) {
     return (
-      <div className="w-full rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 font-bold text-red-500">
-            !
-          </div>
+      <div
+        className="
+          flex
+          min-h-[420px]
+          w-full
+          items-center
+          justify-center
+          rounded-[14px]
+          bg-[#EEF1F3]
+          p-4
+          sm:min-h-[500px]
+          md:min-h-[560px]
+        "
+      >
+        <div
+          className="
+            w-full
+            max-w-md
+            rounded-2xl
+            border
+            border-red-100
+            bg-white
+            p-5
+            shadow-[0_12px_35px_rgba(30,45,60,0.08)]
+            sm:p-6
+          "
+        >
+          <div
+            className="
+              flex
+              items-start
+              gap-3
+            "
+          >
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-red-50
+                text-red-500
+              "
+            >
+              <MessageSquareWarning
+                size={19}
+              />
+            </div>
 
-          <div className="min-w-0">
-            <h2 className="text-base font-bold text-slate-900">
-              Customer Grievances
-            </h2>
+            <div
+              className="
+                min-w-0
+              "
+            >
+              <h2
+                className="
+                  text-[14px]
+                  font-bold
+                  text-[#17243A]
+                "
+              >
+                {title}
+              </h2>
 
-            <p className="mt-1 text-sm text-red-600">
-              {error}
-            </p>
-
-            <p className="mt-2 break-all text-xs text-slate-500">
-              {COMPLAINTS_ENDPOINT}
-            </p>
+              <p
+                className="
+                  mt-1.5
+                  break-words
+                  text-[11px]
+                  leading-5
+                  text-red-500
+                "
+              >
+                {error}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -1251,376 +1463,693 @@ export default function CustomerGrev() {
   }
 
   /* ==========================================================
-     MAIN RENDER
+     MAIN MAP
   ========================================================== */
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div
+      className="
+        relative
+        h-full
+        min-h-[420px]
+        w-full
+        overflow-hidden
+        rounded-[14px]
+        bg-[#EEF1F3]
 
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+        sm:min-h-[500px]
+        md:min-h-[560px]
+        lg:min-h-[620px]
+        xl:min-h-[650px]
+      "
+    >
+      <MapContainer
+        center={
+          BENGALURU_CENTER
+        }
+        zoom={
+          DEFAULT_ZOOM
+        }
+        scrollWheelZoom
+        zoomControl={false}
+        className="
+          h-full
+          min-h-[420px]
+          w-full
 
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
-        <div className="flex items-center gap-3">
+          sm:min-h-[500px]
+          md:min-h-[560px]
+          lg:min-h-[620px]
+          xl:min-h-[650px]
+        "
+      >
+        {/* ==================================================
+            CARTO MAP
+        ================================================== */}
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
-            <svg
-              width="23"
-              height="23"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 12V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6" />
-
-              <path d="M16 16l2 2 4-4" />
-            </svg>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              Customer Grievances
-            </h2>
-
-            <p className="text-xs text-slate-500">
-              Bengaluru complaint locations
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-700">
-            {visibleComplaints.length}{" "}
-            Complaints
-          </span>
-        </div>
-      </div>
-
-      {/* ======================================================
-          MAP
-      ====================================================== */}
-
-      <div className="h-[650px] w-full">
-
-        <MapContainer
-          center={
-            BENGALURU_CENTER
+        <TileLayer
+          attribution={
+            CARTO_ATTRIBUTION
           }
-
-          zoom={
-            DEFAULT_ZOOM
+          url={
+            CARTO_LIGHT_URL
           }
+          subdomains={[
+            "a",
+            "b",
+            "c",
+            "d",
+          ]}
+          maxZoom={20}
+        />
 
-          scrollWheelZoom={
-            true
+        <MapSizeController />
+
+        <BengaluruMapFocus
+          boundaryPaths={
+            boundaryPaths
           }
+        />
 
-          zoomControl={
-            true
-          }
+        <ZoomControl
+          position="topleft"
+        />
 
-          className="h-full w-full"
-        >
+        {/* ==================================================
+            BENGALURU BOUNDARY
+        ================================================== */}
 
-          {/* ==================================================
-              PALE WHITE MAP
-          ================================================== */}
+        {boundaryPaths.map(
+          (
+            polygon,
+            index
+          ) => (
+            <Polygon
+              key={
+                `grievance-boundary-${index}`
+              }
+              positions={
+                polygon
+              }
+              pathOptions={{
+                color:
+                  "#2563EB",
+                weight: 3,
+                opacity: 0.95,
+                fillColor:
+                  "#3B82F6",
+                fillOpacity:
+                  0.04,
+              }}
+            />
+          )
+        )}
 
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            subdomains={[
-              "a",
-              "b",
-              "c",
-              "d",
-            ]}
-            maxZoom={20}
-          />
+        {/* ==================================================
+            COMPLAINT MARKERS
+        ================================================== */}
 
-          {/* ==================================================
-              FOCUS ONLY BENGALURU
-          ================================================== */}
+        {visibleComplaints.map(
+          (
+            complaint,
+            index
+          ) => {
+            const ticket =
+              getField(
+                complaint,
+                [
+                  "ticketNumber",
+                  "ticket_number",
+                  "ticketNo",
+                  "ticket",
+                  "id",
+                ],
+                `#${index + 1}`
+              );
 
-          <BengaluruMapFocus
-            boundaryPaths={
-              boundaryPaths
-            }
-          />
+            const complaintTitle =
+              getField(
+                complaint,
+                [
+                  "title",
+                  "complaintTitle",
+                  "complaint_title",
+                  "subject",
+                  "name",
+                ],
+                title
+              );
 
-          {/* ==================================================
-              BENGALURU BOUNDARY
-          ================================================== */}
+            const status =
+              getField(
+                complaint,
+                [
+                  "status",
+                  "complaintStatus",
+                ],
+                "—"
+              );
 
-          {boundaryPaths.map(
-            (
-              polygon,
-              index
-            ) => (
-              <Polygon
-                key={`bengaluru-boundary-${index}`}
-                positions={
-                  polygon
-                }
+            const category =
+              getField(
+                complaint,
+                [
+                  "category",
+                  "complaintCategory",
+                  "complaint_category",
+                ],
+                "—"
+              );
 
-                pathOptions={{
-                  color:
-                    "#2563eb",
+            const phone =
+              getField(
+                complaint,
+                [
+                  "phone",
+                  "phoneNumber",
+                  "citizenPhone",
+                  "citizen_phone",
+                  "contactNumber",
+                ],
+                "—"
+              );
 
-                  weight: 3,
+            const description =
+              getField(
+                complaint,
+                [
+                  "description",
+                  "complaintDescription",
+                  "complaint_description",
+                ],
+                "—"
+              );
 
-                  opacity: 1,
+            const address =
+              getField(
+                complaint,
+                [
+                  "address",
+                  "location",
+                  "fullAddress",
+                ],
+                "—"
+              );
 
-                  fillColor:
-                    "#2563eb",
+            const createdAt =
+              getField(
+                complaint,
+                [
+                  "createdAt",
+                  "created_at",
+                  "date",
+                  "timestamp",
+                ],
+                ""
+              );
 
-                  fillOpacity:
-                    0.04,
-                }}
-              />
-            )
-          )}
+            const statusClasses =
+              getStatusClasses(
+                status
+              );
 
-          {/* ==================================================
-              COMPLAINT MARKERS
-          ================================================== */}
-
-          {visibleComplaints.map(
-            (
-              complaint,
-              index
-            ) => (
+            return (
               <Marker
                 key={
-                  complaint
-                    ?.data
-                    ?.id ??
-                  index
+                  complaint.id ??
+                  ticket ??
+                  `complaint-${index}`
                 }
-
                 position={[
                   complaint.lat,
                   complaint.long,
                 ]}
-
                 icon={
                   complaintIcon
                 }
               >
-
                 <Popup
-                  closeButton={
-                    true
-                  }
-
-                  maxWidth={
-                    350
-                  }
+                  maxWidth={360}
+                  minWidth={250}
+                  closeButton
+                  className="
+                    customer-grievance-popup
+                  "
                 >
+                  <div
+                    className="
+                      w-[240px]
+                      max-w-[calc(100vw-60px)]
+                      overflow-hidden
+                      rounded-xl
+                      bg-white
+                      sm:w-[310px]
+                    "
+                  >
+                    {/* ======================================
+                        POPUP HEADER
+                    ====================================== */}
 
-                  <div className="w-[300px]">
+                    <div
+                      className="
+                        border-b
+                        border-slate-100
+                        pb-3
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-start
+                          justify-between
+                          gap-3
+                        "
+                      >
+                        <div
+                          className="
+                            min-w-0
+                          "
+                        >
+                          <h3
+                            className="
+                              break-words
+                              text-[14px]
+                              font-bold
+                              leading-5
+                              text-[#162033]
+                              sm:text-[16px]
+                            "
+                          >
+                            {
+                              complaintTitle
+                            }
+                          </h3>
 
-                    {/* ----------------------------------------
-                        TITLE
-                    ---------------------------------------- */}
-
-                    <div className="mb-3 border-b border-slate-200 pb-3">
-
-                      <div className="text-base font-bold text-slate-900">
-                        {complaint
-                          ?.data
-                          ?.title ||
-                          "Customer Complaint"}
+                          <p
+                            className="
+                              mt-1
+                              break-all
+                              text-[10px]
+                              text-[#7890AA]
+                              sm:text-[11px]
+                            "
+                          >
+                            {
+                              labels.ticket
+                            }
+                            :{" "}
+                            {ticket}
+                          </p>
+                        </div>
                       </div>
-
-                      <div className="mt-1 text-xs font-medium text-slate-500">
-                        Ticket:{" "}
-                        {complaint
-                          ?.data
-                          ?.ticket_number ||
-                          "N/A"}
-                      </div>
-
                     </div>
 
-                    {/* ----------------------------------------
+                    {/* ======================================
                         STATUS
-                    ---------------------------------------- */}
+                    ====================================== */}
 
-                    <div className="mb-3 flex items-center justify-between">
-
-                      <span className="text-xs font-medium text-slate-500">
-                        Status
+                    <div
+                      className="
+                        mt-3
+                        flex
+                        items-center
+                        justify-between
+                        gap-3
+                      "
+                    >
+                      <span
+                        className="
+                          text-[11px]
+                          text-[#69819B]
+                          sm:text-[12px]
+                        "
+                      >
+                        {
+                          labels.status
+                        }
                       </span>
 
-                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                        {complaint
-                          ?.data
-                          ?.status ||
-                          "N/A"}
-                      </span>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        CATEGORY
-                    ---------------------------------------- */}
-
-                    <div className="mb-3 flex items-start justify-between gap-4">
-
-                      <span className="text-xs font-medium text-slate-500">
-                        Category
-                      </span>
-
-                      <span className="text-right text-xs font-semibold text-slate-800">
-                        {complaint
-                          ?.data
-                          ?.category ||
-                          "N/A"}
-                      </span>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        PHONE
-                    ---------------------------------------- */}
-
-                    <div className="mb-3 flex items-start justify-between gap-4">
-
-                      <span className="text-xs font-medium text-slate-500">
-                        Phone
-                      </span>
-
-                      <span className="text-right text-xs font-semibold text-slate-800">
-                        {complaint
-                          ?.data
-                          ?.phone_number ||
-                          "N/A"}
-                      </span>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        DESCRIPTION
-                    ---------------------------------------- */}
-
-                    <div className="mb-3">
-
-                      <div className="mb-1 text-xs font-medium text-slate-500">
-                        Description
-                      </div>
-
-                      <div className="rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-700">
-                        {complaint
-                          ?.data
-                          ?.description ||
-                          "No description available."}
-                      </div>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        ADDRESS
-                    ---------------------------------------- */}
-
-                    <div className="mb-3">
-
-                      <div className="mb-1 text-xs font-medium text-slate-500">
-                        Address
-                      </div>
-
-                      <div className="text-xs leading-5 text-slate-700">
-                        {complaint
-                          ?.data
-                          ?.address ||
-                          "N/A"}
-                      </div>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        COORDINATES
-                    ---------------------------------------- */}
-
-                    <div className="border-t border-slate-200 pt-3">
-
-                      <div className="grid grid-cols-2 gap-2">
-
-                        <div className="rounded-lg bg-slate-50 p-2">
-
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Latitude
-                          </div>
-
-                          <div className="mt-1 text-xs font-semibold text-slate-700">
-                            {complaint.lat}
-                          </div>
-
-                        </div>
-
-                        <div className="rounded-lg bg-slate-50 p-2">
-
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Longitude
-                          </div>
-
-                          <div className="mt-1 text-xs font-semibold text-slate-700">
-                            {complaint.long}
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                    {/* ----------------------------------------
-                        IMAGE
-                    ---------------------------------------- */}
-
-                    {complaint
-                      ?.data
-                      ?.image_url && (
-                      <div className="mt-3">
-
-                        <img
-                          src={
-                            complaint
-                              .data
-                              .image_url
-                          }
-
-                          alt="Complaint"
-
-                          className="h-36 w-full rounded-lg object-cover"
-
-                          onError={(
-                            event
-                          ) => {
-                            event.currentTarget.style.display =
-                              "none";
-                          }}
+                      <span
+                        className={`
+                          inline-flex
+                          max-w-[170px]
+                          items-center
+                          gap-1.5
+                          rounded-full
+                          px-2.5
+                          py-1
+                          text-right
+                          text-[9px]
+                          font-bold
+                          sm:text-[10px]
+                          ${statusClasses.badge}
+                        `}
+                      >
+                        <span
+                          className={`
+                            h-1.5
+                            w-1.5
+                            shrink-0
+                            rounded-full
+                            ${statusClasses.dot}
+                          `}
                         />
 
+                        <span
+                          className="
+                            break-words
+                          "
+                        >
+                          {status}
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* ======================================
+                        BASIC DATA
+                    ====================================== */}
+
+                    <div
+                      className="
+                        mt-2
+                        divide-y
+                        divide-slate-100
+                      "
+                    >
+                      <PopupRow
+                        label={
+                          labels.category
+                        }
+                        value={
+                          category
+                        }
+                      />
+
+                      <PopupRow
+                        label={
+                          labels.phone
+                        }
+                        value={
+                          phone
+                        }
+                      />
+                    </div>
+
+                    {/* ======================================
+                        DESCRIPTION
+                    ====================================== */}
+
+                    <div
+                      className="
+                        mt-2
+                      "
+                    >
+                      <p
+                        className="
+                          mb-1
+                          text-[10px]
+                          font-medium
+                          text-[#6E86A0]
+                          sm:text-[11px]
+                        "
+                      >
+                        {
+                          labels.description
+                        }
+                      </p>
+
+                      <div
+                        className="
+                          max-h-[100px]
+                          overflow-y-auto
+                          rounded-xl
+                          bg-[#F6F8FA]
+                          px-3
+                          py-2.5
+                          text-[10px]
+                          leading-4
+                          text-[#40566D]
+                          sm:text-[11px]
+                        "
+                      >
+                        {
+                          description
+                        }
+                      </div>
+                    </div>
+
+                    {/* ======================================
+                        ADDRESS
+                    ====================================== */}
+
+                    <div
+                      className="
+                        mt-2
+                      "
+                    >
+                      <p
+                        className="
+                          mb-1
+                          text-[10px]
+                          font-medium
+                          text-[#6E86A0]
+                          sm:text-[11px]
+                        "
+                      >
+                        {
+                          labels.address
+                        }
+                      </p>
+
+                      <p
+                        className="
+                          break-words
+                          text-[10px]
+                          leading-4
+                          text-[#40566D]
+                          sm:text-[11px]
+                        "
+                      >
+                        {address}
+                      </p>
+                    </div>
+
+                    {/* ======================================
+                        COORDINATES
+                    ====================================== */}
+
+                    <div
+                      className="
+                        mt-3
+                        grid
+                        grid-cols-2
+                        gap-2
+                      "
+                    >
+                      <div
+                        className="
+                          rounded-lg
+                          bg-[#F6F8FA]
+                          px-2.5
+                          py-2
+                        "
+                      >
+                        <p
+                          className="
+                            text-[8px]
+                            font-semibold
+                            uppercase
+                            tracking-wide
+                            text-[#9AAABC]
+                          "
+                        >
+                          {
+                            labels.latitude
+                          }
+                        </p>
+
+                        <p
+                          className="
+                            mt-0.5
+                            break-all
+                            text-[10px]
+                            font-semibold
+                            text-[#34495E]
+                          "
+                        >
+                          {
+                            Number(
+                              complaint.lat
+                            ).toFixed(
+                              7
+                            )
+                          }
+                        </p>
+                      </div>
+
+                      <div
+                        className="
+                          rounded-lg
+                          bg-[#F6F8FA]
+                          px-2.5
+                          py-2
+                        "
+                      >
+                        <p
+                          className="
+                            text-[8px]
+                            font-semibold
+                            uppercase
+                            tracking-wide
+                            text-[#9AAABC]
+                          "
+                        >
+                          {
+                            labels.longitude
+                          }
+                        </p>
+
+                        <p
+                          className="
+                            mt-0.5
+                            break-all
+                            text-[10px]
+                            font-semibold
+                            text-[#34495E]
+                          "
+                        >
+                          {
+                            Number(
+                              complaint.long
+                            ).toFixed(
+                              7
+                            )
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ======================================
+                        CREATED DATE
+                    ====================================== */}
+
+                    {createdAt && (
+                      <div
+                        className="
+                          mt-2
+                          border-t
+                          border-slate-100
+                          pt-2
+                        "
+                      >
+                        <PopupRow
+                          label={
+                            labels.date
+                          }
+                          value={formatDate(
+                            createdAt
+                          )}
+                        />
                       </div>
                     )}
-
                   </div>
-
                 </Popup>
-
               </Marker>
-            )
-          )}
+            );
+          }
+        )}
+      </MapContainer>
 
-        </MapContainer>
+      {/* ====================================================
+          EMPTY STATE
+      ==================================================== */}
 
-      </div>
+      {visibleComplaints.length ===
+        0 && (
+        <div
+          className="
+            pointer-events-none
+            absolute
+            inset-x-0
+            bottom-4
+            z-[500]
+            flex
+            justify-center
+            px-4
+          "
+        >
+          <div
+            className="
+              rounded-xl
+              border
+              border-white/80
+              bg-white/95
+              px-4
+              py-2.5
+              text-center
+              text-[10px]
+              font-semibold
+              text-[#71869D]
+              shadow-[0_8px_25px_rgba(30,45,60,0.08)]
+              sm:text-[11px]
+            "
+          >
+            {noComplaintsText}
+          </div>
+        </div>
+      )}
 
+      {/* ====================================================
+          RESPONSIVE COMPLAINT COUNT
+      ==================================================== */}
+
+      {visibleComplaints.length >
+        0 && (
+        <div
+          className="
+            pointer-events-none
+            absolute
+            bottom-3
+            right-3
+            z-[500]
+            sm:bottom-4
+            sm:right-4
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              rounded-full
+              border
+              border-white/80
+              bg-white/95
+              px-3
+              py-1.5
+              text-[9px]
+              font-semibold
+              text-[#58708A]
+              shadow-[0_8px_25px_rgba(30,45,60,0.08)]
+              sm:px-3.5
+              sm:py-2
+              sm:text-[10px]
+            "
+          >
+            <span
+              className="
+                h-2
+                w-2
+                rounded-full
+                bg-red-500
+              "
+            />
+
+            {visibleComplaints.length}{" "}
+            {labels.complaints}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

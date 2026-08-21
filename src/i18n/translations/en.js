@@ -1057,6 +1057,128 @@ gvpMap: {
     coordinates: "Coordinates",
   },
 },
+
+cityOverviewMap: {
+  title: "OVERVIEW MAPS",
+
+  mapFilters: "MAP FILTERS",
+
+  cityOverview: "City Overview Map",
+  routeMaps: "Route Maps",
+  gvpPoints: "GVP Points",
+  plants: "Plants",
+
+  customerGrievances: {
+    title: "Customer Grievances",
+
+    loading:
+      "Loading customer grievances...",
+
+    error:
+      "Unable to load customer grievances.",
+
+    empty:
+      "No customer grievances found.",
+
+    complaints:
+      "Complaints",
+
+    ticket:
+      "Ticket",
+
+    status:
+      "Status",
+
+    category:
+      "Category",
+
+    phone:
+      "Phone",
+
+    description:
+      "Description",
+
+    address:
+      "Address",
+
+    latitude:
+      "Latitude",
+
+    longitude:
+      "Longitude",
+
+    date:
+      "Date",
+  },
+
+  zone: "ZONE",
+  division: "DIVISION",
+  ward: "WARD",
+
+  allZones: "All Zones",
+  allDivisions: "All Divisions",
+  allWards: "All Wards",
+
+  selectZoneFirst: "Select a Zone First",
+  selectDivisionFirst:
+    "Select a Division First",
+
+  loadingDivisions:
+    "Loading Divisions...",
+
+  loadingWards:
+    "Loading Wards...",
+
+  noDivisions:
+    "No Divisions",
+
+  noWards:
+    "No Wards",
+
+  loadingDivisionsFor:
+    "Loading divisions for",
+
+  loadingWardsFor:
+    "Loading wards for",
+
+  resetMap:
+    "Reset Map",
+
+  selectedZone:
+    "Selected Zone",
+
+  selectedDivision:
+    "Selected Division",
+
+  selectedWard:
+    "Selected Ward",
+
+  city: "City",
+
+  divisions:
+    "Divisions",
+
+  wards:
+    "Wards",
+
+  wardId:
+    "Ward ID",
+
+  plantLocations:
+    "Plant Locations",
+
+  loadingPlants:
+    "Loading plant locations...",
+
+  unableLoadPlants:
+    "Unable to Load Plants",
+
+  changeMapView:
+    "Change map view",
+
+  loading:
+    "Loading city map...",
+},
 };
 
 export default en;
