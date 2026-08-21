@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function WasteGeneratorDirectory({
   citizens = [],
@@ -35,6 +36,8 @@ export default function WasteGeneratorDirectory({
 
   onPageSizeChange,
 }) {
+  const { t } = useTranslation();
+
   /*
   |--------------------------------------------------------------------------
   | SAFE VALUES
@@ -42,7 +45,9 @@ export default function WasteGeneratorDirectory({
   */
 
   const safePage =
-    Number.isInteger(Number(page)) && Number(page) > 0 ? Number(page) : 1;
+    Number.isInteger(Number(page)) && Number(page) > 0
+      ? Number(page)
+      : 1;
 
   const safePageSize = [10, 20, 50].includes(Number(pageSize))
     ? Number(pageSize)
@@ -50,7 +55,8 @@ export default function WasteGeneratorDirectory({
 
   const safeTotal = Number(total) >= 0 ? Number(total) : 0;
 
-  const safeTotalPages = Number(totalPages) >= 0 ? Number(totalPages) : 0;
+  const safeTotalPages =
+    Number(totalPages) >= 0 ? Number(totalPages) : 0;
 
   /*
   |--------------------------------------------------------------------------
@@ -82,9 +88,16 @@ export default function WasteGeneratorDirectory({
 
     const start = Math.max(2, safePage - 1);
 
-    const end = Math.min(safeTotalPages - 1, safePage + 1);
+    const end = Math.min(
+      safeTotalPages - 1,
+      safePage + 1,
+    );
 
-    for (let number = start; number <= end; number++) {
+    for (
+      let number = start;
+      number <= end;
+      number++
+    ) {
       pages.push(number);
     }
 
@@ -103,39 +116,51 @@ export default function WasteGeneratorDirectory({
   |--------------------------------------------------------------------------
   */
 
-  const startRecord = safeTotal === 0 ? 0 : (safePage - 1) * safePageSize + 1;
+  const startRecord =
+    safeTotal === 0
+      ? 0
+      : (safePage - 1) * safePageSize + 1;
 
   const endRecord =
-    safeTotal === 0 ? 0 : Math.min(safePage * safePageSize, safeTotal);
+    safeTotal === 0
+      ? 0
+      : Math.min(
+          safePage * safePageSize,
+          safeTotal,
+        );
 
   /*
   |--------------------------------------------------------------------------
-  | ACTUAL MASTER-CITIZEN FIELD HELPERS
-  |--------------------------------------------------------------------------
-  |
-  | These correspond directly to the actual data:
-  |
-  | personName
-  | phoneNumber
-  | contactNumber
-  | wetRFID
-  | dryRFID
-  | ward
-  | area
-  | zoneName (response-only)
-  | totalWaste (calculated response field)
-  | averageWaste (calculated response field)
+  | MASTER CITIZEN FIELD HELPERS
   |--------------------------------------------------------------------------
   */
 
-  const getName = (citizen) => citizen?.personName || "N/A";
+  const getName = (citizen) =>
+    citizen?.personName ||
+    "N/A";
 
   const getPhone = (citizen) =>
-    citizen?.phoneNumber || citizen?.contactNumber || "N/A";
+    citizen?.phoneNumber ||
+    citizen?.contactNumber ||
+    "N/A";
 
-  const getWetRFID = (citizen) => citizen?.wetRFID || "Not Assigned";
+  const getWetRFID = (citizen) =>
+    citizen?.wetRFID ||
+    t(
+      "wasteGenerators.directory.notAssigned",
+      {
+        defaultValue: "Not Assigned",
+      },
+    );
 
-  const getDryRFID = (citizen) => citizen?.dryRFID || "Not Assigned";
+  const getDryRFID = (citizen) =>
+    citizen?.dryRFID ||
+    t(
+      "wasteGenerators.directory.notAssigned",
+      {
+        defaultValue: "Not Assigned",
+      },
+    );
 
   const getWard = (citizen) => {
     if (citizen?.wardName) {
@@ -147,7 +172,12 @@ export default function WasteGeneratorDirectory({
       citizen?.wardNo !== undefined &&
       String(citizen.wardNo).trim() !== ""
     ) {
-      return `Ward ${citizen.wardNo}`;
+      return `${t(
+        "wasteGenerators.directory.ward",
+        {
+          defaultValue: "Ward",
+        },
+      )} ${citizen.wardNo}`;
     }
 
     if (
@@ -155,44 +185,40 @@ export default function WasteGeneratorDirectory({
       citizen?.ward !== undefined &&
       String(citizen.ward).trim() !== ""
     ) {
-      return `Ward ${citizen.ward}`;
+      return `${t(
+        "wasteGenerators.directory.ward",
+        {
+          defaultValue: "Ward",
+        },
+      )} ${citizen.ward}`;
     }
 
     return "N/A";
   };
 
-  const getArea = (citizen) => citizen?.area || "N/A";
+  const getArea = (citizen) =>
+    citizen?.area || "N/A";
 
-  const getZone = (citizen) => citizen?.zoneName || "N/A";
+  const getZone = (citizen) =>
+    citizen?.zoneName || "N/A";
 
   const getStatus = (citizen) => {
-    return citizen?.status === "ACTIVE" ? "ACTIVE" : "INACTIVE";
+    return citizen?.status === "ACTIVE"
+      ? "ACTIVE"
+      : "INACTIVE";
   };
 
   /*
   |--------------------------------------------------------------------------
   | WASTE VALUE HELPERS
   |--------------------------------------------------------------------------
-  |
-  | Directory does NOT invent waste values.
-  |
-  | If backend has calculated them:
-  |
-  | totalWaste
-  | totalWasteCollected
-  |
-  | averageWaste
-  | avgWaste
-  |
-  | display them.
-  |
-  | Otherwise:
-  | N/A
-  |--------------------------------------------------------------------------
   */
 
   const getTotalWaste = (citizen) => {
-    if (citizen?.totalWaste !== null && citizen?.totalWaste !== undefined) {
+    if (
+      citizen?.totalWaste !== null &&
+      citizen?.totalWaste !== undefined
+    ) {
       return citizen.totalWaste;
     }
 
@@ -207,11 +233,17 @@ export default function WasteGeneratorDirectory({
   };
 
   const getAverageWaste = (citizen) => {
-    if (citizen?.averageWaste !== null && citizen?.averageWaste !== undefined) {
+    if (
+      citizen?.averageWaste !== null &&
+      citizen?.averageWaste !== undefined
+    ) {
       return citizen.averageWaste;
     }
 
-    if (citizen?.avgWaste !== null && citizen?.avgWaste !== undefined) {
+    if (
+      citizen?.avgWaste !== null &&
+      citizen?.avgWaste !== undefined
+    ) {
       return citizen.avgWaste;
     }
 
@@ -307,7 +339,13 @@ export default function WasteGeneratorDirectory({
                 leading-tight
               "
             >
-              Waste Generators Directory
+              {t(
+                "wasteGenerators.directory.title",
+                {
+                  defaultValue:
+                    "Waste Generators Directory",
+                },
+              )}
             </h2>
 
             <p
@@ -325,8 +363,13 @@ export default function WasteGeneratorDirectory({
                 max-w-[720px]
               "
             >
-              View and manage waste generators based on registered citizen
-              information.
+              {t(
+                "wasteGenerators.directory.description",
+                {
+                  defaultValue:
+                    "View and manage waste generators based on registered citizen information.",
+                },
+              )}
             </p>
           </div>
 
@@ -388,8 +431,18 @@ export default function WasteGeneratorDirectory({
               <input
                 type="text"
                 value={search}
-                onChange={(event) => onSearch?.(event.target.value)}
-                placeholder="Search by name, phone number, Wet RFID"
+                onChange={(event) =>
+                  onSearch?.(
+                    event.target.value,
+                  )
+                }
+                placeholder={t(
+                  "wasteGenerators.directory.searchPlaceholder",
+                  {
+                    defaultValue:
+                      "Search by name, phone number, Wet RFID",
+                  },
+                )}
                 className="
                   w-full
 
@@ -434,7 +487,9 @@ export default function WasteGeneratorDirectory({
             <button
               type="button"
               onClick={onSync}
-              disabled={syncing || loading}
+              disabled={
+                syncing || loading
+              }
               className="
                 h-[44px]
                 sm:h-[48px]
@@ -478,9 +533,30 @@ export default function WasteGeneratorDirectory({
                 shrink-0
               "
             >
-              <RefreshCw size={17} className={syncing ? "animate-spin" : ""} />
+              <RefreshCw
+                size={17}
+                className={
+                  syncing
+                    ? "animate-spin"
+                    : ""
+                }
+              />
 
-              {syncing ? "Syncing..." : "Sync"}
+              {syncing
+                ? t(
+                    "wasteGenerators.directory.syncing",
+                    {
+                      defaultValue:
+                        "Syncing...",
+                    },
+                  )
+                : t(
+                    "wasteGenerators.directory.sync",
+                    {
+                      defaultValue:
+                        "Sync",
+                    },
+                  )}
             </button>
           </div>
         </div>
@@ -564,7 +640,12 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Name
+                {t(
+                  "wasteGenerators.directory.name",
+                  {
+                    defaultValue: "Name",
+                  },
+                )}
               </th>
 
               <th
@@ -587,7 +668,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Phone Number
+                {t(
+                  "wasteGenerators.directory.phone",
+                  {
+                    defaultValue:
+                      "Phone Number",
+                  },
+                )}
               </th>
 
               <th
@@ -610,7 +697,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Wet RFID
+                {t(
+                  "wasteGenerators.directory.wetRFID",
+                  {
+                    defaultValue:
+                      "Wet RFID",
+                  },
+                )}
               </th>
 
               <th
@@ -633,7 +726,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Dry RFID
+                {t(
+                  "wasteGenerators.directory.dryRFID",
+                  {
+                    defaultValue:
+                      "Dry RFID",
+                  },
+                )}
               </th>
 
               <th
@@ -656,7 +755,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Ward / Area
+                {t(
+                  "wasteGenerators.directory.wardArea",
+                  {
+                    defaultValue:
+                      "Ward / Area",
+                  },
+                )}
               </th>
 
               <th
@@ -679,30 +784,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Zone
-              </th>
-
-              <th
-                className="
-    px-4
-    sm:px-5
-    py-3
-    sm:py-4
-
-    text-left
-
-    text-[11px]
-    sm:text-[12px]
-    lg:text-[13px]
-
-    font-semibold
-
-    text-[#263A63]
-
-    whitespace-nowrap
-  "
-              >
-                Status
+                {t(
+                  "wasteGenerators.directory.zone",
+                  {
+                    defaultValue:
+                      "Zone",
+                  },
+                )}
               </th>
 
               <th
@@ -725,7 +813,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Total Waste
+                {t(
+                  "wasteGenerators.directory.status",
+                  {
+                    defaultValue:
+                      "Status",
+                  },
+                )}
               </th>
 
               <th
@@ -748,7 +842,42 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Average Waste
+                {t(
+                  "wasteGenerators.directory.totalWaste",
+                  {
+                    defaultValue:
+                      "Total Waste",
+                  },
+                )}
+              </th>
+
+              <th
+                className="
+                  px-4
+                  sm:px-5
+                  py-3
+                  sm:py-4
+
+                  text-left
+
+                  text-[11px]
+                  sm:text-[12px]
+                  lg:text-[13px]
+
+                  font-semibold
+
+                  text-[#263A63]
+
+                  whitespace-nowrap
+                "
+              >
+                {t(
+                  "wasteGenerators.directory.averageWaste",
+                  {
+                    defaultValue:
+                      "Average Waste",
+                  },
+                )}
               </th>
 
               <th
@@ -771,7 +900,13 @@ export default function WasteGeneratorDirectory({
                   whitespace-nowrap
                 "
               >
-                Action
+                {t(
+                  "common.actions",
+                  {
+                    defaultValue:
+                      "Action",
+                  },
+                )}
               </th>
             </tr>
           </thead>
@@ -798,7 +933,13 @@ export default function WasteGeneratorDirectory({
                     text-gray-500
                   "
                 >
-                  Loading waste generators...
+                  {t(
+                    "wasteGenerators.directory.loading",
+                    {
+                      defaultValue:
+                        "Loading waste generators...",
+                    },
+                  )}
                 </td>
               </tr>
             ) : citizens.length === 0 ? (
@@ -819,24 +960,46 @@ export default function WasteGeneratorDirectory({
                   "
                 >
                   {search.trim()
-                    ? "No waste generators found for this search."
-                    : "No waste generators found."}
+                    ? t(
+                        "wasteGenerators.directory.noSearchResults",
+                        {
+                          defaultValue:
+                            "No waste generators found for this search.",
+                        },
+                      )
+                    : t(
+                        "wasteGenerators.directory.empty",
+                        {
+                          defaultValue:
+                            "No waste generators found.",
+                        },
+                      )}
                 </td>
               </tr>
             ) : (
-              citizens.map((citizen, index) => {
-                const totalWaste = getTotalWaste(citizen);
+              citizens.map(
+                (
+                  citizen,
+                  index,
+                ) => {
+                  const totalWaste =
+                    getTotalWaste(
+                      citizen,
+                    );
 
-                const averageWaste = getAverageWaste(citizen);
+                  const averageWaste =
+                    getAverageWaste(
+                      citizen,
+                    );
 
-                return (
-                  <tr
-                    key={
-                      citizen.id ??
-                      citizen.phoneNumber ??
-                      `${citizen.ward}-${index}`
-                    }
-                    className="
+                  return (
+                    <tr
+                      key={
+                        citizen.id ??
+                        citizen.phoneNumber ??
+                        `${citizen.ward}-${index}`
+                      }
+                      className="
                         border-b
                         border-gray-100
 
@@ -844,13 +1007,13 @@ export default function WasteGeneratorDirectory({
 
                         transition
                       "
-                  >
-                    {/* ==================================================
+                    >
+                      {/* ==================================================
                           #
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
@@ -864,25 +1027,28 @@ export default function WasteGeneratorDirectory({
 
                           whitespace-nowrap
                         "
-                    >
-                      {(safePage - 1) * safePageSize + index + 1}
-                    </td>
+                      >
+                        {(safePage - 1) *
+                          safePageSize +
+                          index +
+                          1}
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           NAME
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <span
-                        className="
+                      >
+                        <span
+                          className="
                             text-[12px]
                             sm:text-[14px]
 
@@ -892,17 +1058,19 @@ export default function WasteGeneratorDirectory({
 
                             whitespace-nowrap
                           "
-                      >
-                        {getName(citizen)}
-                      </span>
-                    </td>
+                        >
+                          {getName(
+                            citizen,
+                          )}
+                        </span>
+                      </td>
 
-                    {/* ==================================================
-                          PHONE NUMBER
+                      {/* ==================================================
+                          PHONE
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
@@ -916,25 +1084,27 @@ export default function WasteGeneratorDirectory({
 
                           whitespace-nowrap
                         "
-                    >
-                      {getPhone(citizen)}
-                    </td>
+                      >
+                        {getPhone(
+                          citizen,
+                        )}
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           WET RFID
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <span
-                        className="
+                      >
+                        <span
+                          className="
                             inline-flex
 
                             px-2.5
@@ -955,26 +1125,28 @@ export default function WasteGeneratorDirectory({
 
                             whitespace-nowrap
                           "
-                      >
-                        {getWetRFID(citizen)}
-                      </span>
-                    </td>
+                        >
+                          {getWetRFID(
+                            citizen,
+                          )}
+                        </span>
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           DRY RFID
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <span
-                        className="
+                      >
+                        <span
+                          className="
                             inline-flex
 
                             px-2.5
@@ -995,34 +1167,36 @@ export default function WasteGeneratorDirectory({
 
                             whitespace-nowrap
                           "
-                      >
-                        {getDryRFID(citizen)}
-                      </span>
-                    </td>
+                        >
+                          {getDryRFID(
+                            citizen,
+                          )}
+                        </span>
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           WARD / AREA
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <div
-                        className="
+                      >
+                        <div
+                          className="
                             flex
                             flex-col
 
                             min-w-[120px]
                           "
-                      >
-                        <span
-                          className="
+                        >
+                          <span
+                            className="
                               text-[12px]
                               sm:text-[13px]
 
@@ -1032,12 +1206,14 @@ export default function WasteGeneratorDirectory({
 
                               whitespace-nowrap
                             "
-                        >
-                          {getWard(citizen)}
-                        </span>
+                          >
+                            {getWard(
+                              citizen,
+                            )}
+                          </span>
 
-                        <span
-                          className="
+                          <span
+                            className="
                               text-[10px]
                               sm:text-[12px]
 
@@ -1045,18 +1221,20 @@ export default function WasteGeneratorDirectory({
 
                               whitespace-nowrap
                             "
-                        >
-                          {getArea(citizen)}
-                        </span>
-                      </div>
-                    </td>
+                          >
+                            {getArea(
+                              citizen,
+                            )}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           ZONE
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
@@ -1070,89 +1248,106 @@ export default function WasteGeneratorDirectory({
 
                           whitespace-nowrap
                         "
-                    >
-                      {getZone(citizen)}
-                    </td>
+                      >
+                        {getZone(
+                          citizen,
+                        )}
+                      </td>
 
-                    {/* ==================================================
-      STATUS
-  ================================================== */}
+                      {/* ==================================================
+                          STATUS
+                      ================================================== */}
 
-                    <td
-                      className="
-    px-4
-    sm:px-5
+                      <td
+                        className="
+                          px-4
+                          sm:px-5
 
-    py-4
-    sm:py-5
-  "
-                    >
-                      {getStatus(citizen) === "ACTIVE" ? (
-                        <span
-                          className="
-        inline-flex
-        items-center
+                          py-4
+                          sm:py-5
+                        "
+                      >
+                        {getStatus(
+                          citizen,
+                        ) ===
+                        "ACTIVE" ? (
+                          <span
+                            className="
+                              inline-flex
+                              items-center
 
-        px-3
-        py-1
+                              px-3
+                              py-1
 
-        rounded-full
+                              rounded-full
 
-        bg-green-50
-        text-green-600
+                              bg-green-50
+                              text-green-600
 
-        text-[10px]
-        sm:text-[12px]
+                              text-[10px]
+                              sm:text-[12px]
 
-        font-semibold
+                              font-semibold
 
-        whitespace-nowrap
-      "
-                        >
-                          Active
-                        </span>
-                      ) : (
-                        <span
-                          className="
-        inline-flex
-        items-center
+                              whitespace-nowrap
+                            "
+                          >
+                            {t(
+                              "common.active",
+                              {
+                                defaultValue:
+                                  "Active",
+                              },
+                            )}
+                          </span>
+                        ) : (
+                          <span
+                            className="
+                              inline-flex
+                              items-center
 
-        px-3
-        py-1
+                              px-3
+                              py-1
 
-        rounded-full
+                              rounded-full
 
-        bg-red-50
-        text-red-600
+                              bg-red-50
+                              text-red-600
 
-        text-[10px]
-        sm:text-[12px]
+                              text-[10px]
+                              sm:text-[12px]
 
-        font-semibold
+                              font-semibold
 
-        whitespace-nowrap
-      "
-                        >
-                          Inactive
-                        </span>
-                      )}
-                    </td>
+                              whitespace-nowrap
+                            "
+                          >
+                            {t(
+                              "common.inactive",
+                              {
+                                defaultValue:
+                                  "Inactive",
+                              },
+                            )}
+                          </span>
+                        )}
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           TOTAL WASTE
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <span
-                        className="
+                      >
+                        <span
+                          className="
                             text-[12px]
                             sm:text-[14px]
 
@@ -1162,15 +1357,21 @@ export default function WasteGeneratorDirectory({
 
                             whitespace-nowrap
                           "
-                      >
-                        {totalWaste !== null
-                          ? Number(totalWaste).toFixed(2)
-                          : "N/A"}
-                      </span>
+                        >
+                          {totalWaste !==
+                          null
+                            ? Number(
+                                totalWaste,
+                              ).toFixed(
+                                2,
+                              )
+                            : "N/A"}
+                        </span>
 
-                      {totalWaste !== null && (
-                        <span
-                          className="
+                        {totalWaste !==
+                          null && (
+                          <span
+                            className="
                               ml-1
 
                               text-[9px]
@@ -1178,27 +1379,27 @@ export default function WasteGeneratorDirectory({
 
                               text-gray-400
                             "
-                        >
-                          kg
-                        </span>
-                      )}
-                    </td>
+                          >
+                            kg
+                          </span>
+                        )}
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           AVERAGE WASTE
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
                           py-4
                           sm:py-5
                         "
-                    >
-                      <span
-                        className="
+                      >
+                        <span
+                          className="
                             text-[12px]
                             sm:text-[14px]
 
@@ -1208,15 +1409,21 @@ export default function WasteGeneratorDirectory({
 
                             whitespace-nowrap
                           "
-                      >
-                        {averageWaste !== null
-                          ? Number(averageWaste).toFixed(2)
-                          : "N/A"}
-                      </span>
+                        >
+                          {averageWaste !==
+                          null
+                            ? Number(
+                                averageWaste,
+                              ).toFixed(
+                                2,
+                              )
+                            : "N/A"}
+                        </span>
 
-                      {averageWaste !== null && (
-                        <span
-                          className="
+                        {averageWaste !==
+                          null && (
+                          <span
+                            className="
                               ml-1
 
                               text-[9px]
@@ -1224,18 +1431,18 @@ export default function WasteGeneratorDirectory({
 
                               text-gray-400
                             "
-                        >
-                          kg
-                        </span>
-                      )}
-                    </td>
+                          >
+                            kg
+                          </span>
+                        )}
+                      </td>
 
-                    {/* ==================================================
+                      {/* ==================================================
                           ACTION
                       ================================================== */}
 
-                    <td
-                      className="
+                      <td
+                        className="
                           px-4
                           sm:px-5
 
@@ -1244,11 +1451,15 @@ export default function WasteGeneratorDirectory({
 
                           text-center
                         "
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onUpdate?.(citizen)}
-                        className="
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onUpdate?.(
+                              citizen,
+                            )
+                          }
+                          className="
                             w-8
                             h-8
                             sm:w-9
@@ -1268,14 +1479,23 @@ export default function WasteGeneratorDirectory({
 
                             transition
                           "
-                        title="Update Waste Generator"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+                          title={t(
+                            "wasteGenerators.directory.update",
+                            {
+                              defaultValue:
+                                "Update Waste Generator",
+                            },
+                          )}
+                        >
+                          <Pencil
+                            size={16}
+                          />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                },
+              )
             )}
           </tbody>
         </table>
@@ -1324,7 +1544,13 @@ export default function WasteGeneratorDirectory({
             whitespace-nowrap
           "
         >
-          Showing{" "}
+          {t(
+            "wasteGenerators.directory.showing",
+            {
+              defaultValue:
+                "Showing",
+            },
+          )}{" "}
           <span
             className="
               font-semibold
@@ -1342,7 +1568,14 @@ export default function WasteGeneratorDirectory({
           >
             {endRecord}
           </span>
-          {" of "}
+          {" "}
+          {t(
+            "wasteGenerators.directory.of",
+            {
+              defaultValue:
+                "of",
+            },
+          )}{" "}
           <span
             className="
               font-semibold
@@ -1351,7 +1584,13 @@ export default function WasteGeneratorDirectory({
           >
             {safeTotal}
           </span>{" "}
-          waste generators
+          {t(
+            "wasteGenerators.directory.wasteGenerators",
+            {
+              defaultValue:
+                "waste generators",
+            },
+          )}
         </p>
 
         {/* ============================================================ */}
@@ -1392,13 +1631,23 @@ export default function WasteGeneratorDirectory({
                 whitespace-nowrap
               "
             >
-              Rows:
+              {t(
+                "wasteGenerators.directory.rows",
+                {
+                  defaultValue:
+                    "Rows:",
+                },
+              )}
             </span>
 
             <select
               value={safePageSize}
               onChange={(event) =>
-                onPageSizeChange?.(Number(event.target.value))
+                onPageSizeChange?.(
+                  Number(
+                    event.target.value,
+                  ),
+                )
               }
               className="
                 h-8
@@ -1424,11 +1673,17 @@ export default function WasteGeneratorDirectory({
                 focus:border-violet-400
               "
             >
-              <option value={10}>10</option>
+              <option value={10}>
+                10
+              </option>
 
-              <option value={20}>20</option>
+              <option value={20}>
+                20
+              </option>
 
-              <option value={50}>50</option>
+              <option value={50}>
+                50
+              </option>
             </select>
           </div>
 
@@ -1438,8 +1693,15 @@ export default function WasteGeneratorDirectory({
 
           <button
             type="button"
-            disabled={safePage <= 1 || loading}
-            onClick={() => onPageChange?.(safePage - 1)}
+            disabled={
+              safePage <= 1 ||
+              loading
+            }
+            onClick={() =>
+              onPageChange?.(
+                safePage - 1,
+              )
+            }
             className="
               w-8
               h-8
@@ -1464,9 +1726,17 @@ export default function WasteGeneratorDirectory({
 
               shrink-0
             "
-            title="Previous page"
+            title={t(
+              "wasteGenerators.directory.previous",
+              {
+                defaultValue:
+                  "Previous page",
+              },
+            )}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft
+              size={16}
+            />
           </button>
 
           {/* ========================================================== */}
@@ -1486,11 +1756,16 @@ export default function WasteGeneratorDirectory({
               scrollbar-none
             "
           >
-            {pageNumbers.map((pageNumber, index) =>
-              pageNumber === "..." ? (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="
+            {pageNumbers.map(
+              (
+                pageNumber,
+                index,
+              ) =>
+                pageNumber ===
+                "..." ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="
                       w-7
                       sm:w-8
 
@@ -1503,16 +1778,20 @@ export default function WasteGeneratorDirectory({
 
                       shrink-0
                     "
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => onPageChange?.(pageNumber)}
-                  className={`
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    disabled={loading}
+                    onClick={() =>
+                      onPageChange?.(
+                        pageNumber,
+                      )
+                    }
+                    className={`
                       w-8
                       h-8
                       sm:w-9
@@ -1530,15 +1809,16 @@ export default function WasteGeneratorDirectory({
                       shrink-0
 
                       ${
-                        pageNumber === safePage
+                        pageNumber ===
+                        safePage
                           ? "bg-[#6D28D9] text-white"
                           : "text-gray-600 hover:bg-gray-50"
                       }
                     `}
-                >
-                  {pageNumber}
-                </button>
-              ),
+                  >
+                    {pageNumber}
+                  </button>
+                ),
             )}
           </div>
 
@@ -1549,9 +1829,16 @@ export default function WasteGeneratorDirectory({
           <button
             type="button"
             disabled={
-              safePage >= safeTotalPages || loading || safeTotalPages === 0
+              safePage >=
+                safeTotalPages ||
+              loading ||
+              safeTotalPages === 0
             }
-            onClick={() => onPageChange?.(safePage + 1)}
+            onClick={() =>
+              onPageChange?.(
+                safePage + 1,
+              )
+            }
             className="
               w-8
               h-8
@@ -1576,9 +1863,17 @@ export default function WasteGeneratorDirectory({
 
               shrink-0
             "
-            title="Next page"
+            title={t(
+              "wasteGenerators.directory.next",
+              {
+                defaultValue:
+                  "Next page",
+              },
+            )}
           >
-            <ChevronRight size={16} />
+            <ChevronRight
+              size={16}
+            />
           </button>
         </div>
       </div>
