@@ -34,6 +34,19 @@ import { useLanguage } from "../../i18n";
 import api from "../../api/axios";
 
 /* ============================================================
+   CONSTANTS
+============================================================ */
+
+const EMPTY_PLANTS = [];
+
+const DEFAULT_MAP_CENTER = [
+  13.0358,
+  77.597,
+];
+
+const DEFAULT_MAP_ZOOM = 13;
+
+/* ============================================================
    LEAFLET DEFAULT MARKER ICON
 ============================================================ */
 
@@ -44,6 +57,61 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+/* ============================================================
+   AUTH TOKEN HELPER
+============================================================ */
+
+function getAuthToken() {
+  try {
+    /*
+     * Dashboard authentication stores the token in localStorage.
+     *
+     * sessionStorage is also checked as a safe fallback because
+     * the authentication application uses sessionStorage during
+     * parts of the login flow.
+     */
+
+    const localToken =
+      localStorage.getItem("token");
+
+    if (localToken) {
+      return localToken;
+    }
+
+    const sessionToken =
+      sessionStorage.getItem("token");
+
+    if (sessionToken) {
+      return sessionToken;
+    }
+
+    /*
+     * Additional common token keys are checked only as fallback.
+     */
+
+    const localAccessToken =
+      localStorage.getItem("accessToken");
+
+    if (localAccessToken) {
+      return localAccessToken;
+    }
+
+    const sessionAccessToken =
+      sessionStorage.getItem("accessToken");
+
+    if (sessionAccessToken) {
+      return sessionAccessToken;
+    }
+  } catch (error) {
+    console.warn(
+      "Unable to read authentication token:",
+      error
+    );
+  }
+
+  return null;
+}
 
 /* ============================================================
    EXTRACT PLANTS FROM API RESPONSE
@@ -119,28 +187,51 @@ function FitBounds({ plants }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!plants.length) {
+    if (!Array.isArray(plants) || plants.length === 0) {
       return;
     }
 
     if (plants.length === 1) {
-      map.setView(plants[0].position, 15);
+      map.setView(
+        plants[0].position,
+        15,
+        {
+          animate: true,
+        }
+      );
 
       return;
     }
 
-    const bounds = L.latLngBounds(
-      plants.map((plant) => plant.position)
-    );
+    const bounds =
+      L.latLngBounds(
+        plants.map(
+          (plant) =>
+            plant.position
+        )
+      );
 
     if (!bounds.isValid()) {
       return;
     }
 
-    map.fitBounds(bounds, {
-      padding: [60, 60],
-    });
-  }, [plants, map]);
+    map.fitBounds(
+      bounds,
+      {
+        padding: [
+          60,
+          60,
+        ],
+
+        maxZoom: 15,
+
+        animate: true,
+      }
+    );
+  }, [
+    plants,
+    map,
+  ]);
 
   return null;
 }
@@ -154,26 +245,47 @@ function MapSizeController() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => map.invalidateSize(), 100),
-      setTimeout(() => map.invalidateSize(), 500),
-      setTimeout(() => map.invalidateSize(), 1000),
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        100
+      ),
+
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        500
+      ),
+
+      setTimeout(
+        () =>
+          map.invalidateSize(),
+        1000
+      ),
     ];
 
     const handleResize = () => {
       map.invalidateSize();
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener(
+      "resize",
+      handleResize
+    );
 
     return () => {
-      timers.forEach(clearTimeout);
+      timers.forEach(
+        clearTimeout
+      );
 
       window.removeEventListener(
         "resize",
         handleResize
       );
     };
-  }, [map]);
+  }, [
+    map,
+  ]);
 
   return null;
 }
@@ -183,13 +295,14 @@ function MapSizeController() {
 ============================================================ */
 
 export default function Plants({
-  plants: incomingPlants = [],
+  plants: incomingPlants = EMPTY_PLANTS,
 }) {
   /* ==========================================================
      LANGUAGE
   ========================================================== */
 
-  const { t } = useLanguage();
+  const { t } =
+    useLanguage();
 
   /* ==========================================================
      STATE
@@ -210,26 +323,34 @@ export default function Plants({
     setPlantsError,
   ] = useState("");
 
-  const abortRef = useRef(null);
+  const abortRef =
+    useRef(null);
 
   /* ==========================================================
-     FETCH PLANTS WHEN PARENT DATA IS NOT PROVIDED
+     DETERMINE WHETHER PARENT PROVIDED PLANTS
+  ========================================================== */
 
+  const hasIncomingPlants =
+    Array.isArray(
+      incomingPlants
+    ) &&
+    incomingPlants.length > 0;
+
+  /* ==========================================================
+     FETCH PLANTS
+     
      IMPORTANT:
-     Uses the project's existing Axios instance so that the
-     authentication interceptor/token is preserved.
+     Uses the existing Axios instance AND explicitly provides
+     the authentication token used by the dashboard.
   ========================================================== */
 
   useEffect(() => {
     /*
-     * If CityMapOverview already supplied plants,
-     * use those and do not make another request.
+     * If the parent already supplied plant data,
+     * do NOT make another request.
      */
 
-    if (
-      Array.isArray(incomingPlants) &&
-      incomingPlants.length > 0
-    ) {
+    if (hasIncomingPlants) {
       setFetchedPlants([]);
       setPlantsError("");
       setPlantsLoading(false);
@@ -238,130 +359,197 @@ export default function Plants({
     }
 
     /*
-     * Cancel previous request if one exists.
+     * Cancel previous request.
      */
 
     abortRef.current?.abort();
 
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
-    abortRef.current = controller;
+    abortRef.current =
+      controller;
 
-    const loadPlants = async () => {
-      try {
-        setPlantsLoading(true);
-        setPlantsError("");
+    const loadPlants =
+      async () => {
+        try {
+          setPlantsLoading(true);
+          setPlantsError("");
 
-        console.log(
-          "🌱 PLANTS MAP REQUEST: /api/plants"
-        );
+          /*
+           * Get authentication token from the dashboard.
+           */
 
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT use fetch() here.
-         *
-         * The project's axios instance handles authentication
-         * and attaches the required token/interceptors.
-         */
+          const token =
+            getAuthToken();
 
-        const response = await api.get(
-          "/api/plants",
-          {
-            signal: controller.signal,
+          console.log(
+            "🌱 PLANTS MAP REQUEST: /api/plants"
+          );
+
+          console.log(
+            "🔐 PLANTS AUTH TOKEN:",
+            token
+              ? "FOUND"
+              : "NOT FOUND"
+          );
+
+          /*
+           * IMPORTANT:
+           *
+           * The dashboard receives the authentication token
+           * through AuthCallback and stores it in localStorage.
+           *
+           * We explicitly pass the Bearer token here so that
+           * /api/plants does not receive an unauthenticated request.
+           */
+
+          const response =
+            await api.get(
+              "/api/plants",
+              {
+                signal:
+                  controller.signal,
+
+                headers:
+                  token
+                    ? {
+                        Authorization:
+                          `Bearer ${token}`,
+                      }
+                    : {},
+              }
+            );
+
+          if (
+            controller.signal.aborted
+          ) {
+            return;
           }
-        );
 
-        if (controller.signal.aborted) {
-          return;
-        }
+          const result =
+            response?.data;
 
-        const result = response?.data;
+          console.log(
+            "🌱 PLANTS MAP RESPONSE:",
+            result
+          );
 
-        console.log(
-          "🌱 PLANTS MAP RESPONSE:",
-          result
-        );
+          if (
+            result?.success ===
+            false
+          ) {
+            throw new Error(
+              result?.message ||
+                t(
+                  "plants.errors.serverConnection",
+                  "Unable to fetch plants."
+                )
+            );
+          }
 
-        if (result?.success === false) {
-          throw new Error(
-            result.message ||
+          const loadedPlants =
+            extractPlants(
+              result
+            );
+
+          console.log(
+            "🌱 PLANTS MAP LOADED:",
+            loadedPlants.length
+          );
+
+          if (
+            loadedPlants.length > 0
+          ) {
+            console.log(
+              "🌱 FIRST PLANT:",
+              loadedPlants[0]
+            );
+          }
+
+          setFetchedPlants(
+            loadedPlants
+          );
+
+          setPlantsError("");
+        } catch (
+          requestError
+        ) {
+          /*
+           * Ignore cancelled requests.
+           */
+
+          if (
+            requestError?.name ===
+            "AbortError"
+          ) {
+            return;
+          }
+
+          if (
+            requestError?.code ===
+            "ERR_CANCELED"
+          ) {
+            return;
+          }
+
+          console.error(
+            "❌ PLANTS MAP ERROR:",
+            requestError
+          );
+
+          /*
+           * HTTP 401
+           */
+
+          if (
+            requestError?.response
+              ?.status === 401
+          ) {
+            console.error(
+              "🔐 PLANTS API RETURNED 401 UNAUTHORIZED."
+            );
+
+            console.error(
+              "🔐 Token available:",
+              getAuthToken()
+                ? "YES"
+                : "NO"
+            );
+          }
+
+          setFetchedPlants(
+            []
+          );
+
+          /*
+           * Preserve backend message if available.
+           */
+
+          const backendMessage =
+            requestError?.response
+              ?.data
+              ?.message;
+
+          setPlantsError(
+            backendMessage ||
+              requestError?.message ||
               t(
                 "plants.errors.serverConnection",
-                "Unable to fetch plants."
+                "Unable to load plants."
               )
           );
+        } finally {
+          if (
+            !controller.signal
+              .aborted
+          ) {
+            setPlantsLoading(
+              false
+            );
+          }
         }
-
-        const loadedPlants =
-          extractPlants(result);
-
-        console.log(
-          "🌱 PLANTS MAP LOADED:",
-          loadedPlants.length
-        );
-
-        if (loadedPlants.length > 0) {
-          console.log(
-            "🌱 FIRST PLANT:",
-            loadedPlants[0]
-          );
-        }
-
-        setFetchedPlants(
-          loadedPlants
-        );
-      } catch (requestError) {
-        if (
-          requestError?.name ===
-          "AbortError"
-        ) {
-          return;
-        }
-
-        /*
-         * Axios cancellation can also expose a canceled request
-         * through its own error code.
-         */
-
-        if (
-          requestError?.code ===
-          "ERR_CANCELED"
-        ) {
-          return;
-        }
-
-        console.error(
-          "❌ PLANTS MAP ERROR:",
-          requestError
-        );
-
-        setFetchedPlants([]);
-
-        /*
-         * Preserve backend error messages when available.
-         */
-
-        const backendMessage =
-          requestError?.response?.data
-            ?.message;
-
-        setPlantsError(
-          backendMessage ||
-            requestError?.message ||
-            t(
-              "plants.errors.serverConnection",
-              "Unable to load plants."
-            )
-        );
-      } finally {
-        if (
-          !controller.signal.aborted
-        ) {
-          setPlantsLoading(false);
-        }
-      }
-    };
+      };
 
     loadPlants();
 
@@ -369,7 +557,7 @@ export default function Plants({
       controller.abort();
     };
   }, [
-    incomingPlants,
+    hasIncomingPlants,
     t,
   ]);
 
@@ -378,8 +566,7 @@ export default function Plants({
   ========================================================== */
 
   const plants =
-    Array.isArray(incomingPlants) &&
-    incomingPlants.length > 0
+    hasIncomingPlants
       ? incomingPlants
       : fetchedPlants;
 
@@ -389,35 +576,49 @@ export default function Plants({
 
   const formattedPlants =
     useMemo(() => {
+      if (
+        !Array.isArray(
+          plants
+        )
+      ) {
+        return [];
+      }
+
       return plants
-        .filter((plant) => {
-          const latitude =
-            Number(
-              getLatitude(plant)
-            );
+        .filter(
+          (plant) => {
+            const latitude =
+              Number(
+                getLatitude(
+                  plant
+                )
+              );
 
-          const longitude =
-            Number(
-              getLongitude(plant)
-            );
+            const longitude =
+              Number(
+                getLongitude(
+                  plant
+                )
+              );
 
-          return (
-            Number.isFinite(
-              latitude
-            ) &&
-            Number.isFinite(
-              longitude
-            ) &&
-            latitude >= -90 &&
-            latitude <= 90 &&
-            longitude >= -180 &&
-            longitude <= 180 &&
-            !(
-              latitude === 0 &&
-              longitude === 0
-            )
-          );
-        })
+            return (
+              Number.isFinite(
+                latitude
+              ) &&
+              Number.isFinite(
+                longitude
+              ) &&
+              latitude >= -90 &&
+              latitude <= 90 &&
+              longitude >= -180 &&
+              longitude <= 180 &&
+              !(
+                latitude === 0 &&
+                longitude === 0
+              )
+            );
+          }
+        )
         .map(
           (
             plant,
@@ -425,17 +626,23 @@ export default function Plants({
           ) => {
             const latitude =
               Number(
-                getLatitude(plant)
+                getLatitude(
+                  plant
+                )
               );
 
             const longitude =
               Number(
-                getLongitude(plant)
+                getLongitude(
+                  plant
+                )
               );
 
             return {
               id:
                 plant?.id ??
+                plant?.plant_id ??
+                plant?.plantId ??
                 `plant-${index}`,
 
               name:
@@ -497,44 +704,43 @@ export default function Plants({
      STATUS HELPER
   ========================================================== */
 
-  const getStatusLabel = (
-    status
-  ) => {
-    const normalized =
-      String(
-        status || ""
-      )
-        .trim()
-        .toUpperCase();
+  const getStatusLabel =
+    (status) => {
+      const normalized =
+        String(
+          status || ""
+        )
+          .trim()
+          .toUpperCase();
 
-    if (
-      normalized ===
-      "ACTIVE"
-    ) {
-      return t(
-        "common.active",
-        "Active"
+      if (
+        normalized ===
+        "ACTIVE"
+      ) {
+        return t(
+          "common.active",
+          "Active"
+        );
+      }
+
+      if (
+        normalized ===
+        "INACTIVE"
+      ) {
+        return t(
+          "common.inactive",
+          "Inactive"
+        );
+      }
+
+      return (
+        status ||
+        t(
+          "plants.map.unknown",
+          "Unknown"
+        )
       );
-    }
-
-    if (
-      normalized ===
-      "INACTIVE"
-    ) {
-      return t(
-        "common.inactive",
-        "Inactive"
-      );
-    }
-
-    return (
-      status ||
-      t(
-        "plants.map.unknown",
-        "Unknown"
-      )
-    );
-  };
+    };
 
   /* ==========================================================
      RENDER
@@ -710,11 +916,12 @@ export default function Plants({
         "
       >
         <MapContainer
-          center={[
-            13.0358,
-            77.597,
-          ]}
-          zoom={13}
+          center={
+            DEFAULT_MAP_CENTER
+          }
+          zoom={
+            DEFAULT_MAP_ZOOM
+          }
           zoomControl={false}
           className="
             !h-full
@@ -752,7 +959,9 @@ export default function Plants({
           {formattedPlants.map(
             (plant) => (
               <Marker
-                key={plant.id}
+                key={
+                  plant.id
+                }
                 position={
                   plant.position
                 }
@@ -768,9 +977,7 @@ export default function Plants({
                       p-1
                     "
                   >
-                    {/* =======================================
-                        POPUP HEADER
-                    ======================================== */}
+                    {/* POPUP HEADER */}
 
                     <div
                       className="
@@ -813,7 +1020,9 @@ export default function Plants({
                             text-[#172033]
                           "
                         >
-                          {plant.name}
+                          {
+                            plant.name
+                          }
                         </h3>
 
                         <span
@@ -838,9 +1047,7 @@ export default function Plants({
                       </div>
                     </div>
 
-                    {/* =======================================
-                        POPUP DETAILS
-                    ======================================== */}
+                    {/* POPUP DETAILS */}
 
                     <div
                       className="
@@ -874,7 +1081,9 @@ export default function Plants({
                             text-[#34475B]
                           "
                         >
-                          {plant.zone}
+                          {
+                            plant.zone
+                          }
                         </span>
                       </div>
 
@@ -903,7 +1112,9 @@ export default function Plants({
                             text-[#34475B]
                           "
                         >
-                          {plant.manager}
+                          {
+                            plant.manager
+                          }
                         </span>
                       </div>
 
@@ -932,7 +1143,9 @@ export default function Plants({
                             text-[#34475B]
                           "
                         >
-                          {plant.vehicles}{" "}
+                          {
+                            plant.vehicles
+                          }{" "}
                           {t(
                             "plants.map.vehicles",
                             "Vehicles"
@@ -965,7 +1178,9 @@ export default function Plants({
                             text-[#34475B]
                           "
                         >
-                          {plant.capacity}{" "}
+                          {
+                            plant.capacity
+                          }{" "}
                           {t(
                             "plants.map.tonPerDay",
                             "Ton/Day"
@@ -1076,6 +1291,7 @@ export default function Plants({
                 flex
                 items-center
                 justify-center
+                bg-[#EEF1F3]/40
                 p-4
               "
             >
@@ -1086,18 +1302,60 @@ export default function Plants({
                   border
                   border-[#DCE4EC]
                   bg-white/95
-                  px-4
-                  py-3
+                  px-5
+                  py-5
                   text-center
-                  text-[11px]
-                  font-semibold
-                  text-red-500
                   shadow-[0_10px_30px_rgba(30,45,60,0.10)]
-                  sm:px-5
-                  sm:text-xs
                 "
               >
-                {plantsError}
+                <div
+                  className="
+                    mx-auto
+                    mb-4
+                    flex
+                    h-16
+                    w-16
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-violet-100
+                  "
+                >
+                  <Factory
+                    size={30}
+                    className="
+                      text-violet-600
+                    "
+                  />
+                </div>
+
+                <p
+                  className="
+                    text-[15px]
+                    font-bold
+                    text-[#34475B]
+                    sm:text-[16px]
+                  "
+                >
+                  {t(
+                    "plants.errors.title",
+                    "Unable to Load Plants"
+                  )}
+                </p>
+
+                <p
+                  className="
+                    mt-2
+                    break-words
+                    text-[11px]
+                    font-medium
+                    leading-5
+                    text-[#8AA1BB]
+                    sm:text-[12px]
+                  "
+                >
+                  {plantsError}
+                </p>
               </div>
             </div>
           )}
