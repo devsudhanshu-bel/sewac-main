@@ -5,6 +5,8 @@ import React, {
   useState,
 } from "react";
 
+import axios from "axios";
+
 import {
   MapContainer,
   TileLayer,
@@ -31,7 +33,6 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 import { useLanguage } from "../../i18n";
-import api from "../../api/axios";
 
 /* ============================================================
    CONSTANTS
@@ -45,6 +46,23 @@ const DEFAULT_MAP_CENTER = [
 ];
 
 const DEFAULT_MAP_ZOOM = 13;
+
+/*
+ * IMPORTANT:
+ * This Axios instance is ONLY for the Plants component.
+ *
+ * We intentionally do NOT use the shared api instance here because
+ * the shared interceptor currently reads sessionStorage and can
+ * overwrite the dashboard token stored in localStorage.
+ *
+ * This keeps the authentication fix isolated to Plants.
+ */
+const plantsApi = axios.create({
+  baseURL: "https://sewac-main.onrender.com",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 /* ============================================================
    LEAFLET DEFAULT MARKER ICON
@@ -62,16 +80,16 @@ L.Icon.Default.mergeOptions({
    AUTH TOKEN HELPER
 ============================================================ */
 
+/*
+ * Dashboard authentication stores the token in localStorage.
+ *
+ * We check localStorage FIRST because the Dashboard/AuthCallback
+ * flow stores the authenticated dashboard token there.
+ *
+ * sessionStorage is only a fallback.
+ */
 function getAuthToken() {
   try {
-    /*
-     * Dashboard authentication stores the token in localStorage.
-     *
-     * sessionStorage is also checked as a safe fallback because
-     * the authentication application uses sessionStorage during
-     * parts of the login flow.
-     */
-
     const localToken =
       localStorage.getItem("token");
 
@@ -79,22 +97,18 @@ function getAuthToken() {
       return localToken;
     }
 
-    const sessionToken =
-      sessionStorage.getItem("token");
-
-    if (sessionToken) {
-      return sessionToken;
-    }
-
-    /*
-     * Additional common token keys are checked only as fallback.
-     */
-
     const localAccessToken =
       localStorage.getItem("accessToken");
 
     if (localAccessToken) {
       return localAccessToken;
+    }
+
+    const sessionToken =
+      sessionStorage.getItem("token");
+
+    if (sessionToken) {
+      return sessionToken;
     }
 
     const sessionAccessToken =
@@ -187,7 +201,10 @@ function FitBounds({ plants }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!Array.isArray(plants) || plants.length === 0) {
+    if (
+      !Array.isArray(plants) ||
+      plants.length === 0
+    ) {
       return;
     }
 
@@ -222,9 +239,7 @@ function FitBounds({ plants }) {
           60,
           60,
         ],
-
         maxZoom: 15,
-
         animate: true,
       }
     );
@@ -274,9 +289,7 @@ function MapSizeController() {
     );
 
     return () => {
-      timers.forEach(
-        clearTimeout
-      );
+      timers.forEach(clearTimeout);
 
       window.removeEventListener(
         "resize",
@@ -340,8 +353,11 @@ export default function Plants({
      FETCH PLANTS
      
      IMPORTANT:
-     Uses the existing Axios instance AND explicitly provides
-     the authentication token used by the dashboard.
+     This request intentionally uses the isolated plantsApi
+     instance instead of the global api instance.
+
+     This prevents the global sessionStorage interceptor from
+     overwriting the dashboard localStorage token.
   ========================================================== */
 
   useEffect(() => {
@@ -377,7 +393,7 @@ export default function Plants({
           setPlantsError("");
 
           /*
-           * Get authentication token from the dashboard.
+           * Get the dashboard authentication token.
            */
 
           const token =
@@ -395,29 +411,44 @@ export default function Plants({
           );
 
           /*
+           * If there is no token, do not send an
+           * unauthenticated request.
+           */
+
+          if (!token) {
+            console.error(
+              "🔐 PLANTS: No authentication token found."
+            );
+
+            setFetchedPlants([]);
+
+            setPlantsError(
+              "Authentication token not found. Please log in again."
+            );
+
+            return;
+          }
+
+          /*
            * IMPORTANT:
            *
-           * The dashboard receives the authentication token
-           * through AuthCallback and stores it in localStorage.
+           * We use plantsApi instead of the shared api instance.
            *
-           * We explicitly pass the Bearer token here so that
-           * /api/plants does not receive an unauthenticated request.
+           * Therefore there is NO global interceptor here that
+           * can replace this Authorization header.
            */
 
           const response =
-            await api.get(
+            await plantsApi.get(
               "/api/plants",
               {
                 signal:
                   controller.signal,
 
-                headers:
-                  token
-                    ? {
-                        Authorization:
-                          `Bearer ${token}`,
-                      }
-                    : {},
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
               }
             );
 
@@ -511,16 +542,33 @@ export default function Plants({
             );
 
             console.error(
-              "🔐 Token available:",
+              "🔐 PLANTS TOKEN AVAILABLE:",
               getAuthToken()
                 ? "YES"
                 : "NO"
             );
+
+            console.error(
+              "🔐 PLANTS TOKEN SOURCE:",
+              localStorage.getItem("token")
+                ? "localStorage.token"
+                : localStorage.getItem(
+                    "accessToken"
+                  )
+                ? "localStorage.accessToken"
+                : sessionStorage.getItem(
+                    "token"
+                  )
+                ? "sessionStorage.token"
+                : sessionStorage.getItem(
+                    "accessToken"
+                  )
+                ? "sessionStorage.accessToken"
+                : "NONE"
+            );
           }
 
-          setFetchedPlants(
-            []
-          );
+          setFetchedPlants([]);
 
           /*
            * Preserve backend message if available.
