@@ -12,7 +12,6 @@ const EditUserModal = ({
   const [form, setForm] = useState({
     full_name: "",
     phone_number: "",
-    status: "ACTIVE",
   });
 
   const [loading, setLoading] = useState(false);
@@ -21,10 +20,9 @@ const EditUserModal = ({
   useEffect(() => {
     if (open && user) {
       setForm({
-        full_name: user.full_name || user.name || "",
-        phone_number: user.phone_number || user.phone || "",
-        status: user.status || "ACTIVE",
-      });
+  full_name: user.full_name || user.name || "",
+  phone_number: user.phone_number || user.phone || "",
+});
 
       setError("");
       setLoading(false);
@@ -80,10 +78,9 @@ const EditUserModal = ({
 
     try {
       const response = await api.put(`/api/users/${user.id}`, {
-        full_name: fullName,
-        phone_number: phone,
-        status: form.status,
-      });
+  full_name: fullName,
+  phone_number: phone,
+});
 
       const updatedUser = response?.data?.user;
 
@@ -235,37 +232,7 @@ const EditUserModal = ({
               />
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="mb-2 block text-[13px] font-medium text-[#1F3768]">
-                Status
-              </label>
-
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                disabled={loading}
-                className="
-                  h-12
-                  w-full
-                  rounded-xl
-                  border
-                  border-gray-200
-                  bg-white
-                  px-4
-                  text-[14px]
-                  text-gray-700
-                  outline-none
-                  focus:border-violet-500
-                  disabled:bg-gray-50
-                  disabled:cursor-not-allowed
-                "
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
-            </div>
+          
 
           </div>
 
