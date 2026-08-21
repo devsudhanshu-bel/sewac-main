@@ -1,8 +1,9 @@
 import React from "react";
 import { Building2, Plus, Search } from "lucide-react";
+import { useState } from "react";
 
 import UserTable from "./UserTable";
-
+import AddUserModal from "./AddUserModal";
 const contractorUsers = [
   {
     id: 1,
@@ -31,6 +32,9 @@ const contractorUsers = [
 ];
 
 const ContractorUsers = () => {
+  const [showAddContractorModal, setShowAddContractorModal] =
+    useState(false);
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
       {/* Header */}
@@ -68,15 +72,24 @@ const ContractorUsers = () => {
               className="w-full h-10 rounded-lg border border-gray-200 pl-10 pr-3 text-[13px] outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+<button
+  onClick={() => setShowAddContractorModal(true)}
+  className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2"
+>
+  <Plus className="w-4 h-4" />
 
-<button className="h-10 px-5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-600 hover:text-white transition text-[13px] font-medium flex items-center gap-2">            <Plus className="w-4 h-4" />
-
-            Add Contractor
-          </button>
+  Add Contractor
+</button>
         </div>
       </div>
 
-      <UserTable users={contractorUsers} />
+            <UserTable users={contractorUsers} />
+
+      <AddUserModal
+        open={showAddContractorModal}
+        onClose={() => setShowAddContractorModal(false)}
+        title="Add Contractor"
+      />
     </div>
   );
 };
