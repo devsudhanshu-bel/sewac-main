@@ -32,33 +32,28 @@ const {
 
 router.get(
   "/summary",
-  authMiddleware,
   getVehicleSummary,
 );
 
-router.get("/", authMiddleware, checkPermission("vehicles"), getAllVehicles);
+router.get("/", getAllVehicles);
 
 router.get(
   "/:vehicleId",
-  authMiddleware,
   getVehicleById,
 );
 
 router.post(
   "/",
-  authMiddleware,
   createVehicle,
 );
 
 router.put(
   "/:vehicleId",
-  authMiddleware,
   updateVehicle,
 );
 
 router.delete(
   "/:vehicleId",
-  authMiddleware,
   deleteVehicle,
 );
 

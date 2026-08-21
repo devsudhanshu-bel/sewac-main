@@ -23,19 +23,17 @@ const {
 
 router.get(
   "/dashboard",
-  authMiddleware,
   getPlantDashboard,
 );
 
 router.get(
   "/locations",
-  authMiddleware,
   getPlantLocations,
 );
 
-router.get("/", authMiddleware, getAllPlants);
+router.get("/", getAllPlants);
 
-router.get("/:id", authMiddleware, getPlantById);
+router.get("/:id", getPlantById);
 
 /*
 |--------------------------------------------------------------------------
@@ -45,19 +43,16 @@ router.get("/:id", authMiddleware, getPlantById);
 
 router.post(
   "/",
-  authMiddleware,
   createPlant,
 );
 
 router.put(
   "/:id",
-  authMiddleware,
   updatePlant,
 );
 
 router.delete(
   "/:id",
-  authMiddleware,
   deletePlant,
 );
 
