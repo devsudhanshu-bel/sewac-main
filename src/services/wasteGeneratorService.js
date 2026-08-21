@@ -448,34 +448,66 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| GET CITIZENS FROM MASTER CITIZEN DATABASE
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Geographic hierarchy:
+|
+|   masterCitizenPrisma
+|        ↓
+|   city → zone → division → ward
+|
+| Actual citizen directory:
+|
+|   helperPrisma
+|        ↓
+|   master_citizen_data
+|
+| master_citizen_data is READ ONLY.
+|
+|--------------------------------------------------------------------------
+*/
+
 const getMasterCitizensForWard = async (ward) => {
-  if (!ward || ward.wardNo === null || ward.wardNo === undefined) {
+  if (!ward) {
+    return [];
+  }
+
+  if (
+    ward.wardNo === null ||
+    ward.wardNo === undefined ||
+    String(ward.wardNo).trim() === ""
+  ) {
     return [];
   }
 
   const wardNo = String(ward.wardNo).trim();
 
-  if (!wardNo) {
-    return [];
-  }
+  console.log("[Waste Generator Directory] Reading master_citizen_data", {
+    wardNo,
+    cityId: ward.cityId,
+    zoneId: ward.zoneId,
+    divisionId: ward.divisionId,
+    wardId: ward.wardId,
+  });
 
   /*
   |--------------------------------------------------------------------------
-  | IMPORTANT:
+  | ACTUAL CITIZEN DATA
+  |--------------------------------------------------------------------------
   |
-  | Your actual master table stores:
+  | THIS MUST USE helperPrisma.
   |
-  | ward = text
+  | master_citizen_data exists in the HELPER DATABASE.
   |
-  | Example:
-  |
-  | "216"
-  |
-  | We therefore compare as TEXT.
   |--------------------------------------------------------------------------
   */
 
-  const rows = await masterCitizenPrisma.$queryRawUnsafe(
+  const rows = await helperPrisma.$queryRawUnsafe(
     `
         SELECT
           id,
@@ -531,12 +563,19 @@ const getMasterCitizensForWard = async (ward) => {
     wardNo,
   );
 
+  console.log(
+    `[Waste Generator Directory] Found ${rows.length} citizens for ward ${wardNo}`,
+  );
+
   /*
   |--------------------------------------------------------------------------
-  | ADD HEADER HIERARCHY TO RESPONSE ONLY
+  | ADD HEADER HIERARCHY TO RESPONSE
   |--------------------------------------------------------------------------
   |
-  | Nothing is written back to DB.
+  | These are response-only fields.
+  |
+  | NOTHING is written to master_citizen_data.
+  |
   |--------------------------------------------------------------------------
   */
 
@@ -557,7 +596,7 @@ const getMasterCitizensForWard = async (ward) => {
 
     wardId: ward.wardId,
 
-    wardNo: ward.wardNo,
+    wardNo: Number(wardNo),
 
     wardName: ward.wardName,
   }));
