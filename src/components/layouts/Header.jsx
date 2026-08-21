@@ -193,29 +193,19 @@ function Dropdown({
         className="
           w-full
           h-9
-
           rounded-xl
-
           border
           border-gray-200
-
           bg-white
-
           px-3
-
           flex
           items-center
           justify-between
-
           text-[11px]
           sm:text-[12px]
-
           font-medium
-
           text-[#16295A]
-
           hover:border-violet-400
-
           transition-all
           duration-300
         "
@@ -229,10 +219,8 @@ function Dropdown({
           className={`
             shrink-0
             ml-2
-
             transition-transform
             duration-300
-
             ${
               open
                 ? "rotate-180"
@@ -251,27 +239,17 @@ function Dropdown({
           ref={menuRef}
           className="
             absolute
-
             top-11
             left-0
-
             w-full
-
             max-h-[315px]
-
             overflow-y-auto
-
             rounded-2xl
-
             bg-white
-
             border
             border-gray-100
-
             shadow-[0_15px_40px_rgba(15,23,42,0.10)]
-
             z-[99999]
-
             scrollbar-thin
             scrollbar-thumb-violet-300
             scrollbar-track-transparent
@@ -303,20 +281,14 @@ function Dropdown({
                   }}
                   className="
                     w-full
-
                     px-4
                     py-2.5
-
                     flex
                     items-center
                     justify-between
-
                     text-[12px]
-
                     hover:bg-violet-50
-
                     transition
-
                     text-left
                   "
                 >
@@ -330,9 +302,7 @@ function Dropdown({
                       size={14}
                       className="
                         text-violet-600
-
                         shrink-0
-
                         ml-2
                       "
                     />
@@ -773,6 +743,97 @@ export default function Header({
   );
 
   /* =======================================================
+     SEARCH COMPONENT
+     
+     Shared by:
+     - tablet inline search
+     - mobile full-width search row
+  ======================================================= */
+
+  const searchInput = (
+    <div
+      className="
+        relative
+        w-full
+      "
+    >
+      <Search
+        size={15}
+        className="
+          absolute
+          left-3
+          top-1/2
+          -translate-y-1/2
+          text-gray-400
+          pointer-events-none
+          z-10
+        "
+      />
+
+      <input
+        ref={searchRef}
+        type="text"
+        value={search}
+        onChange={(event) =>
+          setSearch(
+            event.target.value
+          )
+        }
+        placeholder={t(
+          "header.search"
+        )}
+        aria-label="Search"
+        className="
+          w-full
+          h-9
+          rounded-xl
+          border
+          border-gray-200
+          bg-white
+          pl-9
+          pr-8
+          text-[11px]
+          text-[#16295A]
+          caret-[#16295A]
+          outline-none
+          transition-all
+          duration-300
+          focus:border-violet-500
+          focus:ring-2
+          focus:ring-violet-100
+          placeholder:text-gray-400
+        "
+      />
+
+      {search.length >
+        0 && (
+        <button
+          type="button"
+          onClick={() =>
+            setSearch("")
+          }
+          className="
+            absolute
+            right-2
+            top-1/2
+            -translate-y-1/2
+            flex
+            items-center
+            justify-center
+            text-gray-400
+            hover:text-violet-600
+            transition
+          "
+        >
+          <X
+            size={13}
+          />
+        </button>
+      )}
+    </div>
+  );
+
+  /* =======================================================
      RENDER
   ======================================================= */
 
@@ -782,13 +843,9 @@ export default function Header({
       className="
         sticky
         top-0
-
         z-[9999]
-
         w-full
-
         bg-white
-
         border-b
         border-gray-100
 
@@ -813,11 +870,8 @@ export default function Header({
           flex
           items-center
           justify-between
-
           gap-2
-
           min-h-[44px]
-
           xl:h-full
         "
       >
@@ -830,11 +884,8 @@ export default function Header({
           className="
             flex
             items-center
-
             gap-2
-
             min-w-0
-
             flex-1
           "
         >
@@ -846,11 +897,8 @@ export default function Header({
             className="
               flex
               items-center
-
               gap-2
-
               shrink-0
-
               xl:hidden
             "
           >
@@ -866,29 +914,20 @@ export default function Header({
               aria-label="Open navigation menu"
               className="
                 md:hidden
-
                 w-9
                 h-9
-
                 rounded-xl
-
                 border
                 border-gray-200
-
                 bg-white
-
                 flex
                 items-center
                 justify-center
-
                 text-[#16295A]
-
                 hover:border-violet-400
                 hover:text-violet-600
-
                 transition-all
                 duration-200
-
                 shrink-0
               "
             >
@@ -907,17 +946,11 @@ export default function Header({
               draggable={false}
               className="
                 w-[64px]
-
                 sm:w-[76px]
-
                 md:w-[68px]
-
                 h-auto
-
                 object-contain
-
                 select-none
-
                 shrink-0
               "
             />
@@ -925,24 +958,16 @@ export default function Header({
 
           {/* ===============================================
               DASHBOARD FILTERS
-              
-              IMPORTANT:
-              Dashboard responsive behavior is preserved.
           =============================================== */}
 
           {isDashboard ? (
             <div
               className="
                 hidden
-
                 xl:flex
-
                 items-center
-
                 gap-2
-
                 min-w-0
-
                 shrink-0
               "
             >
@@ -959,10 +984,8 @@ export default function Header({
               <div
                 className="
                   relative
-
                   hidden
                   xl:block
-
                   shrink-0
                 "
               >
@@ -970,14 +993,10 @@ export default function Header({
                   size={16}
                   className="
                     absolute
-
                     left-3
                     top-1/2
-
                     -translate-y-1/2
-
                     text-gray-400
-
                     pointer-events-none
                   "
                 />
@@ -996,30 +1015,19 @@ export default function Header({
                   )}
                   className="
                     w-[330px]
-
                     h-9
-
                     rounded-xl
-
                     border
                     border-gray-200
-
                     bg-white
-
                     pl-10
                     pr-9
-
                     text-[12px]
-
                     text-[#16295A]
-
                     outline-none
-
                     transition-all
                     duration-300
-
                     focus:border-violet-500
-
                     focus:ring-2
                     focus:ring-violet-100
                   "
@@ -1034,16 +1042,11 @@ export default function Header({
                     }
                     className="
                       absolute
-
                       right-3
                       top-1/2
-
                       -translate-y-1/2
-
                       text-gray-400
-
                       hover:text-violet-600
-
                       transition
                     "
                   >
@@ -1055,175 +1058,46 @@ export default function Header({
               </div>
 
               {/* =============================================
-                  TABLET / MOBILE SEARCH
-
-                  IMPORTANT FIX:
-
-                  This does NOT use flex-1.
-
-                  Therefore it cannot push the
-                  date / language / profile around.
+                  TABLET SEARCH
+                  
+                  768px - 1279px
+                  
+                  Stays in the primary row.
               ============================================= */}
 
               <div
                 className="
-                  flex
+                  hidden
+                  md:flex
                   xl:hidden
-
                   items-center
-
                   shrink-0
-
                   ml-auto
                 "
               >
                 <div
                   className="
                     relative
-
-                    w-9
-
-                    sm:w-[170px]
-
-                    md:w-[220px]
-
+                    w-[220px]
+                    lg:w-[260px]
                     shrink-0
                   "
                 >
-                  {/* SEARCH ICON */}
-
-                  <Search
-                    size={15}
-                    className="
-                      absolute
-
-                      left-3
-                      top-1/2
-
-                      -translate-y-1/2
-
-                      text-gray-400
-
-                      pointer-events-none
-
-                      z-10
-                    "
-                  />
-
-                  {/* INPUT */}
-
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(event) =>
-                      setSearch(
-                        event.target.value
-                      )
-                    }
-                    placeholder={t(
-                      "header.search"
-                    )}
-                    aria-label="Search"
-                    className="
-                      w-full
-
-                      h-9
-
-                      rounded-xl
-
-                      border
-                      border-gray-200
-
-                      bg-white
-
-                      pl-9
-                      pr-8
-
-                      text-[11px]
-
-                      text-transparent
-
-                      caret-transparent
-
-                      outline-none
-
-                      transition-all
-                      duration-300
-
-                      focus:border-violet-500
-
-                      focus:ring-2
-                      focus:ring-violet-100
-
-                      sm:text-[#16295A]
-
-                      sm:caret-[#16295A]
-
-                      sm:placeholder:text-gray-400
-
-                      max-[479px]:text-transparent
-                      max-[479px]:caret-transparent
-                    "
-                  />
-
-                  {/* MOBILE ONLY SEARCH ICON OVERLAY */}
-
-                  <div
-                    className="
-                      absolute
-
-                      inset-0
-
-                      flex
-                      items-center
-                      justify-center
-
-                      pointer-events-none
-
-                      sm:hidden
-                    "
-                  >
-                    <Search
-                      size={15}
-                      className="text-gray-400"
-                    />
-                  </div>
-
-                  {/* CLEAR */}
-
-                  {search.length >
-                    0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSearch("")
-                      }
-                      className="
-                        absolute
-
-                        right-2
-                        top-1/2
-
-                        -translate-y-1/2
-
-                        hidden
-                        sm:flex
-
-                        items-center
-                        justify-center
-
-                        text-gray-400
-
-                        hover:text-violet-600
-                      "
-                    >
-                      <X
-                        size={13}
-                      />
-                    </button>
-                  )}
+                  {searchInput}
                 </div>
               </div>
+
+              {/* =============================================
+                  SMALL SCREEN SEARCH
+                  
+                  BELOW 768px
+                  
+                  IMPORTANT:
+                  Search is intentionally NOT inside
+                  the primary header row.
+                  
+                  It gets its own full-width row below.
+              ============================================= */}
             </>
           )}
         </div>
@@ -1236,10 +1110,8 @@ export default function Header({
           className="
             flex
             items-center
-
             gap-1.5
             sm:gap-2
-
             shrink-0
           "
         >
@@ -1250,9 +1122,7 @@ export default function Header({
           <div
             className="
               relative
-
               shrink-0
-
               [&>div]:shrink-0
             "
           >
@@ -1272,11 +1142,8 @@ export default function Header({
 
           {/* ===============================================
               WET / DRY DAY
-
+              
               Dashboard only.
-
-              Hidden on small screens to
-              preserve the responsive header.
           =============================================== */}
 
           {isDashboard && (
@@ -1284,14 +1151,10 @@ export default function Header({
               className="
                 hidden
                 sm:flex
-
                 rounded-xl
-
                 border
                 border-gray-200
-
                 overflow-hidden
-
                 shrink-0
               "
             >
@@ -1303,18 +1166,13 @@ export default function Header({
                   }
                   className={`
                     h-9
-
                     px-3
                     lg:px-4
-
                     text-[11px]
                     lg:text-[12px]
-
                     font-semibold
-
                     transition-all
                     duration-300
-
                     ${
                       dayType ===
                       "dry"
@@ -1334,18 +1192,13 @@ export default function Header({
                 }
                 className={`
                   h-9
-
                   px-3
                   lg:px-4
-
                   text-[11px]
                   lg:text-[12px]
-
                   font-semibold
-
                   transition-all
                   duration-300
-
                   ${
                     dayType ===
                     "wet"
@@ -1367,7 +1220,6 @@ export default function Header({
             ref={languageRef}
             className="
               relative
-
               shrink-0
             "
           >
@@ -1383,28 +1235,19 @@ export default function Header({
               }
               className="
                 h-9
-
                 px-2
                 sm:px-3
-
                 rounded-xl
-
                 border
                 border-gray-200
-
                 bg-white
-
                 flex
                 items-center
-
                 gap-1
                 sm:gap-1.5
-
                 hover:border-violet-400
-
                 transition-all
                 duration-300
-
                 shrink-0
               "
             >
@@ -1412,7 +1255,6 @@ export default function Header({
                 size={14}
                 className="
                   text-violet-600
-
                   shrink-0
                 "
               />
@@ -1421,9 +1263,7 @@ export default function Header({
                 className="
                   text-[11px]
                   sm:text-[12px]
-
                   font-semibold
-
                   text-[#16295A]
                 "
               >
@@ -1434,10 +1274,8 @@ export default function Header({
                 size={12}
                 className={`
                   shrink-0
-
                   transition-transform
                   duration-300
-
                   ${
                     languageOpen
                       ? "rotate-180"
@@ -1453,23 +1291,15 @@ export default function Header({
               <div
                 className="
                   absolute
-
                   right-0
                   top-11
-
                   w-44
-
                   rounded-2xl
-
                   bg-white
-
                   border
                   border-gray-100
-
                   shadow-[0_15px_40px_rgba(15,23,42,0.10)]
-
                   overflow-hidden
-
                   z-[99999]
                 "
               >
@@ -1487,20 +1317,14 @@ export default function Header({
                       }
                       className="
                         w-full
-
                         px-4
                         py-3
-
                         flex
                         items-center
                         justify-between
-
                         text-[12px]
-
                         hover:bg-violet-50
-
                         transition
-
                         text-left
                       "
                     >
@@ -1534,7 +1358,6 @@ export default function Header({
             ref={profileRef}
             className="
               relative
-
               shrink-0
             "
           >
@@ -1550,33 +1373,22 @@ export default function Header({
               }
               className="
                 h-9
-
                 pl-1
                 pr-1
-
                 sm:pl-2
                 sm:pr-2
-
                 xl:pr-3
-
                 rounded-xl
-
                 border
                 border-gray-200
-
                 bg-white
-
                 flex
                 items-center
-
                 gap-1.5
                 sm:gap-2
-
                 hover:border-violet-400
-
                 transition-all
                 duration-300
-
                 shrink-0
               "
             >
@@ -1588,23 +1400,16 @@ export default function Header({
                 className="
                   w-8
                   h-8
-
                   rounded-full
-
                   bg-gradient-to-r
                   from-violet-600
                   to-fuchsia-600
-
                   text-white
-
                   text-[13px]
-
                   font-semibold
-
                   flex
                   items-center
                   justify-center
-
                   shrink-0
                 "
               >
@@ -1613,31 +1418,24 @@ export default function Header({
 
               {/* =========================================
                   USER INFO
-
+                  
                   Desktop only
               ========================================= */}
 
               <div
                 className="
                   hidden
-
                   xl:block
-
                   text-left
-
                   leading-tight
-
                   min-w-0
                 "
               >
                 <h3
                   className="
                     font-semibold
-
                     text-[13px]
-
                     text-[#16295A]
-
                     truncate
                   "
                 >
@@ -1647,11 +1445,8 @@ export default function Header({
                 <p
                   className="
                     text-[10px]
-
                     text-gray-500
-
                     mt-0.5
-
                     truncate
                   "
                 >
@@ -1666,12 +1461,9 @@ export default function Header({
                 className={`
                   hidden
                   xl:block
-
                   shrink-0
-
                   transition-transform
                   duration-300
-
                   ${
                     profileOpen
                       ? "rotate-180"
@@ -1689,23 +1481,15 @@ export default function Header({
               <div
                 className="
                   absolute
-
                   right-0
                   top-11
-
                   w-56
-
                   rounded-2xl
-
                   bg-white
-
                   border
                   border-gray-100
-
                   shadow-[0_15px_40px_rgba(15,23,42,0.10)]
-
                   overflow-hidden
-
                   z-[99999]
                 "
               >
@@ -1717,7 +1501,6 @@ export default function Header({
                   className="
                     px-5
                     py-4
-
                     border-b
                     border-gray-100
                   "
@@ -1733,23 +1516,16 @@ export default function Header({
                       className="
                         w-9
                         h-9
-
                         rounded-full
-
                         bg-gradient-to-r
                         from-violet-600
                         to-fuchsia-600
-
                         text-white
-
                         text-[13px]
-
                         font-semibold
-
                         flex
                         items-center
                         justify-center
-
                         shrink-0
                       "
                     >
@@ -1764,11 +1540,8 @@ export default function Header({
                       <h3
                         className="
                           font-semibold
-
                           text-[13px]
-
                           text-[#16295A]
-
                           truncate
                         "
                       >
@@ -1778,11 +1551,8 @@ export default function Header({
                       <p
                         className="
                           text-[10px]
-
                           text-gray-500
-
                           mt-0.5
-
                           truncate
                         "
                       >
@@ -1809,23 +1579,15 @@ export default function Header({
                   }}
                   className="
                     w-full
-
                     px-5
                     py-3
-
                     flex
                     items-center
-
                     gap-3
-
                     text-[12px]
-
                     text-[#16295A]
-
                     hover:bg-violet-50
-
                     transition
-
                     text-left
                   "
                 >
@@ -1853,23 +1615,15 @@ export default function Header({
                   }}
                   className="
                     w-full
-
                     px-5
                     py-3
-
                     flex
                     items-center
-
                     gap-3
-
                     text-[12px]
-
                     text-red-500
-
                     hover:bg-red-50
-
                     transition
-
                     text-left
                   "
                 >
@@ -1886,6 +1640,44 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* ===================================================
+          NON-DASHBOARD SMALL SCREEN SEARCH ROW
+
+          IMPORTANT:
+          This is the main responsive change.
+
+          <= 767px:
+          Search gets its own row.
+
+          This prevents the search box from fighting
+          with the calendar, language and profile controls.
+
+          At 768px+ it disappears and the inline
+          tablet search above takes over.
+      =================================================== */}
+
+      {!isDashboard && (
+        <div
+          className="
+            md:hidden
+
+            w-full
+
+            mt-2
+
+            px-0.5
+          "
+        >
+          <div
+            className="
+              w-full
+            "
+          >
+            {searchInput}
+          </div>
+        </div>
+      )}
 
       {/* ===================================================
           DASHBOARD RESPONSIVE FILTER ROW
@@ -1906,17 +1698,12 @@ export default function Header({
         <div
           className="
             xl:hidden
-
             w-full
-
             overflow-x-auto
             overflow-y-visible
-
             scrollbar-none
-
             pt-1
             pb-1
-
             -mx-0.5
           "
         >
@@ -1924,11 +1711,8 @@ export default function Header({
             className="
               flex
               items-center
-
               gap-2
-
               min-w-max
-
               px-0.5
             "
           >
