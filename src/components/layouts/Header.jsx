@@ -58,8 +58,7 @@ const ROLE_LABELS = {
 
 function getUserFromToken() {
   try {
-    const token =
-      sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     if (!token) {
       return {
@@ -68,8 +67,7 @@ function getUserFromToken() {
       };
     }
 
-    const payload =
-      token.split(".")[1];
+    const payload = token.split(".")[1];
 
     if (!payload) {
       return {
@@ -87,13 +85,8 @@ function getUserFromToken() {
     );
 
     return {
-      name:
-        decoded.full_name ||
-        "Admin",
-
-      role:
-        decoded.role ||
-        "ADMIN_LAYER_1",
+      name: decoded.full_name || "Admin",
+      role: decoded.role || "ADMIN_LAYER_1",
     };
   } catch (error) {
     console.error(
@@ -127,24 +120,20 @@ function Dropdown({
   onChange,
   placeholder = "Select",
 }) {
-  const [open, setOpen] =
-    useState(false);
+  const [open, setOpen] = useState(false);
 
-  const wrapperRef =
-    useRef(null);
-
-  const menuRef =
-    useRef(null);
+  const wrapperRef = useRef(null);
+  const menuRef = useRef(null);
 
   /* =======================================================
      CLOSE OUTSIDE
   ======================================================= */
 
   useEffect(() => {
-    function close(e) {
+    function close(event) {
       if (
         !wrapperRef.current?.contains(
-          e.target
+          event.target
         )
       ) {
         setOpen(false);
@@ -165,7 +154,7 @@ function Dropdown({
   }, []);
 
   /* =======================================================
-     ANIMATION
+     DROPDOWN ANIMATION
   ======================================================= */
 
   useEffect(() => {
@@ -194,16 +183,8 @@ function Dropdown({
   return (
     <div
       ref={wrapperRef}
-      className={`
-        relative
-        shrink-0
-        ${width}
-      `}
+      className={`relative shrink-0 ${width}`}
     >
-      {/* =================================================
-          BUTTON
-      ================================================= */}
-
       <button
         type="button"
         onClick={() =>
@@ -226,7 +207,9 @@ function Dropdown({
           items-center
           justify-between
 
-          text-[12px]
+          text-[11px]
+          sm:text-[12px]
+
           font-medium
 
           text-[#16295A]
@@ -238,8 +221,7 @@ function Dropdown({
         "
       >
         <span className="truncate">
-          {value ||
-            placeholder}
+          {value || placeholder}
         </span>
 
         <ChevronDown
@@ -260,9 +242,9 @@ function Dropdown({
         />
       </button>
 
-      {/* =================================================
+      {/* ===================================================
           MENU
-      ================================================= */}
+      =================================================== */}
 
       {open && (
         <div
@@ -286,7 +268,7 @@ function Dropdown({
             border
             border-gray-100
 
-            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+            shadow-[0_15px_40px_rgba(15,23,42,0.10)]
 
             z-[99999]
 
@@ -295,20 +277,20 @@ function Dropdown({
             scrollbar-track-transparent
           "
         >
-          {options.map(
+          {options?.map(
             (item) => {
               const label =
-                item.city_name ||
-                item.zone_name ||
-                item.division_name ||
-                item.ward_name ||
+                item?.city_name ||
+                item?.zone_name ||
+                item?.division_name ||
+                item?.ward_name ||
                 item;
 
               const key =
-                item.city_id ||
-                item.zone_id ||
-                item.division_id ||
-                item.ward_id ||
+                item?.city_id ||
+                item?.zone_id ||
+                item?.division_id ||
+                item?.ward_id ||
                 label;
 
               return (
@@ -366,7 +348,7 @@ function Dropdown({
 }
 
 /* =========================================================
-   SIDEBAR TOGGLE
+   SIDEBAR TOGGLE EVENT
 ========================================================= */
 
 const toggleSidebar = () => {
@@ -456,7 +438,9 @@ export default function Header({
     );
 
   const roleLabel =
-    getRoleLabel(user.role);
+    getRoleLabel(
+      user.role
+    );
 
   const userInitial =
     user.name
@@ -529,7 +513,9 @@ export default function Header({
     const tl =
       gsap.timeline();
 
-    if (headerRef.current) {
+    if (
+      headerRef.current
+    ) {
       tl.from(
         headerRef.current,
         {
@@ -541,7 +527,9 @@ export default function Header({
       );
     }
 
-    if (controlsRef.current) {
+    if (
+      controlsRef.current
+    ) {
       tl.from(
         controlsRef.current
           .children,
@@ -566,10 +554,10 @@ export default function Header({
   ======================================================= */
 
   useEffect(() => {
-    function close(e) {
+    function close(event) {
       if (
         !profileRef.current?.contains(
-          e.target
+          event.target
         )
       ) {
         setProfileOpen(false);
@@ -577,7 +565,7 @@ export default function Header({
 
       if (
         !languageRef.current?.contains(
-          e.target
+          event.target
         )
       ) {
         setLanguageOpen(false);
@@ -602,12 +590,12 @@ export default function Header({
   ======================================================= */
 
   useEffect(() => {
-    function shortcut(e) {
+    function shortcut(event) {
       if (
-        e.key === "/" &&
+        event.key === "/" &&
         variant !== "dashboard"
       ) {
-        e.preventDefault();
+        event.preventDefault();
 
         searchRef.current?.focus();
       }
@@ -630,46 +618,51 @@ export default function Header({
      LOGOUT
   ======================================================= */
 
-  const handleLogout = () => {
-    sessionStorage.clear();
+  const handleLogout =
+    () => {
+      sessionStorage.clear();
 
-    window.location.replace(
-      "https://app-authentication-frontend.onrender.com"
-    );
-  };
+      window.location.replace(
+        "https://app-authentication-frontend.onrender.com"
+      );
+    };
 
   /* =======================================================
      DATE FORMAT
   ======================================================= */
 
-  const formatLocalDate = (
-    date
-  ) => {
-    const year =
-      date.getFullYear();
+  const formatLocalDate =
+    (date) => {
+      const year =
+        date.getFullYear();
 
-    const month = String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
+      const month =
+        String(
+          date.getMonth() + 1
+        ).padStart(2, "0");
 
-    const day = String(
-      date.getDate()
-    ).padStart(2, "0");
+      const day =
+        String(
+          date.getDate()
+        ).padStart(2, "0");
 
-    return `${year}-${month}-${day}`;
-  };
+      return `${year}-${month}-${day}`;
+    };
 
   /* =======================================================
-     LANGUAGE CHANGE
+     LANGUAGE HANDLER
   ======================================================= */
 
-  const handleLanguageChange = (
-    languageCode
-  ) => {
-    setLanguage(languageCode);
+  const handleLanguageChange =
+    (languageCode) => {
+      setLanguage(
+        languageCode
+      );
 
-    setLanguageOpen(false);
-  };
+      setLanguageOpen(
+        false
+      );
+    };
 
   /* =======================================================
      CURRENT LANGUAGE
@@ -684,14 +677,6 @@ export default function Header({
 
   /* =======================================================
      LOCATION FILTERS
-
-     IMPORTANT BREAKPOINT:
-
-     < 1536px
-       Filters get their own row.
-
-     >= 1536px
-       Filters stay in the main header row.
   ======================================================= */
 
   const locationFilters = (
@@ -704,7 +689,7 @@ export default function Header({
         width="
           w-[148px]
           sm:w-[155px]
-          2xl:w-[118px]
+          xl:w-[118px]
         "
         value={
           selectedCity?.city_name ||
@@ -727,7 +712,7 @@ export default function Header({
         width="
           w-[220px]
           sm:w-[235px]
-          2xl:w-[200px]
+          xl:w-[200px]
         "
         value={
           selectedZone?.zone_name ||
@@ -750,7 +735,7 @@ export default function Header({
         width="
           w-[170px]
           sm:w-[180px]
-          2xl:w-[138px]
+          xl:w-[138px]
         "
         value={
           selectedDivision?.division_name ||
@@ -771,7 +756,7 @@ export default function Header({
         width="
           w-[155px]
           sm:w-[165px]
-          2xl:w-[122px]
+          xl:w-[122px]
         "
         value={
           selectedWard
@@ -797,6 +782,7 @@ export default function Header({
       className="
         sticky
         top-0
+
         z-[9999]
 
         w-full
@@ -808,34 +794,31 @@ export default function Header({
 
         px-3
         sm:px-4
+        xl:px-4
 
         pt-2
         pb-2
+
+        xl:h-16
 
         overflow-visible
       "
     >
       {/* ===================================================
-          MAIN HEADER ROW
-
-          >= 1536px:
-            Everything in one row.
-
-          < 1536px:
-            Right controls occupy this row.
+          PRIMARY HEADER ROW
       =================================================== */}
 
       <div
         className="
-          w-full
-
-          min-h-[44px]
-
           flex
           items-center
           justify-between
 
           gap-2
+
+          min-h-[44px]
+
+          xl:h-full
         "
       >
         {/* =================================================
@@ -856,11 +839,7 @@ export default function Header({
           "
         >
           {/* ===============================================
-              MOBILE MENU + LOGO
-
-              Visible below 1536 only on
-              mobile/tablet where sidebar
-              may need to be opened.
+              MOBILE / TABLET BRAND
           =============================================== */}
 
           <div
@@ -872,11 +851,13 @@ export default function Header({
 
               shrink-0
 
-              md:hidden
-
-              2xl:hidden
+              xl:hidden
             "
           >
+            {/* =============================================
+                MOBILE MENU
+            ============================================= */}
+
             <button
               type="button"
               onClick={
@@ -884,6 +865,8 @@ export default function Header({
               }
               aria-label="Open navigation menu"
               className="
+                md:hidden
+
                 w-9
                 h-9
 
@@ -905,6 +888,8 @@ export default function Header({
 
                 transition-all
                 duration-200
+
+                shrink-0
               "
             >
               <Menu
@@ -912,34 +897,45 @@ export default function Header({
               />
             </button>
 
+            {/* =============================================
+                SEWAC LOGO
+            ============================================= */}
+
             <img
               src={SewacLogo}
               alt="SEWAC"
               draggable={false}
               className="
                 w-[64px]
-                sm:w-[72px]
+
+                sm:w-[76px]
+
+                md:w-[68px]
 
                 h-auto
 
                 object-contain
 
                 select-none
+
+                shrink-0
               "
             />
           </div>
 
           {/* ===============================================
-              DESKTOP FILTERS
-
-              ONLY 1536px+
+              DASHBOARD FILTERS
+              
+              IMPORTANT:
+              Dashboard responsive behavior is preserved.
           =============================================== */}
 
           {isDashboard ? (
             <div
               className="
                 hidden
-                2xl:flex
+
+                xl:flex
 
                 items-center
 
@@ -953,215 +949,295 @@ export default function Header({
               {locationFilters}
             </div>
           ) : (
-            /* =============================================
-               DESKTOP SEARCH
-            ============================================= */
+            <>
+              {/* =============================================
+                  DESKTOP SEARCH
+                  
+                  xl+
+              ============================================= */}
 
-            <div
-              className="
-                relative
-
-                hidden
-                2xl:block
-              "
-            >
-              <Search
-                size={16}
+              <div
                 className="
-                  absolute
+                  relative
 
-                  left-3
-                  top-1/2
+                  hidden
+                  xl:block
 
-                  -translate-y-1/2
-
-                  text-gray-400
+                  shrink-0
                 "
-              />
-
-              <input
-                ref={searchRef}
-                type="text"
-                value={search}
-                onChange={(e) =>
-                  setSearch(
-                    e.target.value
-                  )
-                }
-                placeholder={t(
-                  "header.search"
-                )}
-                className="
-                  w-[330px]
-
-                  h-9
-
-                  rounded-xl
-
-                  border
-                  border-gray-200
-
-                  bg-white
-
-                  pl-10
-                  pr-9
-
-                  text-[12px]
-
-                  outline-none
-
-                  transition-all
-                  duration-300
-
-                  focus:border-violet-500
-
-                  focus:ring-2
-                  focus:ring-violet-100
-                "
-              />
-
-              {search.length >
-                0 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSearch("")
-                  }
+              >
+                <Search
+                  size={16}
                   className="
                     absolute
 
-                    right-3
+                    left-3
                     top-1/2
 
                     -translate-y-1/2
 
                     text-gray-400
 
-                    hover:text-violet-600
-
-                    transition
+                    pointer-events-none
                   "
-                >
-                  <X
-                    size={14}
-                  />
-                </button>
-              )}
-            </div>
-          )}
+                />
 
-          {/* ===============================================
-              NON-DASHBOARD SEARCH
-          =============================================== */}
-
-          {!isDashboard && (
-            <div
-              className="
-                relative
-
-                flex-1
-                min-w-0
-
-                2xl:hidden
-              "
-            >
-              <Search
-                size={15}
-                className="
-                  absolute
-
-                  left-3
-                  top-1/2
-
-                  -translate-y-1/2
-
-                  text-gray-400
-                "
-              />
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) =>
-                  setSearch(
-                    e.target.value
-                  )
-                }
-                placeholder={t(
-                  "header.search"
-                )}
-                className="
-                  w-full
-
-                  max-w-[360px]
-
-                  h-9
-
-                  rounded-xl
-
-                  border
-                  border-gray-200
-
-                  bg-white
-
-                  pl-9
-                  pr-8
-
-                  text-[12px]
-
-                  outline-none
-
-                  focus:border-violet-500
-
-                  focus:ring-2
-                  focus:ring-violet-100
-                "
-              />
-
-              {search.length >
-                0 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSearch("")
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value
+                    )
                   }
+                  placeholder={t(
+                    "header.search"
+                  )}
                   className="
-                    absolute
+                    w-[330px]
 
-                    right-3
-                    top-1/2
+                    h-9
 
-                    -translate-y-1/2
+                    rounded-xl
 
-                    text-gray-400
+                    border
+                    border-gray-200
+
+                    bg-white
+
+                    pl-10
+                    pr-9
+
+                    text-[12px]
+
+                    text-[#16295A]
+
+                    outline-none
+
+                    transition-all
+                    duration-300
+
+                    focus:border-violet-500
+
+                    focus:ring-2
+                    focus:ring-violet-100
+                  "
+                />
+
+                {search.length >
+                  0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearch("")
+                    }
+                    className="
+                      absolute
+
+                      right-3
+                      top-1/2
+
+                      -translate-y-1/2
+
+                      text-gray-400
+
+                      hover:text-violet-600
+
+                      transition
+                    "
+                  >
+                    <X
+                      size={14}
+                    />
+                  </button>
+                )}
+              </div>
+
+              {/* =============================================
+                  TABLET / MOBILE SEARCH
+
+                  IMPORTANT FIX:
+
+                  This does NOT use flex-1.
+
+                  Therefore it cannot push the
+                  date / language / profile around.
+              ============================================= */}
+
+              <div
+                className="
+                  flex
+                  xl:hidden
+
+                  items-center
+
+                  shrink-0
+
+                  ml-auto
+                "
+              >
+                <div
+                  className="
+                    relative
+
+                    w-9
+
+                    sm:w-[170px]
+
+                    md:w-[220px]
+
+                    shrink-0
                   "
                 >
-                  <X
-                    size={14}
+                  {/* SEARCH ICON */}
+
+                  <Search
+                    size={15}
+                    className="
+                      absolute
+
+                      left-3
+                      top-1/2
+
+                      -translate-y-1/2
+
+                      text-gray-400
+
+                      pointer-events-none
+
+                      z-10
+                    "
                   />
-                </button>
-              )}
-            </div>
+
+                  {/* INPUT */}
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) =>
+                      setSearch(
+                        event.target.value
+                      )
+                    }
+                    placeholder={t(
+                      "header.search"
+                    )}
+                    aria-label="Search"
+                    className="
+                      w-full
+
+                      h-9
+
+                      rounded-xl
+
+                      border
+                      border-gray-200
+
+                      bg-white
+
+                      pl-9
+                      pr-8
+
+                      text-[11px]
+
+                      text-transparent
+
+                      caret-transparent
+
+                      outline-none
+
+                      transition-all
+                      duration-300
+
+                      focus:border-violet-500
+
+                      focus:ring-2
+                      focus:ring-violet-100
+
+                      sm:text-[#16295A]
+
+                      sm:caret-[#16295A]
+
+                      sm:placeholder:text-gray-400
+
+                      max-[479px]:text-transparent
+                      max-[479px]:caret-transparent
+                    "
+                  />
+
+                  {/* MOBILE ONLY SEARCH ICON OVERLAY */}
+
+                  <div
+                    className="
+                      absolute
+
+                      inset-0
+
+                      flex
+                      items-center
+                      justify-center
+
+                      pointer-events-none
+
+                      sm:hidden
+                    "
+                  >
+                    <Search
+                      size={15}
+                      className="text-gray-400"
+                    />
+                  </div>
+
+                  {/* CLEAR */}
+
+                  {search.length >
+                    0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSearch("")
+                      }
+                      className="
+                        absolute
+
+                        right-2
+                        top-1/2
+
+                        -translate-y-1/2
+
+                        hidden
+                        sm:flex
+
+                        items-center
+                        justify-center
+
+                        text-gray-400
+
+                        hover:text-violet-600
+                      "
+                    >
+                      <X
+                        size={13}
+                      />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
 
         {/* =================================================
-            RIGHT CONTROLS
-
-            At 1285px this group is
-            completely independent from
-            the location filters.
-
-            This prevents overlap.
+            RIGHT SIDE
         ================================================= */}
 
         <div
           className="
             flex
             items-center
-            justify-end
 
-            gap-1
+            gap-1.5
             sm:gap-2
 
             shrink-0
@@ -1173,11 +1249,11 @@ export default function Header({
 
           <div
             className="
+              relative
+
               shrink-0
 
-              flex
-              items-center
-              justify-center
+              [&>div]:shrink-0
             "
           >
             <Calendar
@@ -1195,40 +1271,75 @@ export default function Header({
           </div>
 
           {/* ===============================================
-              WET / DRY
+              WET / DRY DAY
+
+              Dashboard only.
+
+              Hidden on small screens to
+              preserve the responsive header.
           =============================================== */}
 
-          <div
-            className="
-              hidden
-              sm:flex
+          {isDashboard && (
+            <div
+              className="
+                hidden
+                sm:flex
 
-              rounded-xl
+                rounded-xl
 
-              border
-              border-gray-200
+                border
+                border-gray-200
 
-              overflow-hidden
+                overflow-hidden
 
-              shrink-0
-            "
-          >
-            {isDryDay && (
+                shrink-0
+              "
+            >
+              {isDryDay && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDayType("dry")
+                  }
+                  className={`
+                    h-9
+
+                    px-3
+                    lg:px-4
+
+                    text-[11px]
+                    lg:text-[12px]
+
+                    font-semibold
+
+                    transition-all
+                    duration-300
+
+                    ${
+                      dayType ===
+                      "dry"
+                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                        : "bg-white text-[#16295A] hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  Dry Day
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() =>
-                  setDayType(
-                    "dry"
-                  )
+                  setDayType("wet")
                 }
                 className={`
                   h-9
 
                   px-3
-                  2xl:px-4
+                  lg:px-4
 
                   text-[11px]
-                  2xl:text-[12px]
+                  lg:text-[12px]
 
                   font-semibold
 
@@ -1237,52 +1348,16 @@ export default function Header({
 
                   ${
                     dayType ===
-                    "dry"
+                    "wet"
                       ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                       : "bg-white text-[#16295A] hover:bg-gray-50"
                   }
                 `}
               >
-                {t(
-                  "header.dryDay"
-                )}
+                Wet Day
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() =>
-                setDayType(
-                  "wet"
-                )
-              }
-              className={`
-                h-9
-
-                px-3
-                2xl:px-4
-
-                text-[11px]
-                2xl:text-[12px]
-
-                font-semibold
-
-                transition-all
-                duration-300
-
-                ${
-                  dayType ===
-                  "wet"
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                    : "bg-white text-[#16295A] hover:bg-gray-50"
-                }
-              `}
-            >
-              {t(
-                "header.wetDay"
-              )}
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* ===============================================
               LANGUAGE
@@ -1292,6 +1367,7 @@ export default function Header({
             ref={languageRef}
             className="
               relative
+
               shrink-0
             "
           >
@@ -1328,12 +1404,15 @@ export default function Header({
 
                 transition-all
                 duration-300
+
+                shrink-0
               "
             >
               <Globe
                 size={14}
                 className="
                   text-violet-600
+
                   shrink-0
                 "
               />
@@ -1348,9 +1427,7 @@ export default function Header({
                   text-[#16295A]
                 "
               >
-                {
-                  currentLanguageCode
-                }
+                {currentLanguageCode}
               </span>
 
               <ChevronDown
@@ -1370,9 +1447,7 @@ export default function Header({
               />
             </button>
 
-            {/* =============================================
-                LANGUAGE MENU
-            ============================================= */}
+            {/* LANGUAGE MENU */}
 
             {languageOpen && (
               <div
@@ -1380,7 +1455,6 @@ export default function Header({
                   absolute
 
                   right-0
-
                   top-11
 
                   w-44
@@ -1392,7 +1466,7 @@ export default function Header({
                   border
                   border-gray-100
 
-                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  shadow-[0_15px_40px_rgba(15,23,42,0.10)]
 
                   overflow-hidden
 
@@ -1460,6 +1534,7 @@ export default function Header({
             ref={profileRef}
             className="
               relative
+
               shrink-0
             "
           >
@@ -1482,7 +1557,7 @@ export default function Header({
                 sm:pl-2
                 sm:pr-2
 
-                2xl:pr-3
+                xl:pr-3
 
                 rounded-xl
 
@@ -1501,6 +1576,8 @@ export default function Header({
 
                 transition-all
                 duration-300
+
+                shrink-0
               "
             >
               {/* =========================================
@@ -1535,28 +1612,29 @@ export default function Header({
               </div>
 
               {/* =========================================
-                  USER INFORMATION
+                  USER INFO
+
+                  Desktop only
               ========================================= */}
 
               <div
                 className="
                   hidden
-                  sm:block
+
+                  xl:block
 
                   text-left
 
                   leading-tight
 
-                  max-w-[100px]
-                  2xl:max-w-none
+                  min-w-0
                 "
               >
-                <h4
+                <h3
                   className="
-                    text-[11px]
-                    2xl:text-[12px]
-
                     font-semibold
+
+                    text-[13px]
 
                     text-[#16295A]
 
@@ -1564,14 +1642,15 @@ export default function Header({
                   "
                 >
                   {user.name}
-                </h4>
+                </h3>
 
                 <p
                   className="
-                    text-[9px]
-                    2xl:text-[10px]
+                    text-[10px]
 
                     text-gray-500
+
+                    mt-0.5
 
                     truncate
                   "
@@ -1580,11 +1659,13 @@ export default function Header({
                 </p>
               </div>
 
+              {/* DESKTOP CHEVRON */}
+
               <ChevronDown
                 size={12}
                 className={`
                   hidden
-                  sm:block
+                  xl:block
 
                   shrink-0
 
@@ -1601,7 +1682,7 @@ export default function Header({
             </button>
 
             {/* =============================================
-                PROFILE DROPDOWN
+                PROFILE MENU
             ============================================= */}
 
             {profileOpen && (
@@ -1610,7 +1691,6 @@ export default function Header({
                   absolute
 
                   right-0
-
                   top-11
 
                   w-56
@@ -1622,34 +1702,15 @@ export default function Header({
                   border
                   border-gray-100
 
-                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+                  shadow-[0_15px_40px_rgba(15,23,42,0.10)]
 
                   overflow-hidden
 
                   z-[99999]
                 "
-                ref={(el) => {
-                  if (el) {
-                    gsap.fromTo(
-                      el,
-                      {
-                        opacity: 0,
-                        scale: 0.96,
-                        y: -8,
-                      },
-                      {
-                        opacity: 1,
-                        scale: 1,
-                        y: 0,
-                        duration: 0.22,
-                        ease: "power3.out",
-                      }
-                    );
-                  }
-                }}
               >
                 {/* =========================================
-                    USER INFO
+                    USER INFORMATION
                 ========================================= */}
 
                 <div
@@ -1681,7 +1742,7 @@ export default function Header({
 
                         text-white
 
-                        text-[14px]
+                        text-[13px]
 
                         font-semibold
 
@@ -1695,7 +1756,11 @@ export default function Header({
                       {userInitial}
                     </div>
 
-                    <div className="min-w-0">
+                    <div
+                      className="
+                        min-w-0
+                      "
+                    >
                       <h3
                         className="
                           font-semibold
@@ -1760,6 +1825,8 @@ export default function Header({
                     hover:bg-violet-50
 
                     transition
+
+                    text-left
                   "
                 >
                   <Settings
@@ -1802,6 +1869,8 @@ export default function Header({
                     hover:bg-red-50
 
                     transition
+
+                    text-left
                   "
                 >
                   <LogOut
@@ -1819,29 +1888,24 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          RESPONSIVE FILTER ROW
+          DASHBOARD RESPONSIVE FILTER ROW
 
-          < 1536px ONLY
+          Dashboard only.
 
-          This is the important change.
+          Filters stay in their own horizontal row
+          below xl so they do NOT disturb:
 
-          At your:
-
-            1285 × 872
-
-          you will get:
-
-          ROW 1:
-          Calendar | Wet Day | EN | Admin
-
-          ROW 2:
-          Bangalore | Zone | Division | Ward
+          logo
+          calendar
+          day type
+          language
+          profile
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
-            2xl:hidden
+            xl:hidden
 
             w-full
 
@@ -1853,7 +1917,7 @@ export default function Header({
             pt-1
             pb-1
 
-            mt-1
+            -mx-0.5
           "
         >
           <div
@@ -1864,6 +1928,8 @@ export default function Header({
               gap-2
 
               min-w-max
+
+              px-0.5
             "
           >
             {locationFilters}
