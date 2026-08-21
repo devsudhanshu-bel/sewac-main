@@ -1,12 +1,4 @@
-import {
-  Search,
-  Globe,
-  ChevronDown,
-  LogOut,
-  Check,
-  X,
-  Menu,
-} from "lucide-react";
+import { Search, Globe, ChevronDown, LogOut, Check, Menu } from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
 
@@ -153,7 +145,7 @@ function Dropdown({
   }, [open]);
 
   /* =======================================================
-     DYNAMIC OPTION HELPERS
+     OPTION HELPERS
   ======================================================= */
 
   const getOptionLabel = (item) => {
@@ -306,7 +298,27 @@ function Dropdown({
    HEADER
 ========================================================= */
 
-export default function Header({ variant = "dashboard" }) {
+export default function Header({
+  variant = "dashboard",
+
+  /*
+   * IMPORTANT:
+   * Date is owned by the page.
+   *
+   * WasteGenerators.jsx:
+   *
+   * <Header
+   *   selectedDate={selectedDate}
+   *   setSelectedDate={setSelectedDate}
+   * />
+   *
+   * Overview.jsx does the same.
+   */
+
+  selectedDate = new Date().toISOString().split("T")[0],
+
+  setSelectedDate = () => {},
+}) {
   /* =======================================================
      LANGUAGE
   ======================================================= */
@@ -346,25 +358,26 @@ export default function Header({ variant = "dashboard" }) {
 
   const profileRef = useRef(null);
 
-  const bellRef = useRef(null);
-
   const languageRef = useRef(null);
 
   const languageMenuRef = useRef(null);
 
   /* =======================================================
-     STATE
+     LOCAL UI STATE
   ======================================================= */
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  /*
+   * IMPORTANT:
+   * DO NOT create selectedDate state here.
+   *
+   * The date belongs to the parent page.
+   */
 
-  const [dayType, setDayType] = useState("dry");
+  const [dayType, setDayType] = useState("wet");
 
   const [search, setSearch] = useState("");
 
   const [profileOpen, setProfileOpen] = useState(false);
-
-  const [notificationOpen, setNotificationOpen] = useState(false);
 
   const [languageOpen, setLanguageOpen] = useState(false);
 
@@ -379,6 +392,65 @@ export default function Header({ variant = "dashboard" }) {
   const roleLabel = getRoleLabel(user.role);
 
   const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+
+  /* =========================================================
+     DATE / DAY TYPE
+  ========================================================= */
+
+  /*
+   * selectedDate comes from the parent.
+   *
+   * Expected format:
+   *
+   * YYYY-MM-DD
+   *
+   * Example:
+   *
+   * 2026-08-21
+   */
+
+  const selectedDateObj = selectedDate
+    ? new Date(`${selectedDate}T12:00:00`)
+    : new Date();
+
+  const selectedDay = selectedDateObj.getDay();
+
+  /*
+   * JavaScript:
+   *
+   * Sunday    = 0
+   * Monday    = 1
+   * Tuesday   = 2
+   * Wednesday = 3
+   * Thursday  = 4
+   * Friday    = 5
+   * Saturday  = 6
+   */
+
+  const isDryDay = selectedDay === 3 || selectedDay === 6;
+
+  /*
+   * IMPORTANT:
+   *
+   * Dry Day exists ONLY on:
+   *
+   * Wednesday
+   * Saturday
+   *
+   * All other days are Wet Day.
+   */
+
+  useEffect(() => {
+    /*
+     * If selected date is NOT Wednesday
+     * or Saturday, Dry Day must not remain
+     * selected.
+     */
+
+    if (!isDryDay) {
+      setDayType("wet");
+    }
+  }, [selectedDate, isDryDay]);
 
   /* =========================================================
      GSAP HEADER ANIMATION
@@ -427,10 +499,6 @@ export default function Header({ variant = "dashboard" }) {
         setProfileOpen(false);
       }
 
-      if (!bellRef.current?.contains(event.target)) {
-        setNotificationOpen(false);
-      }
-
       if (!languageRef.current?.contains(event.target)) {
         setLanguageOpen(false);
       }
@@ -474,20 +542,6 @@ export default function Header({ variant = "dashboard" }) {
   };
 
   /* =========================================================
-     DATE FORMAT
-  ========================================================= */
-
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear();
-
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
-
-  /* =========================================================
      LANGUAGE HANDLER
   ========================================================= */
 
@@ -503,29 +557,6 @@ export default function Header({ variant = "dashboard" }) {
 
   const currentLanguageCode =
     language === "en" ? "EN" : language === "kn" ? "KN" : "HI";
-
-  /* =========================================================
-     NOTIFICATIONS
-  ========================================================= */
-
-  const notifications = [
-    {
-      title: "Vehicle KA-01 AB 1234 reached destination",
-      time: "2 min ago",
-    },
-    {
-      title: "Plant capacity exceeded 90%",
-      time: "8 min ago",
-    },
-    {
-      title: "AI generated today's report",
-      time: "25 min ago",
-    },
-    {
-      title: "New administrator added",
-      time: "1 hr ago",
-    },
-  ];
 
   /* =========================================================
      DYNAMIC LOCATION FILTERS
@@ -833,26 +864,38 @@ export default function Header({ variant = "dashboard" }) {
                 border-gray-200
               "
             >
-              <button
-                type="button"
-                onClick={() => setDayType("dry")}
-                className={`
-                  h-9
-                  px-4
-                  text-[11px]
-                  font-semibold
-                  transition-all
-                  duration-300
+              {/* =============================================
+                  DRY DAY
+                  ONLY WEDNESDAY / SATURDAY
+              ============================================= */}
 
-                  ${
-                    dayType === "dry"
-                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                      : "bg-white text-[#16295A] hover:bg-gray-50"
-                  }
-                `}
-              >
-                {t("header.dryDay", "Dry Day")}
-              </button>
+              {isDryDay && (
+                <button
+                  type="button"
+                  onClick={() => setDayType("dry")}
+                  className={`
+                    h-9
+                    px-4
+                    text-[11px]
+                    font-semibold
+                    transition-all
+                    duration-300
+
+                    ${
+                      dayType === "dry"
+                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                        : "bg-white text-[#16295A] hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  {t("header.dryDay", "Dry Day")}
+                </button>
+              )}
+
+              {/* =============================================
+                  WET DAY
+                  ALWAYS AVAILABLE
+              ============================================= */}
 
               <button
                 type="button"
@@ -1074,7 +1117,6 @@ export default function Header({ variant = "dashboard" }) {
 
             {/* =================================================
                 PROFILE DROPDOWN
-
                 SETTINGS REMOVED
             ================================================= */}
 
