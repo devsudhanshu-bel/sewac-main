@@ -17,7 +17,7 @@ import api from "../../api/axios";
 import { useLanguage } from "../../i18n";
 
 const AdminUsers = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // =========================================================
   // MODAL STATE
@@ -70,13 +70,12 @@ const AdminUsers = () => {
     } catch (err) {
       console.error("Fetch Admin Layer 1 users error:", err);
 
-      /*
-       * IMPORTANT:
-       * Do NOT display the backend message directly.
-       *
-       * Backend may return a message in another language.
-       * Always use the frontend translation here.
-       */
+      // -----------------------------------------------------
+      // IMPORTANT:
+      // Never display backend language/message directly.
+      // Always use the frontend translation.
+      // -----------------------------------------------------
+
       setError(
         t(
           "users.admin.errors.fetchFailed",
@@ -188,7 +187,8 @@ const AdminUsers = () => {
     }
   }, [currentPage, totalPages]);
 
-  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const startIndex =
+    (currentPage - 1) * ROWS_PER_PAGE;
 
   const paginatedAdmins = filteredAdmins.slice(
     startIndex,
@@ -196,7 +196,9 @@ const AdminUsers = () => {
   );
 
   const showingFrom =
-    filteredAdmins.length === 0 ? 0 : startIndex + 1;
+    filteredAdmins.length === 0
+      ? 0
+      : startIndex + 1;
 
   const showingTo = Math.min(
     startIndex + ROWS_PER_PAGE,
@@ -247,6 +249,27 @@ const AdminUsers = () => {
   };
 
   // =========================================================
+  // DATE LOCALE
+  // =========================================================
+
+  const getDateLocale = () => {
+    switch (language) {
+      case "kn":
+      case "kannada":
+        return "kn-IN";
+
+      case "hi":
+      case "hindi":
+        return "hi-IN";
+
+      case "en":
+      case "english":
+      default:
+        return "en-IN";
+    }
+  };
+
+  // =========================================================
   // DATE FORMAT
   // =========================================================
 
@@ -256,13 +279,22 @@ const AdminUsers = () => {
     }
 
     try {
-      return new Date(date).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const parsedDate = new Date(date);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        return "-";
+      }
+
+      return parsedDate.toLocaleString(
+        getDateLocale(),
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
     } catch {
       return "-";
     }
@@ -301,6 +333,8 @@ const AdminUsers = () => {
         {/* TITLE */}
 
         <div className="flex min-w-0 items-start gap-3">
+          {/* ICON */}
+
           <div
             className="
               flex
@@ -315,6 +349,8 @@ const AdminUsers = () => {
           >
             <ShieldCheck className="h-4 w-4 text-violet-600" />
           </div>
+
+          {/* TITLE + DESCRIPTION */}
 
           <div className="min-w-0 flex-1">
             <h2
@@ -428,7 +464,9 @@ const AdminUsers = () => {
 
           <button
             type="button"
-            onClick={() => setShowAddAdminModal(true)}
+            onClick={() =>
+              setShowAddAdminModal(true)
+            }
             className="
               flex
               h-10
@@ -500,6 +538,8 @@ const AdminUsers = () => {
 
           <thead className="bg-[#F7F5FF]">
             <tr>
+              {/* SL.NO */}
+
               <th
                 className="
                   whitespace-nowrap
@@ -518,6 +558,8 @@ const AdminUsers = () => {
                 )}
               </th>
 
+              {/* ADMIN NAME */}
+
               <th
                 className="
                   whitespace-nowrap
@@ -531,11 +573,13 @@ const AdminUsers = () => {
                 "
               >
                 {t(
-                  "users.table.adminName",
+                  "users.admin.table.name",
                   "Admin Name"
                 )}
               </th>
 
+              {/* EMAIL */}
+
               <th
                 className="
                   whitespace-nowrap
@@ -549,11 +593,13 @@ const AdminUsers = () => {
                 "
               >
                 {t(
-                  "users.table.email",
+                  "users.admin.table.email",
                   "Email"
                 )}
               </th>
 
+              {/* PHONE NUMBER */}
+
               <th
                 className="
                   whitespace-nowrap
@@ -567,28 +613,12 @@ const AdminUsers = () => {
                 "
               >
                 {t(
-                  "users.table.phoneNumber",
+                  "users.admin.table.phone",
                   "Phone Number"
                 )}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-5
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.table.status",
-                  "Status"
-                )}
-              </th>
+              {/* STATUS */}
 
               <th
                 className="
@@ -603,10 +633,32 @@ const AdminUsers = () => {
                 "
               >
                 {t(
-                  "users.table.createdAt",
+                  "users.admin.table.status",
+                  "Status"
+                )}
+              </th>
+
+              {/* CREATED AT */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.createdAt",
                   "Created At"
                 )}
               </th>
+
+              {/* ACTIONS */}
 
               <th
                 className="
@@ -621,7 +673,7 @@ const AdminUsers = () => {
                 "
               >
                 {t(
-                  "users.table.actions",
+                  "users.admin.table.actions",
                   "Actions"
                 )}
               </th>
@@ -657,164 +709,174 @@ const AdminUsers = () => {
             {/* DATA */}
 
             {!loading &&
-              paginatedAdmins.map((user, index) => (
-                <tr
-                  key={user.id}
-                  className="
-                    border-b
-                    border-gray-100
-                    transition
-                    hover:bg-gray-50
-                  "
-                >
-                  {/* SL.NO */}
-
-                  <td
+              paginatedAdmins.map(
+                (user, index) => (
+                  <tr
+                    key={user.id}
                     className="
-                      whitespace-nowrap
-                      px-5
-                      py-4
-                      text-[12px]
-                      text-gray-900
-                      sm:text-[13px]
+                      border-b
+                      border-gray-100
+                      transition
+                      hover:bg-gray-50
                     "
                   >
-                    {startIndex + index + 1}
-                  </td>
+                    {/* SL.NO */}
 
-                  {/* NAME */}
-
-                  <td
-                    className="
-                      whitespace-nowrap
-                      px-5
-                      py-4
-                      text-[12px]
-                      font-medium
-                      text-gray-900
-                      sm:text-[13px]
-                    "
-                  >
-                    {user.full_name || "-"}
-                  </td>
-
-                  {/* EMAIL */}
-
-                  <td
-                    className="
-                      whitespace-nowrap
-                      px-5
-                      py-4
-                      text-[12px]
-                      text-gray-600
-                      sm:text-[13px]
-                    "
-                  >
-                    {user.email || "-"}
-                  </td>
-
-                  {/* PHONE */}
-
-                  <td
-                    className="
-                      whitespace-nowrap
-                      px-5
-                      py-4
-                      text-[12px]
-                      text-gray-600
-                      sm:text-[13px]
-                    "
-                  >
-                    {user.phone_number || "-"}
-                  </td>
-
-                  {/* STATUS */}
-
-                  <td className="whitespace-nowrap px-5 py-4">
-                    <span
+                    <td
                       className="
-                        inline-flex
-                        items-center
-                        rounded-md
-                        bg-green-100
-                        px-2.5
-                        py-1
-                        text-[10px]
-                        font-medium
-                        text-green-700
-                        sm:text-[11px]
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-900
+                        sm:text-[13px]
                       "
                     >
-                      {translateStatus(user.status)}
-                    </span>
-                  </td>
+                      {startIndex + index + 1}
+                    </td>
 
-                  {/* CREATED */}
+                    {/* NAME */}
 
-                  <td
-                    className="
-                      whitespace-nowrap
-                      px-5
-                      py-4
-                      text-[12px]
-                      text-gray-600
-                      sm:text-[13px]
-                    "
-                  >
-                    {formatCreatedAt(user.created_at)}
-                  </td>
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        font-medium
+                        text-gray-900
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.full_name || "-"}
+                    </td>
 
-                  {/* ACTIONS */}
+                    {/* EMAIL */}
 
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleEditClick(user)
-                        }
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.email || "-"}
+                    </td>
+
+                    {/* PHONE */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.phone_number || "-"}
+                    </td>
+
+                    {/* STATUS */}
+
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <span
                         className="
-                          text-violet-600
-                          transition
-                          hover:text-violet-800
+                          inline-flex
+                          items-center
+                          rounded-md
+                          bg-green-100
+                          px-2.5
+                          py-1
+                          text-[10px]
+                          font-medium
+                          text-green-700
+                          sm:text-[11px]
                         "
-                        title={t(
-                          "users.actions.edit",
-                          "Edit user"
-                        )}
-                        aria-label={t(
-                          "users.actions.edit",
-                          "Edit user"
-                        )}
                       >
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                        {translateStatus(
+                          user.status
+                        )}
+                      </span>
+                    </td>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleDeleteClick(user)
-                        }
-                        className="
-                          text-red-500
-                          transition
-                          hover:text-red-700
-                        "
-                        title={t(
-                          "users.actions.delete",
-                          "Delete user"
-                        )}
-                        aria-label={t(
-                          "users.actions.delete",
-                          "Delete user"
-                        )}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    {/* CREATED */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {formatCreatedAt(
+                        user.created_at
+                      )}
+                    </td>
+
+                    {/* ACTIONS */}
+
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-center gap-4">
+                        {/* EDIT */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEditClick(user)
+                          }
+                          className="
+                            text-violet-600
+                            transition
+                            hover:text-violet-800
+                          "
+                          title={t(
+                            "users.actions.edit",
+                            "Edit user"
+                          )}
+                          aria-label={t(
+                            "users.actions.edit",
+                            "Edit user"
+                          )}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+
+                        {/* DELETE */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteClick(user)
+                          }
+                          className="
+                            text-red-500
+                            transition
+                            hover:text-red-700
+                          "
+                          title={t(
+                            "users.actions.delete",
+                            "Delete user"
+                          )}
+                          aria-label={t(
+                            "users.actions.delete",
+                            "Delete user"
+                          )}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              )}
 
             {/* EMPTY */}
 
@@ -870,17 +932,17 @@ const AdminUsers = () => {
 
         <p className="font-medium text-violet-700">
           {t(
-            "users.pagination.showing",
+            "users.admin.pagination.showing",
             "Showing"
           )}{" "}
           {showingFrom}–{showingTo}{" "}
           {t(
-            "users.pagination.of",
+            "users.admin.pagination.of",
             "of"
           )}{" "}
           {filteredAdmins.length}{" "}
           {t(
-            "users.pagination.entries",
+            "users.admin.pagination.entries",
             "entries"
           )}
         </p>
@@ -916,11 +978,11 @@ const AdminUsers = () => {
               disabled:opacity-40
             "
             title={t(
-              "users.pagination.previous",
+              "users.admin.pagination.previous",
               "Previous page"
             )}
             aria-label={t(
-              "users.pagination.previous",
+              "users.admin.pagination.previous",
               "Previous page"
             )}
           >
@@ -981,11 +1043,11 @@ const AdminUsers = () => {
               disabled:opacity-40
             "
             title={t(
-              "users.pagination.next",
+              "users.admin.pagination.next",
               "Next page"
             )}
             aria-label={t(
-              "users.pagination.next",
+              "users.admin.pagination.next",
               "Next page"
             )}
           >
