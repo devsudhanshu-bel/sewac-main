@@ -46,9 +46,7 @@ export default function CreateVehicleModal({
 
   const loadCities = async () => {
     try {
-      const res = await api.get(
-        "/api/filters/cities"
-      );
+      const res = await api.get("/api/filters/cities");
 
       setCities(res.data);
     } catch (error) {
@@ -161,21 +159,75 @@ export default function CreateVehicleModal({
   };
 
   /* ===========================================================
+     COMMON FIELD STYLES
+  =========================================================== */
+
+  const fieldClassName = `
+    w-full
+    h-[46px]
+    border
+    border-[#E5E7EB]
+    rounded-xl
+    px-3.5
+    text-[13px]
+    text-[#111827]
+    bg-white
+    outline-none
+    transition
+    focus:border-[#6C2BFF]
+    focus:ring-2
+    focus:ring-[#6C2BFF]/10
+    disabled:bg-[#F8F9FC]
+    disabled:text-gray-400
+    disabled:cursor-not-allowed
+  `;
+
+  /* ===========================================================
      RENDER
   =========================================================== */
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+        bg-black/40
+        backdrop-blur-[2px]
+        flex
+        items-center
+        justify-center
+        p-3
+        sm:p-5
+      "
+    >
+      {/* =====================================================
+          MODAL
+      ===================================================== */}
 
-      <div className="bg-white rounded-2xl p-6 w-[600px]">
-
-        {/* =====================================================
+      <div
+        className="
+          w-full
+          max-w-[600px]
+          max-h-[90vh]
+          overflow-y-auto
+          bg-white
+          rounded-2xl
+          sm:rounded-[22px]
+          shadow-2xl
+          border
+          border-[#ECECF3]
+          p-4
+          sm:p-6
+        "
+      >
+        {/* ===================================================
             HEADER
-        ===================================================== */}
+        =================================================== */}
 
-        <div className="flex justify-between items-center mb-5">
+        <div className="flex items-center justify-between mb-5">
 
-          <h2 className="text-xl font-bold">
+          <h2 className="text-[18px] sm:text-[20px] font-bold text-[#111827]">
             {t(
               "vehicles.createVehicle.title",
               "Create Vehicle"
@@ -189,19 +241,41 @@ export default function CreateVehicleModal({
               "vehicles.createVehicle.close",
               "Close"
             )}
+            className="
+              w-9
+              h-9
+              rounded-xl
+              flex
+              items-center
+              justify-center
+              text-[#6B7280]
+              hover:bg-[#F3F4F6]
+              hover:text-[#111827]
+              transition
+            "
           >
-            <X />
+            <X size={19} />
           </button>
 
         </div>
 
-        {/* =====================================================
+        {/* ===================================================
             FORM
-        ===================================================== */}
+        =================================================== */}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          className="
+            grid
+            grid-cols-1
+            sm:grid-cols-2
+            gap-3
+            sm:gap-4
+          "
+        >
 
-          {/* VEHICLE ID */}
+          {/* =================================================
+              VEHICLE ID
+          ================================================= */}
 
           <input
             name="vehicle_id"
@@ -211,16 +285,18 @@ export default function CreateVehicleModal({
             )}
             value={form.vehicle_id}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className={fieldClassName}
           />
 
-          {/* VEHICLE TYPE */}
+          {/* =================================================
+              VEHICLE TYPE
+          ================================================= */}
 
           <select
             name="vehicle_type"
             value={form.vehicle_type}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className={fieldClassName}
           >
             <option value="">
               {t(
@@ -258,13 +334,15 @@ export default function CreateVehicleModal({
             </option>
           </select>
 
-          {/* STATUS */}
+          {/* =================================================
+              STATUS
+          ================================================= */}
 
           <select
             name="status"
             value={form.status}
             onChange={handleChange}
-            className="border rounded-lg p-3"
+            className={fieldClassName}
           >
             <option value="ACTIVE">
               {t(
@@ -286,7 +364,7 @@ export default function CreateVehicleModal({
           ================================================= */}
 
           <select
-            className="border rounded-lg p-3"
+            className={fieldClassName}
             value={
               cities.find(
                 (city) =>
@@ -339,7 +417,7 @@ export default function CreateVehicleModal({
           ================================================= */}
 
           <select
-            className="border rounded-lg p-3"
+            className={fieldClassName}
             value={
               zones.find(
                 (zone) =>
@@ -391,7 +469,7 @@ export default function CreateVehicleModal({
           ================================================= */}
 
           <select
-            className="border rounded-lg p-3"
+            className={fieldClassName}
             value={
               divisions.find(
                 (division) =>
@@ -415,9 +493,7 @@ export default function CreateVehicleModal({
               setWards([]);
 
               if (divisionId) {
-                loadWards(
-                  divisionId
-                );
+                loadWards(divisionId);
               }
             }}
             disabled={!form.zone}
@@ -452,7 +528,7 @@ export default function CreateVehicleModal({
           ================================================= */}
 
           <select
-            className="border rounded-lg p-3"
+            className={fieldClassName}
             value={
               wards.find(
                 (ward) =>
@@ -490,20 +566,37 @@ export default function CreateVehicleModal({
 
         </div>
 
-        {/* =====================================================
+        {/* ===================================================
             FOOTER
-        ===================================================== */}
+        =================================================== */}
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div
+          className="
+            flex
+            flex-col-reverse
+            sm:flex-row
+            sm:justify-end
+            gap-2.5
+            mt-6
+          "
+        >
+
+          {/* CANCEL */}
 
           <button
             type="button"
             onClick={onClose}
             className="
+              w-full
+              sm:w-auto
+              h-[44px]
               border
-              rounded-lg
+              border-[#E5E7EB]
+              rounded-xl
               px-5
-              py-2
+              text-[13px]
+              font-medium
+              text-[#374151]
               hover:bg-gray-50
               transition
             "
@@ -514,17 +607,24 @@ export default function CreateVehicleModal({
             )}
           </button>
 
+          {/* CREATE */}
+
           <button
             type="button"
             onClick={handleSubmit}
             className="
+              w-full
+              sm:w-auto
+              h-[44px]
               bg-[#6C2BFF]
               text-white
-              rounded-lg
-              px-5
-              py-2
+              rounded-xl
+              px-6
+              text-[13px]
+              font-semibold
               hover:bg-[#5B21E6]
               transition
+              shadow-sm
             "
           >
             {t(
@@ -536,7 +636,6 @@ export default function CreateVehicleModal({
         </div>
 
       </div>
-
     </div>
   );
 }

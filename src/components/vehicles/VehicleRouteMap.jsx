@@ -14,40 +14,33 @@ import L from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 
-import {
-  Route,
-  Truck,
-  Warehouse,
-  MapPin,
-  Loader2,
-  Navigation,
-} from "lucide-react";
+import { Route, Loader2 } from "lucide-react";
 
 /* ===========================================================
-   CUSTOM ICONS
+   CUSTOM TRUCK ICON
 =========================================================== */
 
 const createTruckIcon = (color) =>
   new L.DivIcon({
     className: "",
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
-    popupAnchor: [0, -18],
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -17],
 
     html: `
       <div
         style="
-          width:42px;
-          height:42px;
+          width:38px;
+          height:38px;
           border-radius:50%;
           background:${color};
           display:flex;
           align-items:center;
           justify-content:center;
           border:3px solid white;
-          box-shadow:0 8px 20px rgba(0,0,0,.18);
+          box-shadow:0 6px 16px rgba(0,0,0,.18);
           color:white;
-          font-size:18px;
+          font-size:16px;
         "
       >
         🚛
@@ -58,25 +51,29 @@ const createTruckIcon = (color) =>
 const activeTruckIcon = createTruckIcon("#16C47F");
 const inactiveTruckIcon = createTruckIcon("#9CA3AF");
 
+/* ===========================================================
+   DEPOT ICON
+=========================================================== */
+
 const depotIcon = new L.DivIcon({
   className: "",
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 
   html: `
     <div
       style="
-        width:34px;
-        height:34px;
-        border-radius:10px;
+        width:32px;
+        height:32px;
+        border-radius:9px;
         background:#111827;
         color:white;
         display:flex;
         justify-content:center;
         align-items:center;
         border:2px solid white;
-        box-shadow:0 8px 20px rgba(0,0,0,.18);
-        font-size:17px;
+        box-shadow:0 6px 16px rgba(0,0,0,.18);
+        font-size:15px;
       "
     >
       🏭
@@ -84,20 +81,24 @@ const depotIcon = new L.DivIcon({
   `,
 });
 
+/* ===========================================================
+   COLLECTION POINT ICON
+=========================================================== */
+
 const collectionIcon = new L.DivIcon({
   className: "",
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
 
   html: `
     <div
       style="
-        width:18px;
-        height:18px;
+        width:16px;
+        height:16px;
         border-radius:50%;
         background:#16C47F;
         border:3px solid white;
-        box-shadow:0 5px 10px rgba(0,0,0,.18);
+        box-shadow:0 4px 9px rgba(0,0,0,.18);
       "
     ></div>
   `,
@@ -183,7 +184,7 @@ function FitBounds({ routes }) {
 
     if (bounds.length) {
       map.fitBounds(bounds, {
-        padding: [50, 50],
+        padding: [40, 40],
       });
     }
   }, [map, routes]);
@@ -201,6 +202,10 @@ export default function VehicleRouteMap() {
   const [error, setError] = useState(null);
 
   const isMounted = useRef(true);
+
+  /* ===========================================================
+     MOUNT / UNMOUNT
+  =========================================================== */
 
   useEffect(() => {
     isMounted.current = true;
@@ -222,8 +227,14 @@ export default function VehicleRouteMap() {
         const result = await Promise.all(
           vehicles.map(async (vehicle) => {
             const response = await fetch(
-              `https://router.project-osrm.org/route/v1/driving/${vehicle.start[1]},${vehicle.start[0]};${vehicle.end[1]},${vehicle.end[0]}?overview=full&geometries=geojson`
+              `https://router.project-osrm.org/route/v1/driving/${vehicle.start[1]},${vehicle.start[0]};${vehicle.end[1]},${vehicle.end[0]}?overview=full&geometries=geojson`,
             );
+
+            if (!response.ok) {
+              throw new Error(
+                `OSRM request failed: ${response.status}`,
+              );
+            }
 
             const data = await response.json();
 
@@ -236,7 +247,7 @@ export default function VehicleRouteMap() {
               duration:
                 data.routes?.[0]?.duration ?? 0,
             };
-          })
+          }),
         );
 
         if (isMounted.current) {
@@ -260,41 +271,61 @@ export default function VehicleRouteMap() {
   }, []);
 
   /* ===========================================================
-     HELPERS
+     ACTIVE VEHICLES
   =========================================================== */
 
   const activeVehicles = useMemo(
     () =>
       routes.filter(
-        (vehicle) => vehicle.status === "active"
+        (vehicle) => vehicle.status === "active",
       ),
-    [routes]
+    [routes],
   );
+
+  /* ===========================================================
+     INACTIVE VEHICLES
+  =========================================================== */
 
   const inactiveVehicles = useMemo(
     () =>
       routes.filter(
-        (vehicle) => vehicle.status === "inactive"
+        (vehicle) => vehicle.status === "inactive",
       ),
-    [routes]
+    [routes],
   );
+
+  /* ===========================================================
+     TOTAL DISTANCE
+  =========================================================== */
 
   const totalDistance = useMemo(() => {
     return routes.reduce(
       (sum, vehicle) => sum + vehicle.distance,
-      0
+      0,
     );
   }, [routes]);
+
+  /* ===========================================================
+     TOTAL DURATION
+  =========================================================== */
 
   const totalDuration = useMemo(() => {
     return routes.reduce(
       (sum, vehicle) => sum + vehicle.duration,
-      0
+      0,
     );
   }, [routes]);
 
+  /* ===========================================================
+     FORMAT DISTANCE
+  =========================================================== */
+
   const formatDistance = (meters) =>
     `${(meters / 1000).toFixed(1)} km`;
+
+  /* ===========================================================
+     FORMAT DURATION
+  =========================================================== */
 
   const formatDuration = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
@@ -307,92 +338,200 @@ export default function VehicleRouteMap() {
     return `${mins} min`;
   };
 
-  return (    <section className="mt-8 bg-white rounded-[30px] border border-[#ECECF3] shadow-sm overflow-hidden">
+  /* ===========================================================
+     RENDER
+  =========================================================== */
 
-      {/* ===========================================================
+  return (
+    <section
+      className="
+        mt-4
+        bg-white
+        rounded-[24px]
+        border
+        border-[#ECECF3]
+        shadow-sm
+        overflow-hidden
+      "
+    >
+      {/* =====================================================
           HEADER
-      =========================================================== */}
+      ===================================================== */}
 
-      <div className="flex items-center justify-between h-[84px] px-8 border-b border-[#EEF2F7] bg-white">
+      <div
+        className="
+          min-h-[74px]
+          px-5
+          sm:px-6
+          lg:px-7
+          py-4
+          flex
+          flex-col
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          gap-4
+          border-b
+          border-[#EEF2F7]
+          bg-white
+        "
+      >
+        {/* ================= LEFT ================= */}
 
-        {/* Left */}
-
-        <div className="flex items-center gap-4">
-
-          <div className="w-12 h-12 rounded-2xl bg-[#F4EEFF] flex items-center justify-center">
-
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="
+              w-10
+              h-10
+              sm:w-11
+              sm:h-11
+              shrink-0
+              rounded-xl
+              bg-[#F4EEFF]
+              flex
+              items-center
+              justify-center
+            "
+          >
             <Route
-              size={22}
+              size={20}
+              strokeWidth={2.2}
               className="text-[#6C2BFF]"
             />
-
           </div>
 
-          <div>
-
-            <h2 className="text-[19px] font-semibold text-[#111827]">
+          <div className="min-w-0">
+            <h2
+              className="
+                text-[17px]
+                sm:text-[18px]
+                font-semibold
+                text-[#111827]
+                leading-tight
+              "
+            >
               Vehicle Route Map
             </h2>
 
-            <p className="text-[13px] text-[#6B7280] mt-0.5">
+            <p
+              className="
+                text-[11px]
+                sm:text-[12px]
+                text-[#6B7280]
+                mt-1
+                truncate
+              "
+            >
               Real-time Fleet Tracking using OpenStreetMap & OSRM
             </p>
-
           </div>
-
         </div>
 
-        {/* Right */}
+        {/* ================= RIGHT ================= */}
 
-        <div className="flex items-center gap-3">
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+            flex-wrap
+            sm:justify-end
+          "
+        >
+          {/* VEHICLES */}
 
-          <div className="px-5 py-2 rounded-full bg-[#EEF4FF]">
-
-            <span className="text-sm font-semibold text-[#2563EB]">
-
+          <div
+            className="
+              px-3
+              sm:px-4
+              py-1.5
+              rounded-full
+              bg-[#EEF4FF]
+            "
+          >
+            <span
+              className="
+                text-[11px]
+                sm:text-xs
+                font-semibold
+                text-[#2563EB]
+                whitespace-nowrap
+              "
+            >
               {routes.length} Vehicles
-
             </span>
-
           </div>
 
-          <div className="px-5 py-2 rounded-full bg-[#ECFDF3]">
+          {/* ACTIVE */}
 
-            <span className="text-sm font-semibold text-[#16A34A]">
-
+          <div
+            className="
+              px-3
+              sm:px-4
+              py-1.5
+              rounded-full
+              bg-[#ECFDF3]
+            "
+          >
+            <span
+              className="
+                text-[11px]
+                sm:text-xs
+                font-semibold
+                text-[#16A34A]
+                whitespace-nowrap
+              "
+            >
               {activeVehicles.length} Active
-
             </span>
-
           </div>
 
-          <div className="px-5 py-2 rounded-full bg-[#FEF3C7]">
+          {/* DISTANCE */}
 
-            <span className="text-sm font-semibold text-[#D97706]">
-
+          <div
+            className="
+              px-3
+              sm:px-4
+              py-1.5
+              rounded-full
+              bg-[#FEF3C7]
+            "
+          >
+            <span
+              className="
+                text-[11px]
+                sm:text-xs
+                font-semibold
+                text-[#D97706]
+                whitespace-nowrap
+              "
+            >
               {formatDistance(totalDistance)}
-
             </span>
-
           </div>
-
         </div>
-
       </div>
 
-      {/* ===========================================================
+      {/* =====================================================
           MAP
-      =========================================================== */}
+      ===================================================== */}
 
-      <div className="relative h-[650px]">
-
+      <div
+        className="
+          relative
+          h-[430px]
+          sm:h-[480px]
+          md:h-[520px]
+          lg:h-[560px]
+          xl:h-[580px]
+        "
+      >
         <MapContainer
           center={[12.9716, 77.5946]}
           zoom={12}
           zoomControl={false}
           className="w-full h-full"
         >
-
           <ZoomControl position="topleft" />
 
           <TileLayer
@@ -402,92 +541,73 @@ export default function VehicleRouteMap() {
 
           <FitBounds routes={routes} />
 
-          {/* ===========================================================
+          {/* =================================================
               DEPOT
-          =========================================================== */}
+          ================================================= */}
 
           <Marker
             position={depot}
             icon={depotIcon}
           >
             <Popup>
-
-              <div className="space-y-3 min-w-[220px]">
-
-                <h3 className="font-semibold text-base">
+              <div className="space-y-2 min-w-[190px]">
+                <h3 className="font-semibold text-sm">
                   BBMP Depot
                 </h3>
 
-                <div className="flex justify-between">
-
+                <div className="flex justify-between text-sm">
                   <span>Status</span>
 
                   <span className="font-semibold text-green-600">
                     Operational
                   </span>
-
                 </div>
 
-                <div className="flex justify-between">
-
+                <div className="flex justify-between text-sm">
                   <span>Total Vehicles</span>
 
                   <span className="font-semibold">
                     {routes.length}
                   </span>
-
                 </div>
-
               </div>
-
             </Popup>
           </Marker>
 
-          {/* ===========================================================
+          {/* =================================================
               COLLECTION POINTS
-          =========================================================== */}
+          ================================================= */}
 
           {collectionPoints.map((point, index) => (
-
             <Marker
               key={index}
               position={point}
               icon={collectionIcon}
             >
-
               <Popup>
-
-                <div className="min-w-[180px]">
-
-                  <h3 className="font-semibold">
+                <div className="min-w-[160px]">
+                  <h3 className="font-semibold text-sm">
                     Collection Point {index + 1}
                   </h3>
 
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     Waste Collection Zone
                   </p>
-
                 </div>
-
               </Popup>
-
             </Marker>
-
           ))}
 
-          {/* ===========================================================
+          {/* =================================================
               VEHICLE MARKERS
-          =========================================================== */}
+          ================================================= */}
 
           {routes.map((vehicle) => {
-
             if (!vehicle.geometry.length) return null;
 
-            const current =
-              vehicle.geometry[0];
+            const current = vehicle.geometry[0];
 
             return (
-
               <Marker
                 key={vehicle.id}
                 position={[
@@ -500,27 +620,21 @@ export default function VehicleRouteMap() {
                     : inactiveTruckIcon
                 }
               >
-
                 <Popup>
-
-                  <div className="space-y-3 min-w-[240px]">
-
-                    <h3 className="text-base font-semibold">
+                  <div className="space-y-2 min-w-[210px]">
+                    <h3 className="text-sm font-semibold">
                       {vehicle.id}
                     </h3>
 
-                    <div className="flex justify-between">
-
+                    <div className="flex justify-between text-sm">
                       <span>Driver</span>
 
                       <span className="font-medium">
                         {vehicle.driver}
                       </span>
-
                     </div>
 
-                    <div className="flex justify-between">
-
+                    <div className="flex justify-between text-sm">
                       <span>Status</span>
 
                       <span
@@ -532,78 +646,62 @@ export default function VehicleRouteMap() {
                       >
                         {vehicle.status}
                       </span>
-
                     </div>
 
-                    <div className="flex justify-between">
-
+                    <div className="flex justify-between text-sm">
                       <span>Distance</span>
 
                       <span className="font-medium">
-                        {formatDistance(vehicle.distance)}
+                        {formatDistance(
+                          vehicle.distance,
+                        )}
                       </span>
-
                     </div>
 
-                    <div className="flex justify-between">
-
+                    <div className="flex justify-between text-sm">
                       <span>ETA</span>
 
                       <span className="font-medium">
-                        {formatDuration(vehicle.duration)}
+                        {formatDuration(
+                          vehicle.duration,
+                        )}
                       </span>
-
                     </div>
-
                   </div>
-
                 </Popup>
-
               </Marker>
-
             );
-
           })}
 
-          {/* ===========================================================
-              CONTINUE PART 3
-          =========================================================== */}
-                    {/* ===========================================================
+          {/* =================================================
               ROUTE POLYLINES
-          =========================================================== */}
+          ================================================= */}
 
           {routes.map((vehicle) => {
-
             if (!vehicle.geometry.length) return null;
 
             return (
-
               <Polyline
                 key={vehicle.id}
                 positions={vehicle.geometry.map(
-                  ([lng, lat]) => [lat, lng]
+                  ([lng, lat]) => [lat, lng],
                 )}
                 pathOptions={{
                   color: vehicle.color,
-                  weight: 6,
+                  weight: 5,
                   opacity: 0.95,
                   lineCap: "round",
                   lineJoin: "round",
                 }}
               >
-
                 <Popup>
-
-                  <div className="min-w-[230px]">
-
-                    <h3 className="font-semibold text-base mb-4">
+                  <div className="min-w-[210px]">
+                    <h3 className="font-semibold text-sm mb-3">
                       {vehicle.id} Route
                     </h3>
 
-                    <div className="space-y-3">
-
-                      <div className="flex justify-between">
-
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
                           Driver
                         </span>
@@ -611,35 +709,33 @@ export default function VehicleRouteMap() {
                         <span className="font-medium">
                           {vehicle.driver}
                         </span>
-
                       </div>
 
-                      <div className="flex justify-between">
-
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
                           Route Distance
                         </span>
 
                         <span className="font-semibold">
-                          {formatDistance(vehicle.distance)}
+                          {formatDistance(
+                            vehicle.distance,
+                          )}
                         </span>
-
                       </div>
 
-                      <div className="flex justify-between">
-
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
                           Estimated Time
                         </span>
 
                         <span className="font-semibold">
-                          {formatDuration(vehicle.duration)}
+                          {formatDuration(
+                            vehicle.duration,
+                          )}
                         </span>
-
                       </div>
 
-                      <div className="flex justify-between">
-
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
                           Vehicle Status
                         </span>
@@ -653,140 +749,168 @@ export default function VehicleRouteMap() {
                         >
                           {vehicle.status}
                         </span>
-
                       </div>
-
                     </div>
-
                   </div>
-
                 </Popup>
-
               </Polyline>
-
             );
-
           })}
-
         </MapContainer>
 
-        {/* ===========================================================
+        {/* ===================================================
             LOADING
-        =========================================================== */}
+        =================================================== */}
 
         {loading && (
-
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-[1000]">
-
+          <div
+            className="
+              absolute
+              inset-0
+              bg-white/80
+              backdrop-blur-sm
+              flex
+              flex-col
+              items-center
+              justify-center
+              z-[1000]
+            "
+          >
             <Loader2
-              size={40}
+              size={34}
               className="animate-spin text-[#6C2BFF]"
             />
 
-            <h3 className="mt-5 text-lg font-semibold text-[#111827]">
+            <h3 className="mt-4 text-base font-semibold text-[#111827]">
               Loading Routes
             </h3>
 
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 mt-1">
               Fetching routes from OSRM...
             </p>
-
           </div>
-
         )}
 
-        {/* ===========================================================
+        {/* ===================================================
             ERROR
-        =========================================================== */}
+        =================================================== */}
 
         {error && (
-
-          <div className="absolute inset-0 bg-white flex items-center justify-center z-[1000]">
-
+          <div
+            className="
+              absolute
+              inset-0
+              bg-white
+              flex
+              items-center
+              justify-center
+              z-[1000]
+              px-5
+            "
+          >
             <div className="text-center">
-
-              <h3 className="text-xl font-semibold text-red-600">
+              <h3 className="text-lg font-semibold text-red-600">
                 Failed to Load Routes
               </h3>
 
-              <p className="text-gray-500 mt-3">
+              <p className="text-sm text-gray-500 mt-2">
                 {error}
               </p>
-
             </div>
-
           </div>
-
         )}
 
-        {/* ===========================================================
-            LEGEND
-        =========================================================== */}
+        {/* ===================================================
+            MAP LEGEND
+        =================================================== */}
 
-        <div className="absolute top-6 right-6 z-[999] w-[250px] rounded-3xl bg-white border border-[#ECECF3] shadow-xl p-6">
-
-          <h3 className="font-semibold text-[#111827] mb-5">
+        <div
+          className="
+            absolute
+            top-4
+            right-4
+            sm:top-5
+            sm:right-5
+            z-[999]
+            w-[190px]
+            sm:w-[210px]
+            rounded-2xl
+            bg-white
+            border
+            border-[#ECECF3]
+            shadow-lg
+            p-4
+            sm:p-5
+          "
+        >
+          <h3 className="text-sm font-semibold text-[#111827] mb-4">
             Map Legend
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
+            {/* ACTIVE */}
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#16C47F] shrink-0" />
 
-              <div className="w-4 h-4 rounded-full bg-[#16C47F]" />
-
-              <span className="text-sm">
+              <span className="text-xs text-[#111827]">
                 Active Vehicle
               </span>
-
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* INACTIVE */}
 
-              <div className="w-4 h-4 rounded-full bg-[#9CA3AF]" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#9CA3AF] shrink-0" />
 
-              <span className="text-sm">
+              <span className="text-xs text-[#111827]">
                 Inactive Vehicle
               </span>
-
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* ROUTE */}
 
-              <div className="w-8 h-[5px] rounded-full bg-[#6C2BFF]" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-1 rounded-full bg-[#6C2BFF] shrink-0" />
 
-              <span className="text-sm">
+              <span className="text-xs text-[#111827]">
                 Route
               </span>
-
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* COLLECTION POINT */}
 
-              <div className="w-4 h-4 rounded-full bg-[#16C47F] border-2 border-white shadow" />
+            <div className="flex items-center gap-2.5">
+              <div
+                className="
+                  w-3.5
+                  h-3.5
+                  rounded-full
+                  bg-[#16C47F]
+                  border-2
+                  border-white
+                  shadow
+                  shrink-0
+                "
+              />
 
-              <span className="text-sm">
+              <span className="text-xs text-[#111827]">
                 Collection Point
               </span>
-
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* DEPOT */}
 
-              <div className="w-5 h-5 rounded-md bg-[#111827]" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-4 h-4 rounded-md bg-[#111827] shrink-0" />
 
-              <span className="text-sm">
+              <span className="text-xs text-[#111827]">
                 Depot
               </span>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }
