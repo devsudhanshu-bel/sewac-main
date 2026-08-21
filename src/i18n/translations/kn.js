@@ -1491,7 +1491,7 @@ users: {
 
     active: "ಸಕ್ರಿಯ",
     inactive: "ನಿಷ್ಕ್ರಿಯ",
-    pending: "ಬಾಕಿಯಲ್ಲಿದೆ",
+    pending: "ಬಾಕಿ",
     blocked: "ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ",
 
     actions: "ಕ್ರಿಯೆಗಳು",
@@ -1525,8 +1525,11 @@ users: {
 
   modal: {
     fullName: "ಪೂರ್ಣ ಹೆಸರು",
+
     email: "ಇಮೇಲ್",
+
     password: "ಪಾಸ್‌ವರ್ಡ್",
+
     phoneNumber: "ಫೋನ್ ಸಂಖ್ಯೆ",
 
     fullNamePlaceholder:
@@ -1542,7 +1545,9 @@ users: {
       "ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
 
     cancel: "ರದ್ದುಮಾಡಿ",
+
     save: "ಉಳಿಸಿ",
+
     saving: "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
 
     errors: {

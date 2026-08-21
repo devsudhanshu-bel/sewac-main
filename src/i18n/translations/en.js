@@ -1386,8 +1386,11 @@ users: {
 
   modal: {
     fullName: "Full Name",
+
     email: "Email",
+
     password: "Password",
+
     phoneNumber: "Phone Number",
 
     fullNamePlaceholder:
@@ -1403,7 +1406,9 @@ users: {
       "Enter phone number",
 
     cancel: "Cancel",
+
     save: "Save",
+
     saving: "Saving...",
 
     errors: {
