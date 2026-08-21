@@ -758,7 +758,7 @@ users: {
     "Create and manage users in the system.",
 
   footer:
-    "© 2025 SEWAC. All rights reserved.",
+    "© 2026 SEWAC. All rights reserved.",
 },
 
 complaints: {
