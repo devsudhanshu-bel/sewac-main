@@ -862,14 +862,16 @@ complaints: {
       verifyOtp: "OTP ಪರಿಶೀಲಿಸಿ ಮತ್ತು ದೂರನ್ನು ಮುಚ್ಚಿ",
     },
 
-    kpis: {
+
+  },
+
+      kpis: {
     total: "ಒಟ್ಟು ದೂರುಗಳು",
     allComplaints: "ಎಲ್ಲಾ ದೂರುಗಳು",
     pending: "ಬಾಕಿ",
     readyForVerification: "ಪರಿಶೀಲನೆಗೆ ಸಿದ್ಧ",
     closed: "ಮುಚ್ಚಲಾಗಿದೆ",
     citizenVerified: "ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
-  },
   },
 },
 };

@@ -770,15 +770,14 @@ complaints: {
       requestVerification: "Request Verification OTP",
       verifyOtp: "Verify OTP & Close Complaint",
     },
-
-    kpis: {
-      total: "Total Complaints",
-      allComplaints: "All complaints",
-      pending: "Pending",
-      readyForVerification: "Ready for Verification",
-      closed: "Closed",
-      citizenVerified: "Citizen verified",
-    },
+  },
+  kpis: {
+    total: "Total Complaints",
+    allComplaints: "All Complaints",
+    pending: "Pending",
+    readyForVerification: "Ready for Verification",
+    closed: "Closed",
+    citizenVerified: "Citizen Verified",
   },
 },
 };
