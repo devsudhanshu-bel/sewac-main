@@ -807,6 +807,27 @@ complaints: {
       other: "Other",
     },
   },
+
+  table: {
+  title: "Complaints",
+  complaint: "complaint",
+  found: "found",
+  updating: "Updating...",
+
+  location: "Location",
+  createdAt: "Created At",
+
+  loading: "Loading complaints...",
+  empty: "No complaints found.",
+
+  showing: "Showing",
+  to: "to",
+  of: "of",
+  complaints: "complaints",
+
+  previousPage: "Previous page",
+  nextPage: "Next page",
+},
 },
 };
 

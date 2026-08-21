@@ -706,7 +706,7 @@ complaints: {
 
   description:
     "नागरिकों की शिकायतों को प्रबंधित और ट्रैक करें",
-    
+
   details: {
     empty: {
       title: "शिकायत चुनें",
@@ -795,6 +795,27 @@ complaints: {
       damagedBin: "क्षतिग्रस्त कूड़ेदान",
       other: "अन्य",
     },
+  },
+
+  table: {
+    title: "शिकायतें",
+    complaint: "शिकायत",
+    found: "मिलीं",
+    updating: "अपडेट किया जा रहा है...",
+
+    location: "स्थान",
+    createdAt: "बनाने की तारीख",
+
+    loading: "शिकायतें लोड हो रही हैं...",
+    empty: "कोई शिकायत नहीं मिली।",
+
+    showing: "दिखा रहे हैं",
+    to: "से",
+    of: "में से",
+    complaints: "शिकायतें",
+
+    previousPage: "पिछला पृष्ठ",
+    nextPage: "अगला पृष्ठ",
   },
   
 },

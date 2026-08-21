@@ -4,28 +4,40 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { useLanguage } from "../../context/LanguageContext";
+
 /* =========================================================
    STATUS CONFIG
 ========================================================= */
 
 const statusConfig = {
   PENDING: {
-    label: "Pending",
+    translationKey: "pending",
     className: "bg-[#FFF4D6] text-[#D99A16]",
   },
 
   READY_FOR_VERIFICATION: {
-    label: "Ready for Verification",
+    translationKey: "readyForVerification",
     className: "bg-[#E7F1FF] text-[#2878D8]",
   },
 
   OTP_SENT: {
-    label: "OTP Sent",
+    translationKey: "otpSent",
     className: "bg-[#F3E8FF] text-[#7C3AED]",
   },
 
+  IN_PROGRESS: {
+    translationKey: "inProgress",
+    className: "bg-[#EAF2FF] text-[#2563EB]",
+  },
+
+  ASSIGNED: {
+    translationKey: "assigned",
+    className: "bg-[#EEF2FF] text-[#4F46E5]",
+  },
+
   CLOSED: {
-    label: "Closed",
+    translationKey: "closed",
     className: "bg-[#E4F8EE] text-[#20A66A]",
   },
 };
@@ -42,6 +54,8 @@ export default function ComplaintTable({
   onPageChange,
   onSelectComplaint,
 }) {
+  const { t } = useLanguage();
+
   const currentPage = Number(pagination.page) || 1;
   const limit = Number(pagination.limit) || 10;
   const total = Number(pagination.total) || 0;
@@ -97,7 +111,10 @@ export default function ComplaintTable({
               sm:text-[14px]
             "
           >
-            Complaints
+            {t(
+              "complaints.table.title",
+              "Complaints"
+            )}
           </h2>
 
           <p
@@ -108,7 +125,16 @@ export default function ComplaintTable({
               sm:text-[10px]
             "
           >
-            {total} complaint{total === 1 ? "" : "s"} found
+            {total}{" "}
+            {t(
+              "complaints.table.complaint",
+              "complaint"
+            )}
+            {total === 1 ? "" : "s"}{" "}
+            {t(
+              "complaints.table.found",
+              "found"
+            )}
           </p>
         </div>
 
@@ -121,7 +147,10 @@ export default function ComplaintTable({
               text-violet-500
             "
           >
-            Updating...
+            {t(
+              "complaints.table.updating",
+              "Updating..."
+            )}
           </span>
         )}
       </div>
@@ -170,7 +199,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Ticket Number
+                {t(
+                  "complaints.details.ticketNumber",
+                  "Ticket Number"
+                )}
               </th>
 
               {/* Category */}
@@ -186,7 +218,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Category
+                {t(
+                  "complaints.details.category",
+                  "Category"
+                )}
               </th>
 
               {/* Title */}
@@ -201,7 +236,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Title
+                {t(
+                  "complaints.details.title",
+                  "Title"
+                )}
               </th>
 
               {/* Citizen */}
@@ -218,7 +256,10 @@ export default function ComplaintTable({
                 "
               >
                 <span className="block">
-                  Citizen
+                  {t(
+                    "complaints.details.citizenPhone",
+                    "Citizen"
+                  )}
                 </span>
 
                 <span className="block">
@@ -238,7 +279,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Location
+                {t(
+                  "complaints.table.location",
+                  "Location"
+                )}
               </th>
 
               {/* Status */}
@@ -254,7 +298,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Status
+                {t(
+                  "complaints.details.status",
+                  "Status"
+                )}
               </th>
 
               {/* Created At */}
@@ -270,7 +317,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Created At
+                {t(
+                  "complaints.table.createdAt",
+                  "Created At"
+                )}
               </th>
 
               {/* Action */}
@@ -285,7 +335,10 @@ export default function ComplaintTable({
                   text-gray-500
                 "
               >
-                Action
+                {t(
+                  "common.actions",
+                  "Actions"
+                )}
               </th>
             </tr>
           </thead>
@@ -323,7 +376,10 @@ export default function ComplaintTable({
                     />
 
                     <span>
-                      Loading complaints...
+                      {t(
+                        "complaints.table.loading",
+                        "Loading complaints..."
+                      )}
                     </span>
                   </div>
                 </td>
@@ -359,7 +415,10 @@ export default function ComplaintTable({
                     text-gray-500
                   "
                 >
-                  No complaints found.
+                  {t(
+                    "complaints.table.empty",
+                    "No complaints found."
+                  )}
                 </td>
               </tr>
             ) : (
@@ -368,6 +427,13 @@ export default function ComplaintTable({
               complaints.map((complaint) => {
                 const status =
                   statusConfig[complaint.status];
+
+                const statusLabel = status
+                  ? t(
+                      `complaints.details.statusOptions.${status.translationKey}`,
+                      complaint.status
+                    )
+                  : complaint.status || "—";
 
                 return (
                   <tr
@@ -512,15 +578,9 @@ export default function ComplaintTable({
                             "bg-gray-100 text-gray-700"
                           }
                         `}
-                        title={
-                          status?.label ||
-                          complaint.status ||
-                          ""
-                        }
+                        title={statusLabel}
                       >
-                        {status?.label ||
-                          complaint.status ||
-                          "—"}
+                        {statusLabel}
                       </span>
                     </td>
 
@@ -539,14 +599,14 @@ export default function ComplaintTable({
                       >
                         {complaint.created_at
                           ? new Date(
-                              complaint.created_at,
+                              complaint.created_at
                             ).toLocaleDateString(
                               "en-IN",
                               {
                                 day: "2-digit",
                                 month: "short",
                                 year: "numeric",
-                              },
+                              }
                             )
                           : "—"}
                       </div>
@@ -561,10 +621,17 @@ export default function ComplaintTable({
                         type="button"
                         onClick={() =>
                           onSelectComplaint?.(
-                            complaint,
+                            complaint
                           )
                         }
-                        title="View complaint"
+                        title={t(
+                          "complaints.details.actions.viewComplaint",
+                          "View complaint"
+                        )}
+                        aria-label={t(
+                          "complaints.details.actions.viewComplaint",
+                          "View complaint"
+                        )}
                         className="
                           mx-auto
                           flex
@@ -623,19 +690,31 @@ export default function ComplaintTable({
             sm:text-left
           "
         >
-          Showing{" "}
+          {t(
+            "complaints.table.showing",
+            "Showing"
+          )}{" "}
           <span className="font-medium text-[#16295A]">
             {startItem}
           </span>{" "}
-          to{" "}
+          {t(
+            "complaints.table.to",
+            "to"
+          )}{" "}
           <span className="font-medium text-[#16295A]">
             {endItem}
           </span>{" "}
-          of{" "}
+          {t(
+            "complaints.table.of",
+            "of"
+          )}{" "}
           <span className="font-medium text-[#16295A]">
             {total}
           </span>{" "}
-          complaints
+          {t(
+            "complaints.table.complaints",
+            "complaints"
+          )}
         </p>
 
         {/* ================= PAGINATION CONTROLS ================= */}
@@ -655,30 +734,14 @@ export default function ComplaintTable({
             disabled={currentPage <= 1}
             onClick={() =>
               onPageChange?.(
-                currentPage - 1,
+                currentPage - 1
               )
             }
-            aria-label="Previous page"
-            className={`
-              flex
-              h-7
-              w-7
-              items-center
-              justify-center
-              rounded-lg
-              transition
-              ${
-                currentPage <= 1
-                  ? `
-                    cursor-not-allowed
-                    text-gray-300
-                  `
-                  : `
-                    text-[#16295A]
-                    hover:bg-violet-50
-                  `
-              }
-            `}
+            aria-label={t(
+              "complaints.table.previousPage",
+              "Previous page"
+            )}
+            className={`...`}
           >
             <ChevronLeft size={14} />
           </button>
@@ -715,31 +778,14 @@ export default function ComplaintTable({
             }
             onClick={() =>
               onPageChange?.(
-                currentPage + 1,
+                currentPage + 1
               )
             }
-            aria-label="Next page"
-            className={`
-              flex
-              h-7
-              w-7
-              items-center
-              justify-center
-              rounded-lg
-              transition
-              ${
-                totalPages === 0 ||
-                currentPage >= totalPages
-                  ? `
-                    cursor-not-allowed
-                    text-gray-300
-                  `
-                  : `
-                    text-[#16295A]
-                    hover:bg-violet-50
-                  `
-              }
-            `}
+            aria-label={t(
+              "complaints.table.nextPage",
+              "Next page"
+            )}
+            className={`...`}
           >
             <ChevronRight size={14} />
           </button>
