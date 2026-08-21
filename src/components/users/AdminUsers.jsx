@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ShieldCheck,
   Plus,
@@ -8,79 +8,110 @@ import {
 } from "lucide-react";
 
 import AddUserModal from "./AddUserModal";
-
-const initialAdminUsers = [
-  {
-    id: 1,
-    name: "Super Admin",
-    email: "superadmin@sewac.com",
-    phone: "9876543210",
-    status: "Active",
-    createdAt: "01 May 2025, 08:30 AM",
-  },
-  {
-    id: 2,
-    name: "Ashutosh Kumar",
-    email: "ashutosh@sewac.com",
-    phone: "9123456780",
-    status: "Active",
-    createdAt: "05 May 2025, 10:15 AM",
-  },
-  {
-    id: 3,
-    name: "Neha Sharma",
-    email: "neha@sewac.com",
-    phone: "9988776655",
-    status: "Active",
-    createdAt: "07 May 2025, 02:45 PM",
-  },
-  {
-    id: 4,
-    name: "Ravi Verma",
-    email: "ravi@sewac.com",
-    phone: "9001122334",
-    status: "Active",
-    createdAt: "10 May 2025, 11:20 AM",
-  },
-];
+import api from "../../api/axios";
 
 const AdminUsers = () => {
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
-  const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
+
+  const [adminUsers, setAdminUsers] = useState([]);
+
   const [search, setSearch] = useState("");
 
-  const handleAdminCreated = (createdUser) => {
-    const newAdmin = {
-      id: createdUser.id,
-      name: createdUser.full_name,
-      email: createdUser.email,
-      phone: createdUser.phone_number,
-      status: createdUser.status || "ACTIVE",
-      createdAt: createdUser.created_at
-        ? new Date(createdUser.created_at).toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : new Date().toLocaleString("en-IN"),
-    };
+  const [loading, setLoading] = useState(true);
 
-    setAdminUsers((prev) => [newAdmin, ...prev]);
+  const [error, setError] = useState("");
+
+  const [page, setPage] = useState(1);
+
+  const [limit, setLimit] = useState(10);
+
+  const [total, setTotal] = useState(0);
+
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchAdmins = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/api/users", {
+        params: {
+          type: "ADMIN_LAYER_1",
+          search: search.trim(),
+          page,
+          limit,
+        },
+      });
+
+      const data = response?.data;
+
+      setAdminUsers(data?.users || []);
+
+      setTotal(Number(data?.total || 0));
+
+      setTotalPages(Number(data?.totalPages || 0));
+    } catch (err) {
+      console.error("Failed to fetch Admin Layer 1 users:", err);
+
+      setAdminUsers([]);
+
+      setTotal(0);
+
+      setTotalPages(0);
+
+      setError(
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to load Admin Layer 1 users."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [search, page, limit]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAdmins();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [fetchAdmins]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
   };
 
-  const filteredAdmins = adminUsers.filter((user) => {
-    const value = search.toLowerCase().trim();
+  const handleLimitChange = (e) => {
+    setLimit(Number(e.target.value));
+    setPage(1);
+  };
 
-    if (!value) return true;
+  const formatCreatedAt = (value) => {
+    if (!value) return "-";
 
-    return (
-      user.name.toLowerCase().includes(value) ||
-      user.email.toLowerCase().includes(value) ||
-      user.phone.includes(value)
-    );
-  });
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleAdminCreated = async () => {
+    setShowAddAdminModal(false);
+
+    setPage(1);
+
+    await fetchAdmins();
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
@@ -123,7 +154,7 @@ const AdminUsers = () => {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder="Search by name, email or phone..."
               className="
                 w-full
@@ -168,6 +199,13 @@ const AdminUsers = () => {
 
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+          {error}
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto">
 
@@ -211,83 +249,96 @@ const AdminUsers = () => {
 
           <tbody>
 
-            {filteredAdmins.map((user, index) => (
-
-              <tr
-                key={user.id}
-                className="border-b border-gray-100 hover:bg-gray-50"
-              >
-
-                <td className="px-5 py-4 text-[13px]">
-                  {index + 1}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] font-medium">
-                  {user.name}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.email}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.phone}
-                </td>
-
-                <td className="px-5 py-4">
-
-                  <span className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-[11px] font-medium">
-                    {user.status}
-                  </span>
-
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.createdAt}
-                </td>
-
-                <td className="px-5 py-4">
-
-                  <div className="flex justify-center items-center gap-4">
-
-                    <button
-                      type="button"
-                      className="text-violet-600 hover:text-violet-800"
-                      disabled
-                      title="Edit will be wired next"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      className="text-red-500 hover:text-red-700"
-                      disabled
-                      title="Delete will be wired next"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            ))}
-
-            {filteredAdmins.length === 0 && (
+            {loading ? (
 
               <tr>
-
                 <td
                   colSpan="7"
-                  className="px-5 py-10 text-center text-[13px] text-gray-500"
+                  className="px-5 py-12 text-center text-[13px] text-gray-500"
                 >
-                  No Admin Layer 1 users found.
+                  Loading Admin Layer 1 users...
                 </td>
-
               </tr>
+
+            ) : adminUsers.length === 0 ? (
+
+              <tr>
+                <td
+                  colSpan="7"
+                  className="px-5 py-12 text-center text-[13px] text-gray-500"
+                >
+                  {search.trim()
+                    ? "No Admin Layer 1 users match your search."
+                    : "No Admin Layer 1 users found."}
+                </td>
+              </tr>
+
+            ) : (
+
+              adminUsers.map((user, index) => (
+
+                <tr
+                  key={user.id}
+                  className="border-b border-gray-100 hover:bg-gray-50"
+                >
+
+                  <td className="px-5 py-4 text-[13px]">
+                    {(page - 1) * limit + index + 1}
+                  </td>
+
+                  <td className="px-5 py-4 text-[13px] font-medium">
+                    {user.full_name || "-"}
+                  </td>
+
+                  <td className="px-5 py-4 text-[13px] text-gray-600">
+                    {user.email || "-"}
+                  </td>
+
+                  <td className="px-5 py-4 text-[13px] text-gray-600">
+                    {user.phone_number || "-"}
+                  </td>
+
+                  <td className="px-5 py-4">
+
+                    <span className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-[11px] font-medium">
+                      {user.status || "-"}
+                    </span>
+
+                  </td>
+
+                  <td className="px-5 py-4 text-[13px] text-gray-600">
+                    {formatCreatedAt(user.created_at)}
+                  </td>
+
+                  <td className="px-5 py-4">
+
+                    <div className="flex justify-center items-center gap-4">
+
+                      <button
+                        type="button"
+                        className="text-violet-600 hover:text-violet-800"
+                        disabled
+                        title="Edit will be wired next"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700"
+                        disabled
+                        title="Delete will be wired next"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              ))
 
             )}
 
@@ -301,26 +352,68 @@ const AdminUsers = () => {
       <div className="flex items-center justify-between px-5 py-4 text-[12px]">
 
         <p className="text-violet-700 font-medium">
-          Showing {filteredAdmins.length} of {adminUsers.length} entries
+
+          {total === 0
+            ? "Showing 0 entries"
+            : `Showing ${
+                (page - 1) * limit + 1
+              } to ${Math.min(page * limit, total)} of ${total} entries`}
+
         </p>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
 
-          <span className="text-gray-600">
-            Rows per page:
-          </span>
+          <div className="flex items-center gap-2">
 
-          <select className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none">
-            <option>10</option>
-            <option>25</option>
-            <option>50</option>
-          </select>
+            <span className="text-gray-600">
+              Rows per page:
+            </span>
+
+            <select
+              value={limit}
+              onChange={handleLimitChange}
+              className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+
+          </div>
+
+          <div className="flex items-center gap-2">
+
+            <button
+              type="button"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((prev) => prev - 1)}
+              className="w-8 h-8 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ←
+            </button>
+
+            <span className="text-gray-600 min-w-[60px] text-center">
+              {totalPages === 0
+                ? "0 / 0"
+                : `${page} / ${totalPages}`}
+            </span>
+
+            <button
+              type="button"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((prev) => prev + 1)}
+              className="w-8 h-8 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              →
+            </button>
+
+          </div>
 
         </div>
 
       </div>
 
-      {/* Add Admin Modal */}
+      {/* Add Admin */}
       <AddUserModal
         open={showAddAdminModal}
         onClose={() => setShowAddAdminModal(false)}
