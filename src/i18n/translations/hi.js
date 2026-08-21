@@ -757,6 +757,15 @@ complaints: {
       requestVerification: "सत्यापन OTP का अनुरोध करें",
       verifyOtp: "OTP सत्यापित करें और शिकायत बंद करें",
     },
+
+    kpis: {
+    total: "कुल शिकायतें",
+    allComplaints: "सभी शिकायतें",
+    pending: "लंबित",
+    readyForVerification: "सत्यापन के लिए तैयार",
+    closed: "बंद",
+    citizenVerified: "नागरिक द्वारा सत्यापित",
+  },
   },
 },
 
