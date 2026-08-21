@@ -920,6 +920,58 @@ complaints: {
       "Citizen verified",
   },
 },
+
+cityOverviewMap: {
+  title: "OVERVIEW MAPS",
+
+  mapFilters: "MAP FILTERS",
+
+  cityOverview: "City Overview Map",
+  routeMaps: "Route Maps",
+  gvpPoints: "GVP Points",
+  plants: "Plants",
+  customerGrievances: "Customer Grievances",
+
+  zone: "ZONE",
+  division: "DIVISION",
+  ward: "WARD",
+
+  allZones: "All Zones",
+  allDivisions: "All Divisions",
+  allWards: "All Wards",
+
+  selectZoneFirst: "Select a Zone First",
+  selectDivisionFirst: "Select a Division First",
+
+  loadingDivisions: "Loading Divisions...",
+  loadingWards: "Loading Wards...",
+
+  noDivisions: "No Divisions",
+  noWards: "No Wards",
+
+  loadingDivisionsFor: "Loading divisions for",
+  loadingWardsFor: "Loading wards for",
+
+  resetMap: "Reset Map",
+
+  selectedZone: "Selected Zone",
+  selectedDivision: "Selected Division",
+  selectedWard: "Selected Ward",
+
+  city: "City",
+  divisions: "Divisions",
+  wards: "Wards",
+
+  wardId: "Ward ID",
+
+  plantLocations: "Plant Locations",
+  loadingPlants: "Loading plant locations...",
+  unableLoadPlants: "Unable to Load Plants",
+
+  changeMapView: "Change map view",
+
+  loading: "Loading city map...",
+},
 };
 
 export default en;

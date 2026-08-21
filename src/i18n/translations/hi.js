@@ -943,6 +943,58 @@ complaints: {
   },
 },
 
+cityOverviewMap: {
+  title: "अवलोकन मानचित्र",
+
+  mapFilters: "मानचित्र फ़िल्टर",
+
+  cityOverview: "शहर अवलोकन मानचित्र",
+  routeMaps: "रूट मानचित्र",
+  gvpPoints: "GVP पॉइंट्स",
+  plants: "प्लांट्स",
+  customerGrievances: "नागरिक शिकायतें",
+
+  zone: "ज़ोन",
+  division: "डिवीजन",
+  ward: "वार्ड",
+
+  allZones: "सभी ज़ोन",
+  allDivisions: "सभी डिवीजन",
+  allWards: "सभी वार्ड",
+
+  selectZoneFirst: "पहले ज़ोन चुनें",
+  selectDivisionFirst: "पहले डिवीजन चुनें",
+
+  loadingDivisions: "डिवीजन लोड हो रहे हैं...",
+  loadingWards: "वार्ड लोड हो रहे हैं...",
+
+  noDivisions: "कोई डिवीजन नहीं",
+  noWards: "कोई वार्ड नहीं",
+
+  loadingDivisionsFor: "डिवीजन लोड हो रहे हैं",
+  loadingWardsFor: "वार्ड लोड हो रहे हैं",
+
+  resetMap: "मानचित्र रीसेट करें",
+
+  selectedZone: "चयनित ज़ोन",
+  selectedDivision: "चयनित डिवीजन",
+  selectedWard: "चयनित वार्ड",
+
+  city: "शहर",
+  divisions: "डिवीजन",
+  wards: "वार्ड",
+
+  wardId: "वार्ड ID",
+
+  plantLocations: "प्लांट स्थान",
+  loadingPlants: "प्लांट स्थान लोड हो रहे हैं...",
+  unableLoadPlants: "प्लांट लोड नहीं हो सके",
+
+  changeMapView: "मानचित्र दृश्य बदलें",
+
+  loading: "शहर का मानचित्र लोड हो रहा है...",
+},
+
 };
 
 export default hi;

@@ -1037,6 +1037,58 @@ complaints: {
       "ನಾಗರಿಕರಿಂದ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
   },
 },
+
+cityOverviewMap: {
+  title: "ಅವಲೋಕನ ನಕ್ಷೆಗಳು",
+
+  mapFilters: "ನಕ್ಷೆ ಫಿಲ್ಟರ್‌ಗಳು",
+
+  cityOverview: "ನಗರ ಅವಲೋಕನ ನಕ್ಷೆ",
+  routeMaps: "ಮಾರ್ಗ ನಕ್ಷೆಗಳು",
+  gvpPoints: "GVP ಪಾಯಿಂಟ್‌ಗಳು",
+  plants: "ಘಟಕಗಳು",
+  customerGrievances: "ನಾಗರಿಕ ದೂರುಗಳು",
+
+  zone: "ವಲಯ",
+  division: "ವಿಭಾಗ",
+  ward: "ವಾರ್ಡ್",
+
+  allZones: "ಎಲ್ಲಾ ವಲಯಗಳು",
+  allDivisions: "ಎಲ್ಲಾ ವಿಭಾಗಗಳು",
+  allWards: "ಎಲ್ಲಾ ವಾರ್ಡ್‌ಗಳು",
+
+  selectZoneFirst: "ಮೊದಲು ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  selectDivisionFirst: "ಮೊದಲು ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+  loadingDivisions: "ವಿಭಾಗಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  loadingWards: "ವಾರ್ಡ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+  noDivisions: "ಯಾವುದೇ ವಿಭಾಗಗಳಿಲ್ಲ",
+  noWards: "ಯಾವುದೇ ವಾರ್ಡ್‌ಗಳಿಲ್ಲ",
+
+  loadingDivisionsFor: "ವಿಭಾಗಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ",
+  loadingWardsFor: "ವಾರ್ಡ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ",
+
+  resetMap: "ನಕ್ಷೆಯನ್ನು ಮರುಹೊಂದಿಸಿ",
+
+  selectedZone: "ಆಯ್ಕೆಮಾಡಿದ ವಲಯ",
+  selectedDivision: "ಆಯ್ಕೆಮಾಡಿದ ವಿಭಾಗ",
+  selectedWard: "ಆಯ್ಕೆಮಾಡಿದ ವಾರ್ಡ್",
+
+  city: "ನಗರ",
+  divisions: "ವಿಭಾಗಗಳು",
+  wards: "ವಾರ್ಡ್‌ಗಳು",
+
+  wardId: "ವಾರ್ಡ್ ID",
+
+  plantLocations: "ಘಟಕಗಳ ಸ್ಥಳಗಳು",
+  loadingPlants: "ಘಟಕಗಳ ಸ್ಥಳಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  unableLoadPlants: "ಘಟಕಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+
+  changeMapView: "ನಕ್ಷೆ ವೀಕ್ಷಣೆಯನ್ನು ಬದಲಾಯಿಸಿ",
+
+  loading: "ನಗರ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+},
 };
 
 export default kn;

@@ -36,6 +36,7 @@ import CustomerGrev from "./CustomerGrev";
 import GVPOverviewMap from "./GVPOverviewMap";
 
 import { useFilters } from "../../contexts/FilterContext";
+import { useLanguage } from "../../i18n";
 
 import "leaflet/dist/leaflet.css";
 
@@ -55,24 +56,25 @@ const DEFAULT_CITY_ID = 1;
 
 const CITY_MAP_ENDPOINT = (cityId) =>
   `${API_BASE_URL}/api/master-citizen/map/city/${encodeURIComponent(
-    cityId
+    cityId,
   )}`;
 
 const ZONE_DIVISIONS_ENDPOINT = (zoneTableName) =>
   `${API_BASE_URL}/api/master-citizen/map/zone/${encodeURIComponent(
-    zoneTableName
+    zoneTableName,
   )}/divisions`;
 
 const DIVISION_WARDS_ENDPOINT = (divisionTableName) =>
   `${API_BASE_URL}/api/master-citizen/map/division/${encodeURIComponent(
-    divisionTableName
+    divisionTableName,
   )}/wards`;
 
 /* ============================================================
    PLANTS ENDPOINT
 ============================================================ */
 
-const PLANTS_ENDPOINT = `${API_BASE_URL}/api/plants`;
+const PLANTS_ENDPOINT =
+  `${API_BASE_URL}/api/plants`;
 
 /* ============================================================
    COLORS
@@ -121,15 +123,22 @@ const WARD_COLORS = [
 ============================================================ */
 
 function parseGeoJSON(value) {
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return null;
   }
 
-  if (typeof value === "object") {
+  if (
+    typeof value === "object"
+  ) {
     return value;
   }
 
-  if (typeof value === "string") {
+  if (
+    typeof value === "string"
+  ) {
     try {
       return JSON.parse(value);
     } catch {
@@ -182,47 +191,68 @@ function normalizeCoordinatePair(pair) {
 }
 
 function normalizeCoordinates(value) {
-  if (isCoordinatePair(value)) {
-    return normalizeCoordinatePair(value);
+  if (
+    isCoordinatePair(value)
+  ) {
+    return normalizeCoordinatePair(
+      value,
+    );
   }
 
-  if (Array.isArray(value)) {
-    return value.map(normalizeCoordinates);
+  if (
+    Array.isArray(value)
+  ) {
+    return value.map(
+      normalizeCoordinates,
+    );
   }
 
   return value;
 }
 
 function normalizeGeoJSON(value) {
-  const parsed = parseGeoJSON(value);
+  const parsed =
+    parseGeoJSON(value);
 
   if (!parsed) {
     return null;
   }
 
-  /*
-   * FeatureCollection
-   */
+  /* ==========================================================
+     FEATURE COLLECTION
+  ========================================================== */
 
-  if (parsed.type === "FeatureCollection") {
+  if (
+    parsed.type ===
+    "FeatureCollection"
+  ) {
     return {
       ...parsed,
 
-      features: Array.isArray(parsed.features)
-        ? parsed.features
-            .map((feature) =>
-              normalizeGeoJSON(feature)
-            )
-            .filter(Boolean)
-        : [],
+      features:
+        Array.isArray(
+          parsed.features,
+        )
+          ? parsed.features
+              .map(
+                (feature) =>
+                  normalizeGeoJSON(
+                    feature,
+                  ),
+              )
+              .filter(Boolean)
+          : [],
     };
   }
 
-  /*
-   * Feature
-   */
+  /* ==========================================================
+     FEATURE
+  ========================================================== */
 
-  if (parsed.type === "Feature") {
+  if (
+    parsed.type ===
+    "Feature"
+  ) {
     if (!parsed.geometry) {
       return null;
     }
@@ -230,15 +260,16 @@ function normalizeGeoJSON(value) {
     return {
       ...parsed,
 
-      geometry: normalizeGeoJSON(
-        parsed.geometry
-      ),
+      geometry:
+        normalizeGeoJSON(
+          parsed.geometry,
+        ),
     };
   }
 
-  /*
-   * GeometryCollection
-   */
+  /* ==========================================================
+     GEOMETRY COLLECTION
+  ========================================================== */
 
   if (
     parsed.type ===
@@ -247,19 +278,22 @@ function normalizeGeoJSON(value) {
     return {
       ...parsed,
 
-      geometries: Array.isArray(
-        parsed.geometries
-      )
-        ? parsed.geometries
-            .map(normalizeGeoJSON)
-            .filter(Boolean)
-        : [],
+      geometries:
+        Array.isArray(
+          parsed.geometries,
+        )
+          ? parsed.geometries
+              .map(
+                normalizeGeoJSON,
+              )
+              .filter(Boolean)
+          : [],
     };
   }
 
-  /*
-   * Geometry object
-   */
+  /* ==========================================================
+     GEOMETRY OBJECT
+  ========================================================== */
 
   if (
     parsed.type &&
@@ -270,16 +304,18 @@ function normalizeGeoJSON(value) {
 
       coordinates:
         normalizeCoordinates(
-          parsed.coordinates
+          parsed.coordinates,
         ),
     };
   }
 
-  /*
-   * Raw coordinates
-   */
+  /* ==========================================================
+     RAW COORDINATES
+  ========================================================== */
 
-  if (Array.isArray(parsed)) {
+  if (
+    Array.isArray(parsed)
+  ) {
     return {
       type: "Feature",
 
@@ -289,14 +325,16 @@ function normalizeGeoJSON(value) {
         type: "Polygon",
 
         coordinates:
-          normalizeCoordinates(parsed),
+          normalizeCoordinates(
+            parsed,
+          ),
       },
     };
   }
 
-  /*
-   * Object containing geometry
-   */
+  /* ==========================================================
+     OBJECT CONTAINING GEOMETRY
+  ========================================================== */
 
   if (
     parsed.geometry &&
@@ -307,22 +345,27 @@ function normalizeGeoJSON(value) {
       type: "Feature",
 
       properties:
-        parsed.properties || {},
+        parsed.properties ||
+        {},
 
-      geometry: parsed.geometry,
+      geometry:
+        parsed.geometry,
     });
   }
 
-  /*
-   * Object containing coordinates
-   */
+  /* ==========================================================
+     OBJECT CONTAINING COORDINATES
+  ========================================================== */
 
-  if (parsed.coordinates) {
+  if (
+    parsed.coordinates
+  ) {
     return {
       type: "Feature",
 
       properties:
-        parsed.properties || {},
+        parsed.properties ||
+        {},
 
       geometry: {
         type:
@@ -331,7 +374,7 @@ function normalizeGeoJSON(value) {
 
         coordinates:
           normalizeCoordinates(
-            parsed.coordinates
+            parsed.coordinates,
           ),
       },
     };
@@ -366,7 +409,7 @@ function getGeoJSONBounds(value) {
   } catch (error) {
     console.warn(
       "Unable to calculate GeoJSON bounds:",
-      error
+      error,
     );
 
     return null;
@@ -421,11 +464,13 @@ function getZoneBoundary(zone) {
     zone?.geoBoundary ??
       zone?.geo_boundary ??
       zone?.geometry ??
-      zone?.boundary
+      zone?.boundary,
   );
 }
 
-function getDivisionName(division) {
+function getDivisionName(
+  division,
+) {
   return (
     division?.divisionName ||
     division?.division_name ||
@@ -434,7 +479,9 @@ function getDivisionName(division) {
   );
 }
 
-function getDivisionId(division) {
+function getDivisionId(
+  division,
+) {
   return (
     division?.id ??
     division?.divisionId ??
@@ -443,7 +490,9 @@ function getDivisionId(division) {
   );
 }
 
-function getDivisionTableName(division) {
+function getDivisionTableName(
+  division,
+) {
   return (
     division?.divisionTableName ||
     division?.division_table_name ||
@@ -452,13 +501,13 @@ function getDivisionTableName(division) {
 }
 
 function getDivisionBoundary(
-  division
+  division,
 ) {
   return normalizeGeoJSON(
     division?.geoBoundary ??
       division?.geo_boundary ??
       division?.geometry ??
-      division?.boundary
+      division?.boundary,
   );
 }
 
@@ -467,9 +516,12 @@ function getWardName(ward) {
     ward?.wardName ||
     ward?.ward_name ||
     ward?.name ||
-    (ward?.wardNo !== undefined
-      ? `Ward ${ward.wardNo}`
-      : "Unnamed Ward")
+    (
+      ward?.wardNo !==
+      undefined
+        ? `Ward ${ward.wardNo}`
+        : "Unnamed Ward"
+    )
   );
 }
 
@@ -488,7 +540,7 @@ function getWardBoundary(ward) {
     ward?.geoBoundary ??
       ward?.geo_boundary ??
       ward?.geometry ??
-      ward?.boundary
+      ward?.boundary,
   );
 }
 
@@ -496,9 +548,12 @@ function sameEntity(
   first,
   second,
   getId,
-  getName
+  getName,
 ) {
-  if (!first || !second) {
+  if (
+    !first ||
+    !second
+  ) {
     return false;
   }
 
@@ -532,29 +587,35 @@ function sameEntity(
 
 function extractArray(
   result,
-  key
+  key,
 ) {
   if (
-    Array.isArray(result?.[key])
+    Array.isArray(
+      result?.[key],
+    )
   ) {
     return result[key];
   }
 
   if (
     Array.isArray(
-      result?.data?.[key]
+      result?.data?.[key],
     )
   ) {
     return result.data[key];
   }
 
   if (
-    Array.isArray(result?.data)
+    Array.isArray(
+      result?.data,
+    )
   ) {
     return result.data;
   }
 
-  if (Array.isArray(result)) {
+  if (
+    Array.isArray(result)
+  ) {
     return result;
   }
 
@@ -566,41 +627,48 @@ function extractArray(
 ============================================================ */
 
 function MapSizeController() {
-  const map = useMap();
+  const map =
+    useMap();
 
   useEffect(() => {
     const timers = [
       setTimeout(
-        () => map.invalidateSize(),
-        100
+        () =>
+          map.invalidateSize(),
+        100,
       ),
 
       setTimeout(
-        () => map.invalidateSize(),
-        500
+        () =>
+          map.invalidateSize(),
+        400,
       ),
 
       setTimeout(
-        () => map.invalidateSize(),
-        1000
+        () =>
+          map.invalidateSize(),
+        800,
       ),
     ];
 
-    const resizeHandler = () => {
-      map.invalidateSize();
-    };
+    const handleResize =
+      () => {
+        map.invalidateSize();
+      };
 
     window.addEventListener(
       "resize",
-      resizeHandler
+      handleResize,
     );
 
     return () => {
-      timers.forEach(clearTimeout);
+      timers.forEach(
+        clearTimeout,
+      );
 
       window.removeEventListener(
         "resize",
-        resizeHandler
+        handleResize,
       );
     };
   }, [map]);
@@ -616,92 +684,111 @@ function InitialCityFit({
   cityBoundary,
   zones,
 }) {
-  const map = useMap();
+  const map =
+    useMap();
 
-  const fitted =
+  const didFitRef =
     useRef(false);
 
   useEffect(() => {
-    if (fitted.current) {
+    if (
+      didFitRef.current
+    ) {
       return;
     }
 
     const bounds =
       getGeoJSONBounds(
-        cityBoundary
+        cityBoundary,
       );
 
     if (
       bounds &&
       bounds.isValid()
     ) {
-      fitted.current = true;
+      didFitRef.current =
+        true;
 
       map.fitBounds(
         bounds,
         {
-          padding: [60, 60],
+          padding: [
+            50,
+            50,
+          ],
+
           maxZoom: 10,
+
           animate: false,
-        }
+        },
       );
 
       return;
-    }
-
-    const zoneBounds = zones
-      .map((zone) =>
-        getGeoJSONBounds(
-          getZoneBoundary(zone)
-        )
-      )
-      .filter(Boolean);
-
-    if (!zoneBounds.length) {
-      return;
-    }
-
-    const combined =
-      L.latLngBounds(
-        zoneBounds[0]
-      );
-
-    for (
-      let index = 1;
-      index <
-      zoneBounds.length;
-      index += 1
-    ) {
-      combined.extend(
-        zoneBounds[index]
-      );
     }
 
     if (
-      combined.isValid()
+      Array.isArray(zones) &&
+      zones.length
     ) {
-      fitted.current = true;
+      const zoneBounds =
+        zones
+          .map(
+            (zone) =>
+              getGeoJSONBounds(
+                getZoneBoundary(
+                  zone,
+                ),
+              ),
+          )
+          .filter(Boolean);
 
-      map.fitBounds(
-        combined,
-        {
-          padding: [60, 60],
-          maxZoom: 10,
-          animate: false,
+      if (
+        zoneBounds.length
+      ) {
+        const combined =
+          L.latLngBounds([]);
+
+        zoneBounds.forEach(
+          (bounds) => {
+            combined.extend(
+              bounds,
+            );
+          },
+        );
+
+        if (
+          combined.isValid()
+        ) {
+          didFitRef.current =
+            true;
+
+          map.fitBounds(
+            combined,
+            {
+              padding: [
+                50,
+                50,
+              ],
+
+              maxZoom: 10,
+
+              animate: false,
+            },
+          );
         }
-      );
+      }
     }
   }, [
-    map,
     cityBoundary,
     zones,
+    map,
   ]);
 
   return null;
 }
 
 /* ============================================================
-   SELECTION FOCUS
+   SELECTION FOCUS CONTROLLER
 ============================================================ */
 
 function SelectionFocusController({
@@ -709,123 +796,72 @@ function SelectionFocusController({
   selectedDivision,
   selectedWard,
 }) {
-  const map = useMap();
-
-  const previous =
-    useRef("");
+  const map =
+    useMap();
 
   useEffect(() => {
-    let target = null;
-    let key = "";
+    const selected =
+      selectedWard ||
+      selectedDivision ||
+      selectedZone;
 
-    if (selectedWard) {
-      target =
+    if (!selected) {
+      return;
+    }
+
+    let boundary = null;
+
+    if (
+      selectedWard
+    ) {
+      boundary =
         getWardBoundary(
-          selectedWard
+          selectedWard,
         );
-
-      key = `ward:${
-        getWardId(
-          selectedWard
-        ) ||
-        getWardName(
-          selectedWard
-        )
-      }`;
     } else if (
       selectedDivision
     ) {
-      target =
+      boundary =
         getDivisionBoundary(
-          selectedDivision
+          selectedDivision,
         );
-
-      key = `division:${
-        getDivisionId(
-          selectedDivision
-        ) ||
-        getDivisionName(
-          selectedDivision
-        )
-      }`;
     } else if (
       selectedZone
     ) {
-      target =
+      boundary =
         getZoneBoundary(
-          selectedZone
+          selectedZone,
         );
-
-      key = `zone:${
-        getZoneId(
-          selectedZone
-        ) ||
-        getZoneName(
-          selectedZone
-        )
-      }`;
-    } else {
-      previous.current = "";
-      return;
     }
-
-    if (
-      previous.current === key
-    ) {
-      return;
-    }
-
-    previous.current = key;
 
     const bounds =
-      getGeoJSONBounds(target);
+      getGeoJSONBounds(
+        boundary,
+      );
 
     if (
-      !bounds ||
-      !bounds.isValid()
+      bounds &&
+      bounds.isValid()
     ) {
-      return;
+      map.fitBounds(
+        bounds,
+        {
+          padding: [
+            70,
+            70,
+          ],
+
+          maxZoom: 13,
+
+          animate: true,
+        },
+      );
     }
-
-    let padding = [
-      90,
-      90,
-    ];
-
-    let maxZoom = 13;
-
-    if (selectedDivision) {
-      padding = [
-        100,
-        100,
-      ];
-
-      maxZoom = 15;
-    }
-
-    if (selectedWard) {
-      padding = [
-        120,
-        120,
-      ];
-
-      maxZoom = 17;
-    }
-
-    map.flyToBounds(
-      bounds,
-      {
-        padding,
-        maxZoom,
-        duration: 0.9,
-        easeLinearity: 0.25,
-      }
-    );
   }, [
-    map,
     selectedZone,
     selectedDivision,
     selectedWard,
+    map,
   ]);
 
   return null;
@@ -842,7 +878,9 @@ function ZoneLayer({
   onSelect,
 }) {
   const boundary =
-    getZoneBoundary(zone);
+    getZoneBoundary(
+      zone,
+    );
 
   if (!boundary) {
     return null;
@@ -856,10 +894,9 @@ function ZoneLayer({
 
   return (
     <GeoJSON
-      key={`zone-${
-        getZoneTableName(zone) ||
-        getZoneName(zone)
-      }-${index}`}
+      key={`zone-${getZoneName(
+        zone,
+      )}-${index}`}
       data={boundary}
       style={() => ({
         color: selected
@@ -881,19 +918,24 @@ function ZoneLayer({
           : 0.38,
 
         lineJoin: "round",
+
         lineCap: "round",
       })}
       eventHandlers={{
-        click: (event) => {
+        click: (
+          event,
+        ) => {
           if (
             event?.originalEvent
           ) {
             L.DomEvent.stopPropagation(
-              event.originalEvent
+              event.originalEvent,
             );
           }
 
-          onSelect?.(zone);
+          onSelect?.(
+            zone,
+          );
         },
       }}
     />
@@ -912,7 +954,7 @@ function DivisionLayer({
 }) {
   const boundary =
     getDivisionBoundary(
-      division
+      division,
     );
 
   if (!boundary) {
@@ -929,13 +971,13 @@ function DivisionLayer({
     <GeoJSON
       key={`division-${
         getDivisionTableName(
-          division
+          division,
         ) ||
         getDivisionId(
-          division
+          division,
         ) ||
         getDivisionName(
-          division
+          division,
         )
       }-${index}`}
       data={boundary}
@@ -952,24 +994,30 @@ function DivisionLayer({
 
         fillColor: color,
 
-        fillOpacity: selected
-          ? 0.64
-          : 0.3,
+        fillOpacity:
+          selected
+            ? 0.64
+            : 0.3,
 
         lineJoin: "round",
+
         lineCap: "round",
       })}
       eventHandlers={{
-        click: (event) => {
+        click: (
+          event,
+        ) => {
           if (
             event?.originalEvent
           ) {
             L.DomEvent.stopPropagation(
-              event.originalEvent
+              event.originalEvent,
             );
           }
 
-          onSelect?.(division);
+          onSelect?.(
+            division,
+          );
         },
       }}
     />
@@ -987,7 +1035,9 @@ function WardLayer({
   onSelect,
 }) {
   const boundary =
-    getWardBoundary(ward);
+    getWardBoundary(
+      ward,
+    );
 
   if (!boundary) {
     return null;
@@ -1019,24 +1069,30 @@ function WardLayer({
 
         fillColor: color,
 
-        fillOpacity: selected
-          ? 0.68
-          : 0.34,
+        fillOpacity:
+          selected
+            ? 0.68
+            : 0.34,
 
         lineJoin: "round",
+
         lineCap: "round",
       })}
       eventHandlers={{
-        click: (event) => {
+        click: (
+          event,
+        ) => {
           if (
             event?.originalEvent
           ) {
             L.DomEvent.stopPropagation(
-              event.originalEvent
+              event.originalEvent,
             );
           }
 
-          onSelect?.(ward);
+          onSelect?.(
+            ward,
+          );
         },
       }}
     />
@@ -1059,11 +1115,18 @@ function CityBoundaryLayer({
       data={boundary}
       style={() => ({
         color: "#263B52",
+
         weight: 3.8,
+
         opacity: 1,
-        fillColor: "transparent",
+
+        fillColor:
+          "transparent",
+
         fillOpacity: 0,
+
         lineJoin: "round",
+
         lineCap: "round",
       })}
       interactive={false}
@@ -1103,7 +1166,9 @@ function FilterDropdown({
 
   const updatePosition =
     useCallback(() => {
-      if (!buttonRef.current) {
+      if (
+        !buttonRef.current
+      ) {
         return;
       }
 
@@ -1113,8 +1178,12 @@ function FilterDropdown({
       setPosition({
         top:
           rect.bottom + 7,
-        left: rect.left,
-        width: rect.width,
+
+        left:
+          rect.left,
+
+        width:
+          rect.width,
       });
     }, []);
 
@@ -1126,29 +1195,31 @@ function FilterDropdown({
     updatePosition();
 
     const handlePosition =
-      () => updatePosition();
+      () => {
+        updatePosition();
+      };
 
     window.addEventListener(
       "resize",
-      handlePosition
+      handlePosition,
     );
 
     window.addEventListener(
       "scroll",
       handlePosition,
-      true
+      true,
     );
 
     return () => {
       window.removeEventListener(
         "resize",
-        handlePosition
+        handlePosition,
       );
 
       window.removeEventListener(
         "scroll",
         handlePosition,
-        true
+        true,
       );
     };
   }, [
@@ -1165,7 +1236,7 @@ function FilterDropdown({
       (event) => {
         if (
           buttonRef.current?.contains(
-            event.target
+            event.target,
           )
         ) {
           return;
@@ -1173,7 +1244,7 @@ function FilterDropdown({
 
         if (
           menuRef.current?.contains(
-            event.target
+            event.target,
           )
         ) {
           return;
@@ -1184,13 +1255,13 @@ function FilterDropdown({
 
     document.addEventListener(
       "mousedown",
-      handleOutsideClick
+      handleOutsideClick,
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleOutsideClick
+        handleOutsideClick,
       );
     };
   }, [
@@ -1200,7 +1271,7 @@ function FilterDropdown({
 
   const handleOptionClick =
     (option) => {
-      onChange?.(option);
+      onChange(option);
       setOpen(null);
     };
 
@@ -1217,17 +1288,22 @@ function FilterDropdown({
               z-[2147483647]
               max-h-[300px]
               overflow-y-auto
-              rounded-[13px]
+              rounded-2xl
               border
               border-[#DCE5EE]
               bg-white
-              p-1
-              shadow-[0_16px_38px_rgba(30,45,60,0.16)]
+              p-1.5
+              shadow-[0_18px_45px_rgba(30,45,60,0.16)]
             "
             style={{
-              top: position.top,
-              left: position.left,
-              width: position.width,
+              top:
+                position.top,
+
+              left:
+                position.left,
+
+              width:
+                position.width,
             }}
           >
             {options.length ===
@@ -1248,7 +1324,7 @@ function FilterDropdown({
               options.map(
                 (
                   option,
-                  index
+                  index,
                 ) => {
                   const optionValue =
                     typeof option ===
@@ -1280,9 +1356,11 @@ function FilterDropdown({
                         px-2.5
                         py-2
                         text-left
-                        text-[12px]
+                        text-[11px]
                         font-semibold
                         transition
+                        sm:text-[12px]
+
                         ${
                           selectedOption
                             ? "bg-[#EDF3F8] text-[#20364C]"
@@ -1290,45 +1368,48 @@ function FilterDropdown({
                         }
                       `}
                       onMouseDown={(
-                        event
+                        event,
                       ) => {
                         event.stopPropagation();
                       }}
                       onClick={() =>
                         handleOptionClick(
-                          option
+                          option,
                         )
                       }
                     >
                       {renderOption ? (
                         renderOption(
                           option,
-                          index
+                          index,
                         )
                       ) : (
                         <span className="truncate">
-                          {optionLabel}
+                          {
+                            optionLabel
+                          }
                         </span>
                       )}
                     </button>
                   );
-                }
+                },
               )
             )}
           </div>,
-          document.body
+          document.body,
         )
       : null;
 
   return (
-    <div className="relative mb-[13px]">
+    <div className="relative mb-3">
       <div
         className="
           mb-1.5
-          text-[11px]
+          text-[9px]
           font-bold
           tracking-[0.15px]
           text-[#8BA4BF]
+          sm:text-[10px]
         "
       >
         {label}
@@ -1340,7 +1421,7 @@ function FilterDropdown({
         disabled={disabled}
         className={`
           flex
-          h-12
+          h-11
           w-full
           items-center
           justify-between
@@ -1348,9 +1429,12 @@ function FilterDropdown({
           border
           px-3.5
           text-left
-          text-[13px]
+          text-[11px]
           font-semibold
           transition
+          sm:h-12
+          sm:text-[12px]
+
           ${
             disabled
               ? "cursor-not-allowed border-[#DCE5EE] bg-[#F8FAFC] text-[#A4B2C0] opacity-70"
@@ -1365,7 +1449,7 @@ function FilterDropdown({
           setOpen(
             open
               ? null
-              : label
+              : label,
           );
         }}
       >
@@ -1409,21 +1493,34 @@ export default function CityMapOverview({
   selectedDate,
 }) {
   /* ==========================================================
+     LANGUAGE
+  ========================================================== */
+
+  const { t } =
+    useLanguage();
+
+  /* ==========================================================
      GLOBAL HEADER FILTERS
   ========================================================== */
 
   const {
-    selectedCity: headerSelectedCity,
-    selectedZone: headerSelectedZone,
+    selectedCity:
+      headerSelectedCity,
+
+    selectedZone:
+      headerSelectedZone,
+
     selectedDivision:
       headerSelectedDivision,
-    selectedWard: headerSelectedWard,
+
+    selectedWard:
+      headerSelectedWard,
   } = useFilters();
 
   /*
-   * These values intentionally remain connected
-   * to FilterContext so this component does not
-   * maintain another global filter system.
+   * Keep component connected to
+   * FilterContext without maintaining
+   * another global filter system.
    */
 
   void headerSelectedCity;
@@ -1517,10 +1614,12 @@ export default function CityMapOverview({
   const [
     mapView,
     setMapView,
-  ] = useState("overview");
+  ] = useState(
+    "overview",
+  );
 
   /* ==========================================================
-     PLANTS STATE
+     PLANTS
   ========================================================== */
 
   const [
@@ -1555,7 +1654,7 @@ export default function CityMapOverview({
     useRef(null);
 
   /* ==========================================================
-     LOAD CITY
+     LOAD CITY MAP
   ========================================================== */
 
   const fetchCityMapData =
@@ -1567,7 +1666,7 @@ export default function CityMapOverview({
 
           const endpoint =
             CITY_MAP_ENDPOINT(
-              cityId
+              cityId,
             );
 
           const response =
@@ -1580,12 +1679,14 @@ export default function CityMapOverview({
                   Accept:
                     "application/json",
                 },
-              }
+              },
             );
 
-          if (!response.ok) {
+          if (
+            !response.ok
+          ) {
             throw new Error(
-              `City map request failed with status ${response.status}`
+              `City map request failed with status ${response.status}`,
             );
           }
 
@@ -1598,7 +1699,7 @@ export default function CityMapOverview({
           ) {
             throw new Error(
               result.message ||
-                "Unable to fetch city map data."
+                "Unable to fetch city map data.",
             );
           }
 
@@ -1608,78 +1709,67 @@ export default function CityMapOverview({
 
           const loadedZones =
             Array.isArray(
-              result?.zones
+              result?.zones,
             )
               ? result.zones
               : [];
 
           setCity(
-            loadedCity
+            loadedCity,
           );
 
           setZones(
-            loadedZones
+            loadedZones,
           );
 
           setSelectedZone(
-            null
+            null,
           );
 
           setDivisions(
-            []
+            [],
           );
 
           setSelectedDivision(
-            null
+            null,
           );
 
           setWards(
-            []
+            [],
           );
 
           setSelectedWard(
-            null
+            null,
           );
 
           setDivisionError(
-            ""
+            "",
           );
 
           setWardError(
-            ""
+            "",
           );
 
           setOpenDropdown(
-            null
-          );
-
-          console.log(
-            "✅ CITY MAP LOADED",
-            {
-              city:
-                loadedCity?.cityName,
-
-              zones:
-                loadedZones.length,
-            }
+            null,
           );
         } catch (
           requestError
         ) {
           console.error(
-            "❌ CITY MAP ERROR:",
-            requestError
+            "CITY MAP ERROR:",
+            requestError,
           );
 
           setError(
             requestError?.message ||
-              "Unable to load city map."
+              "Unable to load city map.",
           );
         } finally {
           setLoading(false);
         }
       },
-      [cityId]
+      [cityId],
     );
 
   useEffect(() => {
@@ -1687,9 +1777,7 @@ export default function CityMapOverview({
 
     return () => {
       divisionAbortRef.current?.abort();
-
       wardAbortRef.current?.abort();
-
       plantsAbortRef.current?.abort();
     };
   }, [
@@ -1697,60 +1785,38 @@ export default function CityMapOverview({
   ]);
 
   /* ==========================================================
-     FETCH ZONE DIVISIONS
+     FETCH ZONE → DIVISIONS
   ========================================================== */
 
   const fetchZoneDivisions =
     useCallback(
-      async (zone) => {
+      async (
+        zone,
+      ) => {
         divisionAbortRef.current?.abort();
-
         wardAbortRef.current?.abort();
 
         if (!zone) {
-          setDivisions(
-            []
-          );
-
-          setSelectedDivision(
-            null
-          );
-
-          setWards(
-            []
-          );
-
-          setSelectedWard(
-            null
-          );
-
-          setDivisionError(
-            ""
-          );
-
-          setWardError(
-            ""
-          );
-
+          setDivisions([]);
+          setSelectedDivision(null);
+          setWards([]);
+          setSelectedWard(null);
+          setDivisionError("");
+          setWardError("");
           return;
         }
 
         const zoneTableName =
           getZoneTableName(
-            zone
+            zone,
           );
 
         if (!zoneTableName) {
-          setDivisions(
-            []
-          );
-
-          setSelectedDivision(
-            null
-          );
+          setDivisions([]);
+          setSelectedDivision(null);
 
           setDivisionError(
-            "Selected zone does not contain a valid zoneTableName."
+            "Selected zone does not contain a valid zone table name.",
           );
 
           return;
@@ -1762,37 +1828,19 @@ export default function CityMapOverview({
         divisionAbortRef.current =
           controller;
 
-        setDivisionsLoading(
-          true
-        );
+        setDivisionsLoading(true);
+        setDivisionError("");
 
-        setDivisionError(
-          ""
-        );
+        setDivisions([]);
+        setSelectedDivision(null);
 
-        setDivisions(
-          []
-        );
-
-        setSelectedDivision(
-          null
-        );
-
-        setWards(
-          []
-        );
-
-        setSelectedWard(
-          null
-        );
-
-        setWardError(
-          ""
-        );
+        setWards([]);
+        setSelectedWard(null);
+        setWardError("");
 
         const endpoint =
           ZONE_DIVISIONS_ENDPOINT(
-            zoneTableName
+            zoneTableName,
           );
 
         try {
@@ -1809,12 +1857,14 @@ export default function CityMapOverview({
 
                 signal:
                   controller.signal,
-              }
+              },
             );
 
-          if (!response.ok) {
+          if (
+            !response.ok
+          ) {
             throw new Error(
-              `Zone divisions request failed with status ${response.status}`
+              `Zone divisions request failed with status ${response.status}`,
             );
           }
 
@@ -1827,23 +1877,18 @@ export default function CityMapOverview({
           ) {
             throw new Error(
               result.message ||
-                "Unable to fetch divisions."
+                "Unable to fetch divisions.",
             );
           }
 
           const loadedDivisions =
             extractArray(
               result,
-              "divisions"
+              "divisions",
             ).filter(Boolean);
 
           setDivisions(
-            loadedDivisions
-          );
-
-          console.log(
-            "✅ DIVISIONS LOADED:",
-            loadedDivisions.length
+            loadedDivisions,
           );
         } catch (
           requestError
@@ -1856,17 +1901,14 @@ export default function CityMapOverview({
           }
 
           console.error(
-            "❌ ZONE DIVISIONS ERROR:",
-            requestError
+            "DIVISIONS ERROR:",
+            requestError,
           );
 
-          setDivisions(
-            []
-          );
-
+          setDivisions([]);
           setDivisionError(
             requestError?.message ||
-              "Unable to load divisions."
+              "Unable to load divisions.",
           );
         } finally {
           if (
@@ -1874,55 +1916,43 @@ export default function CityMapOverview({
               .aborted
           ) {
             setDivisionsLoading(
-              false
+              false,
             );
           }
         }
       },
-      []
+      [],
     );
 
   /* ==========================================================
-     FETCH DIVISION WARDS
+     FETCH DIVISION → WARDS
   ========================================================== */
 
   const fetchDivisionWards =
     useCallback(
-      async (division) => {
+      async (
+        division,
+      ) => {
         wardAbortRef.current?.abort();
 
         if (!division) {
-          setWards(
-            []
-          );
-
-          setSelectedWard(
-            null
-          );
-
-          setWardError(
-            ""
-          );
-
+          setWards([]);
+          setSelectedWard(null);
+          setWardError("");
           return;
         }
 
         const divisionTableName =
           getDivisionTableName(
-            division
+            division,
           );
 
         if (!divisionTableName) {
-          setWards(
-            []
-          );
-
-          setSelectedWard(
-            null
-          );
+          setWards([]);
+          setSelectedWard(null);
 
           setWardError(
-            "Selected division does not contain a valid divisionTableName."
+            "Selected division does not contain a valid division table name.",
           );
 
           return;
@@ -1934,25 +1964,15 @@ export default function CityMapOverview({
         wardAbortRef.current =
           controller;
 
-        setWardsLoading(
-          true
-        );
+        setWardsLoading(true);
+        setWardError("");
 
-        setWardError(
-          ""
-        );
-
-        setWards(
-          []
-        );
-
-        setSelectedWard(
-          null
-        );
+        setWards([]);
+        setSelectedWard(null);
 
         const endpoint =
           DIVISION_WARDS_ENDPOINT(
-            divisionTableName
+            divisionTableName,
           );
 
         try {
@@ -1969,12 +1989,14 @@ export default function CityMapOverview({
 
                 signal:
                   controller.signal,
-              }
+              },
             );
 
-          if (!response.ok) {
+          if (
+            !response.ok
+          ) {
             throw new Error(
-              `Division wards request failed with status ${response.status}`
+              `Division wards request failed with status ${response.status}`,
             );
           }
 
@@ -1987,23 +2009,18 @@ export default function CityMapOverview({
           ) {
             throw new Error(
               result.message ||
-                "Unable to fetch wards."
+                "Unable to fetch wards.",
             );
           }
 
           const loadedWards =
             extractArray(
               result,
-              "wards"
+              "wards",
             ).filter(Boolean);
 
           setWards(
-            loadedWards
-          );
-
-          console.log(
-            "✅ WARDS LOADED:",
-            loadedWards.length
+            loadedWards,
           );
         } catch (
           requestError
@@ -2016,17 +2033,14 @@ export default function CityMapOverview({
           }
 
           console.error(
-            "❌ DIVISION WARDS ERROR:",
-            requestError
+            "WARDS ERROR:",
+            requestError,
           );
 
-          setWards(
-            []
-          );
-
+          setWards([]);
           setWardError(
             requestError?.message ||
-              "Unable to load wards."
+              "Unable to load wards.",
           );
         } finally {
           if (
@@ -2034,12 +2048,12 @@ export default function CityMapOverview({
               .aborted
           ) {
             setWardsLoading(
-              false
+              false,
             );
           }
         }
       },
-      []
+      [],
     );
 
   /* ==========================================================
@@ -2054,44 +2068,34 @@ export default function CityMapOverview({
         }
 
         setSelectedZone(
-          zone
+          zone,
         );
 
         setSelectedDivision(
-          null
+          null,
         );
 
         setSelectedWard(
-          null
+          null,
         );
 
-        setDivisions(
-          []
-        );
+        setDivisions([]);
+        setWards([]);
 
-        setWards(
-          []
-        );
-
-        setDivisionError(
-          ""
-        );
-
-        setWardError(
-          ""
-        );
+        setDivisionError("");
+        setWardError("");
 
         setOpenDropdown(
-          null
+          null,
         );
 
         fetchZoneDivisions(
-          zone
+          zone,
         );
       },
       [
         fetchZoneDivisions,
-      ]
+      ],
     );
 
   const handleDivisionSelect =
@@ -2099,19 +2103,17 @@ export default function CityMapOverview({
       (option) => {
         if (!option?.value) {
           setSelectedDivision(
-            null
+            null,
           );
 
           setSelectedWard(
-            null
+            null,
           );
 
-          setWards(
-            []
-          );
+          setWards([]);
 
           setOpenDropdown(
-            null
+            null,
           );
 
           return;
@@ -2121,32 +2123,28 @@ export default function CityMapOverview({
           option.division;
 
         setSelectedDivision(
-          division
+          division,
         );
 
         setSelectedWard(
-          null
+          null,
         );
 
-        setWards(
-          []
-        );
+        setWards([]);
 
-        setWardError(
-          ""
-        );
+        setWardError("");
 
         setOpenDropdown(
-          null
+          null,
         );
 
         fetchDivisionWards(
-          division
+          division,
         );
       },
       [
         fetchDivisionWards,
-      ]
+      ],
     );
 
   const handleWardSelect =
@@ -2154,25 +2152,25 @@ export default function CityMapOverview({
       (option) => {
         if (!option?.value) {
           setSelectedWard(
-            null
+            null,
           );
 
           setOpenDropdown(
-            null
+            null,
           );
 
           return;
         }
 
         setSelectedWard(
-          option.ward
+          option.ward,
         );
 
         setOpenDropdown(
-          null
+          null,
         );
       },
-      []
+      [],
     );
 
   /* ==========================================================
@@ -2184,9 +2182,9 @@ export default function CityMapOverview({
       () =>
         normalizeGeoJSON(
           city?.geoBoundary ??
-            city?.geo_boundary
+            city?.geo_boundary,
         ),
-      [city]
+      [city],
     );
 
   /* ==========================================================
@@ -2196,21 +2194,21 @@ export default function CityMapOverview({
   const selectedZoneName =
     selectedZone
       ? getZoneName(
-          selectedZone
+          selectedZone,
         )
       : "";
 
   const selectedDivisionName =
     selectedDivision
       ? getDivisionName(
-          selectedDivision
+          selectedDivision,
         )
       : "";
 
   const selectedWardName =
     selectedWard
       ? getWardName(
-          selectedWard
+          selectedWard,
         )
       : "";
 
@@ -2231,12 +2229,10 @@ export default function CityMapOverview({
 
         try {
           setPlantsLoading(
-            true
+            true,
           );
 
-          setPlantsError(
-            ""
-          );
+          setPlantsError("");
 
           const response =
             await fetch(
@@ -2251,12 +2247,14 @@ export default function CityMapOverview({
 
                 signal:
                   controller.signal,
-              }
+              },
             );
 
-          if (!response.ok) {
+          if (
+            !response.ok
+          ) {
             throw new Error(
-              `Plants request failed with status ${response.status}`
+              `Plants request failed with status ${response.status}`,
             );
           }
 
@@ -2269,27 +2267,27 @@ export default function CityMapOverview({
           ) {
             throw new Error(
               result.message ||
-                "Unable to fetch plants."
+                "Unable to fetch plants.",
             );
           }
 
           const loadedPlants =
             Array.isArray(
-              result?.plants
+              result?.plants,
             )
               ? result.plants
               : Array.isArray(
-                  result?.data
-                )
+                    result?.data,
+                  )
                 ? result.data
                 : Array.isArray(
-                    result
-                  )
+                      result,
+                    )
                   ? result
                   : [];
 
           setPlants(
-            loadedPlants
+            loadedPlants,
           );
         } catch (
           requestError
@@ -2302,13 +2300,13 @@ export default function CityMapOverview({
           }
 
           console.error(
-            "❌ PLANTS ERROR:",
-            requestError
+            "PLANTS ERROR:",
+            requestError,
           );
 
           setPlantsError(
             requestError?.message ||
-              "Unable to load plants."
+              "Unable to load plants.",
           );
         } finally {
           if (
@@ -2316,12 +2314,12 @@ export default function CityMapOverview({
               .aborted
           ) {
             setPlantsLoading(
-              false
+              false,
             );
           }
         }
       },
-      []
+      [],
     );
 
   useEffect(() => {
@@ -2333,7 +2331,8 @@ export default function CityMapOverview({
     }
 
     if (
-      plants.length > 0
+      plants.length >
+      0
     ) {
       return;
     }
@@ -2354,29 +2353,29 @@ export default function CityMapOverview({
       () => [
         {
           value: "",
-          label: "All Zones",
+          label: t(
+            "overview.cityOverviewMap.allZones",
+            "All Zones",
+          ),
         },
 
         ...zones.map(
           (zone) => ({
             value:
-              getZoneTableName(
-                zone
-              ) ||
               getZoneName(
-                zone
+                zone,
               ),
 
             label:
               getZoneName(
-                zone
+                zone,
               ),
 
             zone,
-          })
+          }),
         ),
       ],
-      [zones]
+      [zones, t],
     );
 
   const divisionOptions =
@@ -2384,35 +2383,29 @@ export default function CityMapOverview({
       () => [
         {
           value: "",
-          label:
+          label: t(
+            "overview.cityOverviewMap.allDivisions",
             "All Divisions",
+          ),
         },
 
         ...divisions.map(
           (division) => ({
             value:
-              getDivisionTableName(
-                division
-              ) ||
-              String(
-                getDivisionId(
-                  division
-                ) ??
-                  getDivisionName(
-                    division
-                  )
+              getDivisionName(
+                division,
               ),
 
             label:
               getDivisionName(
-                division
+                division,
               ),
 
             division,
-          })
+          }),
         ),
       ],
-      [divisions]
+      [divisions, t],
     );
 
   const wardOptions =
@@ -2420,31 +2413,29 @@ export default function CityMapOverview({
       () => [
         {
           value: "",
-          label: "All Wards",
+          label: t(
+            "overview.cityOverviewMap.allWards",
+            "All Wards",
+          ),
         },
 
         ...wards.map(
           (ward) => ({
             value:
-              String(
-                getWardId(
-                  ward
-                ) ??
-                  getWardName(
-                    ward
-                  )
+              getWardName(
+                ward,
               ),
 
             label:
               getWardName(
-                ward
+                ward,
               ),
 
             ward,
-          })
+          }),
         ),
       ],
-      [wards]
+      [wards, t],
     );
 
   /* ==========================================================
@@ -2453,7 +2444,9 @@ export default function CityMapOverview({
 
   const visibleZones =
     useMemo(() => {
-      if (!selectedZone) {
+      if (
+        !selectedZone
+      ) {
         return zones;
       }
 
@@ -2463,8 +2456,8 @@ export default function CityMapOverview({
             zone,
             selectedZone,
             getZoneId,
-            getZoneName
-          )
+            getZoneName,
+          ),
       );
     }, [
       zones,
@@ -2477,11 +2470,15 @@ export default function CityMapOverview({
 
   const visibleDivisions =
     useMemo(() => {
-      if (!selectedZone) {
+      if (
+        !selectedZone
+      ) {
         return [];
       }
 
-      if (!selectedDivision) {
+      if (
+        !selectedDivision
+      ) {
         return divisions;
       }
 
@@ -2491,8 +2488,8 @@ export default function CityMapOverview({
             division,
             selectedDivision,
             getDivisionId,
-            getDivisionName
-          )
+            getDivisionName,
+          ),
       );
     }, [
       selectedZone,
@@ -2506,11 +2503,15 @@ export default function CityMapOverview({
 
   const visibleWards =
     useMemo(() => {
-      if (!selectedDivision) {
+      if (
+        !selectedDivision
+      ) {
         return [];
       }
 
-      if (!selectedWard) {
+      if (
+        !selectedWard
+      ) {
         return wards;
       }
 
@@ -2520,8 +2521,8 @@ export default function CityMapOverview({
             ward,
             selectedWard,
             getWardId,
-            getWardName
-          )
+            getWardName,
+          ),
       );
     }, [
       selectedDivision,
@@ -2535,40 +2536,34 @@ export default function CityMapOverview({
 
   const resetMap =
     useCallback(() => {
+      setMapView(
+        "overview",
+      );
+
       setSelectedZone(
-        null
+        null,
       );
 
       setSelectedDivision(
-        null
+        null,
       );
 
       setSelectedWard(
-        null
+        null,
       );
 
-      setDivisions(
-        []
-      );
+      setDivisions([]);
+      setWards([]);
 
-      setWards(
-        []
-      );
-
-      setDivisionError(
-        ""
-      );
-
-      setWardError(
-        ""
-      );
+      setDivisionError("");
+      setWardError("");
 
       setOpenDropdown(
-        null
+        null,
       );
 
       setShowViewMenu(
-        false
+        false,
       );
 
       setTimeout(() => {
@@ -2581,7 +2576,7 @@ export default function CityMapOverview({
 
         const bounds =
           getGeoJSONBounds(
-            cityBoundary
+            cityBoundary,
           );
 
         if (
@@ -2599,7 +2594,7 @@ export default function CityMapOverview({
               maxZoom: 10,
 
               animate: true,
-            }
+            },
           );
         }
       }, 50);
@@ -2615,17 +2610,16 @@ export default function CityMapOverview({
     useCallback(
       (view) => {
         setShowViewMenu(
-          false
+          false,
         );
 
         setOpenDropdown(
-          null
+          null,
         );
 
         /*
-         * Route Maps still
-         * uses the existing
-         * dedicated page.
+         * Route Maps intentionally
+         * keeps the existing route-map page.
          */
 
         if (
@@ -2637,7 +2631,7 @@ export default function CityMapOverview({
             "function"
           ) {
             onViewChange(
-              view
+              view,
             );
           }
 
@@ -2648,7 +2642,7 @@ export default function CityMapOverview({
         }
 
         setMapView(
-          view
+          view,
         );
 
         if (
@@ -2656,89 +2650,94 @@ export default function CityMapOverview({
           "function"
         ) {
           onViewChange(
-            view
+            view,
           );
         }
-
-        /*
-         * Returning to City Overview
-         * resets map selection.
-         */
 
         if (
           view ===
           "overview"
         ) {
           setSelectedZone(
-            null
+            null,
           );
 
           setSelectedDivision(
-            null
+            null,
           );
 
           setSelectedWard(
-            null
+            null,
           );
 
-          setDivisions(
-            []
-          );
+          setDivisions([]);
+          setWards([]);
 
-          setWards(
-            []
-          );
-
-          setDivisionError(
-            ""
-          );
-
-          setWardError(
-            ""
-          );
+          setDivisionError("");
+          setWardError("");
         }
       },
-      [onViewChange]
+      [onViewChange],
     );
 
   /* ==========================================================
-     VIEW MENU OPTIONS
+     VIEW OPTIONS
   ========================================================== */
 
   const mapViewOptions =
     [
       {
         id: "overview",
-        label:
+
+        label: t(
+          "overview.cityOverviewMap.cityOverview",
           "City Overview Map",
+        ),
+
         icon: MapIcon,
       },
 
       {
         id: "route",
-        label:
+
+        label: t(
+          "overview.cityOverviewMap.routeMaps",
           "Route Maps",
+        ),
+
         icon: Route,
       },
 
       {
         id: "gvp",
-        label:
+
+        label: t(
+          "overview.cityOverviewMap.gvpPoints",
           "GVP Points",
+        ),
+
         icon: MapPinned,
       },
 
       {
         id: "plants",
-        label:
+
+        label: t(
+          "overview.cityOverviewMap.plants",
           "Plants",
+        ),
+
         icon: Factory,
       },
 
       {
         id: "grievances",
-        label:
+
+        label: t(
+          "overview.cityOverviewMap.customerGrievances",
           "Customer Grievances",
+        ),
+
         icon:
           MessageSquareWarning,
       },
@@ -2748,7 +2747,7 @@ export default function CityMapOverview({
     mapViewOptions.find(
       (option) =>
         option.id ===
-        mapView
+        mapView,
     ) ||
     mapViewOptions[0];
 
@@ -2763,16 +2762,19 @@ export default function CityMapOverview({
     <section
       className="
         relative
-        w-full
         box-border
+        w-full
+        min-w-0
         rounded-[18px]
         border
         border-[#DCE4EC]
         bg-white
         p-2.5
-        sm:p-3
-        md:p-3.5
         shadow-[0_4px_18px_rgba(31,45,61,0.05)]
+
+        sm:p-3
+
+        md:p-3.5
       "
     >
       {/* ====================================================
@@ -2789,11 +2791,16 @@ export default function CityMapOverview({
           leading-[1.15]
           tracking-[-0.3px]
           text-[#07111F]
+
           sm:text-[20px]
+
           lg:text-[21px]
         "
       >
-        OVERVIEW MAPS
+        {t(
+          "overview.cityOverviewMap.title",
+          "OVERVIEW MAPS",
+        )}
       </h2>
 
       {/* ====================================================
@@ -2806,6 +2813,7 @@ export default function CityMapOverview({
           h-[520px]
           min-h-[520px]
           w-full
+          min-w-0
           overflow-hidden
           rounded-[18px]
           border
@@ -2848,16 +2856,16 @@ export default function CityMapOverview({
 
               [&_.leaflet-tile-pane]:[filter:saturate(.42)_brightness(1.05)]
 
-              [&_.leaflet-control-attribution]:text-[9px]
-              [&_.leaflet-control-attribution]:bg-white/80
+              [&_.leaflet-control-attribution]:!text-[9px]
+              [&_.leaflet-control-attribution]:!bg-white/80
 
-              [&_.leaflet-control-zoom]:mt-3
-              [&_.leaflet-control-zoom]:ml-3
-              [&_.leaflet-control-zoom]:overflow-hidden
-              [&_.leaflet-control-zoom]:rounded-lg
-              [&_.leaflet-control-zoom]:border
-              [&_.leaflet-control-zoom]:border-[#D8E1EA]
-              [&_.leaflet-control-zoom]:shadow-[0_3px_12px_rgba(36,53,72,0.08)]
+              [&_.leaflet-control-zoom]:!mt-3
+              [&_.leaflet-control-zoom]:!ml-3
+              [&_.leaflet-control-zoom]:!overflow-hidden
+              [&_.leaflet-control-zoom]:!rounded-lg
+              [&_.leaflet-control-zoom]:!border
+              [&_.leaflet-control-zoom]:!border-[#D8E1EA]
+              [&_.leaflet-control-zoom]:!shadow-[0_3px_12px_rgba(36,53,72,0.08)]
 
               [&_.leaflet-control-zoom_a]:!h-[30px]
               [&_.leaflet-control-zoom_a]:!w-[30px]
@@ -2865,6 +2873,10 @@ export default function CityMapOverview({
               [&_.leaflet-control-zoom_a]:!bg-white
               [&_.leaflet-control-zoom_a]:!text-[17px]
               [&_.leaflet-control-zoom_a]:!text-[#34475B]
+
+              sm:[&_.leaflet-control-zoom_a]:!h-[32px]
+              sm:[&_.leaflet-control-zoom_a]:!w-[32px]
+              sm:[&_.leaflet-control-zoom_a]:!leading-[32px]
             "
             preferCanvas={false}
           >
@@ -2918,7 +2930,7 @@ export default function CityMapOverview({
               {visibleZones.map(
                 (
                   zone,
-                  index
+                  index,
                 ) => {
                   const actualIndex =
                     zones.findIndex(
@@ -2927,14 +2939,14 @@ export default function CityMapOverview({
                           item,
                           zone,
                           getZoneId,
-                          getZoneName
-                        )
+                          getZoneName,
+                        ),
                     );
 
                   return (
                     <ZoneLayer
                       key={`zone-${getZoneName(
-                        zone
+                        zone,
                       )}-${index}`}
                       zone={zone}
                       index={
@@ -2949,7 +2961,7 @@ export default function CityMapOverview({
                           zone,
                           selectedZone,
                           getZoneId,
-                          getZoneName
+                          getZoneName,
                         )
                       }
                       onSelect={
@@ -2957,7 +2969,7 @@ export default function CityMapOverview({
                       }
                     />
                   );
-                }
+                },
               )}
             </Pane>
 
@@ -2977,7 +2989,7 @@ export default function CityMapOverview({
                   {visibleDivisions.map(
                     (
                       division,
-                      index
+                      index,
                     ) => {
                       const actualIndex =
                         divisions.findIndex(
@@ -2986,21 +2998,21 @@ export default function CityMapOverview({
                               item,
                               division,
                               getDivisionId,
-                              getDivisionName
-                            )
+                              getDivisionName,
+                            ),
                         );
 
                       return (
                         <DivisionLayer
                           key={`division-${
                             getDivisionTableName(
-                              division
+                              division,
                             ) ||
                             getDivisionId(
-                              division
+                              division,
                             ) ||
                             getDivisionName(
-                              division
+                              division,
                             )
                           }-${index}`}
                           division={
@@ -3018,39 +3030,39 @@ export default function CityMapOverview({
                               division,
                               selectedDivision,
                               getDivisionId,
-                              getDivisionName
+                              getDivisionName,
                             )
                           }
                           onSelect={(
-                            divisionValue
+                            divisionValue,
                           ) => {
                             setSelectedDivision(
-                              divisionValue
+                              divisionValue,
                             );
 
                             setSelectedWard(
-                              null
+                              null,
                             );
 
                             setWards(
-                              []
+                              [],
                             );
 
                             setWardError(
-                              ""
+                              "",
                             );
 
                             setOpenDropdown(
-                              null
+                              null,
                             );
 
                             fetchDivisionWards(
-                              divisionValue
+                              divisionValue,
                             );
                           }}
                         />
                       );
-                    }
+                    },
                   )}
                 </Pane>
               )}
@@ -3071,15 +3083,15 @@ export default function CityMapOverview({
                   {visibleWards.map(
                     (
                       ward,
-                      index
+                      index,
                     ) => (
                       <WardLayer
                         key={`ward-${
                           getWardId(
-                            ward
+                            ward,
                           ) ||
                           getWardName(
-                            ward
+                            ward,
                           )
                         }-${index}`}
                         ward={ward}
@@ -3090,22 +3102,22 @@ export default function CityMapOverview({
                             ward,
                             selectedWard,
                             getWardId,
-                            getWardName
+                            getWardName,
                           )
                         }
                         onSelect={(
-                          wardValue
+                          wardValue,
                         ) => {
                           setSelectedWard(
-                            wardValue
+                            wardValue,
                           );
 
                           setOpenDropdown(
-                            null
+                            null,
                           );
                         }}
                       />
-                    )
+                    ),
                   )}
                 </Pane>
               )}
@@ -3130,7 +3142,7 @@ export default function CityMapOverview({
         )}
 
         {/* ====================================================
-            PLANTS MAP
+            PLANTS
         ==================================================== */}
 
         {mapView ===
@@ -3140,8 +3152,8 @@ export default function CityMapOverview({
               absolute
               inset-0
               h-full
-              w-full
               min-h-full
+              w-full
               overflow-hidden
               bg-[#EEF1F3]
 
@@ -3175,13 +3187,19 @@ export default function CityMapOverview({
                   w-full
                   items-center
                   justify-center
-                  p-8
-                  text-[12px]
+                  p-6
+                  text-center
+                  text-[11px]
                   font-semibold
                   text-[#536A84]
+                  sm:p-8
+                  sm:text-[12px]
                 "
               >
-                Loading plant locations...
+                {t(
+                  "overview.cityOverviewMap.loadingPlants",
+                  "Loading plant locations...",
+                )}
               </div>
             ) : plantsError ? (
               <div
@@ -3191,7 +3209,7 @@ export default function CityMapOverview({
                   w-full
                   items-center
                   justify-center
-                  p-6
+                  p-5
                   sm:p-8
                 "
               >
@@ -3202,8 +3220,8 @@ export default function CityMapOverview({
                     rounded-2xl
                     border
                     border-[#DCE4EC]
-                    bg-white/97
-                    p-6
+                    bg-white/95
+                    p-5
                     text-center
                     shadow-[0_12px_30px_rgba(30,45,60,0.08)]
                     sm:p-7
@@ -3212,38 +3230,45 @@ export default function CityMapOverview({
                   <div
                     className="
                       mx-auto
-                      mb-3.5
+                      mb-3
                       flex
-                      h-14
-                      w-14
+                      h-12
+                      w-12
                       items-center
                       justify-center
                       rounded-2xl
                       bg-violet-100
                       text-violet-600
+                      sm:h-14
+                      sm:w-14
                     "
                   >
                     <Factory
-                      size={30}
+                      size={28}
                     />
                   </div>
 
                   <div
                     className="
-                      text-[16px]
+                      text-[14px]
                       font-bold
                       text-[#34475B]
+                      sm:text-[16px]
                     "
                   >
-                    Unable to Load Plants
+                    {t(
+                      "overview.cityOverviewMap.unableLoadPlants",
+                      "Unable to Load Plants",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-2
-                      text-[12px]
+                      text-[11px]
                       leading-5
                       text-[#8AA1BB]
+                      sm:text-[12px]
                     "
                   >
                     {plantsError}
@@ -3269,8 +3294,8 @@ export default function CityMapOverview({
               absolute
               inset-0
               h-full
-              w-full
               min-h-full
+              w-full
               overflow-auto
               bg-[#EEF1F3]
             "
@@ -3280,7 +3305,7 @@ export default function CityMapOverview({
         )}
 
         {/* ====================================================
-            GVP POINTS MAP
+            GVP POINTS
         ==================================================== */}
 
         {mapView ===
@@ -3290,8 +3315,8 @@ export default function CityMapOverview({
               absolute
               inset-0
               h-full
-              w-full
               min-h-0
+              w-full
               overflow-hidden
             "
           >
@@ -3304,41 +3329,48 @@ export default function CityMapOverview({
         )}
 
         {/* ====================================================
-            CITY OVERVIEW DROPDOWN HEADER
+            MAP VIEW HEADER
         ==================================================== */}
 
         <div
-          className={`
+          className="
             absolute
             left-3
+            right-3
             top-3
             z-[2000]
+
             flex
             min-h-[64px]
-            w-[calc(100%-24px)]
             items-center
             justify-between
+
             rounded-2xl
             border
             border-white/80
-            bg-white/97
+            bg-white/95
+
             px-3
             py-2.5
-            shadow-[0_12px_30px_rgba(30,45,60,0.07)]
+
+            shadow-[0_15px_40px_rgba(30,45,60,0.08)]
             backdrop-blur-xl
 
-            sm:left-[18px]
-            sm:top-[18px]
-            sm:w-[min(50%,540px)]
-            sm:px-[18px]
-            sm:py-[13px]
+            sm:left-5
+            sm:right-auto
+            sm:top-5
+            sm:w-[46%]
+            sm:min-w-[360px]
+            sm:px-4
+            sm:py-3
 
-            ${
-              showViewMenu
-                ? "z-[3001]"
-                : ""
-            }
-          `}
+            lg:left-6
+            lg:top-6
+            lg:w-[52%]
+            lg:max-w-[620px]
+            lg:min-h-[78px]
+            lg:px-5
+          "
         >
           <div
             className="
@@ -3347,6 +3379,7 @@ export default function CityMapOverview({
               items-center
               gap-2.5
               sm:gap-3
+              lg:gap-4
             "
           >
             <CurrentViewIcon
@@ -3355,21 +3388,32 @@ export default function CityMapOverview({
                 w-7
                 shrink-0
                 text-[#617B98]
-                sm:h-[29px]
-                sm:w-[29px]
+
+                sm:h-8
+                sm:w-8
+
+                lg:h-[34px]
+                lg:w-[34px]
               "
               strokeWidth={1.8}
             />
 
-            <div className="min-w-0">
+            <div
+              className="
+                min-w-0
+              "
+            >
               <div
                 className="
                   truncate
-                  text-[16px]
+                  text-[17px]
                   font-bold
-                  leading-[1.1]
+                  leading-tight
                   text-[#34475B]
+
                   sm:text-[19px]
+
+                  lg:text-[22px]
                 "
               >
                 {currentView.label}
@@ -3381,11 +3425,14 @@ export default function CityMapOverview({
                   <div
                     className="
                       mt-0.5
-                      text-[9px]
+                      truncate
+                      text-[10px]
                       font-semibold
                       text-[#8AA1BB]
-                      sm:mt-[3px]
+
                       sm:text-[11px]
+
+                      lg:text-[12px]
                     "
                   >
                     {city.cityName}
@@ -3397,14 +3444,17 @@ export default function CityMapOverview({
                 <div
                   className="
                     mt-0.5
-                    text-[9px]
+                    text-[10px]
                     font-semibold
                     text-[#8AA1BB]
-                    sm:mt-[3px]
+
                     sm:text-[11px]
                   "
                 >
-                  Plant Locations
+                  {t(
+                    "overview.cityOverviewMap.plantLocations",
+                    "Plant Locations",
+                  )}
                 </div>
               )}
             </div>
@@ -3412,38 +3462,47 @@ export default function CityMapOverview({
 
           <button
             type="button"
+            aria-label={t(
+              "overview.cityOverviewMap.changeMapView",
+              "Change map view",
+            )}
             className="
+              ml-2
               flex
-              h-[30px]
-              w-[30px]
+              h-8
+              w-8
               shrink-0
               items-center
               justify-center
               rounded-lg
+              bg-transparent
               text-[#34475B]
               transition
               hover:bg-[#F3F7FA]
+
+              sm:h-9
+              sm:w-9
             "
             onClick={() =>
               setShowViewMenu(
                 (current) =>
-                  !current
+                  !current,
               )
             }
           >
             {showViewMenu ? (
               <ChevronUp
-                size={16}
+                size={17}
               />
             ) : (
               <ChevronDown
-                size={16}
+                size={17}
               />
             )}
           </button>
 
           {/* ==================================================
-              VIEW OPTIONS
+              VIEW MENU
           ================================================== */}
 
           {showViewMenu && (
@@ -3453,16 +3512,18 @@ export default function CityMapOverview({
                 right-1
                 top-[calc(100%+7px)]
                 z-[3000]
+
                 w-[210px]
-                rounded-[13px]
+                rounded-xl
                 border
                 border-[#DCE5EE]
                 bg-white/99
                 p-1.5
+
                 shadow-[0_16px_35px_rgba(30,45,60,0.14)]
                 backdrop-blur-xl
 
-                sm:right-2.5
+                sm:right-0
                 sm:w-[225px]
               "
             >
@@ -3494,7 +3555,8 @@ export default function CityMapOverview({
                         text-[11px]
                         font-semibold
                         transition
-                        sm:text-[12.5px]
+
+                        sm:text-[12px]
 
                         ${
                           isActive
@@ -3504,7 +3566,7 @@ export default function CityMapOverview({
                       `}
                       onClick={() =>
                         handleMapViewChange(
-                          option.id
+                          option.id,
                         )
                       }
                     >
@@ -3521,7 +3583,7 @@ export default function CityMapOverview({
                       </span>
                     </button>
                   );
-                }
+                },
               )}
             </div>
           )}
@@ -3540,39 +3602,50 @@ export default function CityMapOverview({
               left-3
               right-3
               z-[2000]
+
               max-h-[300px]
               overflow-y-auto
+
               rounded-2xl
               border
               border-white/80
-              bg-white/97
+              bg-white/95
+
               p-3
+
               shadow-[0_12px_30px_rgba(30,45,60,0.08)]
               backdrop-blur-xl
 
               sm:bottom-auto
               sm:left-auto
-              sm:right-[18px]
-              sm:top-[18px]
+              sm:right-5
+              sm:top-5
               sm:w-[300px]
               sm:max-h-none
               sm:overflow-visible
-              sm:p-[18px]
+              sm:p-4
 
+              lg:right-[18px]
               lg:w-[330px]
+              lg:p-[18px]
             "
           >
             <div
               className="
                 mb-3
-                text-[14px]
+                text-[13px]
                 font-bold
                 text-[#34475B]
-                sm:mb-3.5
-                sm:text-[15px]
+
+                sm:text-[14px]
+
+                lg:text-[15px]
               "
             >
-              MAP FILTERS
+              {t(
+                "overview.cityOverviewMap.mapFilters",
+                "MAP FILTERS",
+              )}
             </div>
 
             {/* ==================================================
@@ -3580,46 +3653,56 @@ export default function CityMapOverview({
             ================================================== */}
 
             <FilterDropdown
-              label="ZONE"
+              label={t(
+                "overview.cityOverviewMap.zone",
+                "ZONE",
+              )}
               value={
                 selectedZoneName
               }
-              placeholder="All Zones"
+              placeholder={t(
+                "overview.cityOverviewMap.allZones",
+                "All Zones",
+              )}
               options={
                 zoneOptions
               }
               open={
                 openDropdown ===
-                "ZONE"
+                t(
+                  "overview.cityOverviewMap.zone",
+                  "ZONE",
+                )
               }
               setOpen={
                 setOpenDropdown
               }
               onChange={(
-                option
+                option,
               ) => {
                 if (
                   !option?.value
                 ) {
                   resetMap();
-
                   return;
                 }
 
                 handleZoneSelect(
-                  option.zone
+                  option.zone,
                 );
               }}
               renderOption={(
                 option,
-                index
+                index,
               ) => {
                 if (
                   !option.value
                 ) {
                   return (
                     <span>
-                      All Zones
+                      {
+                        option.label
+                      }
                     </span>
                   );
                 }
@@ -3631,8 +3714,8 @@ export default function CityMapOverview({
                         zone,
                         option.zone,
                         getZoneId,
-                        getZoneName
-                      )
+                        getZoneName,
+                      ),
                   );
 
                 const color =
@@ -3685,25 +3768,43 @@ export default function CityMapOverview({
             ================================================== */}
 
             <FilterDropdown
-              label="DIVISION"
+              label={t(
+                "overview.cityOverviewMap.division",
+                "DIVISION",
+              )}
               value={
                 selectedDivisionName
               }
               placeholder={
                 !selectedZone
-                  ? "Select a Zone First"
+                  ? t(
+                      "overview.cityOverviewMap.selectZoneFirst",
+                      "Select a Zone First",
+                    )
                   : divisionsLoading
-                    ? "Loading Divisions..."
+                    ? t(
+                        "overview.cityOverviewMap.loadingDivisions",
+                        "Loading Divisions...",
+                      )
                     : divisions.length
-                      ? "All Divisions"
-                      : "No Divisions"
+                      ? t(
+                          "overview.cityOverviewMap.allDivisions",
+                          "All Divisions",
+                        )
+                      : t(
+                          "overview.cityOverviewMap.noDivisions",
+                          "No Divisions",
+                        )
               }
               options={
                 divisionOptions
               }
               open={
                 openDropdown ===
-                "DIVISION"
+                t(
+                  "overview.cityOverviewMap.division",
+                  "DIVISION",
+                )
               }
               setOpen={
                 setOpenDropdown
@@ -3718,7 +3819,7 @@ export default function CityMapOverview({
                 handleDivisionSelect
               }
               renderOption={(
-                option
+                option,
               ) => (
                 <span
                   className="
@@ -3740,25 +3841,43 @@ export default function CityMapOverview({
             ================================================== */}
 
             <FilterDropdown
-              label="WARD"
+              label={t(
+                "overview.cityOverviewMap.ward",
+                "WARD",
+              )}
               value={
                 selectedWardName
               }
               placeholder={
                 !selectedDivision
-                  ? "Select a Division First"
+                  ? t(
+                      "overview.cityOverviewMap.selectDivisionFirst",
+                      "Select a Division First",
+                    )
                   : wardsLoading
-                    ? "Loading Wards..."
+                    ? t(
+                        "overview.cityOverviewMap.loadingWards",
+                        "Loading Wards...",
+                      )
                     : wards.length
-                      ? "All Wards"
-                      : "No Wards"
+                      ? t(
+                          "overview.cityOverviewMap.allWards",
+                          "All Wards",
+                        )
+                      : t(
+                          "overview.cityOverviewMap.noWards",
+                          "No Wards",
+                        )
               }
               options={
                 wardOptions
               }
               open={
                 openDropdown ===
-                "WARD"
+                t(
+                  "overview.cityOverviewMap.ward",
+                  "WARD",
+                )
               }
               setOpen={
                 setOpenDropdown
@@ -3773,7 +3892,7 @@ export default function CityMapOverview({
                 handleWardSelect
               }
               renderOption={(
-                option
+                option,
               ) => (
                 <span
                   className="
@@ -3798,17 +3917,19 @@ export default function CityMapOverview({
               <div
                 className="
                   mb-2
-                  rounded-[9px]
+                  rounded-lg
                   bg-[#F4F8FB]
                   px-2.5
-                  py-1.5
+                  py-2
                   text-[10px]
                   font-semibold
                   text-[#6F89A4]
-                  sm:text-[10.5px]
                 "
               >
-                Loading divisions for{" "}
+                {t(
+                  "overview.cityOverviewMap.loadingDivisionsFor",
+                  "Loading divisions for",
+                )}{" "}
                 {
                   selectedZoneName
                 }
@@ -3820,17 +3941,19 @@ export default function CityMapOverview({
               <div
                 className="
                   mb-2
-                  rounded-[9px]
+                  rounded-lg
                   bg-[#F4F8FB]
                   px-2.5
-                  py-1.5
+                  py-2
                   text-[10px]
                   font-semibold
                   text-[#6F89A4]
-                  sm:text-[10.5px]
                 "
               >
-                Loading wards for{" "}
+                {t(
+                  "overview.cityOverviewMap.loadingWardsFor",
+                  "Loading wards for",
+                )}{" "}
                 {
                   selectedDivisionName
                 }
@@ -3842,15 +3965,12 @@ export default function CityMapOverview({
               <div
                 className="
                   mb-2
-                  rounded-[9px]
-                  bg-rose-50
-                  px-2.5
-                  py-1.5
+                  border-t
+                  border-[#EDF1F5]
+                  pt-2
                   text-[10px]
-                  font-semibold
                   leading-4
-                  text-red-600
-                  sm:text-[10.5px]
+                  text-rose-600
                 "
               >
                 {
@@ -3863,20 +3983,15 @@ export default function CityMapOverview({
               <div
                 className="
                   mb-2
-                  rounded-[9px]
-                  bg-rose-50
-                  px-2.5
-                  py-1.5
+                  border-t
+                  border-[#EDF1F5]
+                  pt-2
                   text-[10px]
-                  font-semibold
                   leading-4
-                  text-red-600
-                  sm:text-[10.5px]
+                  text-rose-600
                 "
               >
-                {
-                  wardError
-                }
+                {wardError}
               </div>
             )}
 
@@ -3892,24 +4007,25 @@ export default function CityMapOverview({
               <button
                 type="button"
                 className="
-                  mt-0.5
                   flex
-                  h-11
+                  h-10
                   w-full
                   items-center
                   justify-center
-                  gap-1.5
-                  rounded-[11px]
+                  gap-2
+                  rounded-xl
                   border
                   border-[#D4E0EA]
                   bg-white
-                  text-[11px]
+                  text-[10px]
                   font-bold
                   text-[#4E6A84]
                   transition
                   hover:border-[#9DB5CC]
                   hover:bg-[#F7FAFC]
-                  sm:text-[12px]
+
+                  sm:h-11
+                  sm:text-[11px]
                 "
                 onClick={
                   resetMap
@@ -3919,14 +4035,17 @@ export default function CityMapOverview({
                   size={14}
                 />
 
-                Reset Map
+                {t(
+                  "overview.cityOverviewMap.resetMap",
+                  "Reset Map",
+                )}
               </button>
             )}
           </div>
         )}
 
         {/* ====================================================
-            SELECTED WARD / DIVISION / ZONE CARD
+            SELECTED LOCATION CARD
         ==================================================== */}
 
         {mapView ===
@@ -3935,22 +4054,25 @@ export default function CityMapOverview({
             <div
               className="
                 absolute
-                bottom-3
-                left-3
-                z-[2000]
+                bottom-4
+                left-4
+                z-[1900]
+
                 hidden
-                w-[340px]
-                rounded-[15px]
+                w-[330px]
+
+                rounded-2xl
                 border
                 border-[#DCE4EC]
                 bg-white/97
-                p-[15px_18px]
+
+                p-4
+
                 shadow-[0_12px_30px_rgba(30,45,60,0.08)]
                 backdrop-blur-xl
 
                 md:block
-                lg:bottom-[18px]
-                lg:left-[18px]
+                lg:w-[350px]
               "
             >
               <div
@@ -3958,8 +4080,10 @@ export default function CityMapOverview({
                   flex
                   items-center
                   gap-2
-                  text-[10px]
+                  text-[9px]
                   font-bold
+                  uppercase
+                  tracking-wide
                   text-[#8AA1BB]
                 "
               >
@@ -3976,24 +4100,27 @@ export default function CityMapOverview({
                       WARD_COLORS[
                         (
                           wards.findIndex(
-                            (ward) =>
+                            (
+                              ward,
+                            ) =>
                               sameEntity(
                                 ward,
                                 selectedWard,
                                 getWardId,
-                                getWardName
-                              )
-                          ) >= 0
+                                getWardName,
+                              ),
+                          ) >=
+                          0
                             ? wards.findIndex(
                                 (
-                                  ward
+                                  ward,
                                 ) =>
                                   sameEntity(
                                     ward,
                                     selectedWard,
                                     getWardId,
-                                    getWardName
-                                  )
+                                    getWardName,
+                                  ),
                               )
                             : 0
                         ) %
@@ -4002,20 +4129,24 @@ export default function CityMapOverview({
                   }}
                 />
 
-                SELECTED WARD
+                {t(
+                  "overview.cityOverviewMap.selectedWard",
+                  "Selected Ward",
+                )}
               </div>
 
               <div
                 className="
                   mt-1.5
-                  text-[16px]
+                  truncate
+                  text-[15px]
                   font-bold
                   text-[#34475B]
                 "
               >
                 {
                   getWardName(
-                    selectedWard
+                    selectedWard,
                   )
                 }
               </div>
@@ -4023,27 +4154,29 @@ export default function CityMapOverview({
               <div
                 className="
                   mt-1
-                  overflow-hidden
+                  truncate
                   border-b
                   border-[#E7EDF3]
                   pb-2
                   text-[10px]
                   text-[#8BA4BF]
-                  text-ellipsis
-                  whitespace-nowrap
                 "
               >
-                Ward ID:{" "}
+                {t(
+                  "overview.cityOverviewMap.wardId",
+                  "Ward ID",
+                )}
+                :{" "}
                 {
                   getWardId(
-                    selectedWard
+                    selectedWard,
                   ) ?? "—"
                 }
               </div>
 
               <div
                 className="
-                  mt-2.5
+                  mt-3
                   grid
                   grid-cols-3
                   gap-2
@@ -4052,19 +4185,23 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    City
+                    {t(
+                      "overview.cityOverviewMap.city",
+                      "City",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      truncate
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4079,26 +4216,30 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Division
+                    {t(
+                      "overview.cityOverviewMap.division",
+                      "Division",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      truncate
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
                   >
                     {
                       getDivisionName(
-                        selectedDivision
+                        selectedDivision,
                       )
                     }
                   </div>
@@ -4107,19 +4248,22 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Wards
+                    {t(
+                      "overview.cityOverviewMap.wards",
+                      "Wards",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4135,22 +4279,25 @@ export default function CityMapOverview({
             <div
               className="
                 absolute
-                bottom-3
-                left-3
-                z-[2000]
+                bottom-4
+                left-4
+                z-[1900]
+
                 hidden
-                w-[340px]
-                rounded-[15px]
+                w-[330px]
+
+                rounded-2xl
                 border
                 border-[#DCE4EC]
                 bg-white/97
-                p-[15px_18px]
+
+                p-4
+
                 shadow-[0_12px_30px_rgba(30,45,60,0.08)]
                 backdrop-blur-xl
 
                 md:block
-                lg:bottom-[18px]
-                lg:left-[18px]
+                lg:w-[350px]
               "
             >
               <div
@@ -4158,8 +4305,10 @@ export default function CityMapOverview({
                   flex
                   items-center
                   gap-2
-                  text-[10px]
+                  text-[9px]
                   font-bold
+                  uppercase
+                  tracking-wide
                   text-[#8AA1BB]
                 "
               >
@@ -4168,8 +4317,6 @@ export default function CityMapOverview({
                     h-2.5
                     w-2.5
                     rounded-full
-                    border
-                    border-[#314960]/30
                   "
                   style={{
                     backgroundColor:
@@ -4177,25 +4324,26 @@ export default function CityMapOverview({
                         (
                           divisions.findIndex(
                             (
-                              division
+                              division,
                             ) =>
                               sameEntity(
                                 division,
                                 selectedDivision,
                                 getDivisionId,
-                                getDivisionName
-                              )
-                          ) >= 0
+                                getDivisionName,
+                              ),
+                          ) >=
+                          0
                             ? divisions.findIndex(
                                 (
-                                  division
+                                  division,
                                 ) =>
                                   sameEntity(
                                     division,
                                     selectedDivision,
                                     getDivisionId,
-                                    getDivisionName
-                                  )
+                                    getDivisionName,
+                                  ),
                               )
                             : 0
                         ) %
@@ -4204,20 +4352,24 @@ export default function CityMapOverview({
                   }}
                 />
 
-                SELECTED DIVISION
+                {t(
+                  "overview.cityOverviewMap.selectedDivision",
+                  "Selected Division",
+                )}
               </div>
 
               <div
                 className="
                   mt-1.5
-                  text-[16px]
+                  truncate
+                  text-[15px]
                   font-bold
                   text-[#34475B]
                 "
               >
                 {
                   getDivisionName(
-                    selectedDivision
+                    selectedDivision,
                   )
                 }
               </div>
@@ -4225,19 +4377,17 @@ export default function CityMapOverview({
               <div
                 className="
                   mt-1
-                  overflow-hidden
+                  truncate
                   border-b
                   border-[#E7EDF3]
                   pb-2
                   text-[10px]
                   text-[#8BA4BF]
-                  text-ellipsis
-                  whitespace-nowrap
                 "
               >
                 {
                   getDivisionTableName(
-                    selectedDivision
+                    selectedDivision,
                   ) ||
                   "Division"
                 }
@@ -4245,7 +4395,7 @@ export default function CityMapOverview({
 
               <div
                 className="
-                  mt-2.5
+                  mt-3
                   grid
                   grid-cols-3
                   gap-2
@@ -4254,19 +4404,23 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    City
+                    {t(
+                      "overview.cityOverviewMap.city",
+                      "City",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      truncate
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4281,19 +4435,22 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Divisions
+                    {t(
+                      "overview.cityOverviewMap.divisions",
+                      "Divisions",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4307,19 +4464,22 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Wards
+                    {t(
+                      "overview.cityOverviewMap.wards",
+                      "Wards",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4335,22 +4495,25 @@ export default function CityMapOverview({
             <div
               className="
                 absolute
-                bottom-3
-                left-3
-                z-[2000]
+                bottom-4
+                left-4
+                z-[1900]
+
                 hidden
-                w-[340px]
-                rounded-[15px]
+                w-[330px]
+
+                rounded-2xl
                 border
                 border-[#DCE4EC]
                 bg-white/97
-                p-[15px_18px]
+
+                p-4
+
                 shadow-[0_12px_30px_rgba(30,45,60,0.08)]
                 backdrop-blur-xl
 
                 md:block
-                lg:bottom-[18px]
-                lg:left-[18px]
+                lg:w-[350px]
               "
             >
               <div
@@ -4358,8 +4521,10 @@ export default function CityMapOverview({
                   flex
                   items-center
                   gap-2
-                  text-[10px]
+                  text-[9px]
                   font-bold
+                  uppercase
+                  tracking-wide
                   text-[#8AA1BB]
                 "
               >
@@ -4368,8 +4533,6 @@ export default function CityMapOverview({
                     h-2.5
                     w-2.5
                     rounded-full
-                    border
-                    border-[#314960]/30
                   "
                   style={{
                     backgroundColor:
@@ -4378,35 +4541,39 @@ export default function CityMapOverview({
                           0,
                           zones.findIndex(
                             (
-                              zone
+                              zone,
                             ) =>
                               sameEntity(
                                 zone,
                                 selectedZone,
                                 getZoneId,
-                                getZoneName
-                              )
-                          )
+                                getZoneName,
+                              ),
+                          ),
                         ) %
                           ZONE_COLORS.length
                       ],
                   }}
                 />
 
-                SELECTED ZONE
+                {t(
+                  "overview.cityOverviewMap.selectedZone",
+                  "Selected Zone",
+                )}
               </div>
 
               <div
                 className="
                   mt-1.5
-                  text-[16px]
+                  truncate
+                  text-[15px]
                   font-bold
                   text-[#34475B]
                 "
               >
                 {
                   getZoneName(
-                    selectedZone
+                    selectedZone,
                   )
                 }
               </div>
@@ -4414,29 +4581,27 @@ export default function CityMapOverview({
               <div
                 className="
                   mt-1
-                  overflow-hidden
+                  truncate
                   border-b
                   border-[#E7EDF3]
                   pb-2
                   text-[10px]
                   text-[#8BA4BF]
-                  text-ellipsis
-                  whitespace-nowrap
                 "
               >
                 {
                   getZoneTableName(
-                    selectedZone
+                    selectedZone,
                   ) ||
                   getZoneName(
-                    selectedZone
+                    selectedZone,
                   )
                 }
               </div>
 
               <div
                 className="
-                  mt-2.5
+                  mt-3
                   grid
                   grid-cols-3
                   gap-2
@@ -4445,19 +4610,23 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    City
+                    {t(
+                      "overview.cityOverviewMap.city",
+                      "City",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      truncate
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4472,19 +4641,22 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Divisions
+                    {t(
+                      "overview.cityOverviewMap.divisions",
+                      "Divisions",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4498,19 +4670,22 @@ export default function CityMapOverview({
                 <div>
                   <div
                     className="
-                      text-[9px]
+                      text-[8px]
                       font-bold
                       uppercase
                       text-[#91A7BC]
                     "
                   >
-                    Wards
+                    {t(
+                      "overview.cityOverviewMap.wards",
+                      "Wards",
+                    )}
                   </div>
 
                   <div
                     className="
                       mt-0.5
-                      text-[11px]
+                      text-[10px]
                       font-bold
                       text-[#49627C]
                     "
@@ -4518,17 +4693,19 @@ export default function CityMapOverview({
                     {divisions.reduce(
                       (
                         total,
-                        division
+                        division,
                       ) =>
                         total +
-                        (Array.isArray(
-                          division?.wards
-                        )
-                          ? division
-                              .wards
-                              .length
-                          : 0),
-                      0
+                        (
+                          Array.isArray(
+                            division?.wards,
+                          )
+                            ? division
+                                .wards
+                                .length
+                            : 0
+                        ),
+                      0,
                     )}
                   </div>
                 </div>
@@ -4543,30 +4720,35 @@ export default function CityMapOverview({
         {loading && (
           <div
             className="
+              pointer-events-none
               absolute
               inset-0
               z-[4000]
               flex
               items-center
               justify-center
-              pointer-events-none
             "
           >
             <div
               className="
-                rounded-[10px]
+                rounded-xl
                 border
                 border-[#DFE7EF]
-                bg-white/96
+                bg-white/95
                 px-4
                 py-2.5
-                text-[12px]
+                text-[11px]
                 font-semibold
                 text-[#536A84]
                 shadow-[0_12px_30px_rgba(0,0,0,0.08)]
+
+                sm:text-[12px]
               "
             >
-              Loading city map...
+              {t(
+                "overview.cityOverviewMap.loading",
+                "Loading city map...",
+              )}
             </div>
           </div>
         )}
@@ -4579,29 +4761,32 @@ export default function CityMapOverview({
           error && (
             <div
               className="
+                pointer-events-none
                 absolute
                 inset-0
                 z-[4000]
                 flex
                 items-center
                 justify-center
-                pointer-events-none
+                p-4
               "
             >
               <div
                 className="
                   max-w-[90%]
-                  rounded-[10px]
+                  rounded-xl
                   border
                   border-[#DFE7EF]
-                  bg-white/96
+                  bg-white/95
                   px-4
                   py-2.5
                   text-center
-                  text-[12px]
+                  text-[11px]
                   font-semibold
                   text-red-600
                   shadow-[0_12px_30px_rgba(0,0,0,0.08)]
+
+                  sm:text-[12px]
                 "
               >
                 {error}
