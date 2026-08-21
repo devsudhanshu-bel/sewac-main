@@ -6,8 +6,16 @@ import {
 
 import { useLanguage } from "../../i18n";
 
+/* ===========================================================
+   PLANT KPI CARDS
+=========================================================== */
+
 export default function PlantKPICards({ data }) {
   const { t } = useLanguage();
+
+  /* ===========================================================
+     KPI DATA
+  =========================================================== */
 
   const kpis = [
     {
@@ -16,7 +24,9 @@ export default function PlantKPICards({ data }) {
         "Total Plants"
       ),
 
-      value: (data?.totalPlants ?? 0).toLocaleString(),
+      value: (
+        data?.totalPlants ?? 0
+      ).toLocaleString(),
 
       subtitle: t(
         "plants.kpis.allRegisteredPlants",
@@ -63,7 +73,10 @@ export default function PlantKPICards({ data }) {
       ).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      })} ${t("units.ton", "Ton")}`,
+      })} ${t(
+        "units.ton",
+        "Ton"
+      )}`,
 
       subtitle: t(
         "plants.kpis.allTimeCollection",
@@ -78,8 +91,13 @@ export default function PlantKPICards({ data }) {
     },
   ];
 
+  /* ===========================================================
+     RENDER
+  =========================================================== */
+
   return (
     <div className="grid grid-cols-3 gap-5">
+
       {kpis.map((card) => {
         const Icon = card.icon;
 
@@ -89,25 +107,26 @@ export default function PlantKPICards({ data }) {
             className="
               bg-white
               border
-              border-gray-200
+              border-[#E5E7EB]
               rounded-xl
               px-4
-              py-4
+              py-3.5
               flex
               items-center
-              gap-4
+              gap-3.5
               shadow-sm
-              min-h-[115px]
+              min-h-[100px]
             "
           >
+
             {/* =================================================
                 ICON
             ================================================= */}
 
             <div
               className={`
-                w-12
-                h-12
+                w-11
+                h-11
                 rounded-xl
                 flex
                 items-center
@@ -117,7 +136,7 @@ export default function PlantKPICards({ data }) {
               `}
             >
               <Icon
-                size={25}
+                size={22}
                 className={card.color}
                 strokeWidth={2}
               />
@@ -128,21 +147,56 @@ export default function PlantKPICards({ data }) {
             ================================================= */}
 
             <div className="min-w-0 flex flex-col">
-              <p className="text-[13px] font-medium text-gray-500">
+
+              {/* TITLE */}
+
+              <p
+                className="
+                  text-[12px]
+                  font-medium
+                  text-[#667085]
+                  leading-4
+                "
+              >
                 {card.title}
               </p>
 
-              <h2 className="mt-1 text-[23px] font-bold text-gray-900 leading-tight truncate">
+              {/* VALUE */}
+
+              <h2
+                className="
+                  mt-0.5
+                  text-[21px]
+                  font-bold
+                  text-[#111827]
+                  leading-6
+                  truncate
+                "
+              >
                 {card.value}
               </h2>
 
-              <p className="mt-1.5 text-[12px] text-indigo-600 font-medium">
+              {/* SUBTITLE */}
+
+              <p
+                className="
+                  mt-1
+                  text-[11px]
+                  font-medium
+                  text-indigo-600
+                  leading-4
+                  truncate
+                "
+              >
                 {card.subtitle}
               </p>
+
             </div>
+
           </div>
         );
       })}
+
     </div>
   );
 }

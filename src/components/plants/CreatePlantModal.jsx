@@ -26,7 +26,7 @@ import { useLanguage } from "../../i18n";
 const DEFAULT_LOCATION = [12.9716, 77.5946];
 
 /* =========================================================
-   PURPLE MARKER
+   PURPLE PLANT MARKER
 ========================================================= */
 
 const plantIcon = L.divIcon({
@@ -95,7 +95,6 @@ function MapCenterController({ position }) {
         animate: true,
       });
 
-      // Important when Leaflet is inside a modal
       setTimeout(() => {
         map.invalidateSize();
       }, 100);
@@ -144,10 +143,49 @@ export default function CreatePlantModal({
   ======================================================= */
 
   const handleChange = (e) => {
+    const {
+      name,
+      value,
+    } = e.target;
+
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+
+    /*
+      Keep map synced with manually entered coordinates.
+    */
+
+    if (name === "latitude") {
+      const lat = Number(value);
+
+      if (
+        Number.isFinite(lat) &&
+        lat >= -90 &&
+        lat <= 90
+      ) {
+        setPosition((prev) => [
+          lat,
+          prev[1],
+        ]);
+      }
+    }
+
+    if (name === "longitude") {
+      const lng = Number(value);
+
+      if (
+        Number.isFinite(lng) &&
+        lng >= -180 &&
+        lng <= 180
+      ) {
+        setPosition((prev) => [
+          prev[0],
+          lng,
+        ]);
+      }
+    }
   };
 
   /* =======================================================
@@ -155,7 +193,10 @@ export default function CreatePlantModal({
   ======================================================= */
 
   const handleMapLocation = ([lat, lng]) => {
-    setPosition([lat, lng]);
+    setPosition([
+      lat,
+      lng,
+    ]);
 
     setForm((prev) => ({
       ...prev,
@@ -170,24 +211,33 @@ export default function CreatePlantModal({
 
   const handleSubmit = async () => {
     try {
-      await api.post("/api/plants", {
-        ...form,
+      await api.post(
+        "/api/plants",
+        {
+          ...form,
 
-        capacity_ton_per_day:
-          Number(form.capacity_ton_per_day),
+          capacity_ton_per_day:
+            Number(
+              form.capacity_ton_per_day
+            ),
 
-        vehicles_enrolled:
-          Number(form.vehicles_enrolled),
+          vehicles_enrolled:
+            Number(
+              form.vehicles_enrolled
+            ),
 
-        total_waste_collected:
-          Number(form.total_waste_collected),
+          total_waste_collected:
+            Number(
+              form.total_waste_collected
+            ),
 
-        latitude:
-          Number(form.latitude),
+          latitude:
+            Number(form.latitude),
 
-        longitude:
-          Number(form.longitude),
-      });
+          longitude:
+            Number(form.longitude),
+        }
+      );
 
       onSuccess();
       onClose();
@@ -214,7 +264,9 @@ export default function CreatePlantModal({
         items-center
         justify-center
         bg-black/40
-        p-4
+        p-3
+        sm:p-4
+        isolation-auto
       "
     >
 
@@ -229,10 +281,12 @@ export default function CreatePlantModal({
           flex
           w-full
           max-w-[900px]
-          max-h-[92vh]
+          max-h-[95vh]
+          sm:max-h-[92vh]
           flex-col
           overflow-hidden
-          rounded-2xl
+          rounded-xl
+          sm:rounded-2xl
           bg-white
           shadow-2xl
         "
@@ -248,20 +302,25 @@ export default function CreatePlantModal({
             shrink-0
             items-start
             justify-between
+            gap-4
             border-b
             border-gray-100
-            px-7
-            py-6
+            px-4
+            py-4
+            sm:px-7
+            sm:py-6
           "
         >
 
-          <div>
+          <div className="min-w-0">
 
             <h2
               className="
-                text-[24px]
+                text-[19px]
+                sm:text-[24px]
                 font-bold
                 text-[#16295A]
+                leading-tight
               "
             >
               {t(
@@ -273,8 +332,10 @@ export default function CreatePlantModal({
             <p
               className="
                 mt-1
-                text-[14px]
+                text-[12px]
+                sm:text-[14px]
                 text-gray-500
+                leading-relaxed
               "
             >
               {t(
@@ -289,15 +350,20 @@ export default function CreatePlantModal({
             type="button"
             onClick={onClose}
             className="
+              shrink-0
               rounded-lg
-              p-2
+              p-1.5
+              sm:p-2
               text-gray-400
               transition
               hover:bg-gray-100
               hover:text-gray-700
             "
           >
-            <X size={22} />
+            <X
+              size={20}
+              className="sm:w-[22px] sm:h-[22px]"
+            />
           </button>
 
         </div>
@@ -311,8 +377,10 @@ export default function CreatePlantModal({
             min-h-0
             flex-1
             overflow-y-auto
-            px-7
-            py-6
+            px-4
+            py-4
+            sm:px-7
+            sm:py-6
           "
         >
 
@@ -320,18 +388,26 @@ export default function CreatePlantModal({
               LOCATION SECTION
           ================================================= */}
 
-          <div className="mb-6">
+          <div className="mb-5 sm:mb-6">
 
-            <div className="mb-1 flex items-center gap-2">
+            <div
+              className="
+                mb-1
+                flex
+                items-center
+                gap-2
+              "
+            >
 
               <MapPin
-                size={20}
-                className="text-violet-600"
+                size={18}
+                className="shrink-0 text-violet-600 sm:w-5 sm:h-5"
               />
 
               <h3
                 className="
-                  text-[18px]
+                  text-[16px]
+                  sm:text-[18px]
                   font-semibold
                   text-[#16295A]
                 "
@@ -346,8 +422,10 @@ export default function CreatePlantModal({
 
             <p
               className="
-                mb-4
-                text-[14px]
+                mb-3
+                sm:mb-4
+                text-[12px]
+                sm:text-[14px]
                 text-gray-500
               "
             >
@@ -366,7 +444,8 @@ export default function CreatePlantModal({
                 relative
                 z-0
                 isolate
-                h-[285px]
+                h-[220px]
+                sm:h-[285px]
                 w-full
                 overflow-hidden
                 rounded-xl
@@ -388,8 +467,6 @@ export default function CreatePlantModal({
                   zIndex: 0,
                 }}
               >
-
-                {/* WHITE / LIGHT CARTO MAP */}
 
                 <TileLayer
                   url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -421,7 +498,15 @@ export default function CreatePlantModal({
               FORM
           ================================================= */}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div
+            className="
+              grid
+              grid-cols-1
+              gap-3
+              sm:gap-4
+              md:grid-cols-2
+            "
+          >
 
             {/* Plant Name */}
 
@@ -434,13 +519,16 @@ export default function CreatePlantModal({
                 "Plant Name"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 bg-white
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 text-gray-800
                 outline-none
                 transition
@@ -462,13 +550,16 @@ export default function CreatePlantModal({
                 "Plant Type"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 bg-white
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 text-gray-800
                 outline-none
                 transition
@@ -490,12 +581,15 @@ export default function CreatePlantModal({
                 "City"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -516,12 +610,15 @@ export default function CreatePlantModal({
                 "Zone"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -542,12 +639,15 @@ export default function CreatePlantModal({
                 "Division"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -568,12 +668,15 @@ export default function CreatePlantModal({
                 "Ward"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -594,12 +697,15 @@ export default function CreatePlantModal({
                 "Plant Manager"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -621,12 +727,15 @@ export default function CreatePlantModal({
                 "Capacity (Ton/Day)"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -648,12 +757,15 @@ export default function CreatePlantModal({
                 "Vehicles Enrolled"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -675,12 +787,15 @@ export default function CreatePlantModal({
                 "Waste Collected"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -703,12 +818,15 @@ export default function CreatePlantModal({
                 "Latitude"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -731,12 +849,15 @@ export default function CreatePlantModal({
                 "Longitude"
               )}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 placeholder:text-gray-400
@@ -753,13 +874,16 @@ export default function CreatePlantModal({
               value={form.status}
               onChange={handleChange}
               className="
-                h-14
+                h-12
+                sm:h-14
+                w-full
                 rounded-xl
                 border
                 border-gray-200
                 bg-white
                 px-4
-                text-[15px]
+                text-[13px]
+                sm:text-[15px]
                 outline-none
                 transition
                 focus:border-violet-500
@@ -796,13 +920,18 @@ export default function CreatePlantModal({
           className="
             flex
             shrink-0
-            justify-end
-            gap-3
+            flex-col-reverse
+            sm:flex-row
+            sm:justify-end
+            gap-2
+            sm:gap-3
             border-t
             border-gray-100
             bg-white
-            px-7
-            py-5
+            px-4
+            py-4
+            sm:px-7
+            sm:py-5
           "
         >
 
@@ -810,6 +939,8 @@ export default function CreatePlantModal({
             type="button"
             onClick={onClose}
             className="
+              w-full
+              sm:w-auto
               rounded-xl
               border
               border-gray-200
@@ -832,6 +963,8 @@ export default function CreatePlantModal({
             type="button"
             onClick={handleSubmit}
             className="
+              w-full
+              sm:w-auto
               rounded-xl
               bg-[#6C2BFF]
               px-7
