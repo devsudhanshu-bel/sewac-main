@@ -216,23 +216,25 @@ function Dropdown({
         <div
           ref={menuRef}
           className="
-            absolute
-            top-11
-            left-0
-            w-full
-            max-h-[315px]
-            overflow-y-auto
-            rounded-2xl
-            bg-white
-            border
-            border-gray-100
-            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-            z-[10000]
+    absolute
+    top-11
+    left-0
+    w-full
+    max-h-[315px]
+    overflow-y-scroll
+    overflow-x-hidden
+    rounded-2xl
+    bg-white
+    border
+    border-gray-100
+    shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+    z-[10000]
 
-            scrollbar-thin
-            scrollbar-thumb-violet-300
-            scrollbar-track-transparent
-          "
+    scrollbar-thin
+    scrollbar-thumb-violet-300
+    scrollbar-track-gray-100
+    hover:scrollbar-thumb-violet-400
+  "
         >
           {options.length === 0 ? (
             <div
