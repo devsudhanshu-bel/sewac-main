@@ -33,7 +33,7 @@ exports.requestVerification = async (req, res) => {
   } catch (error) {
     console.error("Request verification error:", error);
 
-    return res.status(400).json({
+    return res.status(error.statusCode || 400).json({
       success: false,
       message: error.message || "Unable to start verification.",
     });
@@ -93,7 +93,15 @@ exports.verifyOTP = async (req, res) => {
  */
 exports.getComplaints = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", status, category, dateFrom, dateTo, } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status,
+      category,
+      dateFrom,
+      dateTo,
+    } = req.query;
 
     const result = await complaintService.getComplaints({
       page,
@@ -188,7 +196,7 @@ exports.updateComplaint = async (req, res) => {
     if (status !== undefined) {
       updates.status = status;
     }
-    
+
     if (remarks !== undefined) {
       updates.remarks = remarks;
     }
