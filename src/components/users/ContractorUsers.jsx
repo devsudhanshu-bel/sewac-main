@@ -339,7 +339,7 @@ const ContractorUsers = () => {
           <button
             type="button"
             onClick={() => handleEditClick(user)}
-            className="text-gray-500 hover:text-violet-600 transition"
+            className="text-violet-600 hover:text-violet-800 transition"
             title="Edit user"
           >
             <Pencil className="w-4 h-4" />
@@ -348,7 +348,7 @@ const ContractorUsers = () => {
           <button
             type="button"
             onClick={() => handleDeleteClick(user)}
-            className="text-gray-500 hover:text-red-600 transition"
+            className="text-red-500 hover:text-red-700 transition"
             title="Delete user"
           >
             <Trash2 className="w-4 h-4" />
