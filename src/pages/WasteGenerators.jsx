@@ -158,6 +158,8 @@ export default function WasteGenerators() {
 
       params.set("wardId", String(selectedWard.ward_id));
 
+      params.set("date", selectedDate);
+
       if (directorySearch.trim()) {
         params.set("search", directorySearch.trim());
       }
@@ -191,6 +193,7 @@ export default function WasteGenerators() {
       setDirectoryLoading(false);
     }
   }, [
+    selectedDate,
     selectedCity?.city_id,
     selectedZone?.zone_id,
     selectedDivision?.division_id,
