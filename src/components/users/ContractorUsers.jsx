@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Building2,
   Plus,
@@ -8,29 +8,30 @@ import {
 } from "lucide-react";
 
 import AddUserModal from "./AddUserModal";
+import EditUserModal from "./EditUserModal";
+import DeleteUserModal from "./DeleteUserModal";
 import api from "../../api/axios";
 
 const ContractorUsers = () => {
   const [showAddContractorModal, setShowAddContractorModal] =
     useState(false);
 
-  const [contractorUsers, setContractorUsers] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [contractorUsers, setContractorUsers] = useState([]);
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
-  const [page, setPage] = useState(1);
+  // =========================================================
+  // FETCH CONTRACTORS
+  // =========================================================
 
-  const [limit, setLimit] = useState(10);
-
-  const [total, setTotal] = useState(0);
-
-  const [totalPages, setTotalPages] = useState(0);
-
-  const fetchContractors = useCallback(async () => {
+  const fetchContractors = async () => {
     try {
       setLoading(true);
       setError("");
@@ -38,63 +39,90 @@ const ContractorUsers = () => {
       const response = await api.get("/api/users", {
         params: {
           type: "ADMIN_LAYER_2",
-          search: search.trim(),
-          page,
-          limit,
         },
       });
 
-      const data = response?.data;
+      const users = response?.data?.users || [];
 
-      setContractorUsers(data?.users || []);
-
-      setTotal(Number(data?.total || 0));
-
-      setTotalPages(Number(data?.totalPages || 0));
+      setContractorUsers(users);
     } catch (err) {
-      console.error("Failed to fetch Contractor users:", err);
+      console.error("Fetch Contractor users error:", err);
 
-      setContractorUsers([]);
-
-      setTotal(0);
-
-      setTotalPages(0);
-
-      setError(
+      const backendMessage =
+        err?.response?.data?.message ||
         err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          "Failed to load Contractor users."
-      );
+        err?.message ||
+        "Failed to fetch Contractor users.";
+
+      setError(backendMessage);
     } finally {
       setLoading(false);
     }
-  }, [search, page, limit]);
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchContractors();
-    }, 300);
+    fetchContractors();
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [fetchContractors]);
+  // =========================================================
+  // CREATE
+  // =========================================================
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-
-  const handleLimitChange = (e) => {
-    setLimit(Number(e.target.value));
-    setPage(1);
-  };
-
-  const handleContractorCreated = async () => {
+  const handleContractorCreated = () => {
     setShowAddContractorModal(false);
 
-    setPage(1);
-
-    await fetchContractors();
+    // Refresh actual DB data
+    fetchContractors();
   };
+
+  // =========================================================
+  // EDIT
+  // =========================================================
+
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  const handleUserUpdated = () => {
+    setShowEditModal(false);
+    setSelectedUser(null);
+
+    // Refresh actual DB data
+    fetchContractors();
+  };
+
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleUserDeleted = () => {
+    setShowDeleteModal(false);
+    setSelectedUser(null);
+
+    // Refresh actual DB data
+    fetchContractors();
+  };
+
+  // =========================================================
+  // SEARCH
+  // =========================================================
+
+  const filteredContractors = contractorUsers.filter((user) => {
+    const value = search.toLowerCase().trim();
+
+    if (!value) return true;
+
+    return (
+      (user.full_name || "").toLowerCase().includes(value) ||
+      (user.email || "").toLowerCase().includes(value)
+    );
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
@@ -140,7 +168,7 @@ const ContractorUsers = () => {
             <input
               type="text"
               value={search}
-              onChange={handleSearchChange}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search contractors..."
               className="
                 w-full
@@ -178,8 +206,11 @@ const ContractorUsers = () => {
               gap-2
             "
           >
+
             <Plus className="w-4 h-4" />
+
             Add Contractor
+
           </button>
 
         </div>
@@ -234,33 +265,19 @@ const ContractorUsers = () => {
 
           <tbody>
 
-            {loading ? (
-
+            {loading && (
               <tr>
                 <td
                   colSpan="6"
-                  className="px-5 py-12 text-center text-[13px] text-gray-500"
+                  className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   Loading Contractor users...
                 </td>
               </tr>
+            )}
 
-            ) : contractorUsers.length === 0 ? (
-
-              <tr>
-                <td
-                  colSpan="6"
-                  className="px-5 py-12 text-center text-[13px] text-gray-500"
-                >
-                  {search.trim()
-                    ? "No Contractor users match your search."
-                    : "No Contractor users found."}
-                </td>
-              </tr>
-
-            ) : (
-
-              contractorUsers.map((user) => (
+            {!loading &&
+              filteredContractors.map((user) => (
 
                 <tr
                   key={user.id}
@@ -270,13 +287,13 @@ const ContractorUsers = () => {
                   <td className="px-5 py-4">
 
                     <div className="font-medium text-[13px] text-gray-900">
-                      {user.full_name || "-"}
+                      {user.full_name}
                     </div>
 
                   </td>
 
                   <td className="px-5 py-4 text-[13px] text-gray-600">
-                    {user.email || "-"}
+                    {user.email}
                   </td>
 
                   <td className="px-5 py-4 text-[13px] text-gray-600">
@@ -290,7 +307,7 @@ const ContractorUsers = () => {
                   <td className="px-5 py-4">
 
                     <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">
-                      {user.status || "-"}
+                      {user.status}
                     </span>
 
                   </td>
@@ -301,18 +318,18 @@ const ContractorUsers = () => {
 
                       <button
                         type="button"
+                        onClick={() => handleEditClick(user)}
                         className="text-gray-500 hover:text-violet-600 transition"
-                        disabled
-                        title="Edit will be wired next"
+                        title="Edit user"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
 
                       <button
                         type="button"
+                        onClick={() => handleDeleteClick(user)}
                         className="text-gray-500 hover:text-red-600 transition"
-                        disabled
-                        title="Delete will be wired next"
+                        title="Delete user"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -323,7 +340,20 @@ const ContractorUsers = () => {
 
                 </tr>
 
-              ))
+              ))}
+
+            {!loading && filteredContractors.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="6"
+                  className="px-5 py-10 text-center text-[13px] text-gray-500"
+                >
+                  No contractor users found.
+                </td>
+
+              </tr>
 
             )}
 
@@ -338,57 +368,28 @@ const ContractorUsers = () => {
       <div className="flex items-center justify-between px-5 py-3 text-[12px] text-gray-500 border-t border-gray-100">
 
         <span>
-
-          {total === 0
-            ? "Showing 0 users"
-            : `Showing ${
-                (page - 1) * limit + 1
-              }–${Math.min(page * limit, total)} of ${total} users`}
-
+          Showing {filteredContractors.length} of{" "}
+          {contractorUsers.length} users
         </span>
 
         <div className="flex items-center gap-4">
 
-          <div className="flex items-center gap-2">
-
-            <span>
-              Rows per page:
-            </span>
-
-            <select
-              value={limit}
-              onChange={handleLimitChange}
-              className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none"
-            >
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-
-          </div>
+          <span>
+            Rows per page: 10
+          </span>
 
           <div className="flex items-center gap-2">
 
             <button
               type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((prev) => prev - 1)}
-              className="w-7 h-7 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded border border-gray-200 hover:bg-gray-100"
             >
               ←
             </button>
 
-            <span className="min-w-[55px] text-center">
-              {totalPages === 0
-                ? "0 / 0"
-                : `${page} / ${totalPages}`}
-            </span>
-
             <button
               type="button"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((prev) => prev + 1)}
-              className="w-7 h-7 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded border border-gray-200 hover:bg-gray-100"
             >
               →
             </button>
@@ -407,6 +408,31 @@ const ContractorUsers = () => {
         title="Add Contractor"
         role="ADMIN_LAYER_2"
         onSuccess={handleContractorCreated}
+      />
+
+      {/* Edit Contractor */}
+
+      <EditUserModal
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        title="Edit Contractor"
+        onSuccess={handleUserUpdated}
+      />
+
+      {/* Delete Contractor */}
+
+      <DeleteUserModal
+        open={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={handleUserDeleted}
       />
 
     </div>

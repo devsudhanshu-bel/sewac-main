@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ShieldCheck,
   Plus,
@@ -8,28 +8,28 @@ import {
 } from "lucide-react";
 
 import AddUserModal from "./AddUserModal";
+import EditUserModal from "./EditUserModal";
+import DeleteUserModal from "./DeleteUserModal";
 import api from "../../api/axios";
 
 const AdminUsers = () => {
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const [adminUsers, setAdminUsers] = useState([]);
-
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
-  const [page, setPage] = useState(1);
+  // =========================================================
+  // FETCH ADMIN LAYER 1 USERS
+  // =========================================================
 
-  const [limit, setLimit] = useState(10);
-
-  const [total, setTotal] = useState(0);
-
-  const [totalPages, setTotalPages] = useState(0);
-
-  const fetchAdmins = useCallback(async () => {
+  const fetchAdmins = async () => {
     try {
       setLoading(true);
       setError("");
@@ -37,81 +37,92 @@ const AdminUsers = () => {
       const response = await api.get("/api/users", {
         params: {
           type: "ADMIN_LAYER_1",
-          search: search.trim(),
-          page,
-          limit,
         },
       });
 
-      const data = response?.data;
+      const users = response?.data?.users || [];
 
-      setAdminUsers(data?.users || []);
-
-      setTotal(Number(data?.total || 0));
-
-      setTotalPages(Number(data?.totalPages || 0));
+      setAdminUsers(users);
     } catch (err) {
-      console.error("Failed to fetch Admin Layer 1 users:", err);
+      console.error("Fetch Admin Layer 1 users error:", err);
 
-      setAdminUsers([]);
-
-      setTotal(0);
-
-      setTotalPages(0);
-
-      setError(
+      const backendMessage =
+        err?.response?.data?.message ||
         err?.response?.data?.error ||
-          err?.response?.data?.message ||
-          "Failed to load Admin Layer 1 users."
-      );
+        err?.message ||
+        "Failed to fetch Admin Layer 1 users.";
+
+      setError(backendMessage);
     } finally {
       setLoading(false);
     }
-  }, [search, page, limit]);
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchAdmins();
-    }, 300);
+    fetchAdmins();
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [fetchAdmins]);
+  // =========================================================
+  // CREATE
+  // =========================================================
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-
-  const handleLimitChange = (e) => {
-    setLimit(Number(e.target.value));
-    setPage(1);
-  };
-
-  const formatCreatedAt = (value) => {
-    if (!value) return "-";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "-";
-    }
-
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const handleAdminCreated = async () => {
+  const handleAdminCreated = () => {
     setShowAddAdminModal(false);
 
-    setPage(1);
-
-    await fetchAdmins();
+    // Get actual DB state again
+    fetchAdmins();
   };
+
+  // =========================================================
+  // EDIT
+  // =========================================================
+
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  const handleUserUpdated = () => {
+    setShowEditModal(false);
+    setSelectedUser(null);
+
+    // Refresh actual DB data
+    fetchAdmins();
+  };
+
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleUserDeleted = () => {
+    setShowDeleteModal(false);
+    setSelectedUser(null);
+
+    // Since backend performs soft delete,
+    // refetch active users from DB.
+    fetchAdmins();
+  };
+
+  // =========================================================
+  // SEARCH
+  // =========================================================
+
+  const filteredAdmins = adminUsers.filter((user) => {
+    const value = search.toLowerCase().trim();
+
+    if (!value) return true;
+
+    return (
+      (user.full_name || "").toLowerCase().includes(value) ||
+      (user.email || "").toLowerCase().includes(value) ||
+      (user.phone_number || "").includes(value)
+    );
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
@@ -154,7 +165,7 @@ const AdminUsers = () => {
             <input
               type="text"
               value={search}
-              onChange={handleSearchChange}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email or phone..."
               className="
                 w-full
@@ -249,33 +260,19 @@ const AdminUsers = () => {
 
           <tbody>
 
-            {loading ? (
-
+            {loading && (
               <tr>
                 <td
                   colSpan="7"
-                  className="px-5 py-12 text-center text-[13px] text-gray-500"
+                  className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   Loading Admin Layer 1 users...
                 </td>
               </tr>
+            )}
 
-            ) : adminUsers.length === 0 ? (
-
-              <tr>
-                <td
-                  colSpan="7"
-                  className="px-5 py-12 text-center text-[13px] text-gray-500"
-                >
-                  {search.trim()
-                    ? "No Admin Layer 1 users match your search."
-                    : "No Admin Layer 1 users found."}
-                </td>
-              </tr>
-
-            ) : (
-
-              adminUsers.map((user, index) => (
+            {!loading &&
+              filteredAdmins.map((user, index) => (
 
                 <tr
                   key={user.id}
@@ -283,15 +280,15 @@ const AdminUsers = () => {
                 >
 
                   <td className="px-5 py-4 text-[13px]">
-                    {(page - 1) * limit + index + 1}
+                    {index + 1}
                   </td>
 
                   <td className="px-5 py-4 text-[13px] font-medium">
-                    {user.full_name || "-"}
+                    {user.full_name}
                   </td>
 
                   <td className="px-5 py-4 text-[13px] text-gray-600">
-                    {user.email || "-"}
+                    {user.email}
                   </td>
 
                   <td className="px-5 py-4 text-[13px] text-gray-600">
@@ -301,13 +298,21 @@ const AdminUsers = () => {
                   <td className="px-5 py-4">
 
                     <span className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-[11px] font-medium">
-                      {user.status || "-"}
+                      {user.status}
                     </span>
 
                   </td>
 
                   <td className="px-5 py-4 text-[13px] text-gray-600">
-                    {formatCreatedAt(user.created_at)}
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "-"}
                   </td>
 
                   <td className="px-5 py-4">
@@ -316,18 +321,18 @@ const AdminUsers = () => {
 
                       <button
                         type="button"
-                        className="text-violet-600 hover:text-violet-800"
-                        disabled
-                        title="Edit will be wired next"
+                        onClick={() => handleEditClick(user)}
+                        className="text-violet-600 hover:text-violet-800 transition"
+                        title="Edit user"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
 
                       <button
                         type="button"
-                        className="text-red-500 hover:text-red-700"
-                        disabled
-                        title="Delete will be wired next"
+                        onClick={() => handleDeleteClick(user)}
+                        className="text-red-500 hover:text-red-700 transition"
+                        title="Delete user"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -338,7 +343,20 @@ const AdminUsers = () => {
 
                 </tr>
 
-              ))
+              ))}
+
+            {!loading && filteredAdmins.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="7"
+                  className="px-5 py-10 text-center text-[13px] text-gray-500"
+                >
+                  No Admin Layer 1 users found.
+                </td>
+
+              </tr>
 
             )}
 
@@ -352,62 +370,20 @@ const AdminUsers = () => {
       <div className="flex items-center justify-between px-5 py-4 text-[12px]">
 
         <p className="text-violet-700 font-medium">
-
-          {total === 0
-            ? "Showing 0 entries"
-            : `Showing ${
-                (page - 1) * limit + 1
-              } to ${Math.min(page * limit, total)} of ${total} entries`}
-
+          Showing {filteredAdmins.length} of {adminUsers.length} entries
         </p>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
 
-          <div className="flex items-center gap-2">
+          <span className="text-gray-600">
+            Rows per page:
+          </span>
 
-            <span className="text-gray-600">
-              Rows per page:
-            </span>
-
-            <select
-              value={limit}
-              onChange={handleLimitChange}
-              className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none"
-            >
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-
-          </div>
-
-          <div className="flex items-center gap-2">
-
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((prev) => prev - 1)}
-              className="w-8 h-8 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ←
-            </button>
-
-            <span className="text-gray-600 min-w-[60px] text-center">
-              {totalPages === 0
-                ? "0 / 0"
-                : `${page} / ${totalPages}`}
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((prev) => prev + 1)}
-              className="w-8 h-8 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              →
-            </button>
-
-          </div>
+          <select className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none">
+            <option>10</option>
+            <option>25</option>
+            <option>50</option>
+          </select>
 
         </div>
 
@@ -420,6 +396,29 @@ const AdminUsers = () => {
         title="Add Admin"
         role="ADMIN_LAYER_1"
         onSuccess={handleAdminCreated}
+      />
+
+      {/* Edit Admin */}
+      <EditUserModal
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        title="Edit Admin"
+        onSuccess={handleUserUpdated}
+      />
+
+      {/* Delete Admin */}
+      <DeleteUserModal
+        open={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={handleUserDeleted}
       />
 
     </div>
