@@ -426,6 +426,27 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| DIRECTORY SEARCH
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| The Waste Generator Directory is REPRESENTATIONAL.
+|
+| SOURCE:
+|     helper DB → master_citizen_data
+|
+| IMPORTANT:
+|     We DO NOT INSERT
+|     We DO NOT UPDATE
+|     We DO NOT DELETE
+|     master_citizen_data
+|
+|--------------------------------------------------------------------------
+*/
+
 const citizenMatchesSearch = (citizen, search) => {
   const needle = normalizeSearch(search).toLowerCase();
 
@@ -443,6 +464,8 @@ const citizenMatchesSearch = (citizen, search) => {
     citizen.drySlno,
     citizen.wetRFID,
     citizen.wetSlno,
+    citizen.wardName,
+    citizen.wardNo,
   ];
 
   return fields.some(
@@ -455,84 +478,172 @@ const citizenMatchesSearch = (citizen, search) => {
 
 /*
 |--------------------------------------------------------------------------
-| GET CITIZENS FROM WARD TABLE
+| GET MASTER CITIZENS FOR SELECTED WARD
+|--------------------------------------------------------------------------
+|
+| This is the IMPORTANT replacement.
+|
+| OLD:
+|
+|     selected ward
+|          ↓
+|     physical ward table
+|
+| NEW:
+|
+|     selected ward
+|          ↓
+|     master_citizen_data
+|
+| master_citizen_data remains READ ONLY.
 |--------------------------------------------------------------------------
 */
 
-const getCitizensFromWardTable = async (ward) => {
-  if (!ward.wardTableName) {
+const getMasterCitizensForWard = async (ward) => {
+  if (!ward || !Number.isInteger(Number(ward.wardNo))) {
     return [];
   }
 
-  const table = quoteIdentifier(ward.wardTableName);
+  const wardNo = Number(ward.wardNo);
 
-  try {
-    const rows = await masterCitizenPrisma.$queryRawUnsafe(
-      `
-            SELECT
-              id,
-              "phoneNumber",
-              "area",
-              "wasteGeneratorTypes",
-              "houseNumber",
-              "floorNumber",
-              "householdType",
-              "personName",
-              "contactNumber",
-              "numberOfPeople",
-              "buildingPhoto",
-              "createdAt",
-              "updatedAt",
-              "dryRFID",
-              "drySlno",
-              "wetRFID",
-              "wetSlno",
-              lat,
-              lng
-            FROM ${table}
-            ORDER BY id ASC
-          `,
-    );
+  /*
+  |--------------------------------------------------------------------------
+  | IMPORTANT
+  |--------------------------------------------------------------------------
+  |
+  | The master table stores ward as String.
+  |
+  | Existing data can represent it as:
+  |
+  |     "216"
+  |     "Ward 216"
+  |     "216 - Ibbalur"
+  |
+  | Therefore we normalize the numeric portion before comparing.
+  |
+  |--------------------------------------------------------------------------
+  */
 
-    return rows.map((row) => ({
-      ...row,
+  const rows = await masterCitizenPrisma.$queryRawUnsafe(
+    `
+      SELECT
+        id,
 
-      cityId: ward.cityId,
+        "phoneNumber",
 
-      cityName: ward.cityName,
+        city,
 
-      zoneId: ward.zoneId,
+        ward,
 
-      zoneName: ward.zoneName,
+        area,
 
-      divisionId: ward.divisionId,
+        "wasteGeneratorTypes",
 
-      divisionName: ward.divisionName,
+        "houseNumber",
 
-      wardId: ward.wardId,
+        "floorNumber",
 
-      wardNo: ward.wardNo,
+        "householdType",
 
-      wardName: ward.wardName,
+        "personName",
 
-      wardTableName: ward.wardTableName,
-    }));
-  } catch (error) {
-    if (error?.code === "42P01") {
-      console.warn(
-        `Waste Generator: ward table ${ward.wardTableName} does not exist.`,
-      );
+        "contactNumber",
 
-      return [];
-    }
+        "numberOfPeople",
 
-    throw error;
-  }
+        "buildingPhoto",
+
+        "createdAt",
+
+        "updatedAt",
+
+        "dryRFID",
+
+        "drySlno",
+
+        "wetRFID",
+
+        "wetSlno",
+
+        lat,
+
+        lng
+
+      FROM "master_citizen_data"
+
+      WHERE
+        (
+          TRIM("ward") = $1
+          OR
+          regexp_replace(
+            TRIM("ward"),
+            '[^0-9]',
+            '',
+            'g'
+          ) = $1
+        )
+
+      ORDER BY
+        "createdAt" DESC,
+        id DESC
+    `,
+    String(wardNo),
+  );
+
+  /*
+  |--------------------------------------------------------------------------
+  | ATTACH HIERARCHY INFORMATION
+  |--------------------------------------------------------------------------
+  |
+  | This does NOT modify the master table.
+  |
+  | These are response-only fields generated from the selected
+  | Header hierarchy.
+  |--------------------------------------------------------------------------
+  */
+
+  return rows.map((citizen) => ({
+    ...citizen,
+
+    cityId: ward.cityId,
+
+    cityName: ward.cityName,
+
+    zoneId: ward.zoneId,
+
+    zoneName: ward.zoneName,
+
+    divisionId: ward.divisionId,
+
+    divisionName: ward.divisionName,
+
+    wardId: ward.wardId,
+
+    wardNo: ward.wardNo,
+
+    wardName: ward.wardName,
+  }));
 };
 
 /*
 |--------------------------------------------------------------------------
-| GET ALL CURRENT WASTE GENERATORS
+| DIRECTORY
+|--------------------------------------------------------------------------
+|
+| HEADER FILTER FLOW:
+|
+| City
+|   ↓
+| Zone
+|   ↓
+| Division
+|   ↓
+| Ward
+|   ↓
+| master_citizen_data
+|
+| The Directory is intentionally shown only after a Ward
+| has been selected.
 |--------------------------------------------------------------------------
 */
 
@@ -541,28 +652,134 @@ const getAllWasteGenerators = async (query = {}) => {
 
   const limit = Number(query.limit) || 10;
 
-  const safePage = page < 1 ? 1 : page;
+  const safePage = page < 1 ? 1 : Math.floor(page);
 
-  const safeLimit = limit < 1 ? 10 : Math.min(limit, 100);
+  const safeLimit = limit < 1 ? 10 : Math.min(Math.floor(limit), 50);
 
   const search = normalizeSearch(query.search);
 
+  /*
+  |--------------------------------------------------------------------------
+  | REQUIRE COMPLETE HEADER HIERARCHY
+  |--------------------------------------------------------------------------
+  */
+
+  const cityId = parseId(query.cityId, "cityId");
+
+  const zoneId = parseId(query.zoneId, "zoneId");
+
+  const divisionId = parseId(query.divisionId, "divisionId");
+
+  const wardId = parseId(query.wardId, "wardId");
+
+  /*
+  |--------------------------------------------------------------------------
+  | DIRECTORY REQUIRES WARD
+  |--------------------------------------------------------------------------
+  |
+  | User requirement:
+  |
+  | City → Zone → Division → Ward
+  |
+  | Once Ward is selected, show its master citizens.
+  |--------------------------------------------------------------------------
+  */
+
+  if (!cityId || !zoneId || !divisionId || !wardId) {
+    return {
+      wasteGenerators: [],
+
+      pagination: {
+        page: safePage,
+
+        limit: safeLimit,
+
+        total: 0,
+
+        totalPages: 0,
+      },
+
+      filter: {
+        cityId,
+
+        zoneId,
+
+        divisionId,
+
+        wardId,
+      },
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | RESOLVE THE SELECTED WARD
+  |--------------------------------------------------------------------------
+  |
+  | This uses the SAME geographic hierarchy already used by the
+  | working maps.
+  |--------------------------------------------------------------------------
+  */
+
   const wardScope = await getSelectedWardScope({
-    cityId: query.cityId,
-    zoneId: query.zoneId,
-    divisionId: query.divisionId,
-    wardId: query.wardId,
+    cityId,
+
+    zoneId,
+
+    divisionId,
+
+    wardId,
   });
 
   const wards = wardScope.wards || [];
 
-  let citizens = [];
+  /*
+  |--------------------------------------------------------------------------
+  | SAFETY
+  |--------------------------------------------------------------------------
+  */
 
-  for (const ward of wards) {
-    const rows = await getCitizensFromWardTable(ward);
+  if (wards.length !== 1) {
+    return {
+      wasteGenerators: [],
 
-    citizens.push(...rows);
+      pagination: {
+        page: safePage,
+
+        limit: safeLimit,
+
+        total: 0,
+
+        totalPages: 0,
+      },
+
+      filter: {
+        cityId,
+
+        zoneId,
+
+        divisionId,
+
+        wardId,
+      },
+    };
   }
+
+  const selectedWard = wards[0];
+
+  /*
+  |--------------------------------------------------------------------------
+  | READ MASTER CITIZENS
+  |--------------------------------------------------------------------------
+  */
+
+  let citizens = await getMasterCitizensForWard(selectedWard);
+
+  /*
+  |--------------------------------------------------------------------------
+  | SEARCH
+  |--------------------------------------------------------------------------
+  */
 
   if (search) {
     citizens = citizens.filter((citizen) =>
@@ -570,44 +787,57 @@ const getAllWasteGenerators = async (query = {}) => {
     );
   }
 
-  citizens.sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-
-    if (dateB !== dateA) {
-      return dateB - dateA;
-    }
-
-    return Number(b.id || 0) - Number(a.id || 0);
-  });
+  /*
+  |--------------------------------------------------------------------------
+  | TOTAL
+  |--------------------------------------------------------------------------
+  */
 
   const total = citizens.length;
 
-  const totalPages = Math.ceil(total / safeLimit);
+  const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
 
-  const skip = (safePage - 1) * safeLimit;
+  /*
+  |--------------------------------------------------------------------------
+  | PAGE SAFETY
+  |--------------------------------------------------------------------------
+  */
+
+  const effectivePage =
+    totalPages > 0 && safePage > totalPages ? totalPages : safePage;
+
+  /*
+  |--------------------------------------------------------------------------
+  | PAGINATION
+  |--------------------------------------------------------------------------
+  */
+
+  const skip = (effectivePage - 1) * safeLimit;
 
   const paginated = citizens.slice(skip, skip + safeLimit);
 
+  /*
+  |--------------------------------------------------------------------------
+  | RESPONSE
+  |--------------------------------------------------------------------------
+  */
+
   return {
     wasteGenerators: paginated,
-
     pagination: {
-      page: safePage,
+      page: effectivePage,
       limit: safeLimit,
       total,
       totalPages,
     },
 
     filter: {
-      cityId: parseId(query.cityId, "cityId"),
-
-      zoneId: parseId(query.zoneId, "zoneId"),
-
-      divisionId: parseId(query.divisionId, "divisionId"),
-
-      wardId: parseId(query.wardId, "wardId"),
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+      wardNo: selectedWard.wardNo,
+      wardName: selectedWard.wardName,
     },
   };
 };
