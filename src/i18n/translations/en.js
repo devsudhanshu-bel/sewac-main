@@ -715,55 +715,116 @@ users: {
 },
 
 complaints: {
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
+  title: "Complaints",
+
+  description:
+    "Manage and track citizen complaints",
+
+  /* =========================================================
+     TABLE
+  ========================================================= */
+
   table: {
     title: "Complaints",
+
     complaint: "complaint",
-    complaints: "complaints",
+
     found: "found",
 
     updating: "Updating...",
+
+    location: "Location",
+
+    createdAt: "Created At",
+
     loading: "Loading complaints...",
+
     empty: "No complaints found.",
 
-    ticketNumber: "Ticket Number",
-    category: "Category",
-    titleColumn: "Title",
-    citizen: "Citizen",
-    phone: "(Phone)",
-    location: "Location",
-    status: "Status",
-    createdAt: "Created At",
-    action: "Action",
-
-    view: "View complaint",
-
     showing: "Showing",
+
     to: "to",
+
     of: "of",
 
+    complaints: "complaints",
+
     previousPage: "Previous page",
+
     nextPage: "Next page",
   },
+
+  /* =========================================================
+     FILTERS
+  ========================================================= */
+
+  filters: {
+    searchPlaceholder:
+      "Search by ticket, phone, title, address...",
+
+    category: "Category",
+
+    all: "All",
+
+    to: "to",
+
+    reset: "Reset Filters",
+
+    categories: {
+      missedCollection: "Missed Collection",
+
+      overflowingBin: "Overflowing Bin",
+
+      illegalDumping: "Illegal Dumping",
+
+      streetLitter: "Street Litter",
+
+      damagedBin: "Damaged Bin",
+
+      other: "Other",
+    },
+  },
+
+  /* =========================================================
+     DETAILS
+  ========================================================= */
 
   details: {
     empty: {
       title: "Select a complaint",
+
       description:
         "Select a complaint from the table to view its details.",
     },
 
     ticketNumber: "Ticket Number",
+
     title: "Title",
+
     category: "Category",
+
     citizenPhone: "Citizen (Phone)",
+
     address: "Address",
+
     coordinates: "Coordinates",
+
     complaintImage: "Complaint Image",
+
     imageAlt: "Complaint",
+
     noImage: "No complaint image",
+
     description: "Description",
+
     noDescription: "No description provided.",
+
     status: "Status",
+
     remarks: "Remarks",
 
     closedVerified:
@@ -780,46 +841,83 @@ complaints: {
 
     statusOptions: {
       pending: "Pending",
+
       readyForVerification:
         "Ready for Verification",
-      otpSent: "OTP Sent",
-      inProgress: "In Progress",
-      assigned: "Assigned",
-      closed: "Closed",
+
+      otpSent:
+        "OTP Sent",
+
+      inProgress:
+        "In Progress",
+
+      assigned:
+        "Assigned",
+
+      closed:
+        "Closed",
     },
 
     placeholders: {
-      addRemarks: "Add remarks...",
+      addRemarks:
+        "Add remarks...",
+
       selectComplaint:
         "Select a complaint first...",
-      otp: "Enter 6-digit OTP",
+
+      otp:
+        "Enter 6-digit OTP",
     },
 
     actions: {
-      callCitizen: "Call citizen",
+      callCitizen:
+        "Call citizen",
+
       viewOnMap:
         "View coordinates on map",
+
       expandImage:
         "Expand complaint image",
-      cancel: "Cancel",
-      saving: "Saving...",
-      saveChanges: "Save Changes",
+
+      cancel:
+        "Cancel",
+
+      saving:
+        "Saving...",
+
+      saveChanges:
+        "Save Changes",
+
       requestVerification:
         "Request Verification OTP",
+
       verifyOtp:
         "Verify OTP & Close Complaint",
     },
+  },
 
-    kpis: {
-      total: "Total Complaints",
-      allComplaints: "All complaints",
-      pending: "Pending",
-      readyForVerification:
-        "Ready for Verification",
-      closed: "Closed",
-      citizenVerified:
-        "Citizen verified",
-    },
+  /* =========================================================
+     KPIs
+  ========================================================= */
+
+  kpis: {
+    total:
+      "Total Complaints",
+
+    allComplaints:
+      "All complaints",
+
+    pending:
+      "Pending",
+
+    readyForVerification:
+      "Ready for Verification",
+
+    closed:
+      "Closed",
+
+    citizenVerified:
+      "Citizen verified",
   },
 },
 };
