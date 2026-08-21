@@ -247,9 +247,6 @@ const ContractorUsers = () => {
                 Role
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
-                Last Login
-              </th>
 
               <th className="px-5 py-3 text-left text-[12px] font-semibold text-gray-600">
                 Status
@@ -268,7 +265,7 @@ const ContractorUsers = () => {
             {loading && (
               <tr>
                 <td
-                  colSpan="6"
+                  colSpan="5"
                   className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   Loading Contractor users...
@@ -300,9 +297,7 @@ const ContractorUsers = () => {
                     Contractor
                   </td>
 
-                  <td className="px-5 py-4 text-[13px] text-gray-600">
-                    Never
-                  </td>
+              
 
                   <td className="px-5 py-4">
 
@@ -347,7 +342,7 @@ const ContractorUsers = () => {
               <tr>
 
                 <td
-                  colSpan="6"
+                  colSpan="5"
                   className="px-5 py-10 text-center text-[13px] text-gray-500"
                 >
                   No contractor users found.

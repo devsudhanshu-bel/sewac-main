@@ -56,7 +56,6 @@ const DeleteUserModal = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-
       <div className="w-[440px] rounded-[24px] bg-white shadow-2xl">
 
         {/* Header */}
@@ -88,6 +87,7 @@ const DeleteUserModal = ({
         {/* Body */}
         <div className="px-7 py-6">
 
+          {/* Backend Error */}
           {error && (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-600">
               {error}
@@ -95,7 +95,7 @@ const DeleteUserModal = ({
           )}
 
           <p className="text-[14px] leading-6 text-gray-600">
-            Are you sure you want to deactivate{" "}
+            Are you sure you want to permanently delete{" "}
             <span className="font-semibold text-gray-900">
               {user.full_name || user.name}
             </span>
@@ -103,8 +103,8 @@ const DeleteUserModal = ({
           </p>
 
           <p className="mt-2 text-[12px] text-gray-400">
-            This user will be marked as inactive and will no longer appear
-            in the active users list.
+            This action will permanently remove this user from the system
+            and cannot be undone.
           </p>
 
         </div>
@@ -166,7 +166,6 @@ const DeleteUserModal = ({
         </div>
 
       </div>
-
     </div>
   );
 };
