@@ -7,6 +7,8 @@ import ComplaintFilters from "../components/complaints/ComplaintFilters";
 import ComplaintTable from "../components/complaints/ComplaintTable";
 import ComplaintDetails from "../components/complaints/ComplaintDetails";
 
+import { useLanguage } from "../i18n";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 /* =========================================================
@@ -49,6 +51,12 @@ const DEFAULT_KPIS = {
 ========================================================= */
 
 export default function Complaints() {
+  /* =======================================================
+     LANGUAGE
+  ======================================================= */
+
+  const { t } = useLanguage();
+
   /* =======================================================
      COMPLAINT DATA
   ======================================================= */
@@ -118,7 +126,10 @@ export default function Complaints() {
 
       if (!token) {
         throw new Error(
-          "Admin authentication token not found."
+          t(
+            "complaints.errors.authToken",
+            "Admin authentication token not found."
+          )
         );
       }
 
@@ -202,7 +213,10 @@ export default function Complaints() {
       ) {
         throw new Error(
           result.message ||
-            "Failed to fetch complaints."
+            t(
+              "complaints.errors.fetch",
+              "Failed to fetch complaints."
+            )
         );
       }
 
@@ -230,7 +244,10 @@ export default function Complaints() {
 
       setError(
         err?.message ||
-          "Unable to fetch complaints."
+          t(
+            "complaints.errors.fetchUnable",
+            "Unable to fetch complaints."
+          )
       );
     } finally {
       setLoading(false);
@@ -247,7 +264,10 @@ export default function Complaints() {
 
       if (!token) {
         throw new Error(
-          "Admin authentication token not found."
+          t(
+            "complaints.errors.authToken",
+            "Admin authentication token not found."
+          )
         );
       }
 
@@ -271,7 +291,10 @@ export default function Complaints() {
       ) {
         throw new Error(
           result.message ||
-            "Failed to fetch complaint KPIs."
+            t(
+              "complaints.errors.fetchKpis",
+              "Failed to fetch complaint KPIs."
+            )
         );
       }
 
@@ -306,7 +329,10 @@ export default function Complaints() {
 
       if (!token) {
         throw new Error(
-          "Admin authentication token not found."
+          t(
+            "complaints.errors.authToken",
+            "Admin authentication token not found."
+          )
         );
       }
 
@@ -340,7 +366,10 @@ export default function Complaints() {
       ) {
         throw new Error(
           result.message ||
-            "Failed to update complaint."
+            t(
+              "complaints.errors.update",
+              "Failed to update complaint."
+            )
         );
       }
 
@@ -368,7 +397,10 @@ export default function Complaints() {
       await fetchKPIs();
 
       alert(
-        "Complaint updated successfully."
+        t(
+          "complaints.messages.updated",
+          "Complaint updated successfully."
+        )
       );
     } catch (err) {
       console.error(
@@ -378,7 +410,10 @@ export default function Complaints() {
 
       alert(
         err?.message ||
-          "Unable to update complaint."
+          t(
+            "complaints.errors.updateUnable",
+            "Unable to update complaint."
+          )
       );
     } finally {
       setSavingComplaint(false);
@@ -402,7 +437,10 @@ export default function Complaints() {
 
         if (!token) {
           throw new Error(
-            "Admin authentication token not found."
+            t(
+              "complaints.errors.authToken",
+              "Admin authentication token not found."
+            )
           );
         }
 
@@ -431,7 +469,10 @@ export default function Complaints() {
         ) {
           throw new Error(
             result.message ||
-              "Failed to request verification."
+              t(
+                "complaints.errors.verification",
+                "Failed to request verification."
+              )
           );
         }
 
@@ -490,7 +531,10 @@ export default function Complaints() {
         }
 
         alert(
-          "OTP sent successfully to the citizen."
+          t(
+            "complaints.messages.otpSent",
+            "OTP sent successfully to the citizen."
+          )
         );
       } catch (err) {
         console.error(
@@ -500,7 +544,10 @@ export default function Complaints() {
 
         alert(
           err?.message ||
-            "Unable to request verification OTP."
+            t(
+              "complaints.errors.verificationUnable",
+              "Unable to request verification OTP."
+            )
         );
       }
     };
@@ -514,7 +561,10 @@ export default function Complaints() {
       !selectedComplaint?.ticket_number
     ) {
       throw new Error(
-        "No complaint selected."
+        t(
+          "complaints.errors.noComplaint",
+          "No complaint selected."
+        )
       );
     }
 
@@ -523,7 +573,10 @@ export default function Complaints() {
       otp.length !== 6
     ) {
       throw new Error(
-        "Please enter a valid 6-digit OTP."
+        t(
+          "complaints.errors.invalidOtp",
+          "Please enter a valid 6-digit OTP."
+        )
       );
     }
 
@@ -532,7 +585,10 @@ export default function Complaints() {
 
       if (!token) {
         throw new Error(
-          "Admin authentication token not found."
+          t(
+            "complaints.errors.authToken",
+            "Admin authentication token not found."
+          )
         );
       }
 
@@ -565,12 +621,18 @@ export default function Complaints() {
       ) {
         throw new Error(
           result.message ||
-            "Failed to verify OTP."
+            t(
+              "complaints.errors.verifyOtp",
+              "Failed to verify OTP."
+            )
         );
       }
 
       alert(
-        "Complaint closed successfully."
+        t(
+          "complaints.messages.closed",
+          "Complaint closed successfully."
+        )
       );
 
       /* =================================================
@@ -603,7 +665,10 @@ export default function Complaints() {
 
       alert(
         err?.message ||
-          "Unable to verify OTP."
+          t(
+            "complaints.errors.verifyOtpUnable",
+            "Unable to verify OTP."
+          )
       );
 
       throw err;
@@ -697,13 +762,6 @@ export default function Complaints() {
     if (!selectedComplaint) {
       return;
     }
-
-    /*
-     * We only need to lock the body while the
-     * mobile details drawer is open.
-     *
-     * Desktop keeps its normal page scrolling.
-     */
 
     const mediaQuery =
       window.matchMedia(
@@ -854,8 +912,6 @@ export default function Complaints() {
 
           {/* =================================================
               DESKTOP COMPLAINT DETAILS
-              
-              >= 1024px
           ================================================= */}
 
           <aside
@@ -889,8 +945,6 @@ export default function Complaints() {
 
       {/* =====================================================
           MOBILE COMPLAINT DETAILS DRAWER
-
-          < 1024px
       ===================================================== */}
 
       {selectedComplaint && (
@@ -908,7 +962,10 @@ export default function Complaints() {
 
           <button
             type="button"
-            aria-label="Close complaint details"
+            aria-label={t(
+              "complaints.details.close",
+              "Close complaint details"
+            )}
             onClick={
               closeComplaintDetails
             }
@@ -974,7 +1031,10 @@ export default function Complaints() {
                     text-[#16295A]
                   "
                 >
-                  Complaint Details
+                  {t(
+                    "complaints.details.title",
+                    "Complaint Details"
+                  )}
                 </p>
 
                 <p
@@ -993,7 +1053,10 @@ export default function Complaints() {
 
               <button
                 type="button"
-                aria-label="Close"
+                aria-label={t(
+                  "complaints.details.close",
+                  "Close"
+                )}
                 onClick={
                   closeComplaintDetails
                 }
@@ -1029,6 +1092,7 @@ export default function Complaints() {
                     x2="6"
                     y2="18"
                   />
+
                   <line
                     x1="6"
                     y1="6"

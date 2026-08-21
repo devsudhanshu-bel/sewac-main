@@ -713,6 +713,102 @@ users: {
   footer:
     "© 2025 SEWAC. All rights reserved.",
 },
+
+  complaints: {
+    title: "Complaints",
+    subtitle: "Manage and track citizen complaints",
+
+    filters: {
+      search: "Search complaints",
+      status: "Status",
+      category: "Category",
+      dateFrom: "Date From",
+      dateTo: "Date To",
+      reset: "Reset Filters",
+      allStatuses: "All Statuses",
+      allCategories: "All Categories",
+    },
+
+    kpis: {
+      total: "Total Complaints",
+      pending: "Pending",
+      readyForVerification: "Ready for Verification",
+      otpSent: "OTP Sent",
+      closed: "Closed",
+    },
+
+    table: {
+      ticketNumber: "Ticket Number",
+      citizen: "Citizen",
+      category: "Category",
+      status: "Status",
+      date: "Date",
+      actions: "Actions",
+      view: "View",
+      noComplaints: "No complaints found.",
+      loading: "Loading complaints...",
+      previous: "Previous",
+      next: "Next",
+      page: "Page",
+      of: "of",
+    },
+
+    details: {
+      title: "Complaint Details",
+      close: "Close",
+      complaintInformation: "Complaint Information",
+      ticketNumber: "Ticket Number",
+      citizen: "Citizen",
+      phone: "Phone",
+      category: "Category",
+      description: "Description",
+      location: "Location",
+      status: "Status",
+      remarks: "Remarks",
+      update: "Update Complaint",
+      save: "Save Changes",
+      saving: "Saving...",
+      requestVerification: "Request Verification",
+      verifyOtp: "Verify OTP",
+      enterOtp: "Enter 6-digit OTP",
+      otpSent: "OTP Sent",
+      readyForVerification: "Ready for Verification",
+      pending: "Pending",
+      closed: "Closed",
+      noComplaint: "Select a complaint to view details.",
+    },
+
+    status: {
+      pending: "Pending",
+      readyForVerification: "Ready for Verification",
+      otpSent: "OTP Sent",
+      closed: "Closed",
+      assigned: "Assigned",
+      inProgress: "In Progress",
+    },
+
+    messages: {
+      updated: "Complaint updated successfully.",
+      otpSent: "OTP sent successfully to the citizen.",
+      closed: "Complaint closed successfully.",
+    },
+
+    errors: {
+      authToken: "Admin authentication token not found.",
+      fetch: "Failed to fetch complaints.",
+      fetchUnable: "Unable to fetch complaints.",
+      fetchKpis: "Failed to fetch complaint KPIs.",
+      update: "Failed to update complaint.",
+      updateUnable: "Unable to update complaint.",
+      verification: "Failed to request verification.",
+      verificationUnable:
+        "Unable to request verification OTP.",
+      noComplaint: "No complaint selected.",
+      invalidOtp: "Please enter a valid 6-digit OTP.",
+      verifyOtp: "Failed to verify OTP.",
+      verifyOtpUnable: "Unable to verify OTP.",
+    },
+  },
 };
 
 export default en;
