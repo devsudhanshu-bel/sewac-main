@@ -255,7 +255,7 @@ export default function Complaints() {
         },
       });
 
-      const result = await parseApiResponse.json(response);
+      const result = await parseApiResponse(response);
 
       if (!response.ok || result.success !== true) {
         throw new Error(
@@ -313,7 +313,7 @@ export default function Complaints() {
         },
       );
 
-      const result = await parseApiResponse.json(response);
+      const result = await parseApiResponse(response);
 
       if (!response.ok || result.success !== true) {
         throw new Error(
@@ -390,7 +390,7 @@ export default function Complaints() {
         },
       );
 
-      const result = await response.json();
+      const result = await parseApiResponse(response);
 
       if (!response.ok || result.success !== true) {
         throw new Error(
@@ -433,7 +433,7 @@ export default function Complaints() {
           },
         );
 
-        const detailResult = await parseApiResponse.json(detailResponse);
+        const detailResult = await parseApiResponse(detailResponse);
 
         if (detailResponse.ok && detailResult.success === true) {
           setSelectedComplaint(detailResult.data);
@@ -509,7 +509,7 @@ export default function Complaints() {
         },
       );
 
-      const result = await parseApiResponse.json(response);
+      const result = await parseApiResponse(response);
 
       if (!response.ok || result.success !== true) {
         throw new Error(
