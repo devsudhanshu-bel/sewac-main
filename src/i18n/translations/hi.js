@@ -1396,9 +1396,9 @@ users: {
     active: "सक्रिय",
     inactive: "निष्क्रिय",
     pending: "लंबित",
-    blocked: "अवरुद्ध",
+    blocked: "ब्लॉक किया गया",
 
-    actions: "क्रियाएं",
+    actions: "क्रियाएँ",
 
     showing: "दिखाया जा रहा है",
     of: "में से",
@@ -1421,6 +1421,47 @@ users: {
   actions: {
     edit: "उपयोगकर्ता संपादित करें",
     delete: "उपयोगकर्ता हटाएँ",
+  },
+
+  // =========================================================
+  // ADD / EDIT USER MODAL
+  // =========================================================
+
+  modal: {
+    fullName: "पूरा नाम",
+    email: "ईमेल",
+    password: "पासवर्ड",
+    phoneNumber: "फोन नंबर",
+
+    fullNamePlaceholder:
+      "पूरा नाम दर्ज करें",
+
+    emailPlaceholder:
+      "ईमेल दर्ज करें",
+
+    passwordPlaceholder:
+      "पासवर्ड दर्ज करें",
+
+    phoneNumberPlaceholder:
+      "फोन नंबर दर्ज करें",
+
+    cancel: "रद्द करें",
+    save: "सहेजें",
+    saving: "सहेजा जा रहा है...",
+
+    errors: {
+      fillAllFields:
+        "कृपया सभी फ़ील्ड भरें।",
+
+      roleMissing:
+        "उपयोगकर्ता की भूमिका उपलब्ध नहीं है।",
+
+      createFailed:
+        "उपयोगकर्ता बनाने में विफल।",
+
+      updateFailed:
+        "उपयोगकर्ता अपडेट करने में विफल।",
+    },
   },
 },
 };

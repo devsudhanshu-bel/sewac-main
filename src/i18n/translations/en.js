@@ -1349,10 +1349,12 @@ users: {
     lastLogin: "Last Login",
     status: "Status",
     createdAt: "Created At",
+
     active: "Active",
     inactive: "Inactive",
     pending: "Pending",
     blocked: "Blocked",
+
     actions: "Actions",
 
     showing: "Showing",
@@ -1376,6 +1378,47 @@ users: {
   actions: {
     edit: "Edit user",
     delete: "Delete user",
+  },
+
+  // =========================================================
+  // ADD / EDIT USER MODAL
+  // =========================================================
+
+  modal: {
+    fullName: "Full Name",
+    email: "Email",
+    password: "Password",
+    phoneNumber: "Phone Number",
+
+    fullNamePlaceholder:
+      "Enter full name",
+
+    emailPlaceholder:
+      "Enter email",
+
+    passwordPlaceholder:
+      "Enter password",
+
+    phoneNumberPlaceholder:
+      "Enter phone number",
+
+    cancel: "Cancel",
+    save: "Save",
+    saving: "Saving...",
+
+    errors: {
+      fillAllFields:
+        "Please fill in all fields.",
+
+      roleMissing:
+        "User role is missing.",
+
+      createFailed:
+        "Failed to create user.",
+
+      updateFailed:
+        "Failed to update user.",
+    },
   },
 },
 };
