@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import {
-  X,
   Tag,
   FolderOpen,
   Phone,
@@ -148,64 +147,9 @@ export default function ComplaintDetails({
           w-full
           flex-col
           overflow-hidden
-          rounded-2xl
-          border
-          border-gray-100
           bg-white
-          shadow-[0_8px_25px_rgba(15,23,42,0.05)]
         "
       >
-        {/* HEADER */}
-
-        <div
-          className="
-            flex
-            shrink-0
-            items-center
-            justify-between
-            border-b
-            border-gray-100
-            px-4
-            py-4
-
-            sm:px-5
-          "
-        >
-          <h2
-            className="
-              text-[14px]
-              font-bold
-              text-[#16295A]
-
-              sm:text-[15px]
-            "
-          >
-            Complaint Details
-          </h2>
-
-          <button
-            type="button"
-            onClick={() => onClose?.()}
-            className="
-              flex
-              h-7
-              w-7
-              shrink-0
-              items-center
-              justify-center
-              rounded-lg
-              text-gray-400
-              transition
-              hover:bg-gray-50
-              hover:text-gray-700
-            "
-          >
-            <X size={17} />
-          </button>
-        </div>
-
-        {/* EMPTY CONTENT */}
-
         <div
           className="
             flex
@@ -239,7 +183,6 @@ export default function ComplaintDetails({
                 text-[12px]
                 font-semibold
                 text-[#16295A]
-
                 sm:text-[13px]
               "
             >
@@ -252,7 +195,6 @@ export default function ComplaintDetails({
                 text-[10px]
                 leading-5
                 text-gray-400
-
                 sm:text-[11px]
               "
             >
@@ -273,82 +215,22 @@ export default function ComplaintDetails({
     <div
       className="
         flex
+        h-full
+        min-h-0
         w-full
         flex-col
         overflow-hidden
-        rounded-2xl
-        border
-        border-gray-100
         bg-white
-        shadow-[0_8px_25px_rgba(15,23,42,0.05)]
-
-        h-full
-        min-h-0
-
-        max-h-[calc(100vh-120px)]
-
-        lg:max-h-[calc(100vh-104px)]
       "
     >
       {/* =====================================================
-          HEADER
-      ===================================================== */}
-
-      <div
-        className="
-          flex
-          shrink-0
-          items-center
-          justify-between
-          border-b
-          border-gray-100
-          px-4
-          py-3.5
-
-          sm:px-5
-          sm:py-4
-        "
-      >
-        <div className="min-w-0">
-          <h2
-            className="
-              truncate
-              text-[14px]
-              font-bold
-              text-[#16295A]
-
-              sm:text-[15px]
-            "
-          >
-            Complaint Details
-          </h2>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onClose?.()}
-          className="
-            ml-3
-            flex
-            h-7
-            w-7
-            shrink-0
-            items-center
-            justify-center
-            rounded-lg
-            text-gray-400
-            transition
-            hover:bg-gray-50
-            hover:text-gray-700
-          "
-          aria-label="Close complaint details"
-        >
-          <X size={17} />
-        </button>
-      </div>
-
-      {/* =====================================================
           SCROLL CONTENT
+          NOTE:
+          Header intentionally removed.
+          The parent modal already provides:
+          - Complaint Details title
+          - Ticket number
+          - Close button
       ===================================================== */}
 
       <div
@@ -359,10 +241,8 @@ export default function ComplaintDetails({
           overscroll-contain
           px-4
           py-4
-
           sm:px-5
           sm:py-4
-
           [scrollbar-width:thin]
         "
       >
@@ -403,7 +283,6 @@ export default function ComplaintDetails({
                 text-[10px]
                 font-semibold
                 text-violet-700
-
                 sm:text-[11px]
               "
               title={complaint.ticket_number}
@@ -419,9 +298,7 @@ export default function ComplaintDetails({
                 py-1
                 text-[9px]
                 font-semibold
-
                 sm:text-[10px]
-
                 ${getStatusBadgeClass()}
               `}
             >
@@ -455,7 +332,6 @@ export default function ComplaintDetails({
                 font-medium
                 leading-5
                 text-[#16295A]
-
                 sm:text-[12px]
               "
             >
@@ -485,7 +361,6 @@ export default function ComplaintDetails({
                 break-words
                 text-[11px]
                 text-[#16295A]
-
                 sm:text-[12px]
               "
             >
@@ -516,7 +391,6 @@ export default function ComplaintDetails({
                   truncate
                   text-[11px]
                   text-[#16295A]
-
                   sm:text-[12px]
                 "
               >
@@ -569,7 +443,6 @@ export default function ComplaintDetails({
                 text-[11px]
                 leading-5
                 text-[#16295A]
-
                 sm:text-[12px]
               "
             >
@@ -600,7 +473,6 @@ export default function ComplaintDetails({
                   truncate
                   text-[11px]
                   text-[#16295A]
-
                   sm:text-[12px]
                 "
               >
@@ -658,7 +530,6 @@ export default function ComplaintDetails({
                   w-full
                   rounded-xl
                   object-cover
-
                   sm:h-[145px]
                 "
               />
@@ -676,7 +547,6 @@ export default function ComplaintDetails({
                   bg-gray-50
                   text-[10px]
                   text-gray-400
-
                   sm:h-[145px]
                   sm:text-[11px]
                 "
@@ -734,7 +604,6 @@ export default function ComplaintDetails({
                 text-[11px]
                 leading-5
                 text-[#16295A]
-
                 sm:text-[12px]
               "
             >
@@ -760,7 +629,9 @@ export default function ComplaintDetails({
             </p>
           </div>
 
-          {/* CLOSED */}
+          {/* =================================================
+              CLOSED
+          ================================================= */}
 
           {isClosed ? (
             <div
@@ -778,14 +649,15 @@ export default function ComplaintDetails({
                 text-[10px]
                 font-semibold
                 text-green-700
-
                 sm:text-[11px]
               "
             >
               Closed — Citizen Verified
             </div>
           ) : isOtpSent ? (
-            /* OTP SENT */
+            /* =================================================
+               OTP SENT
+            ================================================= */
 
             <div
               className="
@@ -802,14 +674,15 @@ export default function ComplaintDetails({
                 text-[10px]
                 font-semibold
                 text-violet-700
-
                 sm:text-[11px]
               "
             >
               Verification OTP Sent
             </div>
           ) : (
-            /* ADMIN STATUS SELECT */
+            /* =================================================
+               ADMIN STATUS SELECT
+            ================================================= */
 
             <select
               value={status}
@@ -838,7 +711,6 @@ export default function ComplaintDetails({
                 focus:ring-violet-100
                 disabled:bg-gray-50
                 disabled:text-gray-400
-
                 sm:text-[11px]
               "
             >
@@ -905,7 +777,6 @@ export default function ComplaintDetails({
               focus:ring-violet-100
               disabled:bg-gray-50
               disabled:text-gray-400
-
               sm:text-[11px]
             "
           />
@@ -923,7 +794,6 @@ export default function ComplaintDetails({
               gap-2
               pt-1
               pb-2
-
               min-[420px]:flex-row
               min-[420px]:justify-end
             "
@@ -959,7 +829,6 @@ export default function ComplaintDetails({
                 hover:bg-gray-50
                 disabled:cursor-not-allowed
                 disabled:opacity-50
-
                 min-[420px]:w-auto
                 sm:text-[11px]
               "
@@ -987,7 +856,6 @@ export default function ComplaintDetails({
                 hover:opacity-95
                 disabled:cursor-not-allowed
                 disabled:opacity-50
-
                 min-[420px]:w-auto
                 sm:text-[11px]
               "
@@ -1009,7 +877,9 @@ export default function ComplaintDetails({
             pt-4
           "
         >
-          {/* READY → REQUEST OTP */}
+          {/* =================================================
+              READY → REQUEST OTP
+          ================================================= */}
 
           {isReadyForVerification && !otpSent && (
             <button
@@ -1033,7 +903,6 @@ export default function ComplaintDetails({
                 hover:opacity-95
                 disabled:cursor-not-allowed
                 disabled:opacity-50
-
                 sm:text-[11px]
               "
             >
@@ -1041,7 +910,9 @@ export default function ComplaintDetails({
             </button>
           )}
 
-          {/* OTP INPUT */}
+          {/* =================================================
+              OTP INPUT
+          ================================================= */}
 
           {isOtpSent && (
             <div className="mt-1">
@@ -1080,7 +951,6 @@ export default function ComplaintDetails({
                   focus:border-violet-400
                   focus:ring-2
                   focus:ring-violet-100
-
                   sm:text-[12px]
                 "
               />
@@ -1109,7 +979,6 @@ export default function ComplaintDetails({
                   hover:bg-violet-100
                   disabled:cursor-not-allowed
                   disabled:opacity-50
-
                   sm:text-[11px]
                 "
               >
@@ -1118,7 +987,9 @@ export default function ComplaintDetails({
             </div>
           )}
 
-          {/* CLOSED MESSAGE */}
+          {/* =================================================
+              CLOSED MESSAGE
+          ================================================= */}
 
           {isClosed && (
             <div
