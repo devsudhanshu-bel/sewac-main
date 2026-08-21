@@ -715,6 +715,12 @@ users: {
 },
 
 complaints: {
+
+    title: "Complaints",
+
+  description:
+    "Manage and track citizen complaints",
+
   details: {
     empty: {
       title: "Select a complaint",

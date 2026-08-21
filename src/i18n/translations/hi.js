@@ -701,6 +701,12 @@ users: {
 },
 
 complaints: {
+
+    title: "शिकायतें",
+
+  description:
+    "नागरिकों की शिकायतों को प्रबंधित और ट्रैक करें",
+    
   details: {
     empty: {
       title: "शिकायत चुनें",
