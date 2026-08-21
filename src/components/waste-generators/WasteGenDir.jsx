@@ -165,6 +165,10 @@ export default function WasteGeneratorDirectory({
 
   const getZone = (citizen) => citizen?.zoneName || "N/A";
 
+  const getStatus = (citizen) => {
+    return citizen?.status === "ACTIVE" ? "ACTIVE" : "INACTIVE";
+  };
+
   /*
   |--------------------------------------------------------------------------
   | WASTE VALUE HELPERS
@@ -499,7 +503,7 @@ export default function WasteGeneratorDirectory({
         <table
           className="
             w-full
-            min-w-[1180px]
+            min-w-[1280px]
 
             border-collapse
           "
@@ -680,6 +684,29 @@ export default function WasteGeneratorDirectory({
 
               <th
                 className="
+    px-4
+    sm:px-5
+    py-3
+    sm:py-4
+
+    text-left
+
+    text-[11px]
+    sm:text-[12px]
+    lg:text-[13px]
+
+    font-semibold
+
+    text-[#263A63]
+
+    whitespace-nowrap
+  "
+              >
+                Status
+              </th>
+
+              <th
+                className="
                   px-4
                   sm:px-5
                   py-3
@@ -757,7 +784,7 @@ export default function WasteGeneratorDirectory({
             {loading ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="
                     px-6
                     py-12
@@ -777,7 +804,7 @@ export default function WasteGeneratorDirectory({
             ) : citizens.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="
                     px-6
                     py-12
@@ -1045,6 +1072,70 @@ export default function WasteGeneratorDirectory({
                         "
                     >
                       {getZone(citizen)}
+                    </td>
+
+                    {/* ==================================================
+      STATUS
+  ================================================== */}
+
+                    <td
+                      className="
+    px-4
+    sm:px-5
+
+    py-4
+    sm:py-5
+  "
+                    >
+                      {getStatus(citizen) === "ACTIVE" ? (
+                        <span
+                          className="
+        inline-flex
+        items-center
+
+        px-3
+        py-1
+
+        rounded-full
+
+        bg-green-50
+        text-green-600
+
+        text-[10px]
+        sm:text-[12px]
+
+        font-semibold
+
+        whitespace-nowrap
+      "
+                        >
+                          Active
+                        </span>
+                      ) : (
+                        <span
+                          className="
+        inline-flex
+        items-center
+
+        px-3
+        py-1
+
+        rounded-full
+
+        bg-red-50
+        text-red-600
+
+        text-[10px]
+        sm:text-[12px]
+
+        font-semibold
+
+        whitespace-nowrap
+      "
+                        >
+                          Inactive
+                        </span>
+                      )}
                     </td>
 
                     {/* ==================================================
