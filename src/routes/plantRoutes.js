@@ -4,7 +4,6 @@ const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
-const checkActionPermission = require("../middlewares/checkActionPermission");
 
 const {
   getAllPlants,
@@ -25,20 +24,18 @@ const {
 router.get(
   "/dashboard",
   authMiddleware,
-  checkPermission("plants"),
   getPlantDashboard,
 );
 
 router.get(
   "/locations",
   authMiddleware,
-  checkPermission("plants"),
   getPlantLocations,
 );
 
-router.get("/", authMiddleware, checkPermission("plants"), getAllPlants);
+router.get("/", authMiddleware, getAllPlants);
 
-router.get("/:id", authMiddleware, checkPermission("plants"), getPlantById);
+router.get("/:id", authMiddleware, getPlantById);
 
 /*
 |--------------------------------------------------------------------------
@@ -49,24 +46,18 @@ router.get("/:id", authMiddleware, checkPermission("plants"), getPlantById);
 router.post(
   "/",
   authMiddleware,
-  checkPermission("plants"),
-  checkActionPermission("EDIT"),
   createPlant,
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  checkPermission("plants"),
-  checkActionPermission("EDIT"),
   updatePlant,
 );
 
 router.delete(
   "/:id",
   authMiddleware,
-  checkPermission("plants"),
-  checkActionPermission("DELETE"),
   deletePlant,
 );
 

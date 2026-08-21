@@ -7,7 +7,6 @@ const wasteGeneratorController = require("../controllers/wasteGeneratorControlle
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
 const checkTemporaryPermission = require("../middlewares/checkTemporaryPermission");
-const checkActionPermission = require("../middlewares/checkActionPermission");
 
 /*
 ============================================================
@@ -35,7 +34,6 @@ GET /api/waste-generators/map
 router.get(
   "/map",
   authMiddleware,
-  checkPermission("waste_generators"),
   wasteGeneratorController.getMap,
 );
 
@@ -47,7 +45,6 @@ SUMMARY
 router.get(
   "/summary",
   authMiddleware,
-  checkPermission("waste_generators"),
   wasteGeneratorController.getSummary,
 );
 
@@ -59,7 +56,6 @@ DIRECTORY
 router.get(
   "/directory",
   authMiddleware,
-  checkPermission("waste_generators"),
   wasteGeneratorController.getDirectory,
 );
 
@@ -71,7 +67,6 @@ GVP TREND
 router.get(
   "/gvp-trend",
   authMiddleware,
-  checkPermission("waste_generators"),
   wasteGeneratorController.getGVPTrend,
 );
 
@@ -93,8 +88,6 @@ UPDATE
 router.put(
   "/:phoneNumber",
   authMiddleware,
-  checkPermission("waste_generators"),
-  checkActionPermission("EDIT"),
   wasteGeneratorController.updateWasteGenerator,
 );
 

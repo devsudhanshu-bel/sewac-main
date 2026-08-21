@@ -4,7 +4,6 @@ const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
 const checkPermission = require("../middlewares/checkPermission");
-const checkActionPermission = require("../middlewares/checkActionPermission");
 
 const {
   getAllVehicles,
@@ -34,7 +33,6 @@ const {
 router.get(
   "/summary",
   authMiddleware,
-  checkPermission("vehicles"),
   getVehicleSummary,
 );
 
@@ -43,31 +41,24 @@ router.get("/", authMiddleware, checkPermission("vehicles"), getAllVehicles);
 router.get(
   "/:vehicleId",
   authMiddleware,
-  checkPermission("vehicles"),
   getVehicleById,
 );
 
 router.post(
   "/",
   authMiddleware,
-  checkPermission("vehicles"),
-  checkActionPermission("EDIT"),
   createVehicle,
 );
 
 router.put(
   "/:vehicleId",
   authMiddleware,
-  checkPermission("vehicles"),
-  checkActionPermission("EDIT"),
   updateVehicle,
 );
 
 router.delete(
   "/:vehicleId",
   authMiddleware,
-  checkPermission("vehicles"),
-  checkActionPermission("DELETE"),
   deleteVehicle,
 );
 
