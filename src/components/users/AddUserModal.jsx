@@ -26,7 +26,7 @@ const AddUserModal = ({
   if (!open) return null;
 
   // =========================================================
-  // HANDLE INPUT
+  // HANDLE INPUT CHANGE
   // =========================================================
 
   const handleChange = (e) => {
@@ -67,14 +67,14 @@ const AddUserModal = ({
     const phone = form.phone_number.trim();
     const password = form.password;
 
-    // ---------------------------------------------------------
+    // =======================================================
     // VALIDATION
-    // ---------------------------------------------------------
+    // =======================================================
 
     if (!fullName || !email || !phone || !password) {
       setError(
         t(
-          "users.modals.validation.allFields",
+          "users.modal.errors.fillAllFields",
           "Please fill in all fields."
         )
       );
@@ -84,7 +84,7 @@ const AddUserModal = ({
     if (!role) {
       setError(
         t(
-          "users.modals.validation.roleMissing",
+          "users.modal.errors.roleMissing",
           "User role is missing."
         )
       );
@@ -93,6 +93,10 @@ const AddUserModal = ({
 
     setLoading(true);
     setError("");
+
+    // =======================================================
+    // API REQUEST
+    // =======================================================
 
     try {
       const response = await api.post("/api/users", {
@@ -108,8 +112,8 @@ const AddUserModal = ({
       if (!createdUser) {
         throw new Error(
           t(
-            "users.modals.errors.noUserData",
-            "User was created, but no user data was returned."
+            "users.modal.errors.createFailed",
+            "Failed to create user."
           )
         );
       }
@@ -127,7 +131,7 @@ const AddUserModal = ({
         err?.response?.data?.error ||
         err?.message ||
         t(
-          "users.modals.errors.createFailed",
+          "users.modal.errors.createFailed",
           "Failed to create user."
         );
 
@@ -151,10 +155,11 @@ const AddUserModal = ({
         items-center
         justify-center
         bg-black/40
-        px-4
-        py-4
+        px-3
+        py-3
         backdrop-blur-sm
-        sm:px-6
+        sm:px-5
+        sm:py-5
       "
     >
       {/* =====================================================
@@ -164,16 +169,16 @@ const AddUserModal = ({
       <div
         className="
           flex
-          max-h-[calc(100vh-32px)]
+          max-h-[calc(100vh-24px)]
           w-full
           max-w-[560px]
           flex-col
           overflow-hidden
-          rounded-[20px]
+          rounded-[18px]
           bg-white
           shadow-2xl
-          sm:max-h-[calc(100vh-48px)]
-          sm:rounded-[24px]
+          sm:max-h-[calc(100vh-40px)]
+          sm:rounded-[22px]
         "
       >
         {/* ===================================================
@@ -197,7 +202,7 @@ const AddUserModal = ({
           <h2
             className="
               min-w-0
-              pr-4
+              pr-3
               text-[20px]
               font-semibold
               leading-tight
@@ -209,16 +214,18 @@ const AddUserModal = ({
             {title}
           </h2>
 
+          {/* CLOSE */}
+
           <button
             type="button"
             onClick={resetAndClose}
             disabled={loading}
             aria-label={t(
-              "users.modals.close",
+              "users.modal.close",
               "Close"
             )}
             title={t(
-              "users.modals.close",
+              "users.modal.close",
               "Close"
             )}
             className="
@@ -313,7 +320,7 @@ const AddUserModal = ({
                   "
                 >
                   {t(
-                    "users.modals.fields.fullName",
+                    "users.modal.fullName",
                     "Full Name"
                   )}
                 </label>
@@ -325,7 +332,7 @@ const AddUserModal = ({
                   value={form.full_name}
                   onChange={handleChange}
                   placeholder={t(
-                    "users.modals.fields.fullNamePlaceholder",
+                    "users.modal.fullNamePlaceholder",
                     "Enter full name"
                   )}
                   disabled={loading}
@@ -372,7 +379,7 @@ const AddUserModal = ({
                   "
                 >
                   {t(
-                    "users.modals.fields.email",
+                    "users.modal.email",
                     "Email"
                   )}
                 </label>
@@ -384,7 +391,7 @@ const AddUserModal = ({
                   value={form.email}
                   onChange={handleChange}
                   placeholder={t(
-                    "users.modals.fields.emailPlaceholder",
+                    "users.modal.emailPlaceholder",
                     "Enter email"
                   )}
                   disabled={loading}
@@ -431,7 +438,7 @@ const AddUserModal = ({
                   "
                 >
                   {t(
-                    "users.modals.fields.password",
+                    "users.modal.password",
                     "Password"
                   )}
                 </label>
@@ -443,7 +450,7 @@ const AddUserModal = ({
                   value={form.password}
                   onChange={handleChange}
                   placeholder={t(
-                    "users.modals.fields.passwordPlaceholder",
+                    "users.modal.passwordPlaceholder",
                     "Enter password"
                   )}
                   disabled={loading}
@@ -490,7 +497,7 @@ const AddUserModal = ({
                   "
                 >
                   {t(
-                    "users.modals.fields.phoneNumber",
+                    "users.modal.phoneNumber",
                     "Phone Number"
                   )}
                 </label>
@@ -502,7 +509,7 @@ const AddUserModal = ({
                   value={form.phone_number}
                   onChange={handleChange}
                   placeholder={t(
-                    "users.modals.fields.phoneNumberPlaceholder",
+                    "users.modal.phoneNumberPlaceholder",
                     "Enter phone number"
                   )}
                   disabled={loading}
@@ -582,7 +589,7 @@ const AddUserModal = ({
               "
             >
               {t(
-                "users.modals.cancel",
+                "users.modal.cancel",
                 "Cancel"
               )}
             </button>
@@ -595,7 +602,6 @@ const AddUserModal = ({
               className="
                 h-11
                 w-full
-                min-w-0
                 rounded-xl
                 bg-violet-600
                 px-7
@@ -614,11 +620,11 @@ const AddUserModal = ({
             >
               {loading
                 ? t(
-                    "users.modals.saving",
+                    "users.modal.saving",
                     "Saving..."
                   )
                 : t(
-                    "users.modals.save",
+                    "users.modal.save",
                     "Save"
                   )}
             </button>
