@@ -1649,7 +1649,7 @@ export default function GVPOverviewMap({
                     "
                   >
                     {t(
-                      "wasteGenerators.gvpMap.mapUnavailable",
+                      "wasteGenerators.gvpMap.unavailable",
                       "GVP map unavailable"
                     )}
                   </p>
