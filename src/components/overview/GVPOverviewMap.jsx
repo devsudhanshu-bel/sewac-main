@@ -24,10 +24,7 @@ import { useLanguage } from "../../i18n";
    MAP DEFAULTS
 ========================================================= */
 
-const DEFAULT_CENTER = [
-  12.9716,
-  77.5946,
-];
+const DEFAULT_CENTER = [12.9716, 77.5946];
 
 const DEFAULT_ZOOM = 11;
 
@@ -53,16 +50,11 @@ const isCoordinatePair = (value) =>
 
 const reverseCoordinates = (value) => {
   if (isCoordinatePair(value)) {
-    return [
-      value[1],
-      value[0],
-    ];
+    return [value[1], value[0]];
   }
 
   if (Array.isArray(value)) {
-    return value.map(
-      reverseCoordinates
-    );
+    return value.map(reverseCoordinates);
   }
 
   return value;
@@ -79,19 +71,11 @@ const normalizeGeometry = (value) => {
 
   let geometry = value;
 
-  /*
-   * JSON STRING
-   */
+  /* JSON STRING */
 
-  if (
-    typeof geometry ===
-    "string"
-  ) {
+  if (typeof geometry === "string") {
     try {
-      geometry =
-        JSON.parse(
-          geometry
-        );
+      geometry = JSON.parse(geometry);
     } catch (error) {
       console.error(
         "Unable to parse GVP boundary:",
@@ -102,141 +86,80 @@ const normalizeGeometry = (value) => {
     }
   }
 
-  if (
-    !geometry ||
-    typeof geometry !==
-      "object"
-  ) {
+  if (!geometry || typeof geometry !== "object") {
     return null;
   }
 
-  /*
-   * POLYGON / MULTIPOLYGON
-   */
+  /* POLYGON / MULTIPOLYGON */
 
   if (
-    geometry.type ===
-      "Polygon" ||
-    geometry.type ===
-      "MultiPolygon"
+    geometry.type === "Polygon" ||
+    geometry.type === "MultiPolygon"
   ) {
-    if (
-      !Array.isArray(
-        geometry.coordinates
-      )
-    ) {
+    if (!Array.isArray(geometry.coordinates)) {
       return null;
     }
 
     return {
-      type:
-        geometry.type,
-
-      coordinates:
-        reverseCoordinates(
-          geometry.coordinates
-        ),
+      type: geometry.type,
+      coordinates: reverseCoordinates(
+        geometry.coordinates
+      ),
     };
   }
 
-  /*
-   * FEATURE
-   */
+  /* FEATURE */
 
-  if (
-    geometry.type ===
-    "Feature"
-  ) {
-    return normalizeGeometry(
-      geometry.geometry
-    );
+  if (geometry.type === "Feature") {
+    return normalizeGeometry(geometry.geometry);
   }
 
-  /*
-   * FEATURE COLLECTION
-   */
+  /* FEATURE COLLECTION */
 
   if (
-    geometry.type ===
-      "FeatureCollection" &&
-    Array.isArray(
-      geometry.features
-    )
+    geometry.type === "FeatureCollection" &&
+    Array.isArray(geometry.features)
   ) {
-    const geometries =
-      geometry.features
-        .map(
-          (feature) =>
-            normalizeGeometry(
-              feature?.geometry
-            )
-        )
-        .filter(Boolean);
+    const geometries = geometry.features
+      .map((feature) =>
+        normalizeGeometry(feature?.geometry)
+      )
+      .filter(Boolean);
 
-    if (
-      geometries.length ===
-      0
-    ) {
+    if (geometries.length === 0) {
       return null;
     }
 
-    if (
-      geometries.length ===
-      1
-    ) {
+    if (geometries.length === 1) {
       return geometries[0];
     }
 
     const polygons = [];
 
-    geometries.forEach(
-      (item) => {
-        if (
-          item.type ===
-          "Polygon"
-        ) {
-          polygons.push(
-            item.coordinates
-          );
-        }
-
-        if (
-          item.type ===
-          "MultiPolygon"
-        ) {
-          polygons.push(
-            ...item.coordinates
-          );
-        }
+    geometries.forEach((item) => {
+      if (item.type === "Polygon") {
+        polygons.push(item.coordinates);
       }
-    );
 
-    if (
-      polygons.length ===
-      0
-    ) {
+      if (item.type === "MultiPolygon") {
+        polygons.push(...item.coordinates);
+      }
+    });
+
+    if (polygons.length === 0) {
       return null;
     }
 
     return {
-      type:
-        "MultiPolygon",
-
-      coordinates:
-        polygons,
+      type: "MultiPolygon",
+      coordinates: polygons,
     };
   }
 
-  /*
-   * GENERIC GEOMETRY WRAPPER
-   */
+  /* GENERIC GEOMETRY WRAPPER */
 
-  if (
-    geometry.geometry
-  ) {
-    return normalizeGeometry(
-      geometry.geometry
-    );
+  if (geometry.geometry) {
+    return normalizeGeometry(geometry.geometry);
   }
 
   return null;
@@ -247,44 +170,23 @@ const normalizeGeometry = (value) => {
 ========================================================= */
 
 function MapSizeController() {
-  const map =
-    useMap();
+  const map = useMap();
 
   useEffect(() => {
     const timers = [
-      setTimeout(
-        () =>
-          map.invalidateSize(),
-        100
-      ),
-
-      setTimeout(
-        () =>
-          map.invalidateSize(),
-        500
-      ),
-
-      setTimeout(
-        () =>
-          map.invalidateSize(),
-        1000
-      ),
+      setTimeout(() => map.invalidateSize(), 100),
+      setTimeout(() => map.invalidateSize(), 500),
+      setTimeout(() => map.invalidateSize(), 1000),
     ];
 
-    const handleResize =
-      () => {
-        map.invalidateSize();
-      };
+    const handleResize = () => {
+      map.invalidateSize();
+    };
 
-    window.addEventListener(
-      "resize",
-      handleResize
-    );
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      timers.forEach(
-        clearTimeout
-      );
+      timers.forEach(clearTimeout);
 
       window.removeEventListener(
         "resize",
@@ -305,115 +207,66 @@ function FitGVPMap({
   gvpPoints,
   fitKey,
 }) {
-  const map =
-    useMap();
+  const map = useMap();
 
   useEffect(() => {
     try {
-      const bounds =
-        L.latLngBounds([]);
+      const bounds = L.latLngBounds([]);
 
-      /*
-       * ONLY GVP POINTS
-       */
+      /* ONLY GVP POINTS */
 
-      if (
-        Array.isArray(
-          gvpPoints
-        )
-      ) {
-        gvpPoints.forEach(
-          (point) => {
-            const latitude =
-              Number(
-                point.latitude
-              );
+      if (Array.isArray(gvpPoints)) {
+        gvpPoints.forEach((point) => {
+          const latitude = Number(point.latitude);
+          const longitude = Number(point.longitude);
 
-            const longitude =
-              Number(
-                point.longitude
-              );
-
-            if (
-              Number.isFinite(
-                latitude
-              ) &&
-              Number.isFinite(
-                longitude
-              )
-            ) {
-              bounds.extend([
-                latitude,
-                longitude,
-              ]);
-            }
+          if (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude)
+          ) {
+            bounds.extend([
+              latitude,
+              longitude,
+            ]);
           }
-        );
+        });
       }
 
-      /*
-       * SELECTED WARD BOUNDARY
-       */
+      /* SELECTED WARD BOUNDARY */
 
       if (boundary) {
-        const boundaryLayer =
-          L.geoJSON(
-            boundary
-          );
+        const boundaryLayer = L.geoJSON(boundary);
 
         const boundaryBounds =
           boundaryLayer.getBounds();
 
-        if (
-          boundaryBounds.isValid()
-        ) {
-          bounds.extend(
-            boundaryBounds
-          );
+        if (boundaryBounds.isValid()) {
+          bounds.extend(boundaryBounds);
         }
       }
 
-      /*
-       * NOTHING AVAILABLE
-       */
+      /* NOTHING AVAILABLE */
 
-      if (
-        !bounds.isValid()
-      ) {
+      if (!bounds.isValid()) {
         map.setView(
           DEFAULT_CENTER,
           DEFAULT_ZOOM,
           {
-            animate:
-              false,
+            animate: false,
           }
         );
 
         return;
       }
 
-      /*
-       * FIT SELECTED WARD
-       */
+      /* FIT SELECTED WARD */
 
-      map.fitBounds(
-        bounds,
-        {
-          padding: [
-            30,
-            30,
-          ],
-
-          maxZoom:
-            15,
-
-          animate:
-            true,
-
-          duration:
-            0.8,
-        }
-      );
+      map.fitBounds(bounds, {
+        padding: [30, 30],
+        maxZoom: 15,
+        animate: true,
+        duration: 0.8,
+      });
     } catch (error) {
       console.error(
         "Unable to fit GVP map:",
@@ -424,8 +277,7 @@ function FitGVPMap({
         DEFAULT_CENTER,
         DEFAULT_ZOOM,
         {
-          animate:
-            false,
+          animate: false,
         }
       );
     }
@@ -446,37 +298,29 @@ function FitGVPMap({
 export default function GVPOverviewMap({
   selectedDate,
 }) {
-  /*
-   * =======================================================
-   * LANGUAGE
-   * =======================================================
-   */
+  /* =======================================================
+     LANGUAGE
+  ======================================================= */
 
   const {
     language,
     t,
-  } =
-    useLanguage();
+  } = useLanguage();
 
-  /*
-   * =======================================================
-   * GLOBAL FILTER CONTEXT
-   * =======================================================
-   */
+  /* =======================================================
+     GLOBAL FILTER CONTEXT
+  ======================================================= */
 
   const {
     selectedCity,
     selectedZone,
     selectedDivision,
     selectedWard,
-  } =
-    useFilters();
+  } = useFilters();
 
-  /*
-   * =======================================================
-   * STATE
-   * =======================================================
-   */
+  /* =======================================================
+     STATE
+  ======================================================= */
 
   const [
     mapData,
@@ -493,33 +337,25 @@ export default function GVPOverviewMap({
     setErrorMessage,
   ] = useState("");
 
-  /*
-   * =======================================================
-   * FILTER IDS
-   * =======================================================
-   */
+  /* =======================================================
+     FILTER IDS
+  ======================================================= */
 
   const cityId =
-    selectedCity?.city_id ??
-    null;
+    selectedCity?.city_id ?? null;
 
   const zoneId =
-    selectedZone?.zone_id ??
-    null;
+    selectedZone?.zone_id ?? null;
 
   const divisionId =
-    selectedDivision?.division_id ??
-    null;
+    selectedDivision?.division_id ?? null;
 
   const wardId =
-    selectedWard?.ward_id ??
-    null;
+    selectedWard?.ward_id ?? null;
 
-  /*
-   * =======================================================
-   * FILTER KEY
-   * =======================================================
-   */
+  /* =======================================================
+     FILTER KEY
+  ======================================================= */
 
   const filterKey = [
     cityId ?? "",
@@ -529,142 +365,98 @@ export default function GVPOverviewMap({
     selectedDate ?? "",
   ].join(":");
 
-  /*
-   * =======================================================
-   * LOAD MAP DATA
-   *
-   * SAME EXISTING BACKEND LOGIC
-   * =======================================================
-   */
+  /* =======================================================
+     LOAD MAP DATA
+
+     SAME BACKEND LOGIC
+  ======================================================= */
 
   useEffect(() => {
-    let cancelled =
-      false;
+    let cancelled = false;
 
-    const loadGVPMap =
-      async () => {
-        /*
-         * ALL HIERARCHY LEVELS ARE REQUIRED
-         */
+    const loadGVPMap = async () => {
+      /* ALL HIERARCHY LEVELS ARE REQUIRED */
 
-        if (
-          !cityId ||
-          !zoneId ||
-          !divisionId ||
-          !wardId
-        ) {
-          setMapData(
-            null
-          );
+      if (
+        !cityId ||
+        !zoneId ||
+        !divisionId ||
+        !wardId
+      ) {
+        setMapData(null);
+        setErrorMessage("");
+        setLoading(false);
 
-          setErrorMessage(
-            ""
-          );
+        return;
+      }
 
-          setLoading(
-            false
-          );
+      setLoading(true);
+      setErrorMessage("");
 
+      try {
+        const response = await api.get(
+          "/api/waste-generators/map",
+          {
+            params: {
+              date: selectedDate,
+              cityId,
+              zoneId,
+              divisionId,
+              wardId,
+            },
+          }
+        );
+
+        if (cancelled) {
           return;
         }
 
-        setLoading(
-          true
-        );
-
-        setErrorMessage(
-          ""
-        );
-
-        try {
-          const response =
-            await api.get(
-              "/api/waste-generators/map",
-              {
-                params: {
-                  date:
-                    selectedDate,
-
-                  cityId,
-
-                  zoneId,
-
-                  divisionId,
-
-                  wardId,
-                },
-              }
-            );
-
-          if (
-            cancelled
-          ) {
-            return;
-          }
-
-          if (
-            response?.data
-              ?.success ===
-            false
-          ) {
-            throw new Error(
-              response.data
-                .message ||
-                t(
-                  "wasteGenerators.gvpMap.errors.load",
-                  "Unable to load GVP points."
-                )
-            );
-          }
-
-          setMapData(
-            response?.data
-              ?.data || null
-          );
-        } catch (
-          error
+        if (
+          response?.data?.success === false
         ) {
-          if (
-            cancelled
-          ) {
-            return;
-          }
-
-          console.error(
-            "Overview GVP Map Error:",
-            error
-          );
-
-          setMapData(
-            null
-          );
-
-          setErrorMessage(
-            error?.response
-              ?.data
-              ?.message ||
-              error?.message ||
+          throw new Error(
+            response.data.message ||
               t(
                 "wasteGenerators.gvpMap.errors.load",
                 "Unable to load GVP points."
               )
           );
-        } finally {
-          if (
-            !cancelled
-          ) {
-            setLoading(
-              false
-            );
-          }
         }
-      };
+
+        setMapData(
+          response?.data?.data || null
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Overview GVP Map Error:",
+          error
+        );
+
+        setMapData(null);
+
+        setErrorMessage(
+          error?.response?.data?.message ||
+            error?.message ||
+            t(
+              "wasteGenerators.gvpMap.errors.load",
+              "Unable to load GVP points."
+            )
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
 
     loadGVPMap();
 
     return () => {
-      cancelled =
-        true;
+      cancelled = true;
     };
   }, [
     selectedDate,
@@ -675,74 +467,55 @@ export default function GVPOverviewMap({
     t,
   ]);
 
-  /*
-   * =======================================================
-   * NORMALIZE WARD BOUNDARY
-   * =======================================================
-   */
+  /* =======================================================
+     NORMALIZE WARD BOUNDARY
+  ======================================================= */
 
-  const boundary =
-    useMemo(
-      () =>
-        normalizeGeometry(
-          mapData?.boundary
-        ),
-      [
-        mapData?.boundary,
-      ]
-    );
+  const boundary = useMemo(
+    () =>
+      normalizeGeometry(
+        mapData?.boundary
+      ),
+    [mapData?.boundary]
+  );
 
-  /*
-   * =======================================================
-   * GVP POINTS ONLY
-   * =======================================================
-   */
+  /* =======================================================
+     GVP POINTS ONLY
+  ======================================================= */
 
-  const visibleGVPPoints =
-    useMemo(() => {
-      if (
-        !Array.isArray(
-          mapData?.gvpPoints
-        )
-      ) {
-        return [];
+  const visibleGVPPoints = useMemo(() => {
+    if (
+      !Array.isArray(
+        mapData?.gvpPoints
+      )
+    ) {
+      return [];
+    }
+
+    return mapData.gvpPoints.filter(
+      (point) => {
+        const latitude = Number(
+          point.latitude
+        );
+
+        const longitude = Number(
+          point.longitude
+        );
+
+        return (
+          Number.isFinite(latitude) &&
+          Number.isFinite(longitude)
+        );
       }
+    );
+  }, [mapData?.gvpPoints]);
 
-      return mapData.gvpPoints.filter(
-        (point) => {
-          const latitude =
-            Number(
-              point.latitude
-            );
-
-          const longitude =
-            Number(
-              point.longitude
-            );
-
-          return (
-            Number.isFinite(
-              latitude
-            ) &&
-            Number.isFinite(
-              longitude
-            )
-          );
-        }
-      );
-    }, [
-      mapData?.gvpPoints,
-    ]);
-
-  /*
-   * =======================================================
-   * DISPLAY DATA
-   * =======================================================
-   */
+  /* =======================================================
+     DISPLAY DATA
+  ======================================================= */
 
   const wardName =
-    mapData?.ward
-      ?.wardName ||
+    mapData?.ward?.wardName ||
     selectedWard?.ward_name ||
     t(
       "wasteGenerators.gvpMap.selectedWard",
@@ -765,11 +538,9 @@ export default function GVPOverviewMap({
         )
       : visibleGVPPoints.length;
 
-  /*
-   * =======================================================
-   * DATE LOCALE
-   * =======================================================
-   */
+  /* =======================================================
+     DATE LOCALE
+  ======================================================= */
 
   const locale =
     language === "kn"
@@ -778,11 +549,9 @@ export default function GVPOverviewMap({
       ? "hi-IN"
       : "en-IN";
 
-  /*
-   * =======================================================
-   * FORMATTED DATE
-   * =======================================================
-   */
+  /* =======================================================
+     FORMATTED DATE
+  ======================================================= */
 
   const formattedDate =
     selectedDate
@@ -791,14 +560,9 @@ export default function GVPOverviewMap({
             return new Intl.DateTimeFormat(
               locale,
               {
-                day:
-                  "2-digit",
-
-                month:
-                  "2-digit",
-
-                year:
-                  "numeric",
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
               }
             ).format(
               new Date(
@@ -811,11 +575,9 @@ export default function GVPOverviewMap({
         })()
       : null;
 
-  /*
-   * =======================================================
-   * RENDER
-   * =======================================================
-   */
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <section
@@ -841,7 +603,6 @@ export default function GVPOverviewMap({
           sm:rounded-3xl
         "
       >
-
         {/* =================================================
             HEADER
         ================================================= */}
@@ -851,21 +612,19 @@ export default function GVPOverviewMap({
             flex
             shrink-0
             flex-col
-            gap-2
+            gap-1.5
             border-b
             border-slate-100
             px-3
-            py-2.5
+            py-2
             sm:flex-row
             sm:items-center
             sm:justify-between
-            sm:gap-4
-            sm:px-5
-            sm:pt-4
-            sm:pb-3
+            sm:gap-3
+            sm:px-4
+            sm:py-2.5
           "
         >
-
           {/* ===============================================
               TITLE SIDE
           =============================================== */}
@@ -876,28 +635,27 @@ export default function GVPOverviewMap({
               max-w-full
             "
           >
-
             <div
               className="
                 flex
                 min-w-0
                 flex-wrap
                 items-center
-                gap-x-2
-                gap-y-1
-                sm:gap-x-3
+                gap-x-1.5
+                gap-y-0.5
+                sm:gap-x-2
               "
             >
-
               <h3
                 className="
                   min-w-0
                   max-w-full
                   truncate
-                  text-[12px]
+                  text-[10px]
                   font-semibold
+                  leading-4
                   text-[#16295A]
-                  sm:text-[14px]
+                  sm:text-[12px]
                 "
               >
                 {t(
@@ -909,9 +667,10 @@ export default function GVPOverviewMap({
               <span
                 className="
                   shrink-0
-                  text-[9px]
+                  text-[8px]
+                  leading-4
                   text-slate-400
-                  sm:text-[11px]
+                  sm:text-[9px]
                 "
               >
                 {gvpCount}{" "}
@@ -927,18 +686,14 @@ export default function GVPOverviewMap({
                     shrink-0
                     max-w-full
                     truncate
-                    text-[9px]
+                    text-[8px]
+                    leading-4
                     text-slate-400
-                    sm:text-[11px]
+                    sm:text-[9px]
                   "
-                  title={
-                    formattedDate
-                  }
+                  title={formattedDate}
                 >
-                  ·{" "}
-                  {
-                    formattedDate
-                  }
+                  · {formattedDate}
                 </span>
               )}
             </div>
@@ -946,23 +701,18 @@ export default function GVPOverviewMap({
             {mapData?.ward && (
               <p
                 className="
-                  mt-0.5
+                  mt-0
                   max-w-full
                   truncate
-                  text-[8px]
-                  leading-4
+                  text-[7px]
+                  leading-3
                   text-slate-400
-                  sm:text-[10px]
+                  sm:text-[8px]
                 "
                 title={[
-                  mapData.ward
-                    .zoneName,
-
-                  mapData.ward
-                    .divisionName,
-
+                  mapData.ward.zoneName,
+                  mapData.ward.divisionName,
                   wardName,
-
                   wardNo !== null
                     ? `${t(
                         "wasteGenerators.gvpMap.ward",
@@ -970,34 +720,22 @@ export default function GVPOverviewMap({
                       )} ${wardNo}`
                     : "",
                 ]
-                  .filter(
-                    Boolean
-                  )
-                  .join(
-                    " · "
-                  )}
+                  .filter(Boolean)
+                  .join(" · ")}
               >
-                {
-                  mapData.ward
-                    .zoneName
-                }
+                {mapData.ward.zoneName}
                 {" · "}
-                {
-                  mapData.ward
-                    .divisionName
-                }
+                {mapData.ward.divisionName}
                 {" · "}
                 {wardName}
 
-                {wardNo !==
-                  null &&
+                {wardNo !== null &&
                   ` · ${t(
                     "wasteGenerators.gvpMap.ward",
                     "Ward"
                   )} ${wardNo}`}
               </p>
             )}
-
           </div>
 
           {/* ===============================================
@@ -1010,38 +748,37 @@ export default function GVPOverviewMap({
               w-fit
               shrink-0
               items-center
-              gap-1.5
+              gap-1
               self-start
-              rounded-lg
+              rounded-md
               bg-slate-50
-              px-2
-              py-1
+              px-1.5
+              py-0.5
               sm:self-auto
-              sm:gap-2
+              sm:gap-1.5
               sm:bg-transparent
               sm:px-0
               sm:py-0
             "
           >
-
             <span
               className="
-                h-2
-                w-2
+                h-1.5
+                w-1.5
                 shrink-0
                 rounded-full
                 bg-red-500
-                sm:h-2.5
-                sm:w-2.5
+                sm:h-2
+                sm:w-2
               "
             />
 
             <span
               className="
                 whitespace-nowrap
-                text-[9px]
+                text-[8px]
                 text-slate-500
-                sm:text-[11px]
+                sm:text-[9px]
               "
             >
               {t(
@@ -1053,16 +790,14 @@ export default function GVPOverviewMap({
             <span
               className="
                 shrink-0
-                text-[8px]
+                text-[7px]
                 text-slate-400
-                sm:text-[10px]
+                sm:text-[8px]
               "
             >
               ({gvpCount})
             </span>
-
           </div>
-
         </div>
 
         {/* =================================================
@@ -1081,30 +816,16 @@ export default function GVPOverviewMap({
             xl:min-h-[500px]
           "
         >
-
           <MapContainer
-            center={
-              DEFAULT_CENTER
-            }
-
-            zoom={
-              DEFAULT_ZOOM
-            }
-
-            scrollWheelZoom={
-              true
-            }
-
-            zoomControl={
-              false
-            }
-
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
+            scrollWheelZoom={true}
+            zoomControl={false}
             className="
               h-full
               w-full
             "
           >
-
             {/* =============================================
                 CARTO MAP
             ============================================= */}
@@ -1113,41 +834,26 @@ export default function GVPOverviewMap({
               attribution={
                 CARTO_ATTRIBUTION
               }
-
-              url={
-                CARTO_LIGHT_URL
-              }
-
+              url={CARTO_LIGHT_URL}
               subdomains={[
                 "a",
                 "b",
                 "c",
                 "d",
               ]}
-
-              maxZoom={
-                20
-              }
+              maxZoom={20}
             />
 
-            <ZoomControl
-              position="topleft"
-            />
+            <ZoomControl position="topleft" />
 
             <MapSizeController />
 
             <FitGVPMap
-              boundary={
-                boundary
-              }
-
+              boundary={boundary}
               gvpPoints={
                 visibleGVPPoints
               }
-
-              fitKey={
-                filterKey
-              }
+              fitKey={filterKey}
             />
 
             {/* =============================================
@@ -1156,29 +862,14 @@ export default function GVPOverviewMap({
 
             {boundary && (
               <GeoJSON
-                key={
-                  `gvp-boundary-${filterKey}`
-                }
-
-                data={
-                  boundary
-                }
-
+                key={`gvp-boundary-${filterKey}`}
+                data={boundary}
                 style={{
-                  color:
-                    "#4F46E5",
-
-                  weight:
-                    3,
-
-                  opacity:
-                    1,
-
-                  fillColor:
-                    "#6366F1",
-
-                  fillOpacity:
-                    0.07,
+                  color: "#4F46E5",
+                  weight: 3,
+                  opacity: 1,
+                  fillColor: "#6366F1",
+                  fillOpacity: 0.07,
                 }}
               />
             )}
@@ -1188,19 +879,14 @@ export default function GVPOverviewMap({
             ============================================= */}
 
             {visibleGVPPoints.map(
-              (
-                point,
-                index
-              ) => {
-                const latitude =
-                  Number(
-                    point.latitude
-                  );
+              (point, index) => {
+                const latitude = Number(
+                  point.latitude
+                );
 
-                const longitude =
-                  Number(
-                    point.longitude
-                  );
+                const longitude = Number(
+                  point.longitude
+                );
 
                 const gvpKey =
                   point.pointKey ||
@@ -1211,38 +897,27 @@ export default function GVPOverviewMap({
                     point.vehicleNumber ||
                       "UNKNOWN_VEHICLE",
 
-                    point.id ??
-                      "NO_ID",
+                    point.id ?? "NO_ID",
 
                     point.iotTimestamp ||
                       "NO_TIMESTAMP",
 
-                    latitude.toFixed(
-                      7
-                    ),
+                    latitude.toFixed(7),
 
-                    longitude.toFixed(
-                      7
-                    ),
+                    longitude.toFixed(7),
 
                     index,
-                  ].join(
-                    "-"
-                  );
+                  ].join("-");
 
                 return (
                   <CircleMarker
-                    key={
-                      `overview-gvp-${String(
-                        gvpKey
-                      )}`
-                    }
-
+                    key={`overview-gvp-${String(
+                      gvpKey
+                    )}`}
                     center={[
                       latitude,
                       longitude,
                     ]}
-
                     radius={
                       typeof window !==
                         "undefined" &&
@@ -1251,65 +926,47 @@ export default function GVPOverviewMap({
                         ? 5
                         : 5.5
                     }
-
                     pathOptions={{
-                      color:
-                        "#FFFFFF",
-
-                      weight:
-                        1.5,
-
-                      fillColor:
-                        "#EF4444",
-
-                      fillOpacity:
-                        0.96,
+                      color: "#FFFFFF",
+                      weight: 1.5,
+                      fillColor: "#EF4444",
+                      fillOpacity: 0.96,
                     }}
                   >
-
                     <Tooltip
                       direction="top"
-                      offset={[
-                        0,
-                        -4,
-                      ]}
-                      opacity={
-                        0.96
-                      }
-
+                      offset={[0, -4]}
+                      opacity={0.96}
                       className="
                         gvp-overview-tooltip
                       "
                     >
-
                       <div
                         className="
-                          w-[230px]
+                          w-[220px]
                           max-w-[calc(100vw-32px)]
-                          text-[10px]
-                          leading-[1.55]
-                          sm:w-[280px]
-                          sm:text-[11px]
+                          text-[9px]
+                          leading-[1.45]
+                          sm:w-[270px]
+                          sm:text-[10px]
                         "
                       >
-
-                        {/* =================================
-                            TITLE
-                        ================================= */}
+                        {/* TITLE */}
 
                         <div
                           className="
-                            mb-1.5
+                            mb-1
                             border-b
                             border-slate-200
-                            pb-1.5
+                            pb-1
                           "
                         >
-
                           <div
                             className="
+                              text-[10px]
                               font-semibold
                               text-red-600
+                              sm:text-[11px]
                             "
                           >
                             {t(
@@ -1317,12 +974,9 @@ export default function GVPOverviewMap({
                               "GVP Point"
                             )}
                           </div>
-
                         </div>
 
-                        {/* =================================
-                            VEHICLE
-                        ================================= */}
+                        {/* VEHICLE */}
 
                         <div>
                           <strong>
@@ -1332,15 +986,11 @@ export default function GVPOverviewMap({
                             )}
                             :
                           </strong>{" "}
-                          {
-                            point.vehicleNumber ||
-                            "N/A"
-                          }
+                          {point.vehicleNumber ||
+                            "N/A"}
                         </div>
 
-                        {/* =================================
-                            TABLE
-                        ================================= */}
+                        {/* TABLE */}
 
                         <div>
                           <strong>
@@ -1350,15 +1000,11 @@ export default function GVPOverviewMap({
                             )}
                             :
                           </strong>{" "}
-                          {
-                            point.sourceVehicleTable ||
-                            "N/A"
-                          }
+                          {point.sourceVehicleTable ||
+                            "N/A"}
                         </div>
 
-                        {/* =================================
-                            IOT
-                        ================================= */}
+                        {/* IOT */}
 
                         <div>
                           <strong>
@@ -1368,15 +1014,11 @@ export default function GVPOverviewMap({
                             )}
                             :
                           </strong>{" "}
-                          {
-                            point.iotTimestamp ||
-                            "N/A"
-                          }
+                          {point.iotTimestamp ||
+                            "N/A"}
                         </div>
 
-                        {/* =================================
-                            UNIT
-                        ================================= */}
+                        {/* UNIT */}
 
                         <div>
                           <strong>
@@ -1386,16 +1028,12 @@ export default function GVPOverviewMap({
                             )}
                             :
                           </strong>{" "}
-                          {
-                            point.unit ||
+                          {point.unit ||
                             point.unitName ||
-                            "N/A"
-                          }
+                            "N/A"}
                         </div>
 
-                        {/* =================================
-                            REMARKS
-                        ================================= */}
+                        {/* REMARKS */}
 
                         {point.remarks && (
                           <div>
@@ -1406,15 +1044,11 @@ export default function GVPOverviewMap({
                               )}
                               :
                             </strong>{" "}
-                            {
-                              point.remarks
-                            }
+                            {point.remarks}
                           </div>
                         )}
 
-                        {/* =================================
-                            GVP WASTE
-                        ================================= */}
+                        {/* GVP WASTE */}
 
                         <div>
                           <strong>
@@ -1428,15 +1062,11 @@ export default function GVPOverviewMap({
                             point.gvpWaste ??
                               point.weightDelta ??
                               0
-                          ).toFixed(
-                            3
-                          )}{" "}
+                          ).toFixed(3)}{" "}
                           KG
                         </div>
 
-                        {/* =================================
-                            COORDINATES
-                        ================================= */}
+                        {/* COORDINATES */}
 
                         <div>
                           <strong>
@@ -1446,25 +1076,14 @@ export default function GVPOverviewMap({
                             )}
                             :
                           </strong>{" "}
-                          {
-                            latitude.toFixed(
-                              6
-                            )
-                          }
+                          {latitude.toFixed(6)}
                           ,{" "}
-                          {
-                            longitude.toFixed(
-                              6
-                            )
-                          }
+                          {longitude.toFixed(6)}
                         </div>
 
-                        {/* =================================
-                            WARD
-                        ================================= */}
+                        {/* WARD */}
 
-                        {wardNo !==
-                          null && (
+                        {wardNo !== null && (
                           <div>
                             <strong>
                               {t(
@@ -1473,21 +1092,15 @@ export default function GVPOverviewMap({
                               )}
                               :
                             </strong>{" "}
-                            {
-                              wardNo
-                            }
+                            {wardNo}
                           </div>
                         )}
-
                       </div>
-
                     </Tooltip>
-
                   </CircleMarker>
                 );
               }
             )}
-
           </MapContainer>
 
           {/* =================================================
@@ -1508,19 +1121,18 @@ export default function GVPOverviewMap({
                 backdrop-blur-[1px]
               "
             >
-
               <div
                 className="
-                  rounded-xl
+                  rounded-lg
                   bg-white
                   px-3
-                  py-2
-                  text-[10px]
+                  py-1.5
+                  text-[9px]
                   text-slate-500
                   shadow
-                  sm:px-4
-                  sm:py-2
-                  sm:text-xs
+                  sm:px-3
+                  sm:py-1.5
+                  sm:text-[10px]
                 "
               >
                 {t(
@@ -1528,7 +1140,6 @@ export default function GVPOverviewMap({
                   "Loading GVP points..."
                 )}
               </div>
-
             </div>
           )}
 
@@ -1551,31 +1162,29 @@ export default function GVPOverviewMap({
                   p-4
                 "
               >
-
                 <div
                   className="
                     w-full
-                    max-w-[300px]
-                    rounded-xl
+                    max-w-[280px]
+                    rounded-lg
                     border
                     border-slate-100
                     bg-white/95
-                    px-4
-                    py-4
+                    px-3
+                    py-3
                     text-center
                     shadow-sm
                     backdrop-blur-sm
-                    sm:px-5
-                    sm:py-5
+                    sm:px-4
+                    sm:py-4
                   "
                 >
-
                   <p
                     className="
-                      text-[11px]
+                      text-[10px]
                       font-medium
                       text-slate-500
-                      sm:text-[12px]
+                      sm:text-[11px]
                     "
                   >
                     {t(
@@ -1586,11 +1195,11 @@ export default function GVPOverviewMap({
 
                   <p
                     className="
-                      mt-1
-                      text-[9px]
-                      leading-4
+                      mt-0.5
+                      text-[8px]
+                      leading-3.5
                       text-slate-400
-                      sm:text-[10px]
+                      sm:text-[9px]
                     "
                   >
                     {t(
@@ -1598,9 +1207,7 @@ export default function GVPOverviewMap({
                       "Choose City, Zone, Division and Ward from the header."
                     )}
                   </p>
-
                 </div>
-
               </div>
             )}
 
@@ -1622,30 +1229,28 @@ export default function GVPOverviewMap({
                   p-4
                 "
               >
-
                 <div
                   className="
                     w-full
-                    max-w-[340px]
-                    rounded-xl
+                    max-w-[320px]
+                    rounded-lg
                     border
                     border-red-100
                     bg-white
-                    px-4
-                    py-3
+                    px-3
+                    py-2.5
                     text-center
                     shadow-lg
-                    sm:px-5
-                    sm:py-4
+                    sm:px-4
+                    sm:py-3
                   "
                 >
-
                   <p
                     className="
-                      text-[11px]
+                      text-[10px]
                       font-semibold
                       text-slate-600
-                      sm:text-xs
+                      sm:text-[11px]
                     "
                   >
                     {t(
@@ -1656,21 +1261,17 @@ export default function GVPOverviewMap({
 
                   <p
                     className="
-                      mt-1
+                      mt-0.5
                       break-words
-                      text-[9px]
-                      leading-4
+                      text-[8px]
+                      leading-3.5
                       text-slate-400
-                      sm:text-xs
+                      sm:text-[9px]
                     "
                   >
-                    {
-                      errorMessage
-                    }
+                    {errorMessage}
                   </p>
-
                 </div>
-
               </div>
             )}
 
@@ -1695,18 +1296,17 @@ export default function GVPOverviewMap({
                   sm:right-3
                 "
               >
-
                 <div
                   className="
-                    rounded-lg
+                    rounded-md
                     bg-white/90
-                    px-2.5
-                    py-1.5
-                    text-[9px]
+                    px-2
+                    py-1
+                    text-[8px]
                     text-slate-500
                     shadow
-                    sm:px-3
-                    sm:text-[10px]
+                    sm:px-2.5
+                    sm:text-[9px]
                   "
                 >
                   {t(
@@ -1714,12 +1314,9 @@ export default function GVPOverviewMap({
                     "No GVP points for this date"
                   )}
                 </div>
-
               </div>
             )}
-
         </div>
-
       </div>
     </section>
   );
