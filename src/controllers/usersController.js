@@ -353,6 +353,17 @@ exports.deleteUser = async (req, res) => {
     const loggedInUser = req.user;
 
     // ===========================
+    // Validate User ID
+    // ===========================
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID.",
+      });
+    }
+
+    // ===========================
     // Prevent Self Delete
     // ===========================
 
@@ -381,7 +392,52 @@ exports.deleteUser = async (req, res) => {
     }
 
     // ===========================
-    // Prevent deleting last Admin
+    // RBAC Validation
+    // ===========================
+
+    // Admin Layer 1 can manage:
+    // - Admin Layer 1
+    // - Admin Layer 2 / Contractor
+    if (loggedInUser.role === "ADMIN_LAYER_1") {
+      if (
+        existingUser.role !== "ADMIN_LAYER_1" &&
+        existingUser.role !== "ADMIN_LAYER_2"
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "Admin Layer 1 cannot manage Workers.",
+        });
+      }
+    }
+
+    // Admin Layer 2 can manage:
+    // - Only Workers belonging to them
+    if (loggedInUser.role === "ADMIN_LAYER_2") {
+      if (
+        existingUser.role !== "WORKER" ||
+        existingUser.parent_admin_id !== loggedInUser.id
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "You are not allowed to delete this user.",
+        });
+      }
+    }
+
+    // Other roles
+    if (
+      loggedInUser.role !== "ADMIN_LAYER_1" &&
+      loggedInUser.role !== "ADMIN_LAYER_2"
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized.",
+      });
+    }
+
+    // ===========================
+    // Prevent Deleting Last
+    // Admin Layer 1
     // ===========================
 
     if (existingUser.role === "ADMIN_LAYER_1") {
@@ -398,46 +454,66 @@ exports.deleteUser = async (req, res) => {
           error: "Cannot delete the last Admin Layer 1.",
         });
       }
-    }
 
-    // ===========================
-    // RBAC Validation
-    // ===========================
-    if (loggedInUser.role === "ADMIN_LAYER_1") {
-      if (
-        existingUser.role !== "ADMIN_LAYER_1" &&
-        existingUser.role !== "ADMIN_LAYER_2"
-      ) {
-        return res.status(403).json({
+      // ===========================
+      // Protect Contractors
+      // ===========================
+      //
+      // An Admin Layer 1 may have created
+      // Admin Layer 2 / Contractor accounts.
+      //
+      // Never delete the parent while dependent
+      // contractor accounts still exist.
+
+      const contractorCount = await prisma.admins.count({
+        where: {
+          role: "ADMIN_LAYER_2",
+          parent_admin_id: userId,
+        },
+      });
+
+      if (contractorCount > 0) {
+        return res.status(409).json({
           success: false,
-          error: "Admin Layer 1 cannot manage Workers.",
+          error:
+            "Cannot delete this Admin Layer 1 because contractors are assigned to this account.",
+          code: "DEPENDENT_CONTRACTORS",
+          dependentCount: contractorCount,
         });
       }
     }
 
-    if (loggedInUser.role === "ADMIN_LAYER_2") {
-      if (
-        existingUser.role !== "WORKER" ||
-        existingUser.parent_admin_id !== loggedInUser.id
-      ) {
-        return res.status(403).json({
+    // ===========================
+    // Protect Workers
+    // When deleting Contractor
+    // ===========================
+
+    if (existingUser.role === "ADMIN_LAYER_2") {
+      const workerCount = await prisma.admins.count({
+        where: {
+          role: "WORKER",
+          parent_admin_id: userId,
+        },
+      });
+
+      if (workerCount > 0) {
+        return res.status(409).json({
           success: false,
-          error: "You are not allowed to delete this user.",
+          error:
+            "Cannot delete this Contractor because workers are assigned to this account.",
+          code: "DEPENDENT_WORKERS",
+          dependentCount: workerCount,
         });
       }
     }
 
     // ===========================
-    // Soft Delete
+    // HARD DELETE
     // ===========================
 
-    await prisma.admins.update({
+    await prisma.admins.delete({
       where: {
         id: userId,
-      },
-
-      data: {
-        status: "INACTIVE",
       },
     });
 
@@ -456,20 +532,38 @@ exports.deleteUser = async (req, res) => {
 
       recordId: userId.toString(),
 
-      description: `${loggedInUser.full_name} deactivated ${existingUser.full_name}.`,
+      description: `${loggedInUser.full_name} permanently deleted ${existingUser.full_name}.`,
     });
+
+    // ===========================
+    // Response
+    // ===========================
 
     return res.status(200).json({
       success: true,
 
-      message: "User deleted successfully.",
+      message: "User permanently deleted.",
+
+      userId,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Delete User Error:", error);
+
+    // ===========================
+    // Prisma Foreign Key Protection
+    // ===========================
+
+    if (error?.code === "P2003") {
+      return res.status(409).json({
+        success: false,
+        error:
+          "This user cannot be deleted because dependent records still exist.",
+        code: "DEPENDENCY_CONFLICT",
+      });
+    }
 
     return res.status(500).json({
       success: false,
-
       error: "Failed to delete user.",
     });
   }
