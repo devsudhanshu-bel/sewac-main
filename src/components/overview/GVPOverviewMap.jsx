@@ -61,7 +61,7 @@ const reverseCoordinates = (value) => {
 };
 
 /* =========================================================
-   NORMALIZE BOUNDARY
+   NORMALIZE GVP BOUNDARY
 ========================================================= */
 
 const normalizeGeometry = (value) => {
@@ -106,6 +106,7 @@ const normalizeGeometry = (value) => {
 
     return {
       type: geometry.type,
+
       coordinates: reverseCoordinates(
         geometry.coordinates
       ),
@@ -132,7 +133,9 @@ const normalizeGeometry = (value) => {
   ) {
     const geometries = geometry.features
       .map((feature) =>
-        normalizeGeometry(feature?.geometry)
+        normalizeGeometry(
+          feature?.geometry
+        )
       )
       .filter(Boolean);
 
@@ -152,7 +155,9 @@ const normalizeGeometry = (value) => {
       }
 
       if (item.type === "MultiPolygon") {
-        polygons.push(...item.coordinates);
+        polygons.push(
+          ...item.coordinates
+        );
       }
     });
 
@@ -181,6 +186,10 @@ const normalizeGeometry = (value) => {
 
 /* =========================================================
    MAP SIZE CONTROLLER
+
+   Important because this component is rendered inside the
+   City Overview map container and can change size when the
+   user changes views or browser dimensions.
 ========================================================= */
 
 function MapSizeController() {
@@ -190,12 +199,17 @@ function MapSizeController() {
     const timers = [
       setTimeout(
         () => map.invalidateSize(),
-        100
+        50
       ),
 
       setTimeout(
         () => map.invalidateSize(),
-        500
+        250
+      ),
+
+      setTimeout(
+        () => map.invalidateSize(),
+        600
       ),
 
       setTimeout(
@@ -227,7 +241,7 @@ function MapSizeController() {
 }
 
 /* =========================================================
-   FIT MAP TO GVP POINTS + WARD BOUNDARY
+   FIT GVP MAP
 ========================================================= */
 
 function FitGVPMap({
@@ -239,46 +253,65 @@ function FitGVPMap({
 
   useEffect(() => {
     try {
-      const bounds = L.latLngBounds([]);
+      const bounds =
+        L.latLngBounds([]);
 
       /*
-       * ONLY GVP POINTS
+       * =====================================================
+       * GVP POINTS
+       * =====================================================
        */
 
-      if (Array.isArray(gvpPoints)) {
-        gvpPoints.forEach((point) => {
-          const latitude = Number(
-            point.latitude
-          );
+      if (
+        Array.isArray(gvpPoints)
+      ) {
+        gvpPoints.forEach(
+          (point) => {
+            const latitude =
+              Number(
+                point.latitude
+              );
 
-          const longitude = Number(
-            point.longitude
-          );
+            const longitude =
+              Number(
+                point.longitude
+              );
 
-          if (
-            Number.isFinite(latitude) &&
-            Number.isFinite(longitude)
-          ) {
-            bounds.extend([
-              latitude,
-              longitude,
-            ]);
+            if (
+              Number.isFinite(
+                latitude
+              ) &&
+              Number.isFinite(
+                longitude
+              )
+            ) {
+              bounds.extend([
+                latitude,
+                longitude,
+              ]);
+            }
           }
-        });
+        );
       }
 
       /*
-       * SELECTED WARD BOUNDARY
+       * =====================================================
+       * WARD BOUNDARY
+       * =====================================================
        */
 
       if (boundary) {
         const boundaryLayer =
-          L.geoJSON(boundary);
+          L.geoJSON(
+            boundary
+          );
 
         const boundaryBounds =
           boundaryLayer.getBounds();
 
-        if (boundaryBounds.isValid()) {
+        if (
+          boundaryBounds.isValid()
+        ) {
           bounds.extend(
             boundaryBounds
           );
@@ -286,10 +319,14 @@ function FitGVPMap({
       }
 
       /*
+       * =====================================================
        * NOTHING AVAILABLE
+       * =====================================================
        */
 
-      if (!bounds.isValid()) {
+      if (
+        !bounds.isValid()
+      ) {
         map.setView(
           DEFAULT_CENTER,
           DEFAULT_ZOOM,
@@ -302,18 +339,30 @@ function FitGVPMap({
       }
 
       /*
-       * FIT SELECTED WARD
+       * =====================================================
+       * FIT EVERYTHING
+       * =====================================================
        */
 
-      map.fitBounds(bounds, {
-        padding: [30, 30],
+      const isSmallScreen =
+        typeof window !==
+          "undefined" &&
+        window.innerWidth < 640;
 
-        maxZoom: 15,
+      map.fitBounds(
+        bounds,
+        {
+          padding: isSmallScreen
+            ? [20, 20]
+            : [35, 35],
 
-        animate: true,
+          maxZoom: 15,
 
-        duration: 0.8,
-      });
+          animate: true,
+
+          duration: 0.8,
+        }
+      );
     } catch (error) {
       console.error(
         "Unable to fit GVP map:",
@@ -339,28 +388,125 @@ function FitGVPMap({
 }
 
 /* =========================================================
+   SAFE VALUE FORMATTER
+========================================================= */
+
+function formatValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  if (
+    typeof value === "object"
+  ) {
+    try {
+      return JSON.stringify(
+        value
+      );
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
+}
+
+/* =========================================================
+   FIELD NAME FORMATTER
+========================================================= */
+
+function formatFieldName(
+  field
+) {
+  return String(field)
+    .replace(
+      /([A-Z])/g,
+      " $1"
+    )
+    .replace(
+      /[_-]+/g,
+      " "
+    )
+    .replace(
+      /^./,
+      (char) =>
+        char.toUpperCase()
+    );
+}
+
+/* =========================================================
+   POPUP DATA ROW
+========================================================= */
+
+function PopupDataRow({
+  label,
+  value,
+}) {
+  return (
+    <div
+      className="
+        grid
+        grid-cols-[minmax(75px,95px)_minmax(0,1fr)]
+        gap-2
+        border-b
+        border-slate-100
+        py-1.5
+        last:border-b-0
+      "
+    >
+      <span
+        className="
+          break-words
+          text-[9px]
+          font-medium
+          leading-4
+          text-slate-400
+          sm:text-[10px]
+        "
+      >
+        {label}
+      </span>
+
+      <span
+        className="
+          min-w-0
+          break-words
+          text-[9px]
+          font-medium
+          leading-4
+          text-slate-700
+          sm:text-[10px]
+        "
+      >
+        {formatValue(value)}
+      </span>
+    </div>
+  );
+}
+
+/* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
 export default function GVPOverviewMap({
   selectedDate,
 }) {
-  /*
-   * =======================================================
-   * LANGUAGE
-   * =======================================================
-   */
+  /* =======================================================
+     LANGUAGE
+  ======================================================= */
 
   const {
     language,
     t,
   } = useLanguage();
 
-  /*
-   * =======================================================
-   * GLOBAL FILTER CONTEXT
-   * =======================================================
-   */
+  /* =======================================================
+     GLOBAL FILTER CONTEXT
+  ======================================================= */
 
   const {
     selectedCity,
@@ -369,50 +515,29 @@ export default function GVPOverviewMap({
     selectedWard,
   } = useFilters();
 
-  /*
-   * =======================================================
-   * STATE
-   * =======================================================
-   */
-
-  const [
-    mapData,
-    setMapData,
-  ] = useStateSafe();
-
-  const [
-    loading,
-    setLoading,
-  ] = useStateSafe(false);
-
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useStateSafe("");
-
-  /*
-   * =======================================================
-   * FILTER IDS
-   * =======================================================
-   */
+  /* =======================================================
+     FILTER IDS
+  ======================================================= */
 
   const cityId =
-    selectedCity?.city_id ?? null;
+    selectedCity?.city_id ??
+    null;
 
   const zoneId =
-    selectedZone?.zone_id ?? null;
+    selectedZone?.zone_id ??
+    null;
 
   const divisionId =
-    selectedDivision?.division_id ?? null;
+    selectedDivision
+      ?.division_id ?? null;
 
   const wardId =
-    selectedWard?.ward_id ?? null;
+    selectedWard?.ward_id ??
+    null;
 
-  /*
-   * =======================================================
-   * FILTER KEY
-   * =======================================================
-   */
+  /* =======================================================
+     FILTER KEY
+  ======================================================= */
 
   const filterKey = [
     cityId ?? "",
@@ -422,106 +547,123 @@ export default function GVPOverviewMap({
     selectedDate ?? "",
   ].join(":");
 
-  /*
-   * =======================================================
-   * LOAD MAP DATA
-   * =======================================================
-   */
+  /* =======================================================
+     STATE
+  ======================================================= */
+
+  const [
+    mapData,
+    setMapData,
+  ] = useState(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState("");
+
+  /* =======================================================
+     LOAD GVP DATA
+  ======================================================= */
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadGVPMap = async () => {
-      /*
-       * ALL HIERARCHY LEVELS ARE REQUIRED
-       */
+    const loadGVPMap =
+      async () => {
+        /*
+         * Backend requires the complete hierarchy.
+         */
 
-      if (
-        !cityId ||
-        !zoneId ||
-        !divisionId ||
-        !wardId
-      ) {
-        setMapData(null);
+        if (
+          !cityId ||
+          !zoneId ||
+          !divisionId ||
+          !wardId
+        ) {
+          setMapData(null);
+          setErrorMessage("");
+          setLoading(false);
 
-        setErrorMessage("");
-
-        setLoading(false);
-
-        return;
-      }
-
-      setLoading(true);
-
-      setErrorMessage("");
-
-      try {
-        const response =
-          await api.get(
-            "/api/waste-generators/map",
-            {
-              params: {
-                date: selectedDate,
-
-                cityId,
-
-                zoneId,
-
-                divisionId,
-
-                wardId,
-              },
-            }
-          );
-
-        if (cancelled) {
           return;
         }
 
-        if (
-          response?.data?.success ===
-          false
-        ) {
-          throw new Error(
-            response.data.message ||
+        setLoading(true);
+        setErrorMessage("");
+
+        try {
+          const response =
+            await api.get(
+              "/api/waste-generators/map",
+              {
+                params: {
+                  date:
+                    selectedDate,
+
+                  cityId,
+
+                  zoneId,
+
+                  divisionId,
+
+                  wardId,
+                },
+              }
+            );
+
+          if (cancelled) {
+            return;
+          }
+
+          if (
+            response?.data
+              ?.success === false
+          ) {
+            throw new Error(
+              response.data
+                .message ||
+                t(
+                  "wasteGenerators.gvpMap.errors.load",
+                  "Unable to load GVP points."
+                )
+            );
+          }
+
+          setMapData(
+            response?.data
+              ?.data || null
+          );
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+
+          console.error(
+            "Overview GVP Map Error:",
+            error
+          );
+
+          setMapData(null);
+
+          setErrorMessage(
+            error?.response
+              ?.data?.message ||
+              error?.message ||
               t(
                 "wasteGenerators.gvpMap.errors.load",
                 "Unable to load GVP points."
               )
           );
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
         }
-
-        setMapData(
-          response?.data?.data ||
-            null
-        );
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        console.error(
-          "Overview GVP Map Error:",
-          error
-        );
-
-        setMapData(null);
-
-        setErrorMessage(
-          error?.response?.data
-            ?.message ||
-            error?.message ||
-            t(
-              "wasteGenerators.gvpMap.errors.load",
-              "Unable to load GVP points."
-            )
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
+      };
 
     loadGVPMap();
 
@@ -537,25 +679,24 @@ export default function GVPOverviewMap({
     t,
   ]);
 
-  /*
-   * =======================================================
-   * NORMALIZE WARD BOUNDARY
-   * =======================================================
-   */
+  /* =======================================================
+     NORMALIZE WARD BOUNDARY
+  ======================================================= */
 
-  const boundary = useMemo(
-    () =>
-      normalizeGeometry(
-        mapData?.boundary
-      ),
-    [mapData?.boundary]
-  );
+  const boundary =
+    useMemo(
+      () =>
+        normalizeGeometry(
+          mapData?.boundary
+        ),
+      [
+        mapData?.boundary,
+      ]
+    );
 
-  /*
-   * =======================================================
-   * GVP POINTS ONLY
-   * =======================================================
-   */
+  /* =======================================================
+     GVP POINTS ONLY
+  ======================================================= */
 
   const visibleGVPPoints =
     useMemo(() => {
@@ -570,10 +711,14 @@ export default function GVPOverviewMap({
       return mapData.gvpPoints.filter(
         (point) => {
           const latitude =
-            Number(point.latitude);
+            Number(
+              point.latitude
+            );
 
           const longitude =
-            Number(point.longitude);
+            Number(
+              point.longitude
+            );
 
           return (
             Number.isFinite(
@@ -585,17 +730,19 @@ export default function GVPOverviewMap({
           );
         }
       );
-    }, [mapData?.gvpPoints]);
+    }, [
+      mapData?.gvpPoints,
+    ]);
 
-  /*
-   * =======================================================
-   * DISPLAY DATA
-   * =======================================================
-   */
+  /* =======================================================
+     DISPLAY DATA
+  ======================================================= */
 
   const wardName =
-    mapData?.ward?.wardName ||
-    selectedWard?.ward_name ||
+    mapData?.ward
+      ?.wardName ||
+    selectedWard
+      ?.ward_name ||
     t(
       "wasteGenerators.gvpMap.selectedWard",
       "Selected Ward"
@@ -617,11 +764,9 @@ export default function GVPOverviewMap({
         )
       : visibleGVPPoints.length;
 
-  /*
-   * =======================================================
-   * DATE LOCALE
-   * =======================================================
-   */
+  /* =======================================================
+     DATE LOCALE
+  ======================================================= */
 
   const locale =
     language === "kn"
@@ -630,83 +775,98 @@ export default function GVPOverviewMap({
       ? "hi-IN"
       : "en-IN";
 
-  /*
-   * =======================================================
-   * RENDER
-   * =======================================================
-   */
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
-    <section className="w-full h-full min-h-0">
+    <section
+      className="
+        flex
+        h-full
+        min-h-0
+        w-full
+        flex-col
+        overflow-hidden
+        rounded-2xl
+        border
+        border-gray-200
+        bg-white
+        shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+        sm:rounded-3xl
+      "
+    >
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
       <div
         className="
           flex
-          h-full
-          w-full
-          min-h-0
+          shrink-0
           flex-col
-          overflow-hidden
-          rounded-2xl
-          sm:rounded-3xl
-          border
-          border-gray-200
+          gap-2.5
+          border-b
+          border-slate-100
           bg-white
-          shadow-[0_2px_12px_rgba(0,0,0,0.04)]
+          px-3.5
+          py-3
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          sm:gap-4
+          sm:px-5
+          sm:py-3.5
         "
       >
         {/* =================================================
-            HEADER
+            TITLE
         ================================================= */}
 
-        <div
-          className="
-            flex
-            shrink-0
-            flex-col
-            gap-2.5
-            px-3.5
-            pb-2.5
-            pt-3
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-            sm:gap-4
-            sm:px-5
-            sm:py-4
-          "
-        >
-          {/* =================================================
-              TITLE / LOCATION
-          ================================================= */}
-
-          <div className="min-w-0 flex-1">
-            <div
+        <div className="min-w-0 flex-1">
+          <div
+            className="
+              flex
+              min-w-0
+              flex-wrap
+              items-center
+              gap-x-2
+              gap-y-1
+            "
+          >
+            <h3
               className="
-                flex
-                min-w-0
-                flex-wrap
-                items-center
-                gap-x-2
-                gap-y-1
+                max-w-full
+                truncate
+                text-[13px]
+                font-semibold
+                leading-5
+                text-[#16295A]
+                sm:text-[14px]
               "
             >
-              <h3
-                className="
-                  max-w-full
-                  truncate
-                  text-[13px]
-                  font-semibold
-                  leading-5
-                  text-[#16295A]
-                  sm:text-[14px]
-                "
-              >
-                {t(
-                  "wasteGenerators.gvpMap.title",
-                  "GVP Point Monitoring"
-                )}
-              </h3>
+              {t(
+                "wasteGenerators.gvpMap.title",
+                "GVP Point Monitoring"
+              )}
+            </h3>
 
+            <span
+              className="
+                shrink-0
+                text-[10px]
+                text-slate-400
+                sm:text-[11px]
+              "
+            >
+              {gvpCount}{" "}
+              {t(
+                "wasteGenerators.gvpMap.points",
+                "points"
+              )}
+            </span>
+
+            {selectedDate && (
               <span
                 className="
                   shrink-0
@@ -715,275 +875,382 @@ export default function GVPOverviewMap({
                   sm:text-[11px]
                 "
               >
-                {gvpCount}{" "}
-                {t(
-                  "wasteGenerators.gvpMap.points",
-                  "points"
+                ·{" "}
+                {new Date(
+                  selectedDate
+                ).toLocaleDateString(
+                  locale
                 )}
               </span>
-
-              {selectedDate && (
-                <span
-                  className="
-                    shrink-0
-                    max-w-full
-                    truncate
-                    text-[10px]
-                    text-slate-400
-                    sm:text-[11px]
-                  "
-                >
-                  · {selectedDate}
-                </span>
-              )}
-            </div>
-
-            {mapData?.ward && (
-              <p
-                className="
-                  mt-0.5
-                  max-w-full
-                  truncate
-                  text-[9px]
-                  leading-4
-                  text-slate-400
-                  sm:text-[10px]
-                "
-                title={[
-                  mapData.ward.zoneName,
-                  mapData.ward.divisionName,
-                  wardName,
-                  wardNo !== null
-                    ? `Ward ${wardNo}`
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              >
-                {mapData.ward.zoneName}
-                {" · "}
-                {mapData.ward.divisionName}
-                {" · "}
-                {wardName}
-                {wardNo !== null
-                  ? ` · ${t(
-                      "wasteGenerators.gvpMap.ward",
-                      "Ward"
-                    )} ${wardNo}`
-                  : ""}
-              </p>
             )}
           </div>
 
-          {/* =================================================
-              GVP LEGEND
-          ================================================= */}
-
-          <div
-            className="
-              flex
-              shrink-0
-              items-center
-              self-start
-              gap-1.5
-              rounded-lg
-              bg-slate-50
-              px-2
-              py-1
-              sm:self-auto
-              sm:bg-transparent
-              sm:px-0
-              sm:py-0
-            "
-          >
-            <span
+          {mapData?.ward && (
+            <p
               className="
-                h-2
-                w-2
-                shrink-0
-                rounded-full
-                bg-red-500
-                sm:h-2.5
-                sm:w-2.5
-              "
-            />
-
-            <span
-              className="
-                text-[10px]
-                text-slate-500
-                sm:text-[11px]
-              "
-            >
-              {t(
-                "wasteGenerators.gvpMap.legend",
-                "GVP Point"
-              )}
-            </span>
-
-            <span
-              className="
+                mt-0.5
+                max-w-full
+                truncate
                 text-[9px]
+                leading-4
                 text-slate-400
                 sm:text-[10px]
               "
             >
-              ({gvpCount})
-            </span>
-          </div>
+              {mapData.ward.zoneName}
+              {" · "}
+              {
+                mapData.ward
+                  .divisionName
+              }
+              {" · "}
+              {wardName}
+
+              {wardNo !== null
+                ? ` · ${t(
+                    "wasteGenerators.gvpMap.ward",
+                    "Ward"
+                  )} ${wardNo}`
+                : ""}
+            </p>
+          )}
         </div>
 
         {/* =================================================
-            MAP
+            LEGEND
         ================================================= */}
 
         <div
           className="
-            relative
-            min-h-[300px]
-            flex-1
-            bg-[#F7F8FB]
-            sm:min-h-[340px]
-            md:min-h-[380px]
-            lg:min-h-[420px]
+            flex
+            shrink-0
+            items-center
+            gap-2
+            self-start
+            sm:self-center
           "
         >
-          <MapContainer
-            center={DEFAULT_CENTER}
-            zoom={DEFAULT_ZOOM}
-            scrollWheelZoom
-            zoomControl={false}
-            className="h-full w-full"
+          <span
+            className="
+              h-2.5
+              w-2.5
+              shrink-0
+              rounded-full
+              bg-red-500
+              ring-2
+              ring-red-100
+              sm:h-3
+              sm:w-3
+            "
+          />
+
+          <span
+            className="
+              text-[10px]
+              font-medium
+              text-slate-500
+              sm:text-[11px]
+            "
           >
-            {/* =================================================
-                CARTO MAP
-            ================================================= */}
-
-            <TileLayer
-              attribution={
-                CARTO_ATTRIBUTION
-              }
-              url={CARTO_LIGHT_URL}
-              subdomains={[
-                "a",
-                "b",
-                "c",
-                "d",
-              ]}
-              maxZoom={20}
-            />
-
-            <ZoomControl position="topleft" />
-
-            <MapSizeController />
-
-            <FitGVPMap
-              boundary={boundary}
-              gvpPoints={
-                visibleGVPPoints
-              }
-              fitKey={filterKey}
-            />
-
-            {/* =================================================
-                SELECTED WARD BOUNDARY
-            ================================================= */}
-
-            {boundary && (
-              <GeoJSON
-                key={`gvp-boundary-${filterKey}`}
-                data={boundary}
-                style={{
-                  color: "#4F46E5",
-                  weight: 3,
-                  opacity: 1,
-                  fillColor: "#6366F1",
-                  fillOpacity: 0.07,
-                }}
-              />
+            {t(
+              "wasteGenerators.gvpMap.legend",
+              "GVP Point"
             )}
+          </span>
 
-            {/* =================================================
-                GVP POINTS ONLY
-            ================================================= */}
+          <span
+            className="
+              text-[9px]
+              text-slate-400
+              sm:text-[10px]
+            "
+          >
+            ({gvpCount})
+          </span>
+        </div>
+      </div>
 
-            {visibleGVPPoints.map(
-              (point, index) => {
-                const latitude =
-                  Number(
-                    point.latitude
-                  );
+      {/* =================================================
+          MAP
+      ================================================= */}
 
-                const longitude =
-                  Number(
-                    point.longitude
-                  );
+      <div
+        className="
+          relative
+          min-h-0
+          flex-1
+          bg-[#F7F8FB]
+        "
+      >
+        <MapContainer
+          center={DEFAULT_CENTER}
+          zoom={DEFAULT_ZOOM}
+          scrollWheelZoom
+          zoomControl={false}
+          className="h-full w-full"
+        >
+          {/* =================================================
+              CARTO LIGHT MAP
+          ================================================= */}
 
-                const gvpKey =
-                  point.pointKey ||
-                  [
-                    point.sourceVehicleTable ||
-                      "UNKNOWN_TABLE",
+          <TileLayer
+            attribution={
+              CARTO_ATTRIBUTION
+            }
+            url={
+              CARTO_LIGHT_URL
+            }
+            subdomains={[
+              "a",
+              "b",
+              "c",
+              "d",
+            ]}
+            maxZoom={20}
+          />
 
-                    point.vehicleNumber ||
-                      "UNKNOWN_VEHICLE",
+          {/* =================================================
+              MAP SIZE
+          ================================================= */}
 
-                    point.id ??
-                      "NO_ID",
+          <MapSizeController />
 
-                    point.iotTimestamp ||
-                      "NO_TIMESTAMP",
+          {/* =================================================
+              ZOOM
+          ================================================= */}
 
-                    latitude.toFixed(7),
+          <ZoomControl
+            position="topleft"
+          />
 
-                    longitude.toFixed(7),
+          {/* =================================================
+              FIT MAP
+          ================================================= */}
 
-                    index,
-                  ].join("-");
+          <FitGVPMap
+            boundary={
+              boundary
+            }
+            gvpPoints={
+              visibleGVPPoints
+            }
+            fitKey={filterKey}
+          />
 
-                return (
-                  <CircleMarker
-                    key={`overview-gvp-${String(
-                      gvpKey
-                    )}`}
-                    center={[
-                      latitude,
-                      longitude,
-                    ]}
-                    radius={
-                      window.innerWidth <
+          {/* =================================================
+              WARD BOUNDARY
+          ================================================= */}
+
+          {boundary && (
+            <GeoJSON
+              key={`gvp-boundary-${filterKey}`}
+              data={boundary}
+              style={{
+                color:
+                  "#4F46E5",
+
+                weight: 3,
+
+                opacity: 1,
+
+                fillColor:
+                  "#6366F1",
+
+                fillOpacity:
+                  0.07,
+
+                lineJoin:
+                  "round",
+
+                lineCap:
+                  "round",
+              }}
+            />
+          )}
+
+          {/* =================================================
+              GVP POINTS
+          ================================================= */}
+
+          {visibleGVPPoints.map(
+            (
+              point,
+              index
+            ) => {
+              const latitude =
+                Number(
+                  point.latitude
+                );
+
+              const longitude =
+                Number(
+                  point.longitude
+                );
+
+              const gvpKey =
+                point.pointKey ||
+                [
+                  point.sourceVehicleTable ||
+                    "UNKNOWN_TABLE",
+
+                  point.vehicleNumber ||
+                    "UNKNOWN_VEHICLE",
+
+                  point.id ??
+                    "NO_ID",
+
+                  point.iotTimestamp ||
+                    "NO_TIMESTAMP",
+
+                  latitude.toFixed(
+                    7
+                  ),
+
+                  longitude.toFixed(
+                    7
+                  ),
+
+                  index,
+                ].join("-");
+
+              /*
+               * -----------------------------------------------
+               * POPUP DATA
+               * -----------------------------------------------
+               */
+
+              const telemetry =
+                point?.data &&
+                typeof point.data ===
+                  "object"
+                  ? point.data
+                  : point?.telemetry &&
+                    typeof point.telemetry ===
+                      "object"
+                  ? point.telemetry
+                  : {};
+
+              const vehicle =
+                point.vehicleNumber ||
+                point.vehicle_number ||
+                point.vehicleNo ||
+                point.vehicle_no ||
+                "—";
+
+              const table =
+                point.sourceVehicleTable ||
+                point.vehicleTableName ||
+                point.vehicle_table_name ||
+                "—";
+
+              const timestamp =
+                point.iotTimestamp ||
+                point.iot_timestamp ||
+                point.timestamp ||
+                "—";
+
+              const unit =
+                point.unit ||
+                point.unitName ||
+                point.unit_name ||
+                telemetry?.unit ||
+                "—";
+
+              const remarks =
+                point.remarks ||
+                point.remark ||
+                telemetry?.remarks ||
+                telemetry?.remark ||
+                "—";
+
+              const gvpWaste =
+                point.gvpWaste ??
+                point.gvp_waste ??
+                point.waste ??
+                point.weight ??
+                telemetry?.gvpWaste ??
+                telemetry?.gvp_waste ??
+                "—";
+
+              return (
+                <CircleMarker
+                  key={`overview-gvp-${String(
+                    gvpKey
+                  )}`}
+                  center={[
+                    latitude,
+                    longitude,
+                  ]}
+                  radius={
+                    typeof window !==
+                      "undefined" &&
+                    window.innerWidth <
                       640
-                        ? 5
-                        : 5.5
-                    }
-                    pathOptions={{
-                      color:
-                        "#FFFFFF",
+                      ? 5
+                      : 5.5
+                  }
+                  pathOptions={{
+                    color:
+                      "#FFFFFF",
 
-                      weight: 1.5,
+                    weight: 1.5,
 
-                      fillColor:
-                        "#EF4444",
+                    fillColor:
+                      "#EF4444",
 
-                      fillOpacity:
-                        0.95,
-                    }}
+                    fillOpacity:
+                      0.95,
+
+                    stroke: true,
+                  }}
+                >
+                  {/* =================================================
+                      GVP TOOLTIP
+                  ================================================= */}
+
+                  <Tooltip
+                    direction="top"
+                    offset={[
+                      0,
+                      -6,
+                    ]}
+                    opacity={1}
+                    className="
+                      !rounded-xl
+                      !border
+                      !border-slate-200
+                      !bg-white
+                      !px-0
+                      !py-0
+                      !text-slate-700
+                      !shadow-[0_10px_30px_rgba(15,23,42,0.14)]
+                    "
                   >
-                    <Tooltip direction="top">
+                    <div
+                      className="
+                        w-[240px]
+                        max-w-[calc(100vw-40px)]
+                        overflow-hidden
+                        rounded-xl
+                        bg-white
+                        sm:w-[260px]
+                      "
+                    >
+                      {/* HEADER */}
+
                       <div
                         className="
-                          max-w-[220px]
-                          text-[10px]
-                          leading-4
-                          sm:text-xs
+                          border-b
+                          border-slate-100
+                          px-3
+                          py-2.5
                         "
                       >
-                        {/* GVP */}
-
                         <div
                           className="
-                            font-semibold
-                            text-red-600
+                            text-[12px]
+                            font-bold
+                            text-red-500
                           "
                         >
                           {t(
@@ -992,154 +1259,240 @@ export default function GVPOverviewMap({
                           )}
                         </div>
 
-                        {/* VEHICLE */}
-
-                        {point.vehicleNumber && (
-                          <div>
-                            <span className="font-medium">
-                              {t(
-                                "wasteGenerators.gvpMap.tooltip.vehicle",
-                                "Vehicle"
-                              )}
-                              :
-                            </span>{" "}
-                            {
-                              point.vehicleNumber
-                            }
-                          </div>
-                        )}
-
-                        {/* TABLE */}
-
-                        {point.sourceVehicleTable && (
-                          <div className="break-all">
-                            <span className="font-medium">
-                              {t(
-                                "wasteGenerators.gvpMap.tooltip.table",
-                                "Table"
-                              )}
-                              :
-                            </span>{" "}
-                            {
-                              point.sourceVehicleTable
-                            }
-                          </div>
-                        )}
-
-                        {/* IOT */}
-
-                        {point.iotTimestamp && (
-                          <div>
-                            <span className="font-medium">
-                              {t(
-                                "wasteGenerators.gvpMap.tooltip.iot",
-                                "IoT"
-                              )}
-                              :
-                            </span>{" "}
-                            {new Date(
-                              point.iotTimestamp
-                            ).toLocaleString(
-                              locale
-                            )}
-                          </div>
-                        )}
-
-                        {/* UNIT */}
-
-                        {point.unitNumber && (
-                          <div>
-                            <span className="font-medium">
-                              {t(
-                                "wasteGenerators.gvpMap.tooltip.unit",
-                                "Unit"
-                              )}
-                              :
-                            </span>{" "}
-                            {
-                              point.unitNumber
-                            }
-                          </div>
-                        )}
-
-                        {/* REMARKS */}
-
-                        {point.remarks && (
-                          <div className="break-words">
-                            <span className="font-medium">
-                              {t(
-                                "wasteGenerators.gvpMap.tooltip.remarks",
-                                "Remarks"
-                              )}
-                              :
-                            </span>{" "}
-                            {
-                              point.remarks
-                            }
-                          </div>
-                        )}
-
-                        {/* WASTE */}
-
-                        <div>
-                          <span className="font-medium">
-                            {t(
-                              "wasteGenerators.gvpMap.tooltip.gvpWaste",
-                              "GVP waste"
-                            )}
-                            :
-                          </span>{" "}
-                          {Number(
-                            point.gvpWaste ??
-                              point.weightDelta ??
-                              0
-                          ).toFixed(3)}{" "}
-                          KG
+                        <div
+                          className="
+                            mt-0.5
+                            break-all
+                            text-[10px]
+                            text-slate-400
+                          "
+                        >
+                          {vehicle}
                         </div>
+                      </div>
 
-                        {/* COORDINATES */}
+                      {/* DATA */}
 
-                        <div>
-                          <span className="font-medium">
-                            {t(
-                              "wasteGenerators.gvpMap.tooltip.coordinates",
-                              "Coordinates"
-                            )}
-                            :
-                          </span>{" "}
-                          {latitude.toFixed(
-                            6
+                      <div
+                        className="
+                          max-h-[260px]
+                          overflow-y-auto
+                          px-3
+                          py-2
+                        "
+                      >
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.vehicle",
+                            "Vehicle"
                           )}
-                          ,{" "}
-                          {longitude.toFixed(
-                            6
+                          value={
+                            vehicle
+                          }
+                        />
+
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.table",
+                            "Table"
                           )}
-                        </div>
+                          value={
+                            table
+                          }
+                        />
 
-                        {/* WARD */}
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.iot",
+                            "IoT"
+                          )}
+                          value={
+                            timestamp
+                          }
+                        />
 
-                        {wardNo !== null && (
-                          <div>
-                            {t(
-                              "wasteGenerators.gvpMap.ward",
-                              "Ward"
-                            )}{" "}
-                            {wardNo}
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.unit",
+                            "Unit"
+                          )}
+                          value={
+                            unit
+                          }
+                        />
+
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.remarks",
+                            "Remarks"
+                          )}
+                          value={
+                            remarks
+                          }
+                        />
+
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.gvpWaste",
+                            "GVP waste"
+                          )}
+                          value={
+                            gvpWaste
+                          }
+                        />
+
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.tooltip.coordinates",
+                            "Coordinates"
+                          )}
+                          value={`${latitude.toFixed(
+                            7
+                          )}, ${longitude.toFixed(
+                            7
+                          )}`}
+                        />
+
+                        <PopupDataRow
+                          label={t(
+                            "wasteGenerators.gvpMap.ward",
+                            "Ward"
+                          )}
+                          value={
+                            wardNo ??
+                            "—"
+                          }
+                        />
+
+                        {/* EXTRA TELEMETRY */}
+
+                        {Object.keys(
+                          telemetry
+                        ).length >
+                          0 && (
+                          <div
+                            className="
+                              mt-2
+                              border-t
+                              border-slate-100
+                              pt-2
+                            "
+                          >
+                            <div
+                              className="
+                                mb-1.5
+                                text-[8px]
+                                font-semibold
+                                uppercase
+                                tracking-[0.08em]
+                                text-slate-400
+                              "
+                            >
+                              {t(
+                                "wasteGenerators.gvpMap.tooltip.telemetry",
+                                "Telemetry"
+                              )}
+                            </div>
+
+                            {Object.entries(
+                              telemetry
+                            )
+                              .filter(
+                                ([
+                                  key,
+                                ]) =>
+                                  ![
+                                    "unit",
+                                    "unitName",
+                                    "unit_name",
+                                    "remarks",
+                                    "remark",
+                                    "gvpWaste",
+                                    "gvp_waste",
+                                  ].includes(
+                                    key
+                                  )
+                              )
+                              .slice(
+                                0,
+                                12
+                              )
+                              .map(
+                                ([
+                                  key,
+                                  value,
+                                ]) => (
+                                  <PopupDataRow
+                                    key={
+                                      key
+                                    }
+                                    label={formatFieldName(
+                                      key
+                                    )}
+                                    value={
+                                      value
+                                    }
+                                  />
+                                )
+                              )}
                           </div>
                         )}
                       </div>
-                    </Tooltip>
-                  </CircleMarker>
-                );
-              }
-            )}
-          </MapContainer>
+                    </div>
+                  </Tooltip>
+                </CircleMarker>
+              );
+            }
+          )}
+        </MapContainer>
 
-          {/* =================================================
-              LOADING
-          ================================================= */}
+        {/* =================================================
+            LOADING STATE
+        ================================================= */}
 
-          {loading && (
+        {loading && (
+          <div
+            className="
+              pointer-events-none
+              absolute
+              inset-0
+              z-[1000]
+              flex
+              items-center
+              justify-center
+              bg-white/35
+              backdrop-blur-[1px]
+            "
+          >
+            <div
+              className="
+                rounded-xl
+                border
+                border-slate-200
+                bg-white/95
+                px-4
+                py-2.5
+                text-[11px]
+                font-medium
+                text-slate-500
+                shadow-[0_8px_25px_rgba(15,23,42,0.08)]
+                sm:text-[12px]
+              "
+            >
+              {t(
+                "wasteGenerators.gvpMap.loading",
+                "Loading GVP data..."
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* =================================================
+            ERROR STATE
+        ================================================= */}
+
+        {!loading &&
+          errorMessage && (
             <div
               className="
                 pointer-events-none
@@ -1149,212 +1502,172 @@ export default function GVPOverviewMap({
                 flex
                 items-center
                 justify-center
-                bg-white/55
-                px-4
-                backdrop-blur-[1px]
+                p-4
               "
             >
               <div
                 className="
-                  rounded-xl
-                  bg-white
-                  px-3
-                  py-2
+                  max-w-[420px]
+                  rounded-2xl
+                  border
+                  border-red-100
+                  bg-white/95
+                  px-5
+                  py-4
                   text-center
-                  text-[10px]
-                  text-slate-500
-                  shadow
-                  sm:px-4
-                  sm:text-xs
+                  shadow-[0_10px_30px_rgba(15,23,42,0.08)]
                 "
               >
-                {t(
-                  "wasteGenerators.gvpMap.loading",
-                  "Loading GVP points..."
-                )}
+                <div
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-red-500
+                    sm:text-[13px]
+                  "
+                >
+                  {t(
+                    "wasteGenerators.gvpMap.errors.load",
+                    "Unable to load GVP points."
+                  )}
+                </div>
+
+                <div
+                  className="
+                    mt-1.5
+                    break-words
+                    text-[10px]
+                    leading-4
+                    text-slate-400
+                    sm:text-[11px]
+                  "
+                >
+                  {errorMessage}
+                </div>
               </div>
             </div>
           )}
 
-          {/* =================================================
-              NO FILTER
-          ================================================= */}
+        {/* =================================================
+            NO FILTER STATE
+        ================================================= */}
 
-          {!loading &&
-            !errorMessage &&
-            !wardId && (
+        {!loading &&
+          !errorMessage &&
+          (!cityId ||
+            !zoneId ||
+            !divisionId ||
+            !wardId) && (
+            <div
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-[900]
+                flex
+                items-center
+                justify-center
+                p-4
+              "
+            >
               <div
                 className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  z-[900]
-                  flex
-                  items-center
-                  justify-center
-                  px-4
+                  max-w-[380px]
+                  rounded-2xl
+                  border
+                  border-slate-200
+                  bg-white/95
+                  px-5
+                  py-4
+                  text-center
+                  shadow-[0_10px_30px_rgba(15,23,42,0.08)]
                 "
               >
                 <div
                   className="
-                    w-full
-                    max-w-[320px]
-                    rounded-xl
-                    bg-white/90
-                    px-4
-                    py-3
-                    text-center
-                    shadow
-                    sm:px-5
+                    text-[12px]
+                    font-semibold
+                    text-slate-600
+                    sm:text-[13px]
                   "
                 >
-                  <p
-                    className="
-                      text-[12px]
-                      font-medium
-                      text-[#16295A]
-                      sm:text-sm
-                    "
-                  >
-                    {t(
-                      "wasteGenerators.gvpMap.selectWard",
-                      "Select a ward"
-                    )}
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      text-[10px]
-                      leading-4
-                      text-slate-400
-                      sm:text-xs
-                    "
-                  >
-                    {t(
-                      "wasteGenerators.gvpMap.selectWardDescription",
-                      "Choose City, Zone, Division and Ward from the header."
-                    )}
-                  </p>
+                  {t(
+                    "wasteGenerators.gvpMap.selectWard",
+                    "Select a ward"
+                  )}
                 </div>
-              </div>
-            )}
 
-          {/* =================================================
-              ERROR
-          ================================================= */}
-
-          {!loading &&
-            errorMessage && (
-              <div
-                className="
-                  pointer-events-none
-                  absolute
-                  inset-0
-                  z-[900]
-                  flex
-                  items-center
-                  justify-center
-                  px-4
-                "
-              >
                 <div
                   className="
-                    w-full
-                    max-w-[340px]
-                    rounded-xl
-                    bg-white/95
-                    px-4
-                    py-3
-                    text-center
-                    shadow
-                    sm:px-5
+                    mt-1
+                    text-[10px]
+                    leading-4
+                    text-slate-400
+                    sm:text-[11px]
                   "
                 >
-                  <p
-                    className="
-                      text-[12px]
-                      font-medium
-                      text-red-600
-                      sm:text-sm
-                    "
-                  >
-                    {t(
-                      "wasteGenerators.gvpMap.unavailable",
-                      "GVP map unavailable"
-                    )}
-                  </p>
-
-                  <p
-                    className="
-                      mt-1
-                      break-words
-                      text-[10px]
-                      leading-4
-                      text-slate-400
-                      sm:text-xs
-                    "
-                  >
-                    {errorMessage}
-                  </p>
+                  {t(
+                    "wasteGenerators.gvpMap.selectWardDescription",
+                    "Choose City, Zone, Division and Ward from the header."
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-          {/* =================================================
-              NO GVP POINTS
-          ================================================= */}
+        {/* =================================================
+            EMPTY STATE
+        ================================================= */}
 
-          {!loading &&
-            !errorMessage &&
-            wardId &&
-            mapData &&
-            visibleGVPPoints.length ===
-              0 && (
+        {!loading &&
+          !errorMessage &&
+          cityId &&
+          zoneId &&
+          divisionId &&
+          wardId &&
+          visibleGVPPoints.length ===
+            0 && (
+            <div
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-[900]
+                flex
+                items-center
+                justify-center
+                p-4
+              "
+            >
               <div
                 className="
-                  pointer-events-none
-                  absolute
-                  bottom-2
-                  right-2
-                  z-[900]
-                  sm:bottom-3
-                  sm:right-3
+                  rounded-2xl
+                  border
+                  border-slate-200
+                  bg-white/95
+                  px-5
+                  py-4
+                  text-center
+                  shadow-[0_10px_30px_rgba(15,23,42,0.08)]
                 "
               >
                 <div
                   className="
-                    rounded-lg
-                    bg-white/90
-                    px-2.5
-                    py-1.5
-                    text-[9px]
-                    text-slate-500
-                    shadow
-                    sm:px-3
-                    sm:text-[10px]
+                    text-[12px]
+                    font-semibold
+                    text-slate-600
+                    sm:text-[13px]
                   "
                 >
                   {t(
                     "wasteGenerators.gvpMap.empty",
-                    "No GVP points for this date"
+                    "No GVP points available for the selected ward."
                   )}
                 </div>
               </div>
-            )}
-        </div>
+            </div>
+          )}
       </div>
     </section>
   );
 }
-
-/* =========================================================
-   SAFE STATE HELPERS
-
-   These simply keep the component readable while preserving
-   normal React useState behavior.
-========================================================= */
-
-import {
-  useState as useStateSafe,
-} from "react";
