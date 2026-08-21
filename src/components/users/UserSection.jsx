@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 
 import UserTable from "./UserTable";
@@ -24,15 +24,24 @@ const UserSection = ({
   searchPlaceholderKey,
 
   icon: Icon,
+
   users = [],
 
   onAdd,
+  onEdit,
+  onDelete,
 }) => {
   const { t } = useLanguage();
 
   /* ============================================================
+     STATE
+  ============================================================ */
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  /* ============================================================
      TRANSLATIONS
-     ============================================================ */
+  ============================================================ */
 
   const translatedTitle = titleKey
     ? t(titleKey, title || "")
@@ -50,17 +59,66 @@ const UserSection = ({
     ? t(buttonTextKey, buttonText || "")
     : buttonText;
 
-  const translatedSearchPlaceholder =
-    searchPlaceholderKey
-      ? t(
-          searchPlaceholderKey,
-          searchPlaceholder || ""
-        )
-      : searchPlaceholder;
+  const translatedSearchPlaceholder = searchPlaceholderKey
+    ? t(
+        searchPlaceholderKey,
+        searchPlaceholder || ""
+      )
+    : searchPlaceholder;
+
+  /* ============================================================
+     SAFE USERS
+  ============================================================ */
+
+  const safeUsers = Array.isArray(users)
+    ? users
+    : [];
+
+  /* ============================================================
+     SEARCH
+  ============================================================ */
+
+  const filteredUsers = useMemo(() => {
+    const query = searchTerm
+      .trim()
+      .toLowerCase();
+
+    if (!query) {
+      return safeUsers;
+    }
+
+    return safeUsers.filter((user) => {
+      const searchableValues = [
+        user?.name,
+        user?.email,
+        user?.phone,
+        user?.phoneNumber,
+        user?.role,
+        user?.status,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+  }, [
+    safeUsers,
+    searchTerm,
+  ]);
+
+  /* ============================================================
+     RESET SEARCH WHEN USERS CHANGE
+  ============================================================ */
+
+  useEffect(() => {
+    setSearchTerm("");
+  }, [users]);
 
   /* ============================================================
      ICON CLASS
-     ============================================================ */
+  ============================================================ */
 
   const iconClassName = [
     "flex",
@@ -74,8 +132,8 @@ const UserSection = ({
   ].join(" ");
 
   /* ============================================================
-     BUTTON CLASS
-     ============================================================ */
+     ADD BUTTON CLASS
+  ============================================================ */
 
   const addButtonClassName = [
     "flex",
@@ -86,21 +144,30 @@ const UserSection = ({
     "justify-center",
     "gap-2",
     "rounded-lg",
+    "border",
     "px-4",
     "text-[12px]",
     "font-medium",
-    "text-white",
     "transition",
     "active:scale-[0.98]",
-    "sm:w-auto",
-    "sm:min-w-[120px]",
-    "sm:text-[13px]",
-    buttonColor || "bg-violet-600",
+
+    /*
+     * IMPORTANT:
+     *
+     * Keep search and button stacked until md.
+     * This fixes the narrow/tablet layout shown
+     * in your screenshot.
+     */
+    "md:w-auto",
+    "md:min-w-[120px]",
+    "md:text-[13px]",
+
+    buttonColor || "border-violet-600 bg-violet-600 text-white",
   ].join(" ");
 
   /* ============================================================
      RENDER
-     ============================================================ */
+  ============================================================ */
 
   return (
     <section
@@ -186,9 +253,9 @@ const UserSection = ({
                 {translatedTitle}
               </h2>
 
-              {badge !== undefined &&
-                badge !== null &&
-                badge !== "" && (
+              {translatedBadge !== undefined &&
+                translatedBadge !== null &&
+                translatedBadge !== "" && (
                   <span
                     className="
                       inline-flex
@@ -241,10 +308,18 @@ const UserSection = ({
             w-full
             flex-col
             gap-2.5
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-            sm:gap-3
+
+            /*
+             * IMPORTANT:
+             * Stay column layout below md.
+             * This prevents the search box and button
+             * from squeezing the table.
+             */
+
+            md:flex-row
+            md:items-center
+            md:justify-between
+            md:gap-3
           "
         >
           {/* ==================================================
@@ -255,9 +330,9 @@ const UserSection = ({
             className="
               relative
               w-full
-              sm:max-w-[360px]
-              md:w-72
-              md:max-w-none
+              md:max-w-[360px]
+              lg:w-72
+              lg:max-w-none
             "
           >
             <Search
@@ -275,7 +350,15 @@ const UserSection = ({
 
             <input
               type="text"
-              placeholder={translatedSearchPlaceholder}
+              value={searchTerm}
+              onChange={(event) =>
+                setSearchTerm(
+                  event.target.value
+                )
+              }
+              placeholder={
+                translatedSearchPlaceholder
+              }
               className="
                 h-10
                 w-full
@@ -327,7 +410,11 @@ const UserSection = ({
           USER TABLE
       ====================================================== */}
 
-      <UserTable users={users} />
+      <UserTable
+        users={filteredUsers}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </section>
   );
 };

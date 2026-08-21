@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   Pencil,
   Trash2,
@@ -8,80 +13,111 @@ import {
 
 import { useLanguage } from "../../i18n";
 
-/* ============================================================
-   CONSTANTS
-============================================================ */
-
 const ROWS_PER_PAGE = 10;
 
-/* ============================================================
-   USER TABLE
-============================================================ */
-
-const UserTable = ({ users = [] }) => {
+const UserTable = ({
+  users = [],
+  onEdit,
+  onDelete,
+}) => {
   const { t } = useLanguage();
 
-  /* ==========================================================
-     STATE
-  ========================================================== */
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(1);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  /* ==========================================================
-     SAFE USERS
-  ========================================================== */
+  /* ============================================================
+     SAFE USERS ARRAY
+  ============================================================ */
 
   const safeUsers = Array.isArray(users)
     ? users
     : [];
 
-  /* ==========================================================
-     PAGINATION CALCULATIONS
-  ========================================================== */
+  /* ============================================================
+     PAGINATION
+  ============================================================ */
 
-  const totalUsers = safeUsers.length;
+  const totalUsers =
+    safeUsers.length;
 
-  const totalPages =
-    totalUsers === 0
-      ? 1
-      : Math.ceil(
-          totalUsers / ROWS_PER_PAGE
-        );
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      totalUsers /
+        ROWS_PER_PAGE
+    )
+  );
 
   /*
-   * If the user list changes because of search/filtering,
-   * make sure we never stay on a page that no longer exists.
+   * Keep current page inside
+   * the valid range.
    */
 
-  useEffect(() => {
-    setCurrentPage((page) =>
-      Math.min(
-        Math.max(page, 1),
-        totalPages
-      )
+  const safeCurrentPage =
+    Math.min(
+      currentPage,
+      totalPages
     );
-  }, [totalPages]);
-
-  /* ==========================================================
-     CURRENT PAGE RANGE
-  ========================================================== */
 
   const startIndex =
-    (currentPage - 1) *
+    (safeCurrentPage - 1) *
     ROWS_PER_PAGE;
 
   const endIndex =
-    startIndex + ROWS_PER_PAGE;
+    startIndex +
+    ROWS_PER_PAGE;
 
   const paginatedUsers =
-    safeUsers.slice(
+    useMemo(() => {
+      return safeUsers.slice(
+        startIndex,
+        endIndex
+      );
+    }, [
+      safeUsers,
       startIndex,
-      endIndex
-    );
+      endIndex,
+    ]);
 
-  /* ==========================================================
-     DISPLAY RANGE
-  ========================================================== */
+  /* ============================================================
+     RESET PAGE WHEN SEARCH RESULTS CHANGE
+  ============================================================ */
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [users]);
+
+  /* ============================================================
+     PAGINATION HANDLERS
+  ============================================================ */
+
+  const goToPreviousPage =
+    () => {
+      setCurrentPage(
+        (page) =>
+          Math.max(
+            1,
+            page - 1
+          )
+      );
+    };
+
+  const goToNextPage =
+    () => {
+      setCurrentPage(
+        (page) =>
+          Math.min(
+            totalPages,
+            page + 1
+          )
+      );
+    };
+
+  /* ============================================================
+     SHOWING RANGE
+  ============================================================ */
 
   const showingStart =
     totalUsers === 0
@@ -89,138 +125,120 @@ const UserTable = ({ users = [] }) => {
       : startIndex + 1;
 
   const showingEnd =
-    totalUsers === 0
-      ? 0
-      : Math.min(
-          endIndex,
-          totalUsers
-        );
-
-  /* ==========================================================
-     PAGINATION HANDLERS
-  ========================================================== */
-
-  const handlePreviousPage = () => {
-    setCurrentPage((page) =>
-      Math.max(1, page - 1)
+    Math.min(
+      endIndex,
+      totalUsers
     );
-  };
 
-  const handleNextPage = () => {
-    setCurrentPage((page) =>
-      Math.min(
-        totalPages,
-        page + 1
-      )
-    );
-  };
-
-  /* ==========================================================
+  /* ============================================================
      STATUS LABEL
-  ========================================================== */
+  ============================================================ */
 
-  const getStatusLabel = (status) => {
-    const normalizedStatus =
-      String(status || "")
-        .trim()
-        .toUpperCase();
+  const getStatusLabel =
+    (status) => {
+      const normalized =
+        String(
+          status || ""
+        )
+          .trim()
+          .toUpperCase();
 
-    if (
-      normalizedStatus ===
-      "ACTIVE"
-    ) {
-      return t(
-        "users.table.active",
-        "Active"
+      if (
+        normalized ===
+        "ACTIVE"
+      ) {
+        return t(
+          "users.table.active",
+          t(
+            "common.active",
+            "Active"
+          )
+        );
+      }
+
+      if (
+        normalized ===
+        "INACTIVE"
+      ) {
+        return t(
+          "users.table.inactive",
+          t(
+            "common.inactive",
+            "Inactive"
+          )
+        );
+      }
+
+      return (
+        status || "—"
       );
-    }
+    };
 
-    if (
-      normalizedStatus ===
-      "INACTIVE"
-    ) {
-      return t(
-        "users.table.inactive",
-        "Inactive"
-      );
-    }
+  /* ============================================================
+     STATUS CLASS
+  ============================================================ */
 
-    return (
-      status ||
-      "—"
-    );
-  };
+  const getStatusClass =
+    (status) => {
+      const normalized =
+        String(
+          status || ""
+        )
+          .trim()
+          .toUpperCase();
 
-  /* ==========================================================
-     STATUS STYLE
-  ========================================================== */
+      if (
+        normalized ===
+        "ACTIVE"
+      ) {
+        return `
+          bg-green-100
+          text-green-700
+        `;
+      }
 
-  const getStatusClass = (status) => {
-    const normalizedStatus =
-      String(status || "")
-        .trim()
-        .toUpperCase();
+      if (
+        normalized ===
+        "INACTIVE"
+      ) {
+        return `
+          bg-red-100
+          text-red-700
+        `;
+      }
 
-    if (
-      normalizedStatus ===
-      "ACTIVE"
-    ) {
       return `
-        bg-green-100
-        text-green-700
+        bg-gray-100
+        text-gray-600
       `;
-    }
+    };
 
-    if (
-      normalizedStatus ===
-      "INACTIVE"
-    ) {
-      return `
-        bg-red-100
-        text-red-700
-      `;
-    }
-
-    return `
-      bg-gray-100
-      text-gray-600
-    `;
-  };
-
-  /* ==========================================================
+  /* ============================================================
      RENDER
-  ========================================================== */
+  ============================================================ */
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full">
 
-      {/* ======================================================
+      {/* ========================================================
           TABLE WRAPPER
-
-          Important:
-          On smaller screens the table scrolls horizontally
-          instead of breaking the entire Users page.
-      ====================================================== */}
+      ======================================================== */}
 
       <div
         className="
           w-full
-          min-w-0
           overflow-x-auto
-          overscroll-x-contain
         "
       >
         <table
           className="
             w-full
-            min-w-[820px]
-            border-collapse
+            min-w-[850px]
           "
         >
-
-          {/* ==================================================
+          {/* ====================================================
               TABLE HEADER
-          ================================================== */}
+          ==================================================== */}
 
           <thead>
             <tr
@@ -230,7 +248,6 @@ const UserTable = ({ users = [] }) => {
                 bg-gray-50
               "
             >
-
               {/* NAME */}
 
               <th
@@ -344,19 +361,21 @@ const UserTable = ({ users = [] }) => {
                   "Actions"
                 )}
               </th>
-
             </tr>
           </thead>
 
-          {/* ==================================================
+          {/* ====================================================
               TABLE BODY
-          ================================================== */}
+          ==================================================== */}
 
           <tbody>
-
-            {paginatedUsers.length > 0 ? (
+            {paginatedUsers.length >
+            0 ? (
               paginatedUsers.map(
-                (user, index) => (
+                (
+                  user,
+                  index
+                ) => (
                   <tr
                     key={
                       user?.id ??
@@ -369,24 +388,29 @@ const UserTable = ({ users = [] }) => {
                       hover:bg-gray-50
                     "
                   >
-
                     {/* NAME */}
 
                     <td
                       className="
-                        whitespace-nowrap
                         px-5
                         py-4
-                        text-[13px]
                       "
                     >
                       <div
                         className="
+                          max-w-[220px]
+                          truncate
+                          text-[13px]
                           font-medium
                           text-gray-900
                         "
+                        title={
+                          user?.name ||
+                          ""
+                        }
                       >
-                        {user?.name || "—"}
+                        {user?.name ||
+                          "—"}
                       </div>
                     </td>
 
@@ -394,28 +418,39 @@ const UserTable = ({ users = [] }) => {
 
                     <td
                       className="
-                        whitespace-nowrap
                         px-5
                         py-4
-                        text-[13px]
-                        text-gray-600
                       "
                     >
-                      {user?.email || "—"}
+                      <div
+                        className="
+                          max-w-[260px]
+                          truncate
+                          text-[13px]
+                          text-gray-600
+                        "
+                        title={
+                          user?.email ||
+                          ""
+                        }
+                      >
+                        {user?.email ||
+                          "—"}
+                      </div>
                     </td>
 
                     {/* ROLE */}
 
                     <td
                       className="
-                        whitespace-nowrap
                         px-5
                         py-4
                         text-[13px]
                         text-gray-600
                       "
                     >
-                      {user?.role || "—"}
+                      {user?.role ||
+                        "—"}
                     </td>
 
                     {/* LAST LOGIN */}
@@ -429,14 +464,14 @@ const UserTable = ({ users = [] }) => {
                         text-gray-600
                       "
                     >
-                      {user?.lastLogin || "—"}
+                      {user?.lastLogin ||
+                        "—"}
                     </td>
 
                     {/* STATUS */}
 
                     <td
                       className="
-                        whitespace-nowrap
                         px-5
                         py-4
                       "
@@ -448,8 +483,8 @@ const UserTable = ({ users = [] }) => {
                           rounded-full
                           px-2.5
                           py-1
-                          text-[11px]
-                          font-medium
+                          text-[10px]
+                          font-semibold
                           ${getStatusClass(
                             user?.status
                           )}
@@ -465,7 +500,6 @@ const UserTable = ({ users = [] }) => {
 
                     <td
                       className="
-                        whitespace-nowrap
                         px-5
                         py-4
                       "
@@ -478,29 +512,26 @@ const UserTable = ({ users = [] }) => {
                           gap-3
                         "
                       >
-
                         {/* EDIT */}
 
                         <button
                           type="button"
-                          title={t(
-                            "users.table.edit",
+                          onClick={() =>
+                            onEdit?.(
+                              user
+                            )
+                          }
+                          aria-label={t(
+                            "common.edit",
                             "Edit"
                           )}
-                          aria-label={t(
-                            "users.table.edit",
+                          title={t(
+                            "common.edit",
                             "Edit"
                           )}
                           className="
-                            flex
-                            h-7
-                            w-7
-                            items-center
-                            justify-center
-                            rounded-md
                             text-gray-500
                             transition
-                            hover:bg-violet-50
                             hover:text-violet-600
                           "
                         >
@@ -516,24 +547,22 @@ const UserTable = ({ users = [] }) => {
 
                         <button
                           type="button"
-                          title={t(
-                            "users.table.delete",
+                          onClick={() =>
+                            onDelete?.(
+                              user
+                            )
+                          }
+                          aria-label={t(
+                            "common.delete",
                             "Delete"
                           )}
-                          aria-label={t(
-                            "users.table.delete",
+                          title={t(
+                            "common.delete",
                             "Delete"
                           )}
                           className="
-                            flex
-                            h-7
-                            w-7
-                            items-center
-                            justify-center
-                            rounded-md
                             text-gray-500
                             transition
-                            hover:bg-red-50
                             hover:text-red-600
                           "
                         >
@@ -544,27 +573,21 @@ const UserTable = ({ users = [] }) => {
                             "
                           />
                         </button>
-
                       </div>
                     </td>
-
                   </tr>
                 )
               )
             ) : (
-
-              /* =================================================
-                 EMPTY STATE
-              ================================================= */
-
               <tr>
                 <td
                   colSpan={6}
                   className="
                     px-5
-                    py-12
+                    py-10
                     text-center
-                    text-[13px]
+                    text-[12px]
+                    font-medium
                     text-gray-500
                   "
                 >
@@ -574,17 +597,14 @@ const UserTable = ({ users = [] }) => {
                   )}
                 </td>
               </tr>
-
             )}
-
           </tbody>
-
         </table>
       </div>
 
-      {/* ======================================================
-          PAGINATION FOOTER
-      ====================================================== */}
+      {/* ========================================================
+          FOOTER / PAGINATION
+      ======================================================== */}
 
       <div
         className="
@@ -596,25 +616,20 @@ const UserTable = ({ users = [] }) => {
           border-gray-100
           px-4
           py-3
-          text-[12px]
+          text-[11px]
           text-gray-500
 
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
           sm:px-5
+          sm:text-[12px]
+
+          md:flex-row
+          md:items-center
+          md:justify-between
         "
       >
+        {/* SHOWING */}
 
-        {/* ====================================================
-            SHOWING COUNT
-        ==================================================== */}
-
-        <div
-          className="
-            whitespace-nowrap
-          "
-        >
+        <span className="whitespace-nowrap">
           {t(
             "users.table.showing",
             "Showing"
@@ -635,10 +650,10 @@ const UserTable = ({ users = [] }) => {
             "users.table.users",
             "users"
           )}
-        </div>
+        </span>
 
         {/* ====================================================
-            RIGHT SIDE PAGINATION
+            PAGINATION CONTROLS
         ==================================================== */}
 
         <div
@@ -654,23 +669,18 @@ const UserTable = ({ users = [] }) => {
             sm:gap-4
           "
         >
-
           {/* ROWS PER PAGE */}
 
-          <div
-            className="
-              whitespace-nowrap
-            "
-          >
+          <span className="whitespace-nowrap">
             {t(
               "users.table.rowsPerPage",
               "Rows per page"
             )}
             :{" "}
             {ROWS_PER_PAGE}
-          </div>
+          </span>
 
-          {/* PAGE NAVIGATION */}
+          {/* PAGE CONTROLS */}
 
           <div
             className="
@@ -679,39 +689,36 @@ const UserTable = ({ users = [] }) => {
               gap-2
             "
           >
-
             {/* PREVIOUS */}
 
             <button
               type="button"
               onClick={
-                handlePreviousPage
+                goToPreviousPage
               }
               disabled={
-                currentPage === 1
+                safeCurrentPage === 1
               }
-              title={t(
-                "users.table.previousPage",
-                "Previous page"
-              )}
               aria-label={t(
-                "users.table.previousPage",
-                "Previous page"
+                "users.table.previous",
+                "Previous"
+              )}
+              title={t(
+                "users.table.previous",
+                "Previous"
               )}
               className="
                 flex
-                h-8
-                w-8
+                h-7
+                w-7
                 items-center
                 justify-center
-                rounded-md
+                rounded
                 border
                 border-gray-200
                 bg-white
-                text-gray-600
                 transition
                 hover:bg-gray-100
-                hover:text-gray-900
                 disabled:cursor-not-allowed
                 disabled:opacity-40
               "
@@ -728,18 +735,19 @@ const UserTable = ({ users = [] }) => {
 
             <span
               className="
-                min-w-[58px]
+                min-w-[60px]
                 text-center
-                text-[12px]
-                font-medium
+                text-[11px]
                 text-gray-600
               "
             >
-              {currentPage}{" "}
+              {safeCurrentPage}{" "}
+
               {t(
-                "users.table.ofPage",
+                "users.table.of",
                 "of"
               )}{" "}
+
               {totalPages}
             </span>
 
@@ -748,34 +756,32 @@ const UserTable = ({ users = [] }) => {
             <button
               type="button"
               onClick={
-                handleNextPage
+                goToNextPage
               }
               disabled={
-                currentPage >=
+                safeCurrentPage ===
                 totalPages
               }
-              title={t(
-                "users.table.nextPage",
-                "Next page"
-              )}
               aria-label={t(
-                "users.table.nextPage",
-                "Next page"
+                "users.table.next",
+                "Next"
+              )}
+              title={t(
+                "users.table.next",
+                "Next"
               )}
               className="
                 flex
-                h-8
-                w-8
+                h-7
+                w-7
                 items-center
                 justify-center
-                rounded-md
+                rounded
                 border
                 border-gray-200
                 bg-white
-                text-gray-600
                 transition
                 hover:bg-gray-100
-                hover:text-gray-900
                 disabled:cursor-not-allowed
                 disabled:opacity-40
               "
@@ -787,13 +793,9 @@ const UserTable = ({ users = [] }) => {
                 "
               />
             </button>
-
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };

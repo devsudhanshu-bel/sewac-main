@@ -1219,36 +1219,125 @@ cityOverviewMap: {
 },
 
 users: {
+  title: "Users",
+
+  description:
+    "Create and manage users in the system.",
+
   admin: {
     title: "Admin Level 1 Users",
-    description: "Manage other Admin Level 1 users who have full access to the system.",
-    searchPlaceholder: "Search by name, email or phone",
-    addButton: "Add Admin",
+
+    description:
+      "Manage other Admin Level 1 users who have full access to the system.",
+
+    searchPlaceholder:
+      "Search by name, email or phone...",
+
+    addButton:
+      "Add Admin",
+
+    loading:
+      "Loading Admin Level 1 users...",
+
+    empty:
+      "No Admin Level 1 users found.",
+
+    errors: {
+      fetchFailed:
+        "Failed to fetch Admin Level 1 users.",
+    },
+
+    table: {
+      slNo: "SL.No",
+      name: "Admin Name",
+      email: "Email",
+      phone: "Phone Number",
+      status: "Status",
+      createdAt: "Created At",
+      actions: "Actions",
+    },
+
+    actions: {
+      edit: "Edit user",
+      delete: "Delete user",
+    },
+
+    pagination: {
+      showing: "Showing",
+      of: "of",
+      entries: "entries",
+      rowsPerPage: "Rows per page:",
+      previous: "Previous page",
+      next: "Next page",
+    },
+
+    modals: {
+      addTitle: "Add Admin",
+      editTitle: "Edit Admin",
+    },
   },
 
   contractor: {
-    title: "Contractor Users",
-    description: "Manage contractor users and their access to the system.",
-    searchPlaceholder: "Search by name, email or phone",
-    addButton: "Add Contractor",
+    title:
+      "Contractor Users",
+
+    description:
+      "Manage contractor users and their access to the system.",
+
+    searchPlaceholder:
+      "Search by name, email or phone...",
+
+    addButton:
+      "Add Contractor",
   },
 
   table: {
-    name: "Name",
-    email: "Email",
-    role: "Role",
-    lastLogin: "Last Login",
-    status: "Status",
-    actions: "Actions",
-    showing: "Showing",
-    of: "of",
-    users: "users",
-    rowsPerPage: "Rows per page",
-    previous: "Previous",
-    next: "Next",
-    noUsers: "No users found",
+    name:
+      "Name",
+
+    email:
+      "Email",
+
+    role:
+      "Role",
+
+    lastLogin:
+      "Last Login",
+
+    status:
+      "Status",
+
+    active:
+      "Active",
+
+    inactive:
+      "Inactive",
+
+    actions:
+      "Actions",
+
+    showing:
+      "Showing",
+
+    of:
+      "of",
+
+    users:
+      "users",
+
+    rowsPerPage:
+      "Rows per page",
+
+    previous:
+      "Previous",
+
+    next:
+      "Next",
+
+    noUsers:
+      "No users found",
   },
-}
+},
 };
 
 export default en;
