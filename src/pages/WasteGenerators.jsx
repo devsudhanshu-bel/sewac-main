@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import Header from "../components/layouts/Header";
 import api from "../api/axios";
@@ -11,6 +12,14 @@ import WasteGenDir from "../components/waste-generators/WasteGenDir";
 import { useFilters } from "../contexts/FilterContext";
 
 export default function WasteGenerators() {
+  /*
+  |--------------------------------------------------------------------------
+  | LANGUAGE
+  |--------------------------------------------------------------------------
+  */
+
+  const { t } = useTranslation();
+
   /*
   |--------------------------------------------------------------------------
   | KPI
@@ -35,8 +44,12 @@ export default function WasteGenerators() {
   |--------------------------------------------------------------------------
   */
 
-  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
-    useFilters();
+  const {
+    selectedCity,
+    selectedZone,
+    selectedDivision,
+    selectedWard,
+  } = useFilters();
 
   /*
   |--------------------------------------------------------------------------
@@ -124,10 +137,10 @@ export default function WasteGenerators() {
 
   const loadDirectory = useCallback(async () => {
     /*
-      |--------------------------------------------------------------------------
-      | REQUIRE COMPLETE HEADER
-      |--------------------------------------------------------------------------
-      */
+    |--------------------------------------------------------------------------
+    | REQUIRE COMPLETE HEADER
+    |--------------------------------------------------------------------------
+    */
 
     if (
       !selectedCity?.city_id ||
@@ -154,7 +167,10 @@ export default function WasteGenerators() {
 
       params.set("zoneId", String(selectedZone.zone_id));
 
-      params.set("divisionId", String(selectedDivision.division_id));
+      params.set(
+        "divisionId",
+        String(selectedDivision.division_id),
+      );
 
       params.set("wardId", String(selectedWard.ward_id));
 
@@ -180,9 +196,14 @@ export default function WasteGenerators() {
 
       setDirectoryTotal(Number(pagination.total || 0));
 
-      setDirectoryTotalPages(Number(pagination.totalPages || 0));
+      setDirectoryTotalPages(
+        Number(pagination.totalPages || 0),
+      );
     } catch (error) {
-      console.error("Waste Generator Directory Error:", error);
+      console.error(
+        "Waste Generator Directory Error:",
+        error,
+      );
 
       setCitizens([]);
 
@@ -271,10 +292,17 @@ export default function WasteGenerators() {
     ];
 
     for (const value of values) {
-      if (value !== null && value !== undefined && String(value).trim()) {
+      if (
+        value !== null &&
+        value !== undefined &&
+        String(value).trim()
+      ) {
         const number = Number(value);
 
-        if (Number.isInteger(number) && number > 0) {
+        if (
+          Number.isInteger(number) &&
+          number > 0
+        ) {
           return number;
         }
       }
@@ -293,7 +321,9 @@ export default function WasteGenerators() {
     const wardNo = getSelectedWardNumber();
 
     if (!wardNo) {
-      window.alert("Please select a ward before syncing.");
+      window.alert(
+        t("wasteGenerators.sync.selectWard"),
+      );
 
       return;
     }
@@ -301,29 +331,44 @@ export default function WasteGenerators() {
     try {
       setSyncing(true);
 
-      await api.post(`/api/master-citizen/sync/ward/${wardNo}`);
+      await api.post(
+        `/api/master-citizen/sync/ward/${wardNo}`,
+      );
 
       /*
-        | Refresh the directory after sync.
-        */
+      |--------------------------------------------------------------------------
+      | Refresh the directory after sync
+      |--------------------------------------------------------------------------
+      */
 
       setDirectoryPage(1);
 
       await loadDirectory();
 
-      window.alert(`Ward ${wardNo} synced successfully.`);
+      window.alert(
+        t("wasteGenerators.sync.success", {
+          ward: wardNo,
+        }),
+      );
     } catch (error) {
-      console.error("Waste Generator Sync Error:", error);
+      console.error(
+        "Waste Generator Sync Error:",
+        error,
+      );
 
       window.alert(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to sync the selected ward.",
+          t("wasteGenerators.sync.failed"),
       );
     } finally {
       setSyncing(false);
     }
-  }, [getSelectedWardNumber, loadDirectory]);
+  }, [
+    getSelectedWardNumber,
+    loadDirectory,
+    t,
+  ]);
 
   /*
   |--------------------------------------------------------------------------
@@ -339,7 +384,10 @@ export default function WasteGenerators() {
      * For now we only surface the selected record.
      */
 
-    console.log("Update Waste Generator:", citizen);
+    console.log(
+      "Update Waste Generator:",
+      citizen,
+    );
   }, []);
 
   /*
@@ -350,21 +398,24 @@ export default function WasteGenerators() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+      <Header
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+      />
 
       <div className="w-full px-8 py-7 overflow-x-hidden">
+
         {/* ==========================================================
             TITLE
         ========================================================== */}
 
         <div>
           <h1 className="text-[34px] font-bold tracking-tight text-[#16295A]">
-            Waste Generators
+            {t("wasteGenerators.title")}
           </h1>
 
           <p className="mt-1 text-[14px] text-slate-500">
-            Overview of waste generators participation, waste contribution,
-            activity, monitoring and collection performance.
+            {t("wasteGenerators.description")}
           </p>
         </div>
 
@@ -391,7 +442,9 @@ export default function WasteGenerators() {
           "
         >
           <div className="min-w-0 h-full">
-            <WasteGenMap selectedDate={selectedDate} />
+            <WasteGenMap
+              selectedDate={selectedDate}
+            />
           </div>
 
           <div className="min-w-0 h-full">
