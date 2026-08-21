@@ -10,12 +10,7 @@ import {
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { gsap } from "gsap";
 
@@ -75,11 +70,7 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(
-        payload
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
     );
 
     return {
@@ -87,10 +78,7 @@ function getUserFromToken() {
       role: decoded.role || "ADMIN_LAYER_1",
     };
   } catch (error) {
-    console.error(
-      "Failed to decode authentication token:",
-      error
-    );
+    console.error("Failed to decode authentication token:", error);
 
     return {
       name: "Admin",
@@ -100,11 +88,7 @@ function getUserFromToken() {
 }
 
 function getRoleLabel(role) {
-  return (
-    ROLE_LABELS[role] ||
-    role ||
-    "Admin Layer 1"
-  );
+  return ROLE_LABELS[role] || role || "Admin Layer 1";
 }
 
 /* =========================================================
@@ -114,18 +98,17 @@ function getRoleLabel(role) {
 function Dropdown({
   width,
   value,
-  options,
+  options = [],
   onChange,
   placeholder = "Select",
+  getLabel,
+  getKey,
 }) {
-  const [open, setOpen] =
-    useState(false);
+  const [open, setOpen] = useState(false);
 
-  const wrapperRef =
-    useRef(null);
+  const wrapperRef = useRef(null);
 
-  const menuRef =
-    useRef(null);
+  const menuRef = useRef(null);
 
   /* =======================================================
      CLOSE OUTSIDE
@@ -133,25 +116,15 @@ function Dropdown({
 
   useEffect(() => {
     function close(event) {
-      if (
-        !wrapperRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!wrapperRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
 
-    window.addEventListener(
-      "mousedown",
-      close
-    );
+    window.addEventListener("mousedown", close);
 
     return () => {
-      window.removeEventListener(
-        "mousedown",
-        close
-      );
+      window.removeEventListener("mousedown", close);
     };
   }, []);
 
@@ -160,10 +133,7 @@ function Dropdown({
   ======================================================= */
 
   useEffect(() => {
-    if (
-      open &&
-      menuRef.current
-    ) {
+    if (open && menuRef.current) {
       gsap.fromTo(
         menuRef.current,
         {
@@ -177,21 +147,48 @@ function Dropdown({
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        }
+        },
       );
     }
   }, [open]);
 
+  /* =======================================================
+     DYNAMIC OPTION HELPERS
+  ======================================================= */
+
+  const getOptionLabel = (item) => {
+    if (getLabel) {
+      return getLabel(item);
+    }
+
+    return (
+      item?.city_name ||
+      item?.zone_name ||
+      item?.division_name ||
+      item?.ward_name ||
+      String(item ?? "")
+    );
+  };
+
+  const getOptionKey = (item, index) => {
+    if (getKey) {
+      return getKey(item);
+    }
+
+    return (
+      item?.city_id ||
+      item?.zone_id ||
+      item?.division_id ||
+      item?.ward_id ||
+      `${item}-${index}`
+    );
+  };
+
   return (
-    <div
-      ref={wrapperRef}
-      className={`relative shrink-0 ${width}`}
-    >
+    <div ref={wrapperRef} className={`relative shrink-0 ${width}`}>
       <button
         type="button"
-        onClick={() =>
-          setOpen(!open)
-        }
+        onClick={() => setOpen(!open)}
         className="
           w-full
           h-9
@@ -211,9 +208,7 @@ function Dropdown({
           duration-300
         "
       >
-        <span className="truncate">
-          {value || placeholder}
-        </span>
+        <span className="truncate">{value || placeholder}</span>
 
         <ChevronDown
           size={14}
@@ -221,11 +216,7 @@ function Dropdown({
             shrink-0
             transition-transform
             duration-300
-            ${
-              open
-                ? "rotate-180"
-                : ""
-            }
+            ${open ? "rotate-180" : ""}
           `}
         />
       </button>
@@ -238,6 +229,8 @@ function Dropdown({
             top-11
             left-0
             w-full
+            max-h-[315px]
+            overflow-y-auto
             rounded-2xl
             bg-white
             border
@@ -247,44 +240,61 @@ function Dropdown({
             z-[10000]
           "
         >
-          {options.map(
-            (item, index) => (
-              <button
-                type="button"
-                key={`${item}-${index}`}
-                onClick={() => {
-                  onChange(item);
-                  setOpen(false);
-                }}
-                className="
-                  w-full
-                  px-4
-                  py-2.5
-                  flex
-                  items-center
-                  justify-between
-                  text-left
-                  text-[12px]
-                  text-[#16295A]
-                  hover:bg-violet-50
-                  transition
-                "
-              >
-                <span className="truncate">
-                  {item}
-                </span>
+          {options.length === 0 ? (
+            <div
+              className="
+                px-4
+                py-2.5
+                text-[12px]
+                text-gray-400
+              "
+            >
+              No options available
+            </div>
+          ) : (
+            options.map((item, index) => {
+              const label = getOptionLabel(item);
 
-                {item === value && (
-                  <Check
-                    size={14}
-                    className="
-                      shrink-0
-                      text-violet-600
+              const key = getOptionKey(item, index);
+
+              const isSelected = label === value;
+
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => {
+                    onChange(item);
+                    setOpen(false);
+                  }}
+                  className="
+                      w-full
+                      px-4
+                      py-2.5
+                      flex
+                      items-center
+                      justify-between
+                      text-left
+                      text-[12px]
+                      text-[#16295A]
+                      hover:bg-violet-50
+                      transition
                     "
-                  />
-                )}
-              </button>
-            )
+                >
+                  <span className="truncate">{label}</span>
+
+                  {isSelected && (
+                    <Check
+                      size={14}
+                      className="
+                          shrink-0
+                          text-violet-600
+                        "
+                    />
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
       )}
@@ -296,18 +306,12 @@ function Dropdown({
    HEADER
 ========================================================= */
 
-export default function Header({
-  variant = "dashboard",
-}) {
+export default function Header({ variant = "dashboard" }) {
   /* =======================================================
      LANGUAGE
   ======================================================= */
 
-  const {
-    language,
-    setLanguage,
-    t,
-  } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   /* =======================================================
      FILTER CONTEXT
@@ -323,113 +327,58 @@ export default function Header({
     setSelectedZone,
     setSelectedDivision,
     setSelectedWard,
+
+    cities,
+    zones,
+    divisions,
+    wards,
   } = useFilters();
 
   /* =======================================================
      REFS
   ======================================================= */
 
-  const headerRef =
-    useRef(null);
+  const headerRef = useRef(null);
 
-  const controlsRef =
-    useRef(null);
+  const controlsRef = useRef(null);
 
-  const searchRef =
-    useRef(null);
+  const searchRef = useRef(null);
 
-  const profileRef =
-    useRef(null);
+  const profileRef = useRef(null);
 
-  const bellRef =
-    useRef(null);
+  const bellRef = useRef(null);
 
-  const languageRef =
-    useRef(null);
+  const languageRef = useRef(null);
 
-  const languageMenuRef =
-    useRef(null);
+  const languageMenuRef = useRef(null);
 
   /* =======================================================
      STATE
   ======================================================= */
 
-  const [selectedDate, setSelectedDate] =
-    useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [dayType, setDayType] =
-    useState("dry");
+  const [dayType, setDayType] = useState("dry");
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
-  const [profileOpen, setProfileOpen] =
-    useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [notificationOpen, setNotificationOpen] =
-    useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
-  const [languageOpen, setLanguageOpen] =
-    useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
-  const isDashboard =
-    variant === "dashboard";
+  const isDashboard = variant === "dashboard";
 
   /* =======================================================
      USER
   ======================================================= */
 
-  const user =
-    getUserFromToken();
+  const user = getUserFromToken();
 
-  const roleLabel =
-    getRoleLabel(user.role);
+  const roleLabel = getRoleLabel(user.role);
 
-  const userInitial =
-    user?.name
-      ?.trim()
-      ?.charAt(0)
-      ?.toUpperCase() ||
-    "A";
-
-  /* =========================================================
-     LOCATION OPTIONS
-  ========================================================= */
-
-  const cities = [
-    "Bangalore",
-    "Mysore",
-    "Mangalore",
-    "Hubli",
-    "Belgaum",
-  ];
-
-  const zones = [
-    "All Zones",
-    "East Zone",
-    "West Zone",
-    "South Zone",
-    "North Zone",
-    "Mahadevapura",
-    "Bommanahalli",
-    "RR Nagar",
-    "Yelahanka",
-    "Dasarahalli",
-  ];
-
-  const divisions = [
-    "All Divisions",
-    "Division 1",
-    "Division 2",
-    "Division 3",
-  ];
-
-  const wards = [
-    "All Wards",
-    "Ward 1",
-    "Ward 2",
-    "Ward 3",
-  ];
+  const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "A";
 
   /* =========================================================
      GSAP HEADER ANIMATION
@@ -440,23 +389,16 @@ export default function Header({
       return;
     }
 
-    const tl =
-      gsap.timeline();
+    const tl = gsap.timeline();
 
-    tl.from(
-      headerRef.current,
-      {
-        y: -24,
-        opacity: 0,
-        duration: 0.45,
-        ease: "power4.out",
-      }
-    );
+    tl.from(headerRef.current, {
+      y: -24,
+      opacity: 0,
+      duration: 0.45,
+      ease: "power4.out",
+    });
 
-    if (
-      controlsRef.current
-        ?.children
-    ) {
+    if (controlsRef.current?.children) {
       tl.from(
         controlsRef.current.children,
         {
@@ -466,7 +408,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2"
+        "-=0.2",
       );
     }
 
@@ -481,41 +423,23 @@ export default function Header({
 
   useEffect(() => {
     function close(event) {
-      if (
-        !profileRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!profileRef.current?.contains(event.target)) {
         setProfileOpen(false);
       }
 
-      if (
-        !bellRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!bellRef.current?.contains(event.target)) {
         setNotificationOpen(false);
       }
 
-      if (
-        !languageRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!languageRef.current?.contains(event.target)) {
         setLanguageOpen(false);
       }
     }
 
-    window.addEventListener(
-      "mousedown",
-      close
-    );
+    window.addEventListener("mousedown", close);
 
     return () => {
-      window.removeEventListener(
-        "mousedown",
-        close
-      );
+      window.removeEventListener("mousedown", close);
     };
   }, []);
 
@@ -525,26 +449,17 @@ export default function Header({
 
   useEffect(() => {
     function shortcut(event) {
-      if (
-        event.key === "/" &&
-        variant !== "dashboard"
-      ) {
+      if (event.key === "/" && variant !== "dashboard") {
         event.preventDefault();
 
         searchRef.current?.focus();
       }
     }
 
-    window.addEventListener(
-      "keydown",
-      shortcut
-    );
+    window.addEventListener("keydown", shortcut);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        shortcut
-      );
+      window.removeEventListener("keydown", shortcut);
     };
   }, [variant]);
 
@@ -555,36 +470,19 @@ export default function Header({
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace(
-      "https://app-authentication-frontend.onrender.com"
-    );
+    window.location.replace("https://app-authentication-frontend.onrender.com");
   };
 
   /* =========================================================
      DATE FORMAT
   ========================================================= */
 
-  const formatLocalDate = (
-    date
-  ) => {
-    const year =
-      date.getFullYear();
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
 
-    const month =
-      String(
-        date.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      );
+    const month = String(date.getMonth() + 1).padStart(2, "0");
 
-    const day =
-      String(
-        date.getDate()
-      ).padStart(
-        2,
-        "0"
-      );
+    const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   };
@@ -593,25 +491,18 @@ export default function Header({
      LANGUAGE HANDLER
   ========================================================= */
 
-  const handleLanguageChange =
-    (languageCode) => {
-      setLanguage(
-        languageCode
-      );
+  const handleLanguageChange = (languageCode) => {
+    setLanguage(languageCode);
 
-      setLanguageOpen(false);
-    };
+    setLanguageOpen(false);
+  };
 
   /* =========================================================
      CURRENT LANGUAGE
   ========================================================= */
 
   const currentLanguageCode =
-    language === "en"
-      ? "EN"
-      : language === "kn"
-        ? "KN"
-        : "HI";
+    language === "en" ? "EN" : language === "kn" ? "KN" : "HI";
 
   /* =========================================================
      NOTIFICATIONS
@@ -619,29 +510,25 @@ export default function Header({
 
   const notifications = [
     {
-      title:
-        "Vehicle KA-01 AB 1234 reached destination",
+      title: "Vehicle KA-01 AB 1234 reached destination",
       time: "2 min ago",
     },
     {
-      title:
-        "Plant capacity exceeded 90%",
+      title: "Plant capacity exceeded 90%",
       time: "8 min ago",
     },
     {
-      title:
-        "AI generated today's report",
+      title: "AI generated today's report",
       time: "25 min ago",
     },
     {
-      title:
-        "New administrator added",
+      title: "New administrator added",
       time: "1 hr ago",
     },
   ];
 
   /* =========================================================
-     LOCATION FILTERS
+     DYNAMIC LOCATION FILTERS
   ========================================================= */
 
   const locationFilters = (
@@ -656,17 +543,12 @@ export default function Header({
           sm:w-[155px]
           2xl:w-[118px]
         "
-        value={
-          selectedCity?.city_name ||
-          t("filters.city")
-        }
+        value={selectedCity?.city_name || t("filters.city")}
         options={cities}
-        onChange={
-          setSelectedCity
-        }
-        placeholder={
-          t("filters.city")
-        }
+        onChange={setSelectedCity}
+        placeholder={t("filters.city")}
+        getLabel={(city) => city?.city_name || ""}
+        getKey={(city) => city?.city_id}
       />
 
       {/* =================================================
@@ -679,17 +561,12 @@ export default function Header({
           sm:w-[235px]
           2xl:w-[200px]
         "
-        value={
-          selectedZone?.zone_name ||
-          t("filters.zone")
-        }
+        value={selectedZone?.zone_name || t("filters.zone")}
         options={zones}
-        onChange={
-          setSelectedZone
-        }
-        placeholder={
-          t("filters.zone")
-        }
+        onChange={setSelectedZone}
+        placeholder={t("filters.zone")}
+        getLabel={(zone) => zone?.zone_name || ""}
+        getKey={(zone) => zone?.zone_id}
       />
 
       {/* =================================================
@@ -702,15 +579,12 @@ export default function Header({
           sm:w-[180px]
           2xl:w-[138px]
         "
-        value={
-          selectedDivision?.division_name ||
-          "Select Division"
-        }
+        value={selectedDivision?.division_name || "Select Division"}
         options={divisions}
-        onChange={
-          setSelectedDivision
-        }
+        onChange={setSelectedDivision}
         placeholder="Select Division"
+        getLabel={(division) => division?.division_name || ""}
+        getKey={(division) => division?.division_id}
       />
 
       {/* =================================================
@@ -729,10 +603,16 @@ export default function Header({
             : "Select Ward"
         }
         options={wards}
-        onChange={
-          setSelectedWard
-        }
+        onChange={setSelectedWard}
         placeholder="Select Ward"
+        getLabel={(ward) =>
+          ward
+            ? `${ward.ward_name}${
+                ward.ward_no !== undefined ? ` (${ward.ward_no})` : ""
+              }`
+            : ""
+        }
+        getKey={(ward) => ward?.ward_id}
       />
     </>
   );
@@ -759,15 +639,8 @@ export default function Header({
         ref={searchRef}
         type="text"
         value={search}
-        onChange={(event) =>
-          setSearch(
-            event.target.value
-          )
-        }
-        placeholder={t(
-          "header.search",
-          "Search..."
-        )}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder={t("header.search", "Search...")}
         className="
           w-full
           h-9
@@ -892,8 +765,6 @@ export default function Header({
 
           {/* =================================================
               DESKTOP DASHBOARD FILTERS
-
-              >= 1536px
           ================================================= */}
 
           {isDashboard ? (
@@ -940,12 +811,8 @@ export default function Header({
 
           <div className="relative">
             <Calendar
-              selectedDate={
-                selectedDate
-              }
-              onDateChange={
-                setSelectedDate
-              }
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
             />
           </div>
 
@@ -968,9 +835,7 @@ export default function Header({
             >
               <button
                 type="button"
-                onClick={() =>
-                  setDayType("dry")
-                }
+                onClick={() => setDayType("dry")}
                 className={`
                   h-9
                   px-4
@@ -986,17 +851,12 @@ export default function Header({
                   }
                 `}
               >
-                {t(
-                  "header.dryDay",
-                  "Dry Day"
-                )}
+                {t("header.dryDay", "Dry Day")}
               </button>
 
               <button
                 type="button"
-                onClick={() =>
-                  setDayType("wet")
-                }
+                onClick={() => setDayType("wet")}
                 className={`
                   h-9
                   px-4
@@ -1012,10 +872,7 @@ export default function Header({
                   }
                 `}
               >
-                {t(
-                  "header.wetDay",
-                  "Wet Day"
-                )}
+                {t("header.wetDay", "Wet Day")}
               </button>
             </div>
           )}
@@ -1024,17 +881,10 @@ export default function Header({
               LANGUAGE
           ================================================= */}
 
-          <div
-            ref={languageRef}
-            className="relative"
-          >
+          <div ref={languageRef} className="relative">
             <button
               type="button"
-              onClick={() =>
-                setLanguageOpen(
-                  !languageOpen
-                )
-              }
+              onClick={() => setLanguageOpen(!languageOpen)}
               className="
                 h-9
                 px-2.5
@@ -1052,10 +902,7 @@ export default function Header({
                 duration-300
               "
             >
-              <Globe
-                size={15}
-                className="text-violet-600"
-              />
+              <Globe size={15} className="text-violet-600" />
 
               <span
                 className="
@@ -1073,11 +920,7 @@ export default function Header({
                 className={`
                   transition-transform
                   duration-300
-                  ${
-                    languageOpen
-                      ? "rotate-180"
-                      : ""
-                  }
+                  ${languageOpen ? "rotate-180" : ""}
                 `}
               />
             </button>
@@ -1099,17 +942,12 @@ export default function Header({
                   z-[10000]
                 "
               >
-                {languages.map(
-                  (item) => (
-                    <button
-                      type="button"
-                      key={item.code}
-                      onClick={() =>
-                        handleLanguageChange(
-                          item.code
-                        )
-                      }
-                      className="
+                {languages.map((item) => (
+                  <button
+                    type="button"
+                    key={item.code}
+                    onClick={() => handleLanguageChange(item.code)}
+                    className="
                         w-full
                         px-4
                         py-3
@@ -1121,21 +959,14 @@ export default function Header({
                         hover:bg-violet-50
                         transition
                       "
-                    >
-                      {t(
-                        item.translationKey
-                      )}
+                  >
+                    {t(item.translationKey)}
 
-                      {language ===
-                        item.code && (
-                        <Check
-                          size={14}
-                          className="text-violet-600"
-                        />
-                      )}
-                    </button>
-                  )
-                )}
+                    {language === item.code && (
+                      <Check size={14} className="text-violet-600" />
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -1153,14 +984,8 @@ export default function Header({
           >
             <button
               type="button"
-              onClick={() =>
-                setProfileOpen(
-                  !profileOpen
-                )
-              }
-              aria-expanded={
-                profileOpen
-              }
+              onClick={() => setProfileOpen(!profileOpen)}
+              aria-expanded={profileOpen}
               className="
                 h-9
                 pl-1
@@ -1242,11 +1067,7 @@ export default function Header({
                 className={`
                   transition-transform
                   duration-300
-                  ${
-                    profileOpen
-                      ? "rotate-180"
-                      : ""
-                  }
+                  ${profileOpen ? "rotate-180" : ""}
                 `}
               />
             </button>
@@ -1287,15 +1108,11 @@ export default function Header({
                         y: 0,
                         duration: 0.22,
                         ease: "power3.out",
-                      }
+                      },
                     );
                   }
                 }}
               >
-                {/* =================================================
-                    PROFILE INFORMATION
-                ================================================= */}
-
                 <div
                   className="
                     px-5
@@ -1359,16 +1176,12 @@ export default function Header({
 
                 {/* =================================================
                     LOGOUT ONLY
-
-                    SETTINGS HAS BEEN REMOVED
                 ================================================= */}
 
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(
-                      false
-                    );
+                    setProfileOpen(false);
 
                     handleLogout();
                   }}
@@ -1386,13 +1199,9 @@ export default function Header({
                     text-left
                   "
                 >
-                  <LogOut
-                    size={16}
-                  />
+                  <LogOut size={16} />
 
-                  {t(
-                    "sidebar.logout"
-                  )}
+                  {t("sidebar.logout")}
                 </button>
               </div>
             )}
@@ -1402,8 +1211,6 @@ export default function Header({
 
       {/* ===================================================
           NON-DASHBOARD SMALL SCREEN SEARCH ROW
-
-          <= 767px
       =================================================== */}
 
       {!isDashboard && (
@@ -1415,9 +1222,7 @@ export default function Header({
             px-0.5
           "
         >
-          <div className="w-full">
-            {searchInput}
-          </div>
+          <div className="w-full">{searchInput}</div>
         </div>
       )}
 
