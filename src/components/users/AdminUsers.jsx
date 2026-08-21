@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-
 import {
   ShieldCheck,
   Plus,
@@ -20,47 +19,24 @@ import { useLanguage } from "../../i18n";
 const AdminUsers = () => {
   const { t } = useLanguage();
 
-  // =========================================================
-  // MODAL STATE
-  // =========================================================
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const [showAddAdminModal, setShowAddAdminModal] =
-    useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  const [showEditModal, setShowEditModal] =
-    useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [search, setSearch] = useState("");
 
-  const [showDeleteModal, setShowDeleteModal] =
-    useState(false);
-
-  const [selectedUser, setSelectedUser] =
-    useState(null);
-
-  // =========================================================
-  // DATA STATE
-  // =========================================================
-
-  const [adminUsers, setAdminUsers] =
-    useState([]);
-
-  const [search, setSearch] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   // =========================================================
   // PAGINATION
   // =========================================================
 
-  const [currentPage, setCurrentPage] =
-    useState(1);
-
-  const [rowsPerPage, setRowsPerPage] =
-    useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // =========================================================
   // FETCH ADMIN LAYER 1 USERS
@@ -71,32 +47,25 @@ const AdminUsers = () => {
       setLoading(true);
       setError("");
 
-      const response = await api.get(
-        "/api/users",
-        {
-          params: {
-            type: "ADMIN_LAYER_1",
-          },
-        }
-      );
+      const response = await api.get("/api/users", {
+        params: {
+          type: "ADMIN_LAYER_1",
+        },
+      });
 
-      const users =
-        response?.data?.users || [];
+      const users = response?.data?.users || [];
 
       setAdminUsers(users);
     } catch (err) {
-      console.error(
-        "Fetch Admin Layer 1 users error:",
-        err
-      );
+      console.error("Fetch Admin Layer 1 users error:", err);
 
       const backendMessage =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         t(
-          "users.admin.errors.fetchFailed",
-          "Failed to fetch Admin Level 1 users."
+          "users.admin.fetchError",
+          "Failed to fetch Admin Layer 1 users."
         );
 
       setError(backendMessage);
@@ -105,129 +74,16 @@ const AdminUsers = () => {
     }
   };
 
-  // =========================================================
-  // INITIAL FETCH
-  // =========================================================
-
   useEffect(() => {
     fetchAdmins();
   }, []);
-
-  // =========================================================
-  // SEARCH
-  // =========================================================
-
-  const filteredAdmins = useMemo(() => {
-    const value =
-      search
-        .toLowerCase()
-        .trim();
-
-    if (!value) {
-      return adminUsers;
-    }
-
-    return adminUsers.filter(
-      (user) =>
-        (user.full_name || "")
-          .toLowerCase()
-          .includes(value) ||
-        (user.email || "")
-          .toLowerCase()
-          .includes(value) ||
-        String(
-          user.phone_number || ""
-        ).includes(value)
-    );
-  }, [
-    adminUsers,
-    search,
-  ]);
-
-  // =========================================================
-  // RESET PAGE WHEN SEARCH CHANGES
-  // =========================================================
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
-
-  // =========================================================
-  // PAGINATION CALCULATIONS
-  // =========================================================
-
-  const totalEntries =
-    filteredAdmins.length;
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        totalEntries /
-          rowsPerPage
-      )
-    );
-
-  // Keep current page valid
-  useEffect(() => {
-    if (
-      currentPage >
-      totalPages
-    ) {
-      setCurrentPage(
-        totalPages
-      );
-    }
-  }, [
-    currentPage,
-    totalPages,
-  ]);
-
-  const paginatedAdmins =
-    useMemo(() => {
-      const startIndex =
-        (currentPage - 1) *
-        rowsPerPage;
-
-      const endIndex =
-        startIndex +
-        rowsPerPage;
-
-      return filteredAdmins.slice(
-        startIndex,
-        endIndex
-      );
-    }, [
-      filteredAdmins,
-      currentPage,
-      rowsPerPage,
-    ]);
-
-  const startEntry =
-    totalEntries === 0
-      ? 0
-      : (currentPage - 1) *
-          rowsPerPage +
-        1;
-
-  const endEntry =
-    Math.min(
-      currentPage *
-        rowsPerPage,
-      totalEntries
-    );
 
   // =========================================================
   // CREATE
   // =========================================================
 
   const handleAdminCreated = () => {
-    setShowAddAdminModal(
-      false
-    );
-
-    setCurrentPage(1);
-
+    setShowAddAdminModal(false);
     fetchAdmins();
   };
 
@@ -235,9 +91,7 @@ const AdminUsers = () => {
   // EDIT
   // =========================================================
 
-  const handleEditClick = (
-    user
-  ) => {
+  const handleEditClick = (user) => {
     setSelectedUser(user);
     setShowEditModal(true);
   };
@@ -253,9 +107,7 @@ const AdminUsers = () => {
   // DELETE
   // =========================================================
 
-  const handleDeleteClick = (
-    user
-  ) => {
+  const handleDeleteClick = (user) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
   };
@@ -268,110 +120,89 @@ const AdminUsers = () => {
   };
 
   // =========================================================
-  // PAGE CONTROLS
+  // SEARCH
   // =========================================================
 
-  const goToPreviousPage = () => {
-    setCurrentPage(
-      (previous) =>
-        Math.max(
-          1,
-          previous - 1
-        )
-    );
-  };
+  const filteredAdmins = useMemo(() => {
+    const value = search.toLowerCase().trim();
 
-  const goToNextPage = () => {
-    setCurrentPage(
-      (previous) =>
-        Math.min(
-          totalPages,
-          previous + 1
-        )
-    );
-  };
-
-  const handleRowsPerPageChange = (
-    event
-  ) => {
-    const value = Number(
-      event.target.value
-    );
-
-    setRowsPerPage(value);
-    setCurrentPage(1);
-  };
-
-  // =========================================================
-  // DATE FORMATTER
-  // =========================================================
-
-  const formatCreatedAt = (
-    value
-  ) => {
     if (!value) {
-      return "-";
+      return adminUsers;
     }
 
-    try {
-      return new Date(
-        value
-      ).toLocaleString(
-        "en-IN",
-        {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }
+    return adminUsers.filter((user) => {
+      return (
+        (user.full_name || "").toLowerCase().includes(value) ||
+        (user.email || "").toLowerCase().includes(value) ||
+        (user.phone_number || "").includes(value)
       );
-    } catch {
-      return "-";
-    }
-  };
+    });
+  }, [adminUsers, search]);
 
   // =========================================================
-  // STATUS LABEL
+  // RESET PAGE WHEN SEARCH CHANGES
   // =========================================================
 
-  const getStatusLabel = (
-    status
-  ) => {
-    const normalized =
-      String(
-        status || ""
-      )
-        .trim()
-        .toUpperCase();
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
-    if (
-      normalized ===
-      "ACTIVE"
-    ) {
-      return t(
-        "common.active",
-        "Active"
-      );
+  // =========================================================
+  // PAGINATION
+  // =========================================================
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAdmins.length / rowsPerPage)
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const startIndex = (currentPage - 1) * rowsPerPage;
+
+  const paginatedAdmins = filteredAdmins.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
+
+  const showingFrom =
+    filteredAdmins.length === 0 ? 0 : startIndex + 1;
+
+  const showingTo = Math.min(
+    startIndex + rowsPerPage,
+    filteredAdmins.length
+  );
+
+  // =========================================================
+  // STATUS TRANSLATION
+  // =========================================================
+
+  const translateStatus = (status) => {
+    if (!status) return "-";
+
+    const normalizedStatus = status.toLowerCase();
+
+    if (normalizedStatus === "active") {
+      return t("users.status.active", "Active");
     }
 
-    if (
-      normalized ===
-      "INACTIVE"
-    ) {
-      return t(
-        "common.inactive",
-        "Inactive"
-      );
+    if (normalizedStatus === "inactive") {
+      return t("users.status.inactive", "Inactive");
     }
 
-    return (
-      status ||
-      t(
-        "common.unknown",
-        "Unknown"
-      )
-    );
+    if (normalizedStatus === "pending") {
+      return t("users.status.pending", "Pending");
+    }
+
+    if (normalizedStatus === "blocked") {
+      return t("users.status.blocked", "Blocked");
+    }
+
+    return status;
   };
 
   // =========================================================
@@ -379,165 +210,57 @@ const AdminUsers = () => {
   // =========================================================
 
   return (
-    <section
-      className="
-        w-full
-        overflow-hidden
-        rounded-xl
-        border
-        border-gray-200
-        bg-white
-        shadow-sm
-      "
-    >
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div
-        className="
-          border-b
-          border-gray-100
-          px-4
-          py-4
-          sm:px-5
-          sm:py-5
-        "
-      >
-        {/* ===================================================
-            TITLE
-        =================================================== */}
+      <div className="border-b border-gray-100 px-4 py-4 sm:px-5 sm:py-5">
 
-        <div
-          className="
-            flex
-            min-w-0
-            items-start
-            gap-3
-          "
-        >
-          {/* ICON */}
+        {/* TITLE */}
+        <div className="flex min-w-0 items-start gap-3">
 
-          <div
-            className="
-              flex
-              h-8
-              w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-lg
-              bg-violet-100
-            "
-          >
-            <ShieldCheck
-              className="
-                h-4
-                w-4
-                text-violet-600
-              "
-            />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100">
+            <ShieldCheck className="h-4 w-4 text-violet-600" />
           </div>
 
-          {/* TITLE + DESCRIPTION */}
+          <div className="min-w-0 flex-1">
 
-          <div
-            className="
-              min-w-0
-              flex-1
-            "
-          >
-            <h2
-              className="
-                text-[15px]
-                font-semibold
-                leading-5
-                text-gray-900
-                sm:text-[16px]
-              "
-            >
+            <h2 className="text-[15px] font-semibold leading-5 text-gray-900 sm:text-[16px]">
               {t(
                 "users.admin.title",
                 "Admin Level 1 Users"
               )}
             </h2>
 
-            <p
-              className="
-                mt-1
-                max-w-3xl
-                text-[11px]
-                leading-4
-                text-gray-500
-                sm:text-[12px]
-                sm:leading-5
-              "
-            >
+            <p className="mt-1 max-w-2xl text-[11px] leading-4 text-gray-500 sm:text-[12px] sm:leading-5">
               {t(
                 "users.admin.description",
                 "Manage other Admin Level 1 users who have full access to the system."
               )}
             </p>
+
           </div>
+
         </div>
 
         {/* ===================================================
             SEARCH + ADD BUTTON
-
-            Mobile:
-            Search
-            ↓
-            Add button
-
-            Desktop:
-            Search          Add Admin
         =================================================== */}
 
-        <div
-          className="
-            mt-4
-            flex
-            w-full
-            flex-col
-            gap-2.5
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-            sm:gap-3
-          "
-        >
+        <div className="mt-4 flex w-full flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+
           {/* SEARCH */}
 
-          <div
-            className="
-              relative
-              w-full
-              sm:max-w-[360px]
-              md:w-[340px]
-              md:max-w-none
-            "
-          >
-            <Search
-              className="
-                pointer-events-none
-                absolute
-                right-3
-                top-1/2
-                h-4
-                w-4
-                -translate-y-1/2
-                text-violet-600
-              "
-            />
+          <div className="relative w-full sm:max-w-[360px] md:w-[340px] md:max-w-none">
+
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-600" />
 
             <input
               type="text"
               value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
+              onChange={(e) => setSearch(e.target.value)}
               placeholder={t(
                 "users.admin.searchPlaceholder",
                 "Search by name, email or phone..."
@@ -557,23 +280,20 @@ const AdminUsers = () => {
                 transition
                 placeholder:text-gray-400
                 hover:border-gray-300
-                focus:border-violet-500
+                focus:border-violet-400
                 focus:ring-2
                 focus:ring-violet-100
                 sm:text-[13px]
               "
             />
+
           </div>
 
-          {/* ADD BUTTON */}
+          {/* ADD ADMIN */}
 
           <button
             type="button"
-            onClick={() =>
-              setShowAddAdminModal(
-                true
-              )
-            }
+            onClick={() => setShowAddAdminModal(true)}
             className="
               flex
               h-10
@@ -598,13 +318,7 @@ const AdminUsers = () => {
               sm:text-[13px]
             "
           >
-            <Plus
-              className="
-                h-4
-                w-4
-                shrink-0
-              "
-            />
+            <Plus className="h-4 w-4 shrink-0" />
 
             <span>
               {t(
@@ -613,6 +327,7 @@ const AdminUsers = () => {
               )}
             </span>
           </button>
+
         </div>
       </div>
 
@@ -621,782 +336,368 @@ const AdminUsers = () => {
       ===================================================== */}
 
       {error && (
-        <div
-          className="
-            mx-4
-            mt-4
-            rounded-lg
-            border
-            border-red-200
-            bg-red-50
-            px-4
-            py-3
-            text-[12px]
-            leading-5
-            text-red-600
-            sm:mx-5
-          "
-        >
+        <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-600 sm:mx-5 sm:text-[13px]">
           {error}
         </div>
       )}
 
       {/* =====================================================
           TABLE
-
-          overflow-x-auto keeps the table usable on phones.
       ===================================================== */}
 
-      <div
-        className="
-          w-full
-          overflow-x-auto
-        "
-      >
-        <table
-          className="
-            min-w-[900px]
-            w-full
-          "
-        >
-          {/* =================================================
-              TABLE HEADER
-          ================================================= */}
+      <div className="overflow-x-auto">
 
-          <thead
-            className="
-              bg-[#F7F5FF]
-            "
-          >
+        <table className="w-full min-w-[850px]">
+
+          {/* TABLE HEADER */}
+
+          <thead className="bg-[#F7F5FF]">
+
             <tr>
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.slNo",
-                  "SL.No"
-                )}
+
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.slNo", "SL.No")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.name",
-                  "Admin Name"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.adminName", "Admin Name")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.email",
-                  "Email"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.email", "Email")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.phone",
-                  "Phone Number"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.phoneNumber", "Phone Number")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.status",
-                  "Status"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.status", "Status")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-left
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.createdAt",
-                  "Created At"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.createdAt", "Created At")}
               </th>
 
-              <th
-                className="
-                  whitespace-nowrap
-                  px-4
-                  py-3
-                  text-center
-                  text-[11px]
-                  font-semibold
-                  text-violet-700
-                  sm:px-5
-                  sm:text-[12px]
-                "
-              >
-                {t(
-                  "users.admin.table.actions",
-                  "Actions"
-                )}
+              <th className="whitespace-nowrap px-5 py-3 text-center text-[11px] font-semibold text-violet-700 sm:text-[12px]">
+                {t("users.table.actions", "Actions")}
               </th>
+
             </tr>
+
           </thead>
 
-          {/* =================================================
-              TABLE BODY
-          ================================================= */}
+          {/* TABLE BODY */}
 
           <tbody>
+
             {/* LOADING */}
 
             {loading && (
               <tr>
                 <td
-                  colSpan={7}
-                  className="
-                    px-5
-                    py-10
-                    text-center
-                    text-[12px]
-                    text-gray-500
-                    sm:text-[13px]
-                  "
+                  colSpan="7"
+                  className="px-5 py-10 text-center text-[12px] text-gray-500 sm:text-[13px]"
                 >
                   {t(
                     "users.admin.loading",
-                    "Loading Admin Level 1 users..."
+                    "Loading Admin Layer 1 users..."
                   )}
                 </td>
               </tr>
             )}
 
-            {/* DATA */}
+            {/* USERS */}
 
             {!loading &&
-              paginatedAdmins.map(
-                (
-                  user,
-                  index
-                ) => {
-                  const rowNumber =
-                    (currentPage -
-                      1) *
-                      rowsPerPage +
-                    index +
-                    1;
+              paginatedAdmins.map((user, index) => (
 
-                  return (
-                    <tr
-                      key={
-                        user.id
-                      }
-                      className="
-                        border-b
-                        border-gray-100
-                        transition
-                        hover:bg-gray-50
-                      "
-                    >
-                      {/* SL.NO */}
+                <tr
+                  key={user.id}
+                  className="border-b border-gray-100 transition hover:bg-gray-50"
+                >
 
-                      <td
-                        className="
-                          whitespace-nowrap
-                          px-4
-                          py-4
-                          text-[12px]
-                          text-gray-700
-                          sm:px-5
-                          sm:text-[13px]
-                        "
-                      >
-                        {rowNumber}
-                      </td>
+                  {/* SL.NO */}
 
-                      {/* NAME */}
+                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-900 sm:text-[13px]">
+                    {startIndex + index + 1}
+                  </td>
 
-                      <td
-                        className="
-                          max-w-[220px]
-                          px-4
-                          py-4
-                          text-[12px]
-                          font-medium
-                          text-gray-900
-                          sm:px-5
-                          sm:text-[13px]
-                        "
-                      >
-                        <span
-                          className="
-                            block
-                            truncate
-                          "
-                          title={
-                            user.full_name ||
-                            ""
+                  {/* NAME */}
+
+                  <td className="whitespace-nowrap px-5 py-4 text-[12px] font-medium text-gray-900 sm:text-[13px]">
+                    {user.full_name || "-"}
+                  </td>
+
+                  {/* EMAIL */}
+
+                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                    {user.email || "-"}
+                  </td>
+
+                  {/* PHONE */}
+
+                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                    {user.phone_number || "-"}
+                  </td>
+
+                  {/* STATUS */}
+
+                  <td className="whitespace-nowrap px-5 py-4">
+
+                    <span className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-[10px] font-medium text-green-700 sm:text-[11px]">
+                      {translateStatus(user.status)}
+                    </span>
+
+                  </td>
+
+                  {/* CREATED */}
+
+                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           }
-                        >
-                          {user.full_name ||
-                            "-"}
-                        </span>
-                      </td>
+                        )
+                      : "-"}
+                  </td>
 
-                      {/* EMAIL */}
+                  {/* ACTIONS */}
 
-                      <td
-                        className="
-                          max-w-[260px]
-                          px-4
-                          py-4
-                          text-[12px]
-                          text-gray-600
-                          sm:px-5
-                          sm:text-[13px]
-                        "
-                      >
-                        <span
-                          className="
-                            block
-                            truncate
-                          "
-                          title={
-                            user.email ||
-                            ""
-                          }
-                        >
-                          {user.email ||
-                            "-"}
-                        </span>
-                      </td>
+                  <td className="px-5 py-4">
 
-                      {/* PHONE */}
+                    <div className="flex items-center justify-center gap-4">
 
-                      <td
-                        className="
-                          whitespace-nowrap
-                          px-4
-                          py-4
-                          text-[12px]
-                          text-gray-600
-                          sm:px-5
-                          sm:text-[13px]
-                        "
-                      >
-                        {user.phone_number ||
-                          "-"}
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td
-                        className="
-                          whitespace-nowrap
-                          px-4
-                          py-4
-                          sm:px-5
-                        "
-                      >
-                        <span
-                          className="
-                            inline-flex
-                            items-center
-                            rounded-md
-                            bg-green-100
-                            px-2.5
-                            py-1
-                            text-[10px]
-                            font-medium
-                            text-green-700
-                            sm:text-[11px]
-                          "
-                        >
-                          {getStatusLabel(
-                            user.status
-                          )}
-                        </span>
-                      </td>
-
-                      {/* CREATED AT */}
-
-                      <td
-                        className="
-                          whitespace-nowrap
-                          px-4
-                          py-4
-                          text-[12px]
-                          text-gray-600
-                          sm:px-5
-                          sm:text-[13px]
-                        "
-                      >
-                        {formatCreatedAt(
-                          user.created_at
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(user)}
+                        className="text-violet-600 transition hover:text-violet-800"
+                        title={t(
+                          "users.actions.edit",
+                          "Edit user"
                         )}
-                      </td>
-
-                      {/* ACTIONS */}
-
-                      <td
-                        className="
-                          px-4
-                          py-4
-                          sm:px-5
-                        "
                       >
-                        <div
-                          className="
-                            flex
-                            items-center
-                            justify-center
-                            gap-3
-                          "
-                        >
-                          {/* EDIT */}
+                        <Pencil className="h-4 w-4" />
+                      </button>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEditClick(
-                                user
-                              )
-                            }
-                            className="
-                              text-violet-600
-                              transition
-                              hover:text-violet-800
-                            "
-                            title={t(
-                              "users.admin.actions.edit",
-                              "Edit user"
-                            )}
-                            aria-label={t(
-                              "users.admin.actions.edit",
-                              "Edit user"
-                            )}
-                          >
-                            <Pencil
-                              className="
-                                h-4
-                                w-4
-                              "
-                            />
-                          </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClick(user)}
+                        className="text-red-500 transition hover:text-red-700"
+                        title={t(
+                          "users.actions.delete",
+                          "Delete user"
+                        )}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
 
-                          {/* DELETE */}
+                    </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDeleteClick(
-                                user
-                              )
-                            }
-                            className="
-                              text-red-500
-                              transition
-                              hover:text-red-700
-                            "
-                            title={t(
-                              "users.admin.actions.delete",
-                              "Delete user"
-                            )}
-                            aria-label={t(
-                              "users.admin.actions.delete",
-                              "Delete user"
-                            )}
-                          >
-                            <Trash2
-                              className="
-                                h-4
-                                w-4
-                              "
-                            />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
+                  </td>
+
+                </tr>
+
+              ))}
 
             {/* EMPTY */}
 
             {!loading &&
-              paginatedAdmins.length ===
-                0 && (
+              filteredAdmins.length === 0 && (
+
                 <tr>
+
                   <td
-                    colSpan={7}
-                    className="
-                      px-5
-                      py-10
-                      text-center
-                      text-[12px]
-                      text-gray-500
-                      sm:text-[13px]
-                    "
+                    colSpan="7"
+                    className="px-5 py-10 text-center text-[12px] text-gray-500 sm:text-[13px]"
                   >
                     {t(
                       "users.admin.empty",
-                      "No Admin Level 1 users found."
+                      "No Admin Layer 1 users found."
                     )}
                   </td>
+
                 </tr>
+
               )}
+
           </tbody>
+
         </table>
+
       </div>
 
       {/* =====================================================
-          PAGINATION FOOTER
+          FOOTER / PAGINATION
       ===================================================== */}
 
-      <div
-        className="
-          flex
-          flex-col
-          gap-3
-          border-t
-          border-gray-100
-          px-4
-          py-3
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-          sm:px-5
-          sm:py-4
-        "
-      >
-        {/* RESULTS */}
+      <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-[12px] sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
 
-        <p
-          className="
-            text-[11px]
-            font-medium
-            text-violet-700
-            sm:text-[12px]
-          "
-        >
+        {/* SHOWING */}
+
+        <p className="font-medium text-violet-700">
           {t(
-            "users.admin.pagination.showing",
+            "users.pagination.showing",
             "Showing"
           )}{" "}
-          {startEntry}
-          {"–"}
-          {endEntry}{" "}
+          {showingFrom}–{showingTo}{" "}
           {t(
-            "users.admin.pagination.of",
+            "users.pagination.of",
             "of"
           )}{" "}
-          {totalEntries}{" "}
+          {filteredAdmins.length}{" "}
           {t(
-            "users.admin.pagination.entries",
+            "users.pagination.entries",
             "entries"
           )}
         </p>
 
         {/* CONTROLS */}
 
-        <div
-          className="
-            flex
-            flex-wrap
-            items-center
-            justify-between
-            gap-3
-            sm:justify-end
-          "
-        >
-          {/* ROWS PER PAGE */}
+        <div className="flex flex-wrap items-center gap-2">
 
-          <div
+          <span className="text-gray-600">
+            {t(
+              "users.pagination.rowsPerPage",
+              "Rows per page:"
+            )}
+          </span>
+
+          <select
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="h-9 rounded-md border border-gray-200 bg-white px-2 text-[12px] outline-none focus:border-violet-400"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+
+          {/* PREVIOUS */}
+
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() =>
+              setCurrentPage((page) =>
+                Math.max(1, page - 1)
+              )
+            }
             className="
               flex
+              h-9
+              w-9
               items-center
-              gap-2
-              text-[11px]
-              text-gray-600
-              sm:text-[12px]
+              justify-center
+              rounded-md
+              border
+              border-gray-200
+              text-gray-500
+              transition
+              hover:bg-gray-50
+              disabled:cursor-not-allowed
+              disabled:opacity-40
             "
+            aria-label={t(
+              "users.pagination.previous",
+              "Previous page"
+            )}
           >
-            <span>
-              {t(
-                "users.admin.pagination.rowsPerPage",
-                "Rows per page:"
-              )}
-            </span>
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
-            <select
-              value={
-                rowsPerPage
-              }
-              onChange={
-                handleRowsPerPageChange
-              }
-              className="
-                h-8
-                rounded-md
-                border
-                border-gray-200
-                bg-white
-                px-2
-                text-[11px]
-                outline-none
-                focus:border-violet-400
-                sm:text-[12px]
-              "
-            >
-              <option value={10}>
-                10
-              </option>
+          {/* PAGE */}
 
-              <option value={25}>
-                25
-              </option>
-
-              <option value={50}>
-                50
-              </option>
-            </select>
+          <div className="flex h-9 min-w-9 items-center justify-center rounded-md bg-violet-600 px-3 text-[12px] font-medium text-white">
+            {currentPage}
           </div>
 
-          {/* PAGE BUTTONS */}
+          {/* NEXT */}
 
-          <div
+          <button
+            type="button"
+            disabled={currentPage >= totalPages}
+            onClick={() =>
+              setCurrentPage((page) =>
+                Math.min(totalPages, page + 1)
+              )
+            }
             className="
               flex
+              h-9
+              w-9
               items-center
-              gap-1.5
+              justify-center
+              rounded-md
+              border
+              border-gray-200
+              text-gray-500
+              transition
+              hover:bg-gray-50
+              disabled:cursor-not-allowed
+              disabled:opacity-40
             "
+            aria-label={t(
+              "users.pagination.next",
+              "Next page"
+            )}
           >
-            <button
-              type="button"
-              onClick={
-                goToPreviousPage
-              }
-              disabled={
-                currentPage === 1
-              }
-              className="
-                flex
-                h-8
-                w-8
-                items-center
-                justify-center
-                rounded-md
-                border
-                border-gray-200
-                bg-white
-                text-gray-600
-                transition
-                hover:bg-gray-50
-                disabled:cursor-not-allowed
-                disabled:opacity-40
-              "
-              aria-label={t(
-                "users.admin.pagination.previous",
-                "Previous page"
-              )}
-            >
-              <ChevronLeft
-                className="
-                  h-4
-                  w-4
-                "
-              />
-            </button>
+            <ChevronRight className="h-4 w-4" />
+          </button>
 
-            <div
-              className="
-                flex
-                h-8
-                min-w-8
-                items-center
-                justify-center
-                rounded-md
-                bg-violet-600
-                px-2
-                text-[11px]
-                font-medium
-                text-white
-              "
-            >
-              {currentPage}
-            </div>
-
-            <button
-              type="button"
-              onClick={
-                goToNextPage
-              }
-              disabled={
-                currentPage >=
-                totalPages
-              }
-              className="
-                flex
-                h-8
-                w-8
-                items-center
-                justify-center
-                rounded-md
-                border
-                border-gray-200
-                bg-white
-                text-gray-600
-                transition
-                hover:bg-gray-50
-                disabled:cursor-not-allowed
-                disabled:opacity-40
-              "
-              aria-label={t(
-                "users.admin.pagination.next",
-                "Next page"
-              )}
-            >
-              <ChevronRight
-                className="
-                  h-4
-                  w-4
-                "
-              />
-            </button>
-          </div>
         </div>
+
       </div>
 
       {/* =====================================================
-          ADD ADMIN MODAL
+          MODALS
       ===================================================== */}
 
       <AddUserModal
-        open={
-          showAddAdminModal
-        }
-        onClose={() =>
-          setShowAddAdminModal(
-            false
-          )
-        }
+        open={showAddAdminModal}
+        onClose={() => setShowAddAdminModal(false)}
         title={t(
-          "users.admin.modals.addTitle",
+          "users.admin.addButton",
           "Add Admin"
         )}
         role="ADMIN_LAYER_1"
-        onSuccess={
-          handleAdminCreated
-        }
+        onSuccess={handleAdminCreated}
       />
-
-      {/* =====================================================
-          EDIT ADMIN MODAL
-      ===================================================== */}
 
       <EditUserModal
         open={showEditModal}
         onClose={() => {
-          setShowEditModal(
-            false
-          );
-          setSelectedUser(
-            null
-          );
+          setShowEditModal(false);
+          setSelectedUser(null);
         }}
         user={selectedUser}
         title={t(
-          "users.admin.modals.editTitle",
+          "users.actions.editAdmin",
           "Edit Admin"
         )}
-        onSuccess={
-          handleUserUpdated
-        }
+        onSuccess={handleUserUpdated}
       />
-
-      {/* =====================================================
-          DELETE ADMIN MODAL
-      ===================================================== */}
 
       <DeleteUserModal
-        open={
-          showDeleteModal
-        }
+        open={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(
-            false
-          );
-          setSelectedUser(
-            null
-          );
+          setShowDeleteModal(false);
+          setSelectedUser(null);
         }}
         user={selectedUser}
-        onSuccess={
-          handleUserDeleted
-        }
+        onSuccess={handleUserDeleted}
       />
-    </section>
+
+    </div>
   );
 };
 
