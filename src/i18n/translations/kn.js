@@ -1175,6 +1175,149 @@ gvpMap: {
     coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
   },
 },
+
+cityOverviewMap: {
+  title: "ಅವಲೋಕನ ನಕ್ಷೆಗಳು",
+
+  mapFilters: "ನಕ್ಷೆ ಫಿಲ್ಟರ್‌ಗಳು",
+
+  cityOverview:
+    "ನಗರದ ಅವಲೋಕನ ನಕ್ಷೆ",
+
+  routeMaps:
+    "ಮಾರ್ಗ ನಕ್ಷೆಗಳು",
+
+  gvpPoints:
+    "GVP ಪಾಯಿಂಟ್‌ಗಳು",
+
+  plants:
+    "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳು",
+
+  customerGrievances: {
+    title:
+      "ಗ್ರಾಹಕರ ದೂರುಗಳು",
+
+    loading:
+      "ಗ್ರಾಹಕರ ದೂರುಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+    error:
+      "ಗ್ರಾಹಕರ ದೂರುಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+
+    empty:
+      "ಯಾವುದೇ ಗ್ರಾಹಕರ ದೂರುಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+
+    complaints:
+      "ದೂರುಗಳು",
+
+    ticket:
+      "ಟಿಕೆಟ್",
+
+    status:
+      "ಸ್ಥಿತಿ",
+
+    category:
+      "ವರ್ಗ",
+
+    phone:
+      "ಫೋನ್",
+
+    description:
+      "ವಿವರಣೆ",
+
+    address:
+      "ವಿಳಾಸ",
+
+    latitude:
+      "ಅಕ್ಷಾಂಶ",
+
+    longitude:
+      "ರೇಖಾಂಶ",
+
+    date:
+      "ದಿನಾಂಕ",
+  },
+
+  zone:
+    "ವಲಯ",
+
+  division:
+    "ವಿಭಾಗ",
+
+  ward:
+    "ವಾರ್ಡ್",
+
+  allZones:
+    "ಎಲ್ಲಾ ವಲಯಗಳು",
+
+  allDivisions:
+    "ಎಲ್ಲಾ ವಿಭಾಗಗಳು",
+
+  allWards:
+    "ಎಲ್ಲಾ ವಾರ್ಡ್‌ಗಳು",
+
+  selectZoneFirst:
+    "ಮೊದಲು ವಲಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+  selectDivisionFirst:
+    "ಮೊದಲು ವಿಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+
+  loadingDivisions:
+    "ವಿಭಾಗಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+  loadingWards:
+    "ವಾರ್ಡ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+  noDivisions:
+    "ಯಾವುದೇ ವಿಭಾಗಗಳಿಲ್ಲ",
+
+  noWards:
+    "ಯಾವುದೇ ವಾರ್ಡ್‌ಗಳಿಲ್ಲ",
+
+  loadingDivisionsFor:
+    "ವಿಭಾಗಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ",
+
+  loadingWardsFor:
+    "ವಾರ್ಡ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ",
+
+  resetMap:
+    "ನಕ್ಷೆಯನ್ನು ಮರುಹೊಂದಿಸಿ",
+
+  selectedZone:
+    "ಆಯ್ಕೆ ಮಾಡಿದ ವಲಯ",
+
+  selectedDivision:
+    "ಆಯ್ಕೆ ಮಾಡಿದ ವಿಭಾಗ",
+
+  selectedWard:
+    "ಆಯ್ಕೆ ಮಾಡಿದ ವಾರ್ಡ್",
+
+  city:
+    "ನಗರ",
+
+  divisions:
+    "ವಿಭಾಗಗಳು",
+
+  wards:
+    "ವಾರ್ಡ್‌ಗಳು",
+
+  wardId:
+    "ವಾರ್ಡ್ ID",
+
+  plantLocations:
+    "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳ ಸ್ಥಳಗಳು",
+
+  loadingPlants:
+    "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳ ಸ್ಥಳಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+  unableLoadPlants:
+    "ಸಂಸ್ಕರಣಾ ಘಟಕಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+
+  changeMapView:
+    "ನಕ್ಷೆ ವೀಕ್ಷಣೆಯನ್ನು ಬದಲಾಯಿಸಿ",
+
+  loading:
+    "ನಗರದ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+},
 };
 
 export default kn;

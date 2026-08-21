@@ -1079,6 +1079,149 @@ gvpMap: {
     coordinates: "निर्देशांक",
   },
 },
+
+cityOverviewMap: {
+  title: "ओवरव्यू मैप्स",
+
+  mapFilters: "मैप फ़िल्टर",
+
+  cityOverview:
+    "शहर का अवलोकन मानचित्र",
+
+  routeMaps:
+    "रूट मैप्स",
+
+  gvpPoints:
+    "GVP पॉइंट्स",
+
+  plants:
+    "प्लांट्स",
+
+  customerGrievances: {
+    title:
+      "ग्राहक शिकायतें",
+
+    loading:
+      "ग्राहक शिकायतें लोड हो रही हैं...",
+
+    error:
+      "ग्राहक शिकायतें लोड नहीं हो सकीं।",
+
+    empty:
+      "कोई ग्राहक शिकायत नहीं मिली।",
+
+    complaints:
+      "शिकायतें",
+
+    ticket:
+      "टिकट",
+
+    status:
+      "स्थिति",
+
+    category:
+      "श्रेणी",
+
+    phone:
+      "फोन",
+
+    description:
+      "विवरण",
+
+    address:
+      "पता",
+
+    latitude:
+      "अक्षांश",
+
+    longitude:
+      "देशांतर",
+
+    date:
+      "दिनांक",
+  },
+
+  zone:
+    "जोन",
+
+  division:
+    "डिवीजन",
+
+  ward:
+    "वार्ड",
+
+  allZones:
+    "सभी जोन",
+
+  allDivisions:
+    "सभी डिवीजन",
+
+  allWards:
+    "सभी वार्ड",
+
+  selectZoneFirst:
+    "पहले जोन चुनें",
+
+  selectDivisionFirst:
+    "पहले डिवीजन चुनें",
+
+  loadingDivisions:
+    "डिवीजन लोड हो रहे हैं...",
+
+  loadingWards:
+    "वार्ड लोड हो रहे हैं...",
+
+  noDivisions:
+    "कोई डिवीजन नहीं",
+
+  noWards:
+    "कोई वार्ड नहीं",
+
+  loadingDivisionsFor:
+    "डिवीजन लोड हो रहे हैं",
+
+  loadingWardsFor:
+    "वार्ड लोड हो रहे हैं",
+
+  resetMap:
+    "मैप रीसेट करें",
+
+  selectedZone:
+    "चयनित जोन",
+
+  selectedDivision:
+    "चयनित डिवीजन",
+
+  selectedWard:
+    "चयनित वार्ड",
+
+  city:
+    "शहर",
+
+  divisions:
+    "डिवीजन",
+
+  wards:
+    "वार्ड",
+
+  wardId:
+    "वार्ड ID",
+
+  plantLocations:
+    "प्लांट स्थान",
+
+  loadingPlants:
+    "प्लांट स्थान लोड हो रहे हैं...",
+
+  unableLoadPlants:
+    "प्लांट लोड नहीं हो सके",
+
+  changeMapView:
+    "मैप व्यू बदलें",
+
+  loading:
+    "शहर का मैप लोड हो रहा है...",
+},
 };
 
 export default hi;
