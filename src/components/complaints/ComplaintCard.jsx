@@ -29,53 +29,155 @@ export default function ComplaintCard({
   title,
   value,
   subtitle,
-  color,
+  color = "purple",
 }) {
-  const theme = colors[color];
+  const theme = colors[color] || colors.purple;
 
   return (
     <div
       className="
-        bg-white
+        w-full
+        min-w-0
+        rounded-2xl
         border
         border-gray-100
-        rounded-2xl
-        h-[88px]
-        px-5
-        flex
-        items-center
-        gap-4
+        bg-white
         shadow-sm
-        hover:shadow-md
         transition-all
+        duration-200
+        hover:shadow-md
+
+        px-4
+        py-4
+
+        sm:px-5
+        sm:py-4
+
+        lg:h-[88px]
+        lg:py-0
       "
     >
       <div
-        className={`
-          w-12
-          h-12
-          rounded-2xl
+        className="
           flex
+          min-w-0
           items-center
-          justify-center
-          ${theme.bg}
-        `}
+          gap-3
+
+          sm:gap-4
+
+          lg:h-full
+        "
       >
-        <div className={theme.icon}>{icon}</div>
-      </div>
+        {/* =====================================================
+            ICON
+        ===================================================== */}
 
-      <div className="flex flex-col">
-        <span className="text-[12px] text-gray-500 font-medium">
-          {title}
-        </span>
+        <div
+          className={`
+            flex
+            shrink-0
+            items-center
+            justify-center
+            rounded-2xl
+            ${theme.bg}
 
-        <span className="text-[26px] leading-none font-bold text-[#16295A] mt-1">
-          {value}
-        </span>
+            h-10
+            w-10
 
-        <span className={`text-[11px] font-semibold mt-1 ${theme.accent}`}>
-          {subtitle}
-        </span>
+            sm:h-11
+            sm:w-11
+
+            lg:h-12
+            lg:w-12
+          `}
+        >
+          <div
+            className={`
+              ${theme.icon}
+
+              [&>svg]:h-5
+              [&>svg]:w-5
+
+              sm:[&>svg]:h-[21px]
+              sm:[&>svg]:w-[21px]
+
+              lg:[&>svg]:h-[22px]
+              lg:[&>svg]:w-[22px]
+            `}
+          >
+            {icon}
+          </div>
+        </div>
+
+        {/* =====================================================
+            CONTENT
+        ===================================================== */}
+
+        <div
+          className="
+            min-w-0
+            flex-1
+            overflow-hidden
+          "
+        >
+          {/* TITLE */}
+
+          <span
+            className="
+              block
+              truncate
+              font-medium
+              text-gray-500
+
+              text-[11px]
+
+              sm:text-[12px]
+            "
+          >
+            {title}
+          </span>
+
+          {/* VALUE */}
+
+          <span
+            className="
+              mt-1
+              block
+              truncate
+              leading-none
+              font-bold
+              text-[#16295A]
+
+              text-[23px]
+
+              sm:text-[25px]
+
+              lg:text-[26px]
+            "
+          >
+            {value}
+          </span>
+
+          {/* SUBTITLE */}
+
+          <span
+            className={`
+              mt-1
+              block
+              truncate
+              font-semibold
+
+              text-[10px]
+
+              sm:text-[11px]
+
+              ${theme.accent}
+            `}
+          >
+            {subtitle}
+          </span>
+        </div>
       </div>
     </div>
   );
