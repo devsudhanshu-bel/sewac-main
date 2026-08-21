@@ -481,7 +481,7 @@ exports.updateUser = async (req, res) => {
 
     const loggedInUser = req.user;
 
-    const { full_name, phone_number, status } = req.body;
+    const { full_name, phone_number } = req.body;
 
     const existingUser = await prisma.admins.findUnique({
       where: {
@@ -561,8 +561,6 @@ exports.updateUser = async (req, res) => {
         full_name,
 
         phone_number,
-
-        status,
       },
     });
 
