@@ -51,18 +51,13 @@ const chartData = [
     waste: 48,
     vehicles: 102,
   },
-  {
-    zone: "",
-    waste: 30,
-    vehicles: 76,
-  },
 ];
 
 const THRESHOLD = 70;
 
 /* ===========================================================
    CUSTOM X-AXIS TICK
-   Properly renders multiline zone names
+   Prevents zone labels from overlapping
 =========================================================== */
 
 function CustomXAxisTick({
@@ -76,10 +71,53 @@ function CustomXAxisTick({
     return null;
   }
 
-  const lines = String(value).split("\n");
+  /*
+    Convert the existing zone names into controlled
+    line breaks so every label fits neatly below
+    its corresponding point.
+  */
+
+  const labelMap = {
+    "City Corporation\n(West)": [
+      "City",
+      "Corporation",
+      "(West)",
+    ],
+
+    "West\nCorporation": [
+      "West",
+      "Corporation",
+    ],
+
+    "North\nCorporation": [
+      "North",
+      "Corporation",
+    ],
+
+    "Central/City\nCorporation": [
+      "Central/City",
+      "Corporation",
+    ],
+
+    "East\nCorporation": [
+      "East",
+      "Corporation",
+    ],
+
+    "South\nCorporation": [
+      "South",
+      "Corporation",
+    ],
+  };
+
+  const lines =
+    labelMap[value] ||
+    String(value).split("\n");
 
   return (
-    <g transform={`translate(${x},${y})`}>
+    <g
+      transform={`translate(${x},${y})`}
+    >
       <text
         textAnchor="middle"
         fill="#233876"
@@ -88,9 +126,13 @@ function CustomXAxisTick({
       >
         {lines.map((line, index) => (
           <tspan
-            key={index}
+            key={`${line}-${index}`}
             x="0"
-            dy={index === 0 ? 0 : 13}
+            dy={
+              index === 0
+                ? 0
+                : 13
+            }
           >
             {line}
           </tspan>
@@ -117,7 +159,8 @@ function CustomTooltip({
     return null;
   }
 
-  const data = payload[0].payload;
+  const data =
+    payload[0].payload;
 
   const difference = (
     data.waste - THRESHOLD
@@ -143,7 +186,10 @@ function CustomTooltip({
           </span>
 
           <span className="font-semibold text-right">
-            {data.zone.replace("\n", " ")}
+            {data.zone.replace(
+              "\n",
+              " "
+            )}
           </span>
         </div>
 
@@ -383,9 +429,11 @@ export default function AverageWeightChart() {
           )}
         </p>
 
-        {/* ================= CHART ================= */}
+        {/* =================================================
+            CHART
+        ================================================= */}
 
-        <div className="h-[300px]">
+        <div className="h-[325px]">
 
           <ResponsiveContainer
             width="100%"
@@ -398,7 +446,7 @@ export default function AverageWeightChart() {
                 top: 12,
                 right: 15,
                 left: -8,
-                bottom: 18,
+                bottom: 10,
               }}
             >
 
@@ -420,8 +468,11 @@ export default function AverageWeightChart() {
                 interval={0}
                 tickLine={false}
                 axisLine={false}
-                height={58}
-                tick={<CustomXAxisTick />}
+                height={78}
+                tickMargin={8}
+                tick={
+                  <CustomXAxisTick />
+                }
               />
 
               {/* =================================================
@@ -429,7 +480,10 @@ export default function AverageWeightChart() {
               ================================================= */}
 
               <YAxis
-                domain={[0, 100]}
+                domain={[
+                  0,
+                  100,
+                ]}
                 ticks={[
                   0,
                   20,
@@ -455,10 +509,13 @@ export default function AverageWeightChart() {
                 cursor={{
                   stroke: "#6C2BFF",
                   strokeWidth: 1.5,
-                  strokeDasharray: "4 4",
+                  strokeDasharray:
+                    "4 4",
                 }}
                 content={
-                  <CustomTooltip t={t} />
+                  <CustomTooltip
+                    t={t}
+                  />
                 }
               />
 
@@ -487,15 +544,19 @@ export default function AverageWeightChart() {
                   r: 5,
                   strokeWidth: 3,
                   fill: "#FFFFFF",
-                  stroke: "#6C2BFF",
+                  stroke:
+                    "#6C2BFF",
                 }}
                 activeDot={{
                   r: 7,
                   fill: "#6C2BFF",
-                  stroke: "#FFFFFF",
+                  stroke:
+                    "#FFFFFF",
                   strokeWidth: 3,
                 }}
-                animationDuration={1200}
+                animationDuration={
+                  1200
+                }
               />
 
             </LineChart>
@@ -508,7 +569,7 @@ export default function AverageWeightChart() {
             LEGEND
         ===================================================== */}
 
-        <div className="flex justify-center items-center gap-10 mt-1">
+        <div className="flex justify-center items-center gap-10 mt-2">
 
           {/* ================= WASTE ================= */}
 
