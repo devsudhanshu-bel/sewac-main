@@ -19,11 +19,19 @@ import { useLanguage } from "../../i18n";
 const AdminUsers = () => {
   const { t } = useLanguage();
 
+  // =========================================================
+  // MODAL STATE
+  // =========================================================
+
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // =========================================================
+  // DATA STATE
+  // =========================================================
 
   const [adminUsers, setAdminUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -33,13 +41,15 @@ const AdminUsers = () => {
 
   // =========================================================
   // PAGINATION
+  // Fixed 10 users per page
   // =========================================================
+
+  const ROWS_PER_PAGE = 10;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // =========================================================
-  // FETCH ADMIN LAYER 1 USERS
+  // FETCH ADMIN LEVEL 1 USERS
   // =========================================================
 
   const fetchAdmins = async () => {
@@ -62,9 +72,8 @@ const AdminUsers = () => {
       const backendMessage =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        err?.message ||
         t(
-          "users.admin.fetchError",
+          "users.admin.errors.fetchFailed",
           "Failed to fetch Admin Layer 1 users."
         );
 
@@ -79,16 +88,18 @@ const AdminUsers = () => {
   }, []);
 
   // =========================================================
-  // CREATE
+  // CREATE ADMIN
   // =========================================================
 
   const handleAdminCreated = () => {
     setShowAddAdminModal(false);
+    setCurrentPage(1);
+
     fetchAdmins();
   };
 
   // =========================================================
-  // EDIT
+  // EDIT ADMIN
   // =========================================================
 
   const handleEditClick = (user) => {
@@ -104,7 +115,7 @@ const AdminUsers = () => {
   };
 
   // =========================================================
-  // DELETE
+  // DELETE ADMIN
   // =========================================================
 
   const handleDeleteClick = (user) => {
@@ -134,13 +145,15 @@ const AdminUsers = () => {
       return (
         (user.full_name || "").toLowerCase().includes(value) ||
         (user.email || "").toLowerCase().includes(value) ||
-        (user.phone_number || "").includes(value)
+        String(user.phone_number || "")
+          .toLowerCase()
+          .includes(value)
       );
     });
   }, [adminUsers, search]);
 
   // =========================================================
-  // RESET PAGE WHEN SEARCH CHANGES
+  // RESET PAGINATION WHEN SEARCH CHANGES
   // =========================================================
 
   useEffect(() => {
@@ -148,12 +161,12 @@ const AdminUsers = () => {
   }, [search]);
 
   // =========================================================
-  // PAGINATION
+  // PAGINATION CALCULATIONS
   // =========================================================
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredAdmins.length / rowsPerPage)
+    Math.ceil(filteredAdmins.length / ROWS_PER_PAGE)
   );
 
   useEffect(() => {
@@ -162,18 +175,20 @@ const AdminUsers = () => {
     }
   }, [currentPage, totalPages]);
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
 
   const paginatedAdmins = filteredAdmins.slice(
     startIndex,
-    startIndex + rowsPerPage
+    startIndex + ROWS_PER_PAGE
   );
 
   const showingFrom =
-    filteredAdmins.length === 0 ? 0 : startIndex + 1;
+    filteredAdmins.length === 0
+      ? 0
+      : startIndex + 1;
 
   const showingTo = Math.min(
-    startIndex + rowsPerPage,
+    startIndex + ROWS_PER_PAGE,
     filteredAdmins.length
   );
 
@@ -182,27 +197,40 @@ const AdminUsers = () => {
   // =========================================================
 
   const translateStatus = (status) => {
-    if (!status) return "-";
-
-    const normalizedStatus = status.toLowerCase();
-
-    if (normalizedStatus === "active") {
-      return t("users.status.active", "Active");
+    if (!status) {
+      return "-";
     }
 
-    if (normalizedStatus === "inactive") {
-      return t("users.status.inactive", "Inactive");
-    }
+    const normalizedStatus = String(status).toLowerCase();
 
-    if (normalizedStatus === "pending") {
-      return t("users.status.pending", "Pending");
-    }
+    switch (normalizedStatus) {
+      case "active":
+        return t(
+          "users.status.active",
+          "Active"
+        );
 
-    if (normalizedStatus === "blocked") {
-      return t("users.status.blocked", "Blocked");
-    }
+      case "inactive":
+        return t(
+          "users.status.inactive",
+          "Inactive"
+        );
 
-    return status;
+      case "pending":
+        return t(
+          "users.status.pending",
+          "Pending"
+        );
+
+      case "blocked":
+        return t(
+          "users.status.blocked",
+          "Blocked"
+        );
+
+      default:
+        return status;
+    }
   };
 
   // =========================================================
@@ -210,57 +238,138 @@ const AdminUsers = () => {
   // =========================================================
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-
+    <div
+      className="
+        w-full
+        overflow-hidden
+        rounded-xl
+        border
+        border-gray-200
+        bg-white
+        shadow-sm
+      "
+    >
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="border-b border-gray-100 px-4 py-4 sm:px-5 sm:py-5">
+      <div
+        className="
+          border-b
+          border-gray-100
+          px-4
+          py-4
+          sm:px-5
+          sm:py-5
+        "
+      >
+        {/* ===================================================
+            TITLE
+        =================================================== */}
 
-        {/* TITLE */}
         <div className="flex min-w-0 items-start gap-3">
+          {/* ICON */}
 
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100">
+          <div
+            className="
+              flex
+              h-8
+              w-8
+              shrink-0
+              items-center
+              justify-center
+              rounded-lg
+              bg-violet-100
+            "
+          >
             <ShieldCheck className="h-4 w-4 text-violet-600" />
           </div>
 
-          <div className="min-w-0 flex-1">
+          {/* TITLE + DESCRIPTION */}
 
-            <h2 className="text-[15px] font-semibold leading-5 text-gray-900 sm:text-[16px]">
+          <div className="min-w-0 flex-1">
+            <h2
+              className="
+                text-[15px]
+                font-semibold
+                leading-5
+                text-gray-900
+                sm:text-[16px]
+              "
+            >
               {t(
                 "users.admin.title",
                 "Admin Level 1 Users"
               )}
             </h2>
 
-            <p className="mt-1 max-w-2xl text-[11px] leading-4 text-gray-500 sm:text-[12px] sm:leading-5">
+            <p
+              className="
+                mt-1
+                max-w-2xl
+                text-[11px]
+                leading-4
+                text-gray-500
+                sm:text-[12px]
+                sm:leading-5
+              "
+            >
               {t(
                 "users.admin.description",
                 "Manage other Admin Level 1 users who have full access to the system."
               )}
             </p>
-
           </div>
-
         </div>
 
         {/* ===================================================
             SEARCH + ADD BUTTON
         =================================================== */}
 
-        <div className="mt-4 flex w-full flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-
+        <div
+          className="
+            mt-4
+            flex
+            w-full
+            flex-col
+            gap-2.5
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+            sm:gap-3
+          "
+        >
           {/* SEARCH */}
 
-          <div className="relative w-full sm:max-w-[360px] md:w-[340px] md:max-w-none">
-
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-600" />
+          <div
+            className="
+              relative
+              w-full
+              sm:max-w-[360px]
+              md:w-[340px]
+              md:max-w-none
+            "
+          >
+            <Search
+              className="
+                pointer-events-none
+                absolute
+                right-3
+                top-1/2
+                h-4
+                w-4
+                -translate-y-1/2
+                text-violet-600
+              "
+            />
 
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder={t(
                 "users.admin.searchPlaceholder",
                 "Search by name, email or phone..."
@@ -286,7 +395,6 @@ const AdminUsers = () => {
                 sm:text-[13px]
               "
             />
-
           </div>
 
           {/* ADD ADMIN */}
@@ -327,7 +435,6 @@ const AdminUsers = () => {
               )}
             </span>
           </button>
-
         </div>
       </div>
 
@@ -336,7 +443,22 @@ const AdminUsers = () => {
       ===================================================== */}
 
       {error && (
-        <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-600 sm:mx-5 sm:text-[13px]">
+        <div
+          className="
+            mx-4
+            mt-4
+            rounded-lg
+            border
+            border-red-200
+            bg-red-50
+            px-4
+            py-3
+            text-[12px]
+            text-red-600
+            sm:mx-5
+            sm:text-[13px]
+          "
+        >
           {error}
         </div>
       )}
@@ -346,58 +468,156 @@ const AdminUsers = () => {
       ===================================================== */}
 
       <div className="overflow-x-auto">
-
         <table className="w-full min-w-[850px]">
-
           {/* TABLE HEADER */}
 
           <thead className="bg-[#F7F5FF]">
-
             <tr>
-
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.slNo", "SL.No")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.slNo",
+                  "SL.No"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.adminName", "Admin Name")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.adminName",
+                  "Admin Name"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.email", "Email")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.email",
+                  "Email"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.phoneNumber", "Phone Number")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.phoneNumber",
+                  "Phone Number"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.status", "Status")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.status",
+                  "Status"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-left text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.createdAt", "Created At")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.createdAt",
+                  "Created At"
+                )}
               </th>
 
-              <th className="whitespace-nowrap px-5 py-3 text-center text-[11px] font-semibold text-violet-700 sm:text-[12px]">
-                {t("users.table.actions", "Actions")}
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-center
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.actions",
+                  "Actions"
+                )}
               </th>
-
             </tr>
-
           </thead>
 
           {/* TABLE BODY */}
 
           <tbody>
-
             {/* LOADING */}
 
             {loading && (
               <tr>
                 <td
                   colSpan="7"
-                  className="px-5 py-10 text-center text-[12px] text-gray-500 sm:text-[13px]"
+                  className="
+                    px-5
+                    py-10
+                    text-center
+                    text-[12px]
+                    text-gray-500
+                    sm:text-[13px]
+                  "
                 >
                   {t(
                     "users.admin.loading",
@@ -411,74 +631,143 @@ const AdminUsers = () => {
 
             {!loading &&
               paginatedAdmins.map((user, index) => (
-
                 <tr
                   key={user.id}
-                  className="border-b border-gray-100 transition hover:bg-gray-50"
+                  className="
+                    border-b
+                    border-gray-100
+                    transition
+                    hover:bg-gray-50
+                  "
                 >
-
                   {/* SL.NO */}
 
-                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-900 sm:text-[13px]">
+                  <td
+                    className="
+                      whitespace-nowrap
+                      px-5
+                      py-4
+                      text-[12px]
+                      text-gray-900
+                      sm:text-[13px]
+                    "
+                  >
                     {startIndex + index + 1}
                   </td>
 
                   {/* NAME */}
 
-                  <td className="whitespace-nowrap px-5 py-4 text-[12px] font-medium text-gray-900 sm:text-[13px]">
+                  <td
+                    className="
+                      whitespace-nowrap
+                      px-5
+                      py-4
+                      text-[12px]
+                      font-medium
+                      text-gray-900
+                      sm:text-[13px]
+                    "
+                  >
                     {user.full_name || "-"}
                   </td>
 
                   {/* EMAIL */}
 
-                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                  <td
+                    className="
+                      whitespace-nowrap
+                      px-5
+                      py-4
+                      text-[12px]
+                      text-gray-600
+                      sm:text-[13px]
+                    "
+                  >
                     {user.email || "-"}
                   </td>
 
                   {/* PHONE */}
 
-                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                  <td
+                    className="
+                      whitespace-nowrap
+                      px-5
+                      py-4
+                      text-[12px]
+                      text-gray-600
+                      sm:text-[13px]
+                    "
+                  >
                     {user.phone_number || "-"}
                   </td>
 
                   {/* STATUS */}
 
                   <td className="whitespace-nowrap px-5 py-4">
-
-                    <span className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-[10px] font-medium text-green-700 sm:text-[11px]">
+                    <span
+                      className="
+                        inline-flex
+                        items-center
+                        rounded-md
+                        bg-green-100
+                        px-2.5
+                        py-1
+                        text-[10px]
+                        font-medium
+                        text-green-700
+                        sm:text-[11px]
+                      "
+                    >
                       {translateStatus(user.status)}
                     </span>
-
                   </td>
 
                   {/* CREATED */}
 
-                  <td className="whitespace-nowrap px-5 py-4 text-[12px] text-gray-600 sm:text-[13px]">
+                  <td
+                    className="
+                      whitespace-nowrap
+                      px-5
+                      py-4
+                      text-[12px]
+                      text-gray-600
+                      sm:text-[13px]
+                    "
+                  >
                     {user.created_at
-                      ? new Date(user.created_at).toLocaleString(
-                          "en-IN",
-                          {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )
+                      ? new Date(
+                          user.created_at
+                        ).toLocaleString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                       : "-"}
                   </td>
 
                   {/* ACTIONS */}
 
                   <td className="px-5 py-4">
-
                     <div className="flex items-center justify-center gap-4">
+                      {/* EDIT */}
 
                       <button
                         type="button"
-                        onClick={() => handleEditClick(user)}
-                        className="text-violet-600 transition hover:text-violet-800"
+                        onClick={() =>
+                          handleEditClick(user)
+                        }
+                        className="
+                          text-violet-600
+                          transition
+                          hover:text-violet-800
+                        "
                         title={t(
+                          "users.actions.edit",
+                          "Edit user"
+                        )}
+                        aria-label={t(
                           "users.actions.edit",
                           "Edit user"
                         )}
@@ -486,59 +775,83 @@ const AdminUsers = () => {
                         <Pencil className="h-4 w-4" />
                       </button>
 
+                      {/* DELETE */}
+
                       <button
                         type="button"
-                        onClick={() => handleDeleteClick(user)}
-                        className="text-red-500 transition hover:text-red-700"
+                        onClick={() =>
+                          handleDeleteClick(user)
+                        }
+                        className="
+                          text-red-500
+                          transition
+                          hover:text-red-700
+                        "
                         title={t(
+                          "users.actions.delete",
+                          "Delete user"
+                        )}
+                        aria-label={t(
                           "users.actions.delete",
                           "Delete user"
                         )}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-
                     </div>
-
                   </td>
-
                 </tr>
-
               ))}
 
             {/* EMPTY */}
 
             {!loading &&
               filteredAdmins.length === 0 && (
-
                 <tr>
-
                   <td
                     colSpan="7"
-                    className="px-5 py-10 text-center text-[12px] text-gray-500 sm:text-[13px]"
+                    className="
+                      px-5
+                      py-10
+                      text-center
+                      text-[12px]
+                      text-gray-500
+                      sm:text-[13px]
+                    "
                   >
                     {t(
                       "users.admin.empty",
                       "No Admin Layer 1 users found."
                     )}
                   </td>
-
                 </tr>
-
               )}
-
           </tbody>
-
         </table>
-
       </div>
 
       {/* =====================================================
           FOOTER / PAGINATION
+          NO ROWS-PER-PAGE DROPDOWN
       ===================================================== */}
 
-      <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-[12px] sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
-
+      <div
+        className="
+          flex
+          flex-col
+          gap-3
+          border-t
+          border-gray-100
+          px-4
+          py-3
+          text-[12px]
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          sm:px-5
+          sm:py-4
+        "
+      >
         {/* SHOWING */}
 
         <p className="font-medium text-violet-700">
@@ -558,30 +871,9 @@ const AdminUsers = () => {
           )}
         </p>
 
-        {/* CONTROLS */}
+        {/* PAGINATION BUTTONS */}
 
-        <div className="flex flex-wrap items-center gap-2">
-
-          <span className="text-gray-600">
-            {t(
-              "users.pagination.rowsPerPage",
-              "Rows per page:"
-            )}
-          </span>
-
-          <select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="h-9 rounded-md border border-gray-200 bg-white px-2 text-[12px] outline-none focus:border-violet-400"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-
+        <div className="flex items-center gap-1.5">
           {/* PREVIOUS */}
 
           <button
@@ -598,15 +890,21 @@ const AdminUsers = () => {
               w-9
               items-center
               justify-center
-              rounded-md
+              rounded-lg
               border
               border-gray-200
+              bg-white
               text-gray-500
               transition
-              hover:bg-gray-50
+              hover:border-violet-300
+              hover:text-violet-600
               disabled:cursor-not-allowed
               disabled:opacity-40
             "
+            title={t(
+              "users.pagination.previous",
+              "Previous page"
+            )}
             aria-label={t(
               "users.pagination.previous",
               "Previous page"
@@ -615,9 +913,24 @@ const AdminUsers = () => {
             <ChevronLeft className="h-4 w-4" />
           </button>
 
-          {/* PAGE */}
+          {/* CURRENT PAGE */}
 
-          <div className="flex h-9 min-w-9 items-center justify-center rounded-md bg-violet-600 px-3 text-[12px] font-medium text-white">
+          <div
+            className="
+              flex
+              h-9
+              min-w-9
+              items-center
+              justify-center
+              rounded-lg
+              bg-violet-600
+              px-3
+              text-[12px]
+              font-medium
+              text-white
+            "
+            aria-current="page"
+          >
             {currentPage}
           </div>
 
@@ -637,15 +950,21 @@ const AdminUsers = () => {
               w-9
               items-center
               justify-center
-              rounded-md
+              rounded-lg
               border
               border-gray-200
+              bg-white
               text-gray-500
               transition
-              hover:bg-gray-50
+              hover:border-violet-300
+              hover:text-violet-600
               disabled:cursor-not-allowed
               disabled:opacity-40
             "
+            title={t(
+              "users.pagination.next",
+              "Next page"
+            )}
             aria-label={t(
               "users.pagination.next",
               "Next page"
@@ -653,25 +972,29 @@ const AdminUsers = () => {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-
         </div>
-
       </div>
 
       {/* =====================================================
-          MODALS
+          ADD ADMIN MODAL
       ===================================================== */}
 
       <AddUserModal
         open={showAddAdminModal}
-        onClose={() => setShowAddAdminModal(false)}
+        onClose={() =>
+          setShowAddAdminModal(false)
+        }
         title={t(
-          "users.admin.addButton",
+          "users.admin.modals.addTitle",
           "Add Admin"
         )}
         role="ADMIN_LAYER_1"
         onSuccess={handleAdminCreated}
       />
+
+      {/* =====================================================
+          EDIT ADMIN MODAL
+      ===================================================== */}
 
       <EditUserModal
         open={showEditModal}
@@ -681,11 +1004,15 @@ const AdminUsers = () => {
         }}
         user={selectedUser}
         title={t(
-          "users.actions.editAdmin",
+          "users.admin.modals.editTitle",
           "Edit Admin"
         )}
         onSuccess={handleUserUpdated}
       />
+
+      {/* =====================================================
+          DELETE ADMIN MODAL
+      ===================================================== */}
 
       <DeleteUserModal
         open={showDeleteModal}
@@ -696,7 +1023,6 @@ const AdminUsers = () => {
         user={selectedUser}
         onSuccess={handleUserDeleted}
       />
-
     </div>
   );
 };
