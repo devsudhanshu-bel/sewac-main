@@ -972,6 +972,44 @@ cityOverviewMap: {
 
   loading: "Loading city map...",
 },
+
+gvpMap: {
+  title: "GVP Point Monitoring",
+
+  points: "points",
+
+  ward: "Ward",
+
+  selectedWard: "Selected Ward",
+
+  legend: "GVP Point",
+
+  loading: "Loading GVP points...",
+
+  selectWard: "Select a ward",
+
+  selectWardDescription:
+    "Choose City, Zone, Division and Ward from the header.",
+
+  unavailable: "GVP map unavailable",
+
+  empty: "No GVP points for this date",
+
+  errors: {
+    load: "Unable to load GVP points.",
+  },
+
+  tooltip: {
+    gvpPoint: "GVP Point",
+    vehicle: "Vehicle",
+    table: "Table",
+    iot: "IoT",
+    unit: "Unit",
+    remarks: "Remarks",
+    gvpWaste: "GVP waste",
+    coordinates: "Coordinates",
+  },
+},
 };
 
 export default en;

@@ -995,6 +995,44 @@ cityOverviewMap: {
   loading: "शहर का मानचित्र लोड हो रहा है...",
 },
 
+gvpMap: {
+  title: "GVP पॉइंट निगरानी",
+
+  points: "पॉइंट",
+
+  ward: "वार्ड",
+
+  selectedWard: "चयनित वार्ड",
+
+  legend: "GVP पॉइंट",
+
+  loading: "GVP पॉइंट लोड हो रहे हैं...",
+
+  selectWard: "एक वार्ड चुनें",
+
+  selectWardDescription:
+    "हेडर से शहर, ज़ोन, डिवीजन और वार्ड चुनें।",
+
+  unavailable: "GVP मानचित्र उपलब्ध नहीं है",
+
+  empty:
+    "इस तारीख के लिए कोई GVP पॉइंट नहीं मिला",
+
+  errors: {
+    load: "GVP पॉइंट लोड नहीं किए जा सके।",
+  },
+
+  tooltip: {
+    gvpPoint: "GVP पॉइंट",
+    vehicle: "वाहन",
+    table: "टेबल",
+    iot: "IoT",
+    unit: "यूनिट",
+    remarks: "टिप्पणियाँ",
+    gvpWaste: "GVP कचरा",
+    coordinates: "निर्देशांक",
+  },
+},
 };
 
 export default hi;

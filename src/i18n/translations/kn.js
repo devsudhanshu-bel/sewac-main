@@ -1089,6 +1089,45 @@ cityOverviewMap: {
 
   loading: "ನಗರ ನಕ್ಷೆಯನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
 },
+
+gvpMap: {
+  title: "GVP ಪಾಯಿಂಟ್‌ಗಳ ಮೇಲ್ವಿಚಾರಣೆ",
+
+  points: "ಪಾಯಿಂಟ್‌ಗಳು",
+
+  ward: "ವಾರ್ಡ್",
+
+  selectedWard: "ಆಯ್ಕೆ ಮಾಡಿದ ವಾರ್ಡ್",
+
+  legend: "GVP ಪಾಯಿಂಟ್",
+
+  loading: "GVP ಪಾಯಿಂಟ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+
+  selectWard: "ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+
+  selectWardDescription:
+    "ಹೆಡರ್‌ನಿಂದ ನಗರ, ವಲಯ, ವಿಭಾಗ ಮತ್ತು ವಾರ್ಡ್ ಆಯ್ಕೆಮಾಡಿ.",
+
+  unavailable: "GVP ನಕ್ಷೆ ಲಭ್ಯವಿಲ್ಲ",
+
+  empty:
+    "ಈ ದಿನಾಂಕಕ್ಕೆ ಯಾವುದೇ GVP ಪಾಯಿಂಟ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
+
+  errors: {
+    load: "GVP ಪಾಯಿಂಟ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+  },
+
+  tooltip: {
+    gvpPoint: "GVP ಪಾಯಿಂಟ್",
+    vehicle: "ವಾಹನ",
+    table: "ಟೇಬಲ್",
+    iot: "IoT",
+    unit: "ಘಟಕ",
+    remarks: "ಟಿಪ್ಪಣಿಗಳು",
+    gvpWaste: "GVP ತ್ಯಾಜ್ಯ",
+    coordinates: "ನಿರ್ದೇಶಾಂಕಗಳು",
+  },
+},
 };
 
 export default kn;
