@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Trash2, AlertTriangle } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { useLanguage } from "../../i18n/LanguageContext";
 import api from "../../api/axios";
 
 const DeleteUserModal = ({
@@ -9,18 +9,36 @@ const DeleteUserModal = ({
   user,
   onSuccess,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   if (!open || !user) return null;
 
+  // =========================================================
+  // USER NAME
+  // =========================================================
+
+  const userName =
+    user.full_name ||
+    user.name ||
+    t("users.modal.userFallback", "this user");
+
+  // =========================================================
+  // DELETE USER
+  // =========================================================
+
   const handleDelete = async () => {
     if (loading) return;
 
     if (!user.id) {
-      setError(t("users.modal.errors.userIdMissing"));
+      setError(
+        t(
+          "users.modal.errors.userIdMissing",
+          "User ID is missing."
+        )
+      );
       return;
     }
 
@@ -42,13 +60,20 @@ const DeleteUserModal = ({
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        t("users.modal.errors.deleteFailed");
+        t(
+          "users.modal.errors.deleteFailed",
+          "Failed to delete user."
+        );
 
       setError(backendMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  // =========================================================
+  // CLOSE MODAL
+  // =========================================================
 
   const handleClose = () => {
     if (loading) return;
@@ -57,10 +82,9 @@ const DeleteUserModal = ({
     onClose();
   };
 
-  const userName =
-    user.full_name ||
-    user.name ||
-    t("users.modal.userFallback");
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <div
@@ -73,11 +97,13 @@ const DeleteUserModal = ({
         justify-center
         bg-black/40
         px-4
-        py-6
+        py-5
         backdrop-blur-sm
         sm:px-6
+        sm:py-6
       "
     >
+      {/* Modal */}
       <div
         className="
           w-full
@@ -104,10 +130,10 @@ const DeleteUserModal = ({
             px-5
             py-5
             sm:px-7
-            sm:pt-6
-            sm:pb-5
+            sm:py-6
           "
         >
+          {/* Title + Icon */}
           <div className="flex min-w-0 items-center gap-3">
             <div
               className="
@@ -128,41 +154,57 @@ const DeleteUserModal = ({
                   h-5
                   w-5
                   text-red-600
+                  sm:h-[21px]
+                  sm:w-[21px]
                 "
               />
             </div>
 
             <h2
               className="
+                min-w-0
                 truncate
-                text-[19px]
+                text-[18px]
                 font-semibold
                 text-[#1F3768]
-                sm:text-[22px]
+                sm:text-[21px]
               "
             >
-              {t("users.modal.deleteTitle")}
+              {t(
+                "users.modal.deleteTitle",
+                "Delete User"
+              )}
             </h2>
           </div>
 
+          {/* Close */}
           <button
             type="button"
             onClick={handleClose}
             disabled={loading}
-            aria-label={t("users.modal.close")}
+            aria-label={t(
+              "users.modal.close",
+              "Close"
+            )}
             className="
+              flex
+              h-8
+              w-8
               shrink-0
+              items-center
+              justify-center
               rounded-lg
-              p-1
               text-gray-500
               transition
               hover:bg-gray-100
               hover:text-gray-800
               disabled:cursor-not-allowed
               disabled:opacity-50
+              sm:h-9
+              sm:w-9
             "
           >
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
+            <X className="h-5 w-5 sm:h-[21px] sm:w-[21px]" />
           </button>
         </div>
 
@@ -178,7 +220,7 @@ const DeleteUserModal = ({
             sm:py-6
           "
         >
-          {/* Backend Error */}
+          {/* Error */}
           {error && (
             <div
               className="
@@ -199,6 +241,7 @@ const DeleteUserModal = ({
             </div>
           )}
 
+          {/* Confirmation */}
           <p
             className="
               text-[13px]
@@ -207,13 +250,17 @@ const DeleteUserModal = ({
               sm:text-[14px]
             "
           >
-            {t("users.modal.deleteConfirmation")}{" "}
+            {t(
+              "users.modal.deleteConfirmation",
+              "Are you sure you want to permanently delete"
+            )}{" "}
             <span className="break-words font-semibold text-gray-900">
               {userName}
             </span>
             ?
           </p>
 
+          {/* Warning */}
           <p
             className="
               mt-2
@@ -223,7 +270,10 @@ const DeleteUserModal = ({
               sm:text-[12px]
             "
           >
-            {t("users.modal.deleteWarning")}
+            {t(
+              "users.modal.deleteWarning",
+              "This action will permanently remove this user from the system and cannot be undone."
+            )}
           </p>
         </div>
 
@@ -243,8 +293,7 @@ const DeleteUserModal = ({
             sm:flex-row
             sm:justify-end
             sm:px-7
-            sm:pb-7
-            sm:pt-5
+            sm:py-5
           "
         >
           {/* Cancel */}
@@ -271,7 +320,10 @@ const DeleteUserModal = ({
               sm:text-[14px]
             "
           >
-            {t("users.modal.cancel")}
+            {t(
+              "users.modal.cancel",
+              "Cancel"
+            )}
           </button>
 
           {/* Delete */}
@@ -304,8 +356,14 @@ const DeleteUserModal = ({
             <Trash2 className="h-4 w-4 shrink-0" />
 
             {loading
-              ? t("users.modal.deleting")
-              : t("users.modal.delete")}
+              ? t(
+                  "users.modal.deleting",
+                  "Deleting..."
+                )
+              : t(
+                  "users.modal.delete",
+                  "Delete"
+                )}
           </button>
         </div>
       </div>
