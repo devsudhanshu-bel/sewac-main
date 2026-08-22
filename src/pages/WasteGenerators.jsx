@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Header from "../components/layouts/Header";
 import api from "../api/axios";
@@ -12,11 +12,47 @@ import { useFilters } from "../contexts/FilterContext";
 import { useLanguage } from "../i18n";
 
 export default function WasteGenerators() {
+  /*
+  |--------------------------------------------------------------------------
+  | LANGUAGE
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  | This project uses the custom SEWAC language system.
+  |
+  | DO NOT use:
+  | import { useTranslation } from "react-i18next";
+  |
+  | We use:
+  | import { useLanguage } from "../i18n";
+  |--------------------------------------------------------------------------
+  */
+
+  const { t } = useLanguage();
+
+  /*
+  |--------------------------------------------------------------------------
+  | KPI
+  |--------------------------------------------------------------------------
+  */
+
   const [summary, setSummary] = useState(null);
 
+  /*
+  |--------------------------------------------------------------------------
+  | DATE
+  |--------------------------------------------------------------------------
+  */
+
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
+    new Date().toISOString().split("T")[0]
   );
+
+  /*
+  |--------------------------------------------------------------------------
+  | HEADER FILTERS
+  |--------------------------------------------------------------------------
+  */
 
   const {
     selectedCity,
@@ -25,60 +61,114 @@ export default function WasteGenerators() {
     selectedWard,
   } = useFilters();
 
-  const { t } = useLanguage();
+  /*
+  |--------------------------------------------------------------------------
+  | DIRECTORY STATE
+  |--------------------------------------------------------------------------
+  */
 
-  /* =========================================================
-     LOAD WASTE GENERATOR SUMMARY
-  ========================================================= */
+  const [citizens, setCitizens] = useState([]);
 
-  const loadSummary = async () => {
+  const [directoryLoading, setDirectoryLoading] =
+    useState(false);
+
+  const [directorySearch, setDirectorySearch] =
+    useState("");
+
+  const [directoryPage, setDirectoryPage] =
+    useState(1);
+
+  const [directoryPageSize, setDirectoryPageSize] =
+    useState(10);
+
+  const [directoryTotal, setDirectoryTotal] =
+    useState(0);
+
+  const [directoryTotalPages, setDirectoryTotalPages] =
+    useState(0);
+
+  const [syncing, setSyncing] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD SUMMARY
+  |--------------------------------------------------------------------------
+  */
+
+  const loadSummary = useCallback(async () => {
     try {
+      /*
+      |--------------------------------------------------------------------------
+      | CITY REQUIRED
+      |--------------------------------------------------------------------------
+      */
+
       if (!selectedCity?.city_id) {
         setSummary(null);
         return;
       }
 
+      /*
+      |--------------------------------------------------------------------------
+      | BUILD QUERY
+      |--------------------------------------------------------------------------
+      */
+
       const params = new URLSearchParams();
 
-      params.set("date", selectedDate);
-      params.set("cityId", selectedCity.city_id);
+      params.set(
+        "date",
+        selectedDate
+      );
+
+      params.set(
+        "cityId",
+        selectedCity.city_id
+      );
 
       if (selectedZone?.zone_id) {
-        params.set("zoneId", selectedZone.zone_id);
+        params.set(
+          "zoneId",
+          selectedZone.zone_id
+        );
       }
 
       if (selectedDivision?.division_id) {
         params.set(
           "divisionId",
-          selectedDivision.division_id,
+          selectedDivision.division_id
         );
       }
 
       if (selectedWard?.ward_id) {
-        params.set("wardId", selectedWard.ward_id);
+        params.set(
+          "wardId",
+          selectedWard.ward_id
+        );
       }
 
+      /*
+      |--------------------------------------------------------------------------
+      | API
+      |--------------------------------------------------------------------------
+      */
+
       const response = await api.get(
-        `/api/waste-generators/summary?${params.toString()}`,
+        `/api/waste-generators/summary?${params.toString()}`
       );
 
-      setSummary(response?.data?.data || null);
+      setSummary(
+        response?.data?.data || null
+      );
     } catch (error) {
       console.error(
         "Waste Generator Summary Error:",
-        error,
+        error
       );
 
       setSummary(null);
     }
-  };
-
-  /* =========================================================
-     RELOAD SUMMARY WHEN FILTERS / DATE CHANGE
-  ========================================================= */
-
-  useEffect(() => {
-    loadSummary();
   }, [
     selectedDate,
     selectedCity?.city_id,
@@ -87,163 +177,492 @@ export default function WasteGenerators() {
     selectedWard?.ward_id,
   ]);
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD DIRECTORY
+  |--------------------------------------------------------------------------
+  |
+  | Directory represents current master citizen data.
+  |--------------------------------------------------------------------------
+  */
+
+  const loadDirectory = useCallback(async () => {
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRE COMPLETE HEADER
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !selectedCity?.city_id ||
+      !selectedZone?.zone_id ||
+      !selectedDivision?.division_id ||
+      !selectedWard?.ward_id
+    ) {
+      setCitizens([]);
+
+      setDirectoryTotal(0);
+
+      setDirectoryTotalPages(0);
+
+      return;
+    }
+
+    try {
+      setDirectoryLoading(true);
+
+      /*
+      |--------------------------------------------------------------------------
+      | BUILD QUERY
+      |--------------------------------------------------------------------------
+      */
+
+      const params = new URLSearchParams();
+
+      params.set(
+        "page",
+        String(directoryPage)
+      );
+
+      params.set(
+        "limit",
+        String(directoryPageSize)
+      );
+
+      params.set(
+        "cityId",
+        String(selectedCity.city_id)
+      );
+
+      params.set(
+        "zoneId",
+        String(selectedZone.zone_id)
+      );
+
+      params.set(
+        "divisionId",
+        String(selectedDivision.division_id)
+      );
+
+      params.set(
+        "wardId",
+        String(selectedWard.ward_id)
+      );
+
+      params.set(
+        "date",
+        selectedDate
+      );
+
+      if (directorySearch.trim()) {
+        params.set(
+          "search",
+          directorySearch.trim()
+        );
+      }
+
+      /*
+      |--------------------------------------------------------------------------
+      | API
+      |--------------------------------------------------------------------------
+      */
+
+      const response = await api.get(
+        `/api/waste-generators/directory?${params.toString()}`
+      );
+
+      const directory =
+        response?.data?.data;
+
+      const rows =
+        Array.isArray(
+          directory?.wasteGenerators
+        )
+          ? directory.wasteGenerators
+          : [];
+
+      const pagination =
+        directory?.pagination || {};
+
+      /*
+      |--------------------------------------------------------------------------
+      | SET DIRECTORY
+      |--------------------------------------------------------------------------
+      */
+
+      setCitizens(rows);
+
+      setDirectoryTotal(
+        Number(
+          pagination.total || 0
+        )
+      );
+
+      setDirectoryTotalPages(
+        Number(
+          pagination.totalPages || 0
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Waste Generator Directory Error:",
+        error
+      );
+
+      setCitizens([]);
+
+      setDirectoryTotal(0);
+
+      setDirectoryTotalPages(0);
+    } finally {
+      setDirectoryLoading(false);
+    }
+  }, [
+    selectedDate,
+    selectedCity?.city_id,
+    selectedZone?.zone_id,
+    selectedDivision?.division_id,
+    selectedWard?.ward_id,
+    directoryPage,
+    directoryPageSize,
+    directorySearch,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | HEADER FILTER CHANGE
+  |--------------------------------------------------------------------------
+  |
+  | Whenever City / Zone / Division / Ward changes,
+  | return directory to page 1.
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    setDirectoryPage(1);
+  }, [
+    selectedCity?.city_id,
+    selectedZone?.zone_id,
+    selectedDivision?.division_id,
+    selectedWard?.ward_id,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | SEARCH CHANGE
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    setDirectoryPage(1);
+  }, [
+    directorySearch
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | SUMMARY EFFECT
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    loadSummary();
+  }, [
+    loadSummary
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | DIRECTORY EFFECT
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    loadDirectory();
+  }, [
+    loadDirectory
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | GET WARD NUMBER
+  |--------------------------------------------------------------------------
+  */
+
+  const getSelectedWardNumber =
+    useCallback(() => {
+      if (!selectedWard) {
+        return null;
+      }
+
+      const values = [
+        selectedWard.ward_no,
+        selectedWard.wardNo,
+        selectedWard.ward_number,
+        selectedWard.wardNumber,
+      ];
+
+      for (const value of values) {
+        if (
+          value !== null &&
+          value !== undefined &&
+          String(value).trim()
+        ) {
+          const number =
+            Number(value);
+
+          if (
+            Number.isInteger(number) &&
+            number > 0
+          ) {
+            return number;
+          }
+        }
+      }
+
+      return null;
+    }, [
+      selectedWard
+    ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | SYNC WARD
+  |--------------------------------------------------------------------------
+  */
+
+  const handleSync =
+    useCallback(async () => {
+      const wardNo =
+        getSelectedWardNumber();
+
+      /*
+      |--------------------------------------------------------------------------
+      | NO WARD
+      |--------------------------------------------------------------------------
+      */
+
+      if (!wardNo) {
+        window.alert(
+          t(
+            "wasteGenerators.sync.selectWard",
+            "Please select a ward before syncing."
+          )
+        );
+
+        return;
+      }
+
+      try {
+        setSyncing(true);
+
+        /*
+        |--------------------------------------------------------------------------
+        | SYNC API
+        |--------------------------------------------------------------------------
+        */
+
+        await api.post(
+          `/api/master-citizen/sync/ward/${wardNo}`
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | REFRESH DIRECTORY
+        |--------------------------------------------------------------------------
+        */
+
+        setDirectoryPage(1);
+
+        await loadDirectory();
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        window.alert(
+          t(
+            "wasteGenerators.sync.success",
+            "Ward {{ward}} synced successfully.",
+            {
+              ward: wardNo,
+            }
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Waste Generator Sync Error:",
+          error
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | BACKEND MESSAGE
+        |--------------------------------------------------------------------------
+        */
+
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message;
+
+        window.alert(
+          backendMessage ||
+            t(
+              "wasteGenerators.sync.failed",
+              "Failed to sync the selected ward."
+            )
+        );
+      } finally {
+        setSyncing(false);
+      }
+    }, [
+      getSelectedWardNumber,
+      loadDirectory,
+      t,
+    ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | UPDATE
+  |--------------------------------------------------------------------------
+  */
+
+  const handleUpdate =
+    useCallback((citizen) => {
+      /*
+       * Keep your existing update
+       * modal/navigation here.
+       *
+       * For now we only surface
+       * the selected record.
+       */
+
+      console.log(
+        "Update Waste Generator:",
+        citizen
+      );
+    }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | RENDER
+  |--------------------------------------------------------------------------
+  */
 
   return (
-    <div
-      className="
-        flex-1
-        min-h-screen
-        min-w-0
-        overflow-y-auto
-        overflow-x-hidden
-        bg-[#FAFAFC]
-      "
-    >
-      {/* =====================================================
+    <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
+
+      {/* ========================================================
           HEADER
-      ===================================================== */}
+      ======================================================== */}
 
       <Header
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
       />
 
-      {/* =====================================================
-          PAGE CONTENT
-      ===================================================== */}
-
-      <main
+      <div
         className="
           w-full
-          min-w-0
           overflow-x-hidden
-
           px-4
           py-5
-
-          sm:px-5
+          sm:px-6
           sm:py-6
-
-          md:px-6
-          md:py-7
-
           lg:px-8
           lg:py-7
-
-          xl:px-8
         "
       >
-        {/* ===================================================
-            PAGE TITLE
-        =================================================== */}
 
-        <div className="min-w-0">
+        {/* ======================================================
+            PAGE TITLE
+        ====================================================== */}
+
+        <div>
+
           <h1
             className="
               text-[28px]
-              leading-tight
               font-bold
               tracking-tight
               text-[#16295A]
-
-              sm:text-[30px]
-              md:text-[32px]
+              sm:text-[32px]
               lg:text-[34px]
             "
           >
             {t(
               "wasteGenerators.title",
-              "Waste Generators",
+              "Waste Generators"
             )}
           </h1>
 
           <p
             className="
               mt-1
-              max-w-[1100px]
+              max-w-5xl
               text-[13px]
               leading-5
               text-slate-500
-
               sm:text-[14px]
               sm:leading-6
             "
           >
             {t(
               "wasteGenerators.description",
-              "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance.",
+              "Overview of waste generators participation, waste contribution, activity, monitoring and collection performance."
             )}
           </p>
+
         </div>
 
-        {/* ===================================================
-            WASTE GENERATOR KPIs
-        =================================================== */}
+        {/* ======================================================
+            KPI
+        ====================================================== */}
 
-        <section
-          className="
-            mt-5
-            w-full
-            min-w-0
+        <section className="mt-5 sm:mt-6">
 
-            sm:mt-6
-          "
-        >
-          <div className="w-full min-w-0">
-            <WasteGenKPIs summary={summary} />
-          </div>
+          <WasteGenKPIs
+            summary={summary}
+          />
+
         </section>
 
-        {/* ===================================================
-            MAP + GVP TREND
-        =================================================== */}
+        {/* ======================================================
+            MAPS
+        ====================================================== */}
 
         <section
           className="
             mt-5
             grid
-            w-full
-            min-w-0
             grid-cols-1
-            gap-5
             items-stretch
-
+            gap-5
             lg:grid-cols-2
-            lg:gap-5
           "
         >
-          {/* =================================================
-              COLLECTION MAP
-          ================================================= */}
 
-          <div
-            className="
-              min-w-0
-              w-full
-              max-w-full
-              overflow-hidden
-            "
-          >
+          {/* ====================================================
+              WASTE GENERATOR MAP
+          ==================================================== */}
+
+          <div className="min-w-0 h-full">
+
             <WasteGenMap
               selectedDate={selectedDate}
             />
+
           </div>
 
-          {/* =================================================
-              GVP GENERATION TREND
-          ================================================= */}
+          {/* ====================================================
+              GVP
+          ==================================================== */}
 
-          <div
-            className="
-              min-w-0
-              w-full
-              max-w-full
-              overflow-hidden
-            "
-          >
+          <div className="min-w-0 h-full">
+
             <GVPGen
               selectedDate={selectedDate}
               selectedCity={selectedCity}
@@ -251,29 +670,75 @@ export default function WasteGenerators() {
               selectedDivision={selectedDivision}
               selectedWard={selectedWard}
             />
+
           </div>
+
         </section>
 
-        {/* ===================================================
-            WASTE GENERATOR DIRECTORY
-        =================================================== */}
+        {/* ======================================================
+            DIRECTORY
+        ====================================================== */}
 
-        <section
-          className="
-            mt-5
-            mb-6
-            w-full
-            min-w-0
+        <section className="mt-5 mb-8">
 
-            sm:mb-7
-            md:mb-8
-          "
-        >
-          <div className="w-full min-w-0 max-w-full">
-            <WasteGenDir />
-          </div>
+          <WasteGenDir
+            citizens={citizens}
+
+            search={directorySearch}
+
+            onSearch={
+              setDirectorySearch
+            }
+
+            onUpdate={
+              handleUpdate
+            }
+
+            onSync={
+              handleSync
+            }
+
+            syncing={syncing}
+
+            loading={
+              directoryLoading
+            }
+
+            page={
+              directoryPage
+            }
+
+            pageSize={
+              directoryPageSize
+            }
+
+            total={
+              directoryTotal
+            }
+
+            totalPages={
+              directoryTotalPages
+            }
+
+            onPageChange={
+              setDirectoryPage
+            }
+
+            onPageSizeChange={
+              (newSize) => {
+                setDirectoryPageSize(
+                  newSize
+                );
+
+                setDirectoryPage(1);
+              }
+            }
+          />
+
         </section>
-      </main>
+
+      </div>
+
     </div>
   );
 }

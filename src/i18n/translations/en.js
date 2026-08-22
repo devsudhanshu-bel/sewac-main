@@ -145,6 +145,44 @@ const en = {
   ward: "Ward",
 },
 
+gvpOverviewMap: {
+  title: "GVP Overview Map",
+  subtitle: "Overview of GVP points across Bengaluru",
+
+  filters: {
+    cityOverview: "City Overview",
+    routeMaps: "Route Maps",
+    gvpPoints: "GVP Points",
+    plants: "Plants",
+    wardBoundaries: "Ward Boundaries",
+  },
+
+  map: {
+    loading: "Loading map...",
+    noData: "No GVP points found.",
+    gvpPoint: "GVP Point",
+    name: "Name",
+    location: "Location",
+    status: "Status",
+    coordinates: "Coordinates",
+    latitude: "Latitude",
+    longitude: "Longitude",
+  },
+
+  status: {
+    active: "Active",
+    inactive: "Inactive",
+    pending: "Pending",
+  },
+
+  legend: {
+    gvpPoints: "GVP Points",
+    plants: "Plants",
+    wardBoundary: "Ward Boundary",
+    route: "Route",
+  },
+},
+
 wasteGenerators: {
   /* =========================================================
      PAGE
@@ -491,7 +529,7 @@ plants: {
     "Monitor all waste processing plants and their operations.",
 
   loading:
-    "Loading Plant Dashboard...",
+    "Loading plants dashboard...",
 
   retry:
     "Retry",
@@ -499,6 +537,15 @@ plants: {
   errors: {
     serverConnection:
       "Unable to connect to the server.",
+
+    createFailed:
+      "Unable to create plant.",
+
+    updateFailed:
+      "Unable to update plant.",
+
+    deleteFailed:
+      "Unable to delete plant.",
   },
 
   kpis: {
@@ -518,7 +565,7 @@ plants: {
       "Total Waste Collected",
 
     allTimeCollection:
-      "All time collection",
+      "All-time collection",
   },
 
   directory: {
@@ -609,10 +656,10 @@ plants: {
       "Longitude",
 
     active:
-      "ACTIVE",
+      "Active",
 
     inactive:
-      "INACTIVE",
+      "Inactive",
 
     cancel:
       "Cancel",
@@ -622,7 +669,7 @@ plants: {
 
     errors: {
       createFailed:
-        "Failed to create plant.",
+        "Unable to create plant.",
     },
   },
 
@@ -667,10 +714,10 @@ plants: {
       "Longitude",
 
     active:
-      "ACTIVE",
+      "Active",
 
     inactive:
-      "INACTIVE",
+      "Inactive",
 
     cancel:
       "Cancel",
@@ -680,7 +727,7 @@ plants: {
 
     errors: {
       updateFailed:
-        "Failed to update plant.",
+        "Unable to update plant.",
     },
   },
 
@@ -699,8 +746,46 @@ plants: {
 
     errors: {
       deleteFailed:
-        "Failed to delete plant.",
+        "Unable to delete plant.",
     },
+  },
+
+  /*
+   * =========================================================
+   * PLANT MAP
+   * =========================================================
+   */
+
+  map: {
+    title:
+      "Plant Locations",
+
+    subtitle:
+      "Waste processing plants",
+
+    maximize:
+      "Maximize map",
+
+    loading:
+      "Loading plant locations...",
+
+    empty:
+      "No plant locations available",
+
+    unnamedPlant:
+      "Unnamed Plant",
+
+    notAssigned:
+      "Not Assigned",
+
+    unknown:
+      "Unknown",
+
+    vehicles:
+      "Vehicles",
+
+    tonPerDay:
+      "Ton/Day",
   },
 },
 
@@ -711,104 +796,649 @@ users: {
     "Create and manage users in the system.",
 
   footer:
-    "© 2025 SEWAC. All rights reserved.",
+    "© 2026 SEWAC. All rights reserved.",
 },
 
-  complaints: {
-    title: "Complaints",
-    subtitle: "Manage and track citizen complaints",
+complaints: {
+  /* =========================================================
+     PAGE
+  ========================================================= */
 
-    filters: {
-      search: "Search complaints",
-      status: "Status",
-      category: "Category",
-      dateFrom: "Date From",
-      dateTo: "Date To",
-      reset: "Reset Filters",
-      allStatuses: "All Statuses",
-      allCategories: "All Categories",
+  title: "Complaints",
+
+  description:
+    "Manage and track citizen complaints",
+
+  /* =========================================================
+     TABLE
+  ========================================================= */
+
+  table: {
+    title: "Complaints",
+
+    complaint: "complaint",
+
+    found: "found",
+
+    updating: "Updating...",
+
+    location: "Location",
+
+    createdAt: "Created At",
+
+    loading: "Loading complaints...",
+
+    empty: "No complaints found.",
+
+    showing: "Showing",
+
+    to: "to",
+
+    of: "of",
+
+    complaints: "complaints",
+
+    previousPage: "Previous page",
+
+    nextPage: "Next page",
+  },
+
+  /* =========================================================
+     FILTERS
+  ========================================================= */
+
+  filters: {
+    searchPlaceholder:
+      "Search by ticket, phone, title, address...",
+
+    category: "Category",
+
+    all: "All",
+
+    to: "to",
+
+    reset: "Reset Filters",
+
+    categories: {
+      missedCollection: "Missed Collection",
+
+      overflowingBin: "Overflowing Bin",
+
+      illegalDumping: "Illegal Dumping",
+
+      streetLitter: "Street Litter",
+
+      damagedBin: "Damaged Bin",
+
+      other: "Other",
+    },
+  },
+
+  /* =========================================================
+     DETAILS
+  ========================================================= */
+
+  details: {
+    empty: {
+      title: "Select a complaint",
+
+      description:
+        "Select a complaint from the table to view its details.",
     },
 
-    kpis: {
-      total: "Total Complaints",
+    ticketNumber: "Ticket Number",
+
+    title: "Title",
+
+    category: "Category",
+
+    citizenPhone: "Citizen (Phone)",
+
+    address: "Address",
+
+    coordinates: "Coordinates",
+
+    complaintImage: "Complaint Image",
+
+    imageAlt: "Complaint",
+
+    noImage: "No complaint image",
+
+    description: "Description",
+
+    noDescription: "No description provided.",
+
+    status: "Status",
+
+    remarks: "Remarks",
+
+    closedVerified:
+      "Closed — Citizen Verified",
+
+    verificationOtpSent:
+      "Verification OTP Sent",
+
+    enterOtp:
+      "Enter Verification OTP",
+
+    closedMessage:
+      "Complaint closed after successful citizen verification.",
+
+    statusOptions: {
       pending: "Pending",
-      readyForVerification: "Ready for Verification",
-      otpSent: "OTP Sent",
-      closed: "Closed",
+
+      readyForVerification:
+        "Ready for Verification",
+
+      otpSent:
+        "OTP Sent",
+
+      inProgress:
+        "In Progress",
+
+      assigned:
+        "Assigned",
+
+      closed:
+        "Closed",
+    },
+
+    placeholders: {
+      addRemarks:
+        "Add remarks...",
+
+      selectComplaint:
+        "Select a complaint first...",
+
+      otp:
+        "Enter 6-digit OTP",
+    },
+
+    actions: {
+      callCitizen:
+        "Call citizen",
+
+      viewOnMap:
+        "View coordinates on map",
+
+      expandImage:
+        "Expand complaint image",
+
+      cancel:
+        "Cancel",
+
+      saving:
+        "Saving...",
+
+      saveChanges:
+        "Save Changes",
+
+      requestVerification:
+        "Request Verification OTP",
+
+      verifyOtp:
+        "Verify OTP & Close Complaint",
+    },
+  },
+
+  /* =========================================================
+     KPIs
+  ========================================================= */
+
+  kpis: {
+    total:
+      "Total Complaints",
+
+    allComplaints:
+      "All complaints",
+
+    pending:
+      "Pending",
+
+    readyForVerification:
+      "Ready for Verification",
+
+    closed:
+      "Closed",
+
+    citizenVerified:
+      "Citizen verified",
+  },
+},
+
+cityOverviewMap: {
+  title: "OVERVIEW MAPS",
+
+  mapFilters: "MAP FILTERS",
+
+  cityOverview: "City Overview Map",
+  routeMaps: "Route Maps",
+  gvpPoints: "GVP Points",
+  plants: "Plants",
+  customerGrievances: "Customer Grievances",
+
+  zone: "ZONE",
+  division: "DIVISION",
+  ward: "WARD",
+
+  allZones: "All Zones",
+  allDivisions: "All Divisions",
+  allWards: "All Wards",
+
+  selectZoneFirst: "Select a Zone First",
+  selectDivisionFirst: "Select a Division First",
+
+  loadingDivisions: "Loading Divisions...",
+  loadingWards: "Loading Wards...",
+
+  noDivisions: "No Divisions",
+  noWards: "No Wards",
+
+  loadingDivisionsFor: "Loading divisions for",
+  loadingWardsFor: "Loading wards for",
+
+  resetMap: "Reset Map",
+
+  selectedZone: "Selected Zone",
+  selectedDivision: "Selected Division",
+  selectedWard: "Selected Ward",
+
+  city: "City",
+  divisions: "Divisions",
+  wards: "Wards",
+
+  wardId: "Ward ID",
+
+  plantLocations: "Plant Locations",
+  loadingPlants: "Loading plant locations...",
+  unableLoadPlants: "Unable to Load Plants",
+
+  changeMapView: "Change map view",
+
+  loading: "Loading city map...",
+},
+
+gvpMap: {
+  title: "GVP Point Monitoring",
+
+  points: "points",
+
+  ward: "Ward",
+
+  selectedWard: "Selected Ward",
+
+  legend: "GVP Point",
+
+  loading: "Loading GVP points...",
+
+  selectWard: "Select a ward",
+
+  selectWardDescription:
+    "Choose City, Zone, Division and Ward from the header.",
+
+  unavailable: "GVP map unavailable",
+
+  empty: "No GVP points for this date",
+
+  errors: {
+    load: "Unable to load GVP points.",
+  },
+
+  tooltip: {
+    gvpPoint: "GVP Point",
+    vehicle: "Vehicle",
+    table: "Table",
+    iot: "IoT",
+    unit: "Unit",
+    remarks: "Remarks",
+    gvpWaste: "GVP waste",
+    coordinates: "Coordinates",
+  },
+},
+
+cityOverviewMap: {
+  title: "OVERVIEW MAPS",
+
+  mapFilters: "MAP FILTERS",
+
+  cityOverview: "City Overview Map",
+  routeMaps: "Route Maps",
+  gvpPoints: "GVP Points",
+  plants: "Plants",
+
+  customerGrievances: {
+    title: "Customer Grievances",
+
+    loading:
+      "Loading customer grievances...",
+
+    error:
+      "Unable to load customer grievances.",
+
+    empty:
+      "No customer grievances found.",
+
+    complaints:
+      "Complaints",
+
+    ticket:
+      "Ticket",
+
+    status:
+      "Status",
+
+    category:
+      "Category",
+
+    phone:
+      "Phone",
+
+    description:
+      "Description",
+
+    address:
+      "Address",
+
+    latitude:
+      "Latitude",
+
+    longitude:
+      "Longitude",
+
+    date:
+      "Date",
+  },
+
+  zone: "ZONE",
+  division: "DIVISION",
+  ward: "WARD",
+
+  allZones: "All Zones",
+  allDivisions: "All Divisions",
+  allWards: "All Wards",
+
+  selectZoneFirst: "Select a Zone First",
+  selectDivisionFirst:
+    "Select a Division First",
+
+  loadingDivisions:
+    "Loading Divisions...",
+
+  loadingWards:
+    "Loading Wards...",
+
+  noDivisions:
+    "No Divisions",
+
+  noWards:
+    "No Wards",
+
+  loadingDivisionsFor:
+    "Loading divisions for",
+
+  loadingWardsFor:
+    "Loading wards for",
+
+  resetMap:
+    "Reset Map",
+
+  selectedZone:
+    "Selected Zone",
+
+  selectedDivision:
+    "Selected Division",
+
+  selectedWard:
+    "Selected Ward",
+
+  city: "City",
+
+  divisions:
+    "Divisions",
+
+  wards:
+    "Wards",
+
+  wardId:
+    "Ward ID",
+
+  plantLocations:
+    "Plant Locations",
+
+  loadingPlants:
+    "Loading plant locations...",
+
+  unableLoadPlants:
+    "Unable to Load Plants",
+
+  changeMapView:
+    "Change map view",
+
+  loading:
+    "Loading city map...",
+},
+
+users: {
+  title: "Users",
+
+  description:
+    "Create and manage users in the system.",
+
+  // =========================================================
+  // ADMIN LEVEL 1
+  // =========================================================
+
+  admin: {
+    title: "Admin Level 1 Users",
+
+    description:
+      "Manage other Admin Level 1 users who have full access to the system.",
+
+    searchPlaceholder:
+      "Search by name, email or phone...",
+
+    addButton:
+      "Add Admin",
+
+    loading:
+      "Loading Admin Level 1 users...",
+
+    empty:
+      "No Admin Level 1 users found.",
+
+    errors: {
+      fetchFailed:
+        "Failed to fetch Admin Level 1 users.",
     },
 
     table: {
-      ticketNumber: "Ticket Number",
-      citizen: "Citizen",
-      category: "Category",
+      slNo: "SL.No",
+      name: "Admin Name",
+      email: "Email",
+      phone: "Phone Number",
       status: "Status",
-      date: "Date",
+      createdAt: "Created At",
       actions: "Actions",
-      view: "View",
-      noComplaints: "No complaints found.",
-      loading: "Loading complaints...",
-      previous: "Previous",
-      next: "Next",
-      page: "Page",
+    },
+
+    actions: {
+      edit: "Edit user",
+      delete: "Delete user",
+    },
+
+    pagination: {
+      showing: "Showing",
       of: "of",
+      entries: "entries",
+      previous: "Previous page",
+      next: "Next page",
     },
 
-    details: {
-      title: "Complaint Details",
-      close: "Close",
-      complaintInformation: "Complaint Information",
-      ticketNumber: "Ticket Number",
-      citizen: "Citizen",
-      phone: "Phone",
-      category: "Category",
-      description: "Description",
-      location: "Location",
-      status: "Status",
-      remarks: "Remarks",
-      update: "Update Complaint",
-      save: "Save Changes",
-      saving: "Saving...",
-      requestVerification: "Request Verification",
-      verifyOtp: "Verify OTP",
-      enterOtp: "Enter 6-digit OTP",
-      otpSent: "OTP Sent",
-      readyForVerification: "Ready for Verification",
-      pending: "Pending",
-      closed: "Closed",
-      noComplaint: "Select a complaint to view details.",
-    },
-
-    status: {
-      pending: "Pending",
-      readyForVerification: "Ready for Verification",
-      otpSent: "OTP Sent",
-      closed: "Closed",
-      assigned: "Assigned",
-      inProgress: "In Progress",
-    },
-
-    messages: {
-      updated: "Complaint updated successfully.",
-      otpSent: "OTP sent successfully to the citizen.",
-      closed: "Complaint closed successfully.",
-    },
-
-    errors: {
-      authToken: "Admin authentication token not found.",
-      fetch: "Failed to fetch complaints.",
-      fetchUnable: "Unable to fetch complaints.",
-      fetchKpis: "Failed to fetch complaint KPIs.",
-      update: "Failed to update complaint.",
-      updateUnable: "Unable to update complaint.",
-      verification: "Failed to request verification.",
-      verificationUnable:
-        "Unable to request verification OTP.",
-      noComplaint: "No complaint selected.",
-      invalidOtp: "Please enter a valid 6-digit OTP.",
-      verifyOtp: "Failed to verify OTP.",
-      verifyOtpUnable: "Unable to verify OTP.",
+    modals: {
+      addTitle: "Add Admin",
+      editTitle: "Edit Admin",
     },
   },
+
+  // =========================================================
+  // CONTRACTOR
+  // =========================================================
+
+  contractor: {
+    title: "Contractor Users",
+
+    description:
+      "Manage contractor accounts and permissions.",
+
+    searchPlaceholder:
+      "Search contractors...",
+
+    addButton:
+      "Add Contractor",
+
+    loading:
+      "Loading Contractor users...",
+
+    empty:
+      "No contractor users found.",
+
+    errors: {
+      fetchFailed:
+        "Failed to fetch Contractor users.",
+    },
+
+    table: {
+      slNo: "SL.No",
+      name: "Name",
+      email: "Email",
+      phone: "Phone Number",
+      status: "Status",
+      createdAt: "Created At",
+      actions: "Actions",
+    },
+
+    actions: {
+      edit: "Edit user",
+      delete: "Delete user",
+    },
+
+    pagination: {
+      showing: "Showing",
+      of: "of",
+      entries: "entries",
+      previous: "Previous page",
+      next: "Next page",
+    },
+
+    modals: {
+      addTitle: "Add Contractor",
+      editTitle: "Edit Contractor",
+    },
+  },
+
+  // =========================================================
+  // COMMON USER TABLE
+  // =========================================================
+
+  table: {
+    slNo: "SL.No",
+    name: "Name",
+    email: "Email",
+    phone: "Phone Number",
+    role: "Role",
+    lastLogin: "Last Login",
+    status: "Status",
+    createdAt: "Created At",
+
+    active: "Active",
+    inactive: "Inactive",
+    pending: "Pending",
+    blocked: "Blocked",
+
+    actions: "Actions",
+
+    showing: "Showing",
+    of: "of",
+    entries: "entries",
+
+    users: "users",
+
+    rowsPerPage: "Rows per page",
+
+    previous: "Previous",
+    next: "Next",
+
+    noUsers: "No users found",
+  },
+
+  // =========================================================
+  // COMMON ACTIONS
+  // =========================================================
+
+  actions: {
+    edit: "Edit user",
+    delete: "Delete user",
+  },
+
+  // =========================================================
+  // ADD / EDIT USER MODAL
+  // =========================================================
+
+modal: {
+  fullName: "Full Name",
+  email: "Email",
+  password: "Password",
+  phoneNumber: "Phone Number",
+
+  fullNamePlaceholder: "Enter full name",
+  emailPlaceholder: "Enter email",
+  passwordPlaceholder: "Enter password",
+  phoneNumberPlaceholder: "Enter phone number",
+
+  cancel: "Cancel",
+  save: "Save",
+  saving: "Saving...",
+
+  // Edit
+  update: "Update",
+  updating: "Updating...",
+  emailCannotChange: "Email cannot be changed.",
+
+  // Delete
+  deleteTitle: "Delete User",
+  delete: "Delete",
+  deleting: "Deleting...",
+  close: "Close",
+
+  deleteConfirmation:
+    "Are you sure you want to permanently delete",
+
+  deleteWarning:
+    "This action will permanently remove this user from the system and cannot be undone.",
+
+  userFallback: "this user",
+
+  errors: {
+    fillAllFields:
+      "Please fill in all fields.",
+
+    roleMissing:
+      "User role is missing.",
+
+    createFailed:
+      "Failed to create user.",
+
+    updateFailed:
+      "Failed to update user.",
+
+    userIdMissing:
+      "User ID is missing.",
+
+    deleteFailed:
+      "Failed to delete user.",
+  },
+},
+},
 };
 
 export default en;

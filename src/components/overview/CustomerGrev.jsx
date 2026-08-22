@@ -15,6 +15,8 @@ import {
 
 import L from "leaflet";
 
+import { useLanguage } from "../../i18n";
+
 import "leaflet/dist/leaflet.css";
 
 /* ============================================================
@@ -890,6 +892,15 @@ function BengaluruMapFocus({
 ============================================================ */
 
 export default function CustomerGrev() {
+  /* ==========================================================
+     LANGUAGE
+  ========================================================== */
+
+  const {
+    language,
+    t,
+  } = useLanguage();
+
   const [
     complaints,
     setComplaints,
@@ -909,6 +920,125 @@ export default function CustomerGrev() {
     error,
     setError,
   ] = useState("");
+
+  /* ==========================================================
+     TRANSLATIONS
+  ========================================================== */
+
+  const title =
+    t(
+      "cityOverviewMap.customerGrievances.title",
+      "Customer Grievances"
+    );
+
+  const subtitle =
+    t(
+      "cityOverviewMap.customerGrievances.subtitle",
+      "Bengaluru complaint locations"
+    );
+
+  const complaintsText =
+    t(
+      "cityOverviewMap.customerGrievances.complaints",
+      "Complaints"
+    );
+
+  const loadingTitle =
+    t(
+      "cityOverviewMap.customerGrievances.loading",
+      "Loading customer grievances..."
+    );
+
+  const errorTitle =
+    t(
+      "cityOverviewMap.customerGrievances.error",
+      "Unable to load customer grievances."
+    );
+
+  const customerComplaintText =
+    t(
+      "cityOverviewMap.customerGrievances.customerComplaint",
+      "Customer Complaint"
+    );
+
+  const ticketText =
+    t(
+      "cityOverviewMap.customerGrievances.ticket",
+      "Ticket"
+    );
+
+  const statusText =
+    t(
+      "cityOverviewMap.customerGrievances.status",
+      "Status"
+    );
+
+  const categoryText =
+    t(
+      "cityOverviewMap.customerGrievances.category",
+      "Category"
+    );
+
+  const phoneText =
+    t(
+      "cityOverviewMap.customerGrievances.phone",
+      "Phone"
+    );
+
+  const descriptionText =
+    t(
+      "cityOverviewMap.customerGrievances.description",
+      "Description"
+    );
+
+  const addressText =
+    t(
+      "cityOverviewMap.customerGrievances.address",
+      "Address"
+    );
+
+  const latitudeText =
+    t(
+      "cityOverviewMap.customerGrievances.latitude",
+      "Latitude"
+    );
+
+  const longitudeText =
+    t(
+      "cityOverviewMap.customerGrievances.longitude",
+      "Longitude"
+    );
+
+  const noDescriptionText =
+    t(
+      "cityOverviewMap.customerGrievances.noDescription",
+      "No description available."
+    );
+
+  const notAvailableText =
+    t(
+      "cityOverviewMap.customerGrievances.notAvailable",
+      "N/A"
+    );
+
+  const complaintImageAlt =
+    t(
+      "cityOverviewMap.customerGrievances.imageAlt",
+      "Complaint"
+    );
+
+  /*
+    Keep the locale ready for future
+    date/string formatting without
+    changing the existing data logic.
+  */
+
+  const locale =
+    language === "kn"
+      ? "kn-IN"
+      : language === "hi"
+      ? "hi-IN"
+      : "en-IN";
 
   /* ==========================================================
      FETCH COMPLAINTS + BOUNDARY
@@ -1208,14 +1338,69 @@ export default function CustomerGrev() {
 
   if (loading) {
     return (
-      <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-          <div className="h-7 w-64 animate-pulse rounded-lg bg-slate-100" />
+      <div
+        className="
+          w-full
+          overflow-hidden
+          rounded-xl
+          sm:rounded-2xl
+          border
+          border-slate-200
+          bg-white
+          shadow-sm
+        "
+      >
+        <div
+          className="
+            flex
+            flex-col
+            gap-3
+            border-b
+            border-slate-200
+            px-3
+            py-3
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+            sm:px-6
+            sm:py-5
+          "
+        >
+          <div
+            className="
+              h-6
+              w-48
+              animate-pulse
+              rounded-lg
+              bg-slate-100
+              sm:h-7
+              sm:w-64
+            "
+          />
 
-          <div className="h-8 w-28 animate-pulse rounded-full bg-slate-100" />
+          <div
+            className="
+              h-8
+              w-24
+              animate-pulse
+              rounded-full
+              bg-slate-100
+              sm:w-28
+            "
+          />
         </div>
 
-        <div className="h-[650px] w-full animate-pulse bg-slate-100" />
+        <div
+          className="
+            h-[420px]
+            w-full
+            animate-pulse
+            bg-slate-100
+            sm:h-[500px]
+            md:h-[560px]
+            lg:h-[650px]
+          "
+        />
       </div>
     );
   }
@@ -1226,22 +1411,84 @@ export default function CustomerGrev() {
 
   if (error) {
     return (
-      <div className="w-full rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 font-bold text-red-500">
+      <div
+        className="
+          w-full
+          rounded-xl
+          sm:rounded-2xl
+          border
+          border-red-200
+          bg-white
+          p-4
+          shadow-sm
+          sm:p-6
+        "
+      >
+        <div
+          className="
+            flex
+            items-start
+            gap-3
+          "
+        >
+          <div
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-full
+              bg-red-50
+              font-bold
+              text-red-500
+              sm:h-10
+              sm:w-10
+            "
+          >
             !
           </div>
 
-          <div className="min-w-0">
-            <h2 className="text-base font-bold text-slate-900">
-              Customer Grievances
+          <div
+            className="
+              min-w-0
+              flex-1
+            "
+          >
+            <h2
+              className="
+                text-sm
+                font-bold
+                text-slate-900
+                sm:text-base
+              "
+            >
+              {title}
             </h2>
 
-            <p className="mt-1 text-sm text-red-600">
-              {error}
+            <p
+              className="
+                mt-1
+                break-words
+                text-xs
+                text-red-600
+                sm:text-sm
+              "
+            >
+              {error ||
+                errorTitle}
             </p>
 
-            <p className="mt-2 break-all text-xs text-slate-500">
+            <p
+              className="
+                mt-2
+                break-all
+                text-[10px]
+                text-slate-500
+                sm:text-xs
+              "
+            >
               {COMPLAINTS_ENDPOINT}
             </p>
           </div>
@@ -1255,16 +1502,69 @@ export default function CustomerGrev() {
   ========================================================== */
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div
+      className="
+        w-full
+        min-w-0
+        overflow-hidden
+        rounded-xl
+        sm:rounded-2xl
+        border
+        border-slate-200
+        bg-white
+        shadow-sm
+      "
+    >
 
       {/* ======================================================
           HEADER
       ====================================================== */}
 
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
-        <div className="flex items-center gap-3">
+      <div
+        className="
+          flex
+          flex-col
+          gap-3
+          border-b
+          border-slate-200
+          bg-white
+          px-3
+          py-3
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          sm:px-5
+          sm:py-4
+          md:px-6
+          md:py-5
+        "
+      >
+        <div
+          className="
+            flex
+            min-w-0
+            items-center
+            gap-2.5
+            sm:gap-3
+          "
+        >
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+          <div
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-lg
+              bg-slate-50
+              text-slate-600
+              sm:h-10
+              sm:w-10
+              sm:rounded-xl
+            "
+          >
             <svg
               width="23"
               height="23"
@@ -1274,6 +1574,12 @@ export default function CustomerGrev() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="
+                h-5
+                w-5
+                sm:h-[23px]
+                sm:w-[23px]
+              "
             >
               <path d="M20 12V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6" />
 
@@ -1281,21 +1587,63 @@ export default function CustomerGrev() {
             </svg>
           </div>
 
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              Customer Grievances
+          <div
+            className="
+              min-w-0
+            "
+          >
+            <h2
+              className="
+                truncate
+                text-base
+                font-bold
+                text-slate-900
+                sm:text-lg
+                md:text-xl
+              "
+            >
+              {title}
             </h2>
 
-            <p className="text-xs text-slate-500">
-              Bengaluru complaint locations
+            <p
+              className="
+                truncate
+                text-[10px]
+                text-slate-500
+                sm:text-xs
+              "
+            >
+              {subtitle}
             </p>
           </div>
         </div>
 
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-700">
+        <div
+          className="
+            self-start
+            rounded-full
+            border
+            border-slate-200
+            bg-slate-50
+            px-3
+            py-1.5
+            sm:self-auto
+            sm:px-4
+            sm:py-2
+          "
+        >
+          <span
+            className="
+              whitespace-nowrap
+              text-[11px]
+              font-semibold
+              text-slate-700
+              sm:text-xs
+              md:text-sm
+            "
+          >
             {visibleComplaints.length}{" "}
-            Complaints
+            {complaintsText}
           </span>
         </div>
       </div>
@@ -1304,7 +1652,16 @@ export default function CustomerGrev() {
           MAP
       ====================================================== */}
 
-      <div className="h-[650px] w-full">
+      <div
+        className="
+          h-[420px]
+          w-full
+          min-w-0
+          sm:h-[500px]
+          md:h-[560px]
+          lg:h-[650px]
+        "
+      >
 
         <MapContainer
           center={
@@ -1323,7 +1680,10 @@ export default function CustomerGrev() {
             true
           }
 
-          className="h-full w-full"
+          className="
+            h-full
+            w-full
+          "
         >
 
           {/* ==================================================
@@ -1422,27 +1782,57 @@ export default function CustomerGrev() {
                   }
                 >
 
-                  <div className="w-[300px]">
+                  <div
+                    className="
+                      w-[280px]
+                      max-w-[calc(100vw-40px)]
+                      sm:w-[300px]
+                    "
+                  >
 
                     {/* ----------------------------------------
                         TITLE
                     ---------------------------------------- */}
 
-                    <div className="mb-3 border-b border-slate-200 pb-3">
+                    <div
+                      className="
+                        mb-3
+                        border-b
+                        border-slate-200
+                        pb-3
+                      "
+                    >
 
-                      <div className="text-base font-bold text-slate-900">
+                      <div
+                        className="
+                          break-words
+                          text-sm
+                          font-bold
+                          text-slate-900
+                          sm:text-base
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.title ||
-                          "Customer Complaint"}
+                          customerComplaintText}
                       </div>
 
-                      <div className="mt-1 text-xs font-medium text-slate-500">
-                        Ticket:{" "}
+                      <div
+                        className="
+                          mt-1
+                          break-all
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {ticketText}:{" "}
                         {complaint
                           ?.data
                           ?.ticket_number ||
-                          "N/A"}
+                          notAvailableText}
                       </div>
 
                     </div>
@@ -1451,17 +1841,48 @@ export default function CustomerGrev() {
                         STATUS
                     ---------------------------------------- */}
 
-                    <div className="mb-3 flex items-center justify-between">
+                    <div
+                      className="
+                        mb-3
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
 
-                      <span className="text-xs font-medium text-slate-500">
-                        Status
+                      <span
+                        className="
+                          shrink-0
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {statusText}
                       </span>
 
-                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                      <span
+                        className="
+                          max-w-[65%]
+                          break-words
+                          rounded-full
+                          bg-blue-50
+                          px-2
+                          py-1
+                          text-right
+                          text-[10px]
+                          font-semibold
+                          text-blue-700
+                          sm:px-2.5
+                          sm:text-xs
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.status ||
-                          "N/A"}
+                          notAvailableText}
                       </span>
 
                     </div>
@@ -1470,17 +1891,44 @@ export default function CustomerGrev() {
                         CATEGORY
                     ---------------------------------------- */}
 
-                    <div className="mb-3 flex items-start justify-between gap-4">
+                    <div
+                      className="
+                        mb-3
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
 
-                      <span className="text-xs font-medium text-slate-500">
-                        Category
+                      <span
+                        className="
+                          shrink-0
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {categoryText}
                       </span>
 
-                      <span className="text-right text-xs font-semibold text-slate-800">
+                      <span
+                        className="
+                          min-w-0
+                          max-w-[65%]
+                          break-words
+                          text-right
+                          text-[10px]
+                          font-semibold
+                          text-slate-800
+                          sm:text-xs
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.category ||
-                          "N/A"}
+                          notAvailableText}
                       </span>
 
                     </div>
@@ -1489,17 +1937,44 @@ export default function CustomerGrev() {
                         PHONE
                     ---------------------------------------- */}
 
-                    <div className="mb-3 flex items-start justify-between gap-4">
+                    <div
+                      className="
+                        mb-3
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
 
-                      <span className="text-xs font-medium text-slate-500">
-                        Phone
+                      <span
+                        className="
+                          shrink-0
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {phoneText}
                       </span>
 
-                      <span className="text-right text-xs font-semibold text-slate-800">
+                      <span
+                        className="
+                          min-w-0
+                          max-w-[65%]
+                          break-all
+                          text-right
+                          text-[10px]
+                          font-semibold
+                          text-slate-800
+                          sm:text-xs
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.phone_number ||
-                          "N/A"}
+                          notAvailableText}
                       </span>
 
                     </div>
@@ -1508,17 +1983,44 @@ export default function CustomerGrev() {
                         DESCRIPTION
                     ---------------------------------------- */}
 
-                    <div className="mb-3">
+                    <div
+                      className="
+                        mb-3
+                      "
+                    >
 
-                      <div className="mb-1 text-xs font-medium text-slate-500">
-                        Description
+                      <div
+                        className="
+                          mb-1
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {descriptionText}
                       </div>
 
-                      <div className="rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-700">
+                      <div
+                        className="
+                          max-h-24
+                          overflow-y-auto
+                          break-words
+                          rounded-lg
+                          bg-slate-50
+                          p-2
+                          text-[10px]
+                          leading-4
+                          text-slate-700
+                          sm:p-2.5
+                          sm:text-xs
+                          sm:leading-5
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.description ||
-                          "No description available."}
+                          noDescriptionText}
                       </div>
 
                     </div>
@@ -1527,17 +2029,40 @@ export default function CustomerGrev() {
                         ADDRESS
                     ---------------------------------------- */}
 
-                    <div className="mb-3">
+                    <div
+                      className="
+                        mb-3
+                      "
+                    >
 
-                      <div className="mb-1 text-xs font-medium text-slate-500">
-                        Address
+                      <div
+                        className="
+                          mb-1
+                          text-[10px]
+                          font-medium
+                          text-slate-500
+                          sm:text-xs
+                        "
+                      >
+                        {addressText}
                       </div>
 
-                      <div className="text-xs leading-5 text-slate-700">
+                      <div
+                        className="
+                          max-h-20
+                          overflow-y-auto
+                          break-words
+                          text-[10px]
+                          leading-4
+                          text-slate-700
+                          sm:text-xs
+                          sm:leading-5
+                        "
+                      >
                         {complaint
                           ?.data
                           ?.address ||
-                          "N/A"}
+                          notAvailableText}
                       </div>
 
                     </div>
@@ -1546,29 +2071,91 @@ export default function CustomerGrev() {
                         COORDINATES
                     ---------------------------------------- */}
 
-                    <div className="border-t border-slate-200 pt-3">
+                    <div
+                      className="
+                        border-t
+                        border-slate-200
+                        pt-3
+                      "
+                    >
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div
+                        className="
+                          grid
+                          grid-cols-2
+                          gap-2
+                        "
+                      >
 
-                        <div className="rounded-lg bg-slate-50 p-2">
+                        <div
+                          className="
+                            min-w-0
+                            rounded-lg
+                            bg-slate-50
+                            p-2
+                          "
+                        >
 
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Latitude
+                          <div
+                            className="
+                              text-[9px]
+                              font-medium
+                              uppercase
+                              tracking-wide
+                              text-slate-400
+                              sm:text-[10px]
+                            "
+                          >
+                            {latitudeText}
                           </div>
 
-                          <div className="mt-1 text-xs font-semibold text-slate-700">
+                          <div
+                            className="
+                              mt-1
+                              break-all
+                              text-[10px]
+                              font-semibold
+                              text-slate-700
+                              sm:text-xs
+                            "
+                          >
                             {complaint.lat}
                           </div>
 
                         </div>
 
-                        <div className="rounded-lg bg-slate-50 p-2">
+                        <div
+                          className="
+                            min-w-0
+                            rounded-lg
+                            bg-slate-50
+                            p-2
+                          "
+                        >
 
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Longitude
+                          <div
+                            className="
+                              text-[9px]
+                              font-medium
+                              uppercase
+                              tracking-wide
+                              text-slate-400
+                              sm:text-[10px]
+                            "
+                          >
+                            {longitudeText}
                           </div>
 
-                          <div className="mt-1 text-xs font-semibold text-slate-700">
+                          <div
+                            className="
+                              mt-1
+                              break-all
+                              text-[10px]
+                              font-semibold
+                              text-slate-700
+                              sm:text-xs
+                            "
+                          >
                             {complaint.long}
                           </div>
 
@@ -1585,7 +2172,11 @@ export default function CustomerGrev() {
                     {complaint
                       ?.data
                       ?.image_url && (
-                      <div className="mt-3">
+                      <div
+                        className="
+                          mt-3
+                        "
+                      >
 
                         <img
                           src={
@@ -1594,9 +2185,17 @@ export default function CustomerGrev() {
                               .image_url
                           }
 
-                          alt="Complaint"
+                          alt={
+                            complaintImageAlt
+                          }
 
-                          className="h-36 w-full rounded-lg object-cover"
+                          className="
+                            h-28
+                            w-full
+                            rounded-lg
+                            object-cover
+                            sm:h-36
+                          "
 
                           onError={(
                             event

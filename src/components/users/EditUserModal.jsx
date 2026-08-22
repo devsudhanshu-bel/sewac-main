@@ -1,32 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import api from "../../api/axios";
 import { useLanguage } from "../../i18n";
 
-const initialForm = {
-  full_name: "",
-  email: "",
-  password: "",
-  phone_number: "",
-};
-
-const AddUserModal = ({
+const EditUserModal = ({
   open,
   onClose,
+  user,
   title,
-  role,
   onSuccess,
 }) => {
   const { t } = useLanguage();
 
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState({
+    full_name: "",
+    phone_number: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  if (!open) return null;
+  // =========================================================
+  // LOAD USER DATA
+  // =========================================================
+
+  useEffect(() => {
+    if (open && user) {
+      setForm({
+        full_name: user.full_name || user.name || "",
+        phone_number: user.phone_number || user.phone || "",
+      });
+
+      setError("");
+      setLoading(false);
+    }
+  }, [open, user]);
 
   // =========================================================
-  // HANDLE INPUT CHANGE
+  // CLOSE / RESET
+  // =========================================================
+
+  const resetAndClose = () => {
+    setError("");
+    setLoading(false);
+
+    setForm({
+      full_name: "",
+      phone_number: "",
+    });
+
+    onClose();
+  };
+
+  // =========================================================
+  // HANDLE INPUT
   // =========================================================
 
   const handleChange = (e) => {
@@ -43,17 +70,6 @@ const AddUserModal = ({
   };
 
   // =========================================================
-  // RESET + CLOSE
-  // =========================================================
-
-  const resetAndClose = () => {
-    setForm(initialForm);
-    setError("");
-    setLoading(false);
-    onClose();
-  };
-
-  // =========================================================
   // SUBMIT
   // =========================================================
 
@@ -63,29 +79,37 @@ const AddUserModal = ({
     if (loading) return;
 
     const fullName = form.full_name.trim();
-    const email = form.email.trim();
     const phone = form.phone_number.trim();
-    const password = form.password;
 
-    // =======================================================
+    // -------------------------------------------------------
     // VALIDATION
-    // =======================================================
+    // -------------------------------------------------------
 
-    if (!fullName || !email || !phone || !password) {
+    if (!fullName) {
       setError(
         t(
-          "users.modal.errors.fillAllFields",
-          "Please fill in all fields."
+          "users.modal.fullNameRequired",
+          "Full name is required."
         )
       );
       return;
     }
 
-    if (!role) {
+    if (!phone) {
       setError(
         t(
-          "users.modal.errors.roleMissing",
-          "User role is missing."
+          "users.modal.phoneRequired",
+          "Phone number is required."
+        )
+      );
+      return;
+    }
+
+    if (!user?.id) {
+      setError(
+        t(
+          "users.modal.userIdMissing",
+          "User ID is missing."
         )
       );
       return;
@@ -94,45 +118,42 @@ const AddUserModal = ({
     setLoading(true);
     setError("");
 
-    // =======================================================
-    // API REQUEST
-    // =======================================================
+    // -------------------------------------------------------
+    // API
+    // -------------------------------------------------------
 
     try {
-      const response = await api.post("/api/users", {
+      const response = await api.put(`/api/users/${user.id}`, {
         full_name: fullName,
-        email,
-        password,
         phone_number: phone,
-        role,
       });
 
-      const createdUser = response?.data?.user;
+      const updatedUser = response?.data?.user;
 
-      if (!createdUser) {
+      if (!updatedUser) {
         throw new Error(
           t(
-            "users.modal.errors.createFailed",
-            "Failed to create user."
+            "users.modal.updateNoData",
+            "User was updated, but no user data was returned."
           )
         );
       }
 
       if (onSuccess) {
-        onSuccess(createdUser);
+        onSuccess(updatedUser);
       }
 
       resetAndClose();
     } catch (err) {
-      console.error("Create user error:", err);
+      console.error("Update user error:", err);
 
       const backendMessage =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         t(
-          "users.modal.errors.createFailed",
-          "Failed to create user."
+          "users.modal.errors.updateFailed",
+          "Failed to update user."
         );
 
       setError(backendMessage);
@@ -140,6 +161,23 @@ const AddUserModal = ({
       setLoading(false);
     }
   };
+
+  // =========================================================
+  // DON'T RENDER
+  // =========================================================
+
+  if (!open || !user) return null;
+
+  // =========================================================
+  // TRANSLATIONS
+  // =========================================================
+
+  const modalTitle =
+    title ||
+    t(
+      "users.contractor.modals.editTitle",
+      "Edit User"
+    );
 
   // =========================================================
   // RENDER
@@ -155,11 +193,10 @@ const AddUserModal = ({
         items-center
         justify-center
         bg-black/40
-        px-3
-        py-3
+        px-4
+        py-6
         backdrop-blur-sm
-        sm:px-5
-        sm:py-5
+        sm:px-6
       "
     >
       {/* =====================================================
@@ -169,16 +206,16 @@ const AddUserModal = ({
       <div
         className="
           flex
-          max-h-[calc(100vh-24px)]
+          max-h-[calc(100vh-3rem)]
           w-full
           max-w-[560px]
           flex-col
           overflow-hidden
-          rounded-[18px]
+          rounded-[20px]
           bg-white
           shadow-2xl
-          sm:max-h-[calc(100vh-40px)]
-          sm:rounded-[22px]
+          sm:max-h-[calc(100vh-4rem)]
+          sm:rounded-[24px]
         "
       >
         {/* ===================================================
@@ -202,32 +239,22 @@ const AddUserModal = ({
           <h2
             className="
               min-w-0
-              pr-3
-              text-[20px]
+              pr-4
+              text-[21px]
               font-semibold
               leading-tight
               text-[#1F3768]
-              sm:text-[24px]
+              sm:text-[26px]
               md:text-[28px]
             "
           >
-            {title}
+            {modalTitle}
           </h2>
-
-          {/* CLOSE */}
 
           <button
             type="button"
             onClick={resetAndClose}
             disabled={loading}
-            aria-label={t(
-              "users.modal.close",
-              "Close"
-            )}
-            title={t(
-              "users.modal.close",
-              "Close"
-            )}
             className="
               flex
               h-9
@@ -235,7 +262,7 @@ const AddUserModal = ({
               shrink-0
               items-center
               justify-center
-              rounded-full
+              rounded-lg
               text-gray-500
               transition
               hover:bg-gray-100
@@ -245,6 +272,10 @@ const AddUserModal = ({
               sm:h-10
               sm:w-10
             "
+            aria-label={t(
+              "users.modal.close",
+              "Close"
+            )}
           >
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
@@ -278,7 +309,7 @@ const AddUserModal = ({
               sm:py-6
             "
           >
-            <div className="space-y-4 sm:space-y-5">
+            <div className="space-y-5 sm:space-y-5">
 
               {/* =============================================
                   ERROR
@@ -309,7 +340,7 @@ const AddUserModal = ({
 
               <div>
                 <label
-                  htmlFor="full_name"
+                  htmlFor="edit-full-name"
                   className="
                     mb-2
                     block
@@ -326,7 +357,7 @@ const AddUserModal = ({
                 </label>
 
                 <input
-                  id="full_name"
+                  id="edit-full-name"
                   type="text"
                   name="full_name"
                   value={form.full_name}
@@ -368,7 +399,7 @@ const AddUserModal = ({
 
               <div>
                 <label
-                  htmlFor="email"
+                  htmlFor="edit-email"
                   className="
                     mb-2
                     block
@@ -385,99 +416,42 @@ const AddUserModal = ({
                 </label>
 
                 <input
-                  id="email"
+                  id="edit-email"
                   type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder={t(
-                    "users.modal.emailPlaceholder",
-                    "Enter email"
-                  )}
-                  disabled={loading}
-                  autoComplete="email"
+                  value={user.email || ""}
+                  disabled
+                  readOnly
                   className="
                     h-11
                     w-full
+                    cursor-not-allowed
                     rounded-xl
                     border
                     border-gray-200
-                    bg-white
+                    bg-gray-50
                     px-4
                     text-[13px]
-                    text-gray-700
+                    text-gray-500
                     outline-none
-                    transition
-                    placeholder:text-gray-400
-                    hover:border-gray-300
-                    focus:border-violet-500
-                    focus:ring-2
-                    focus:ring-violet-100
-                    disabled:cursor-not-allowed
-                    disabled:bg-gray-50
                     sm:h-12
                     sm:text-[14px]
                   "
                 />
-              </div>
 
-              {/* =============================================
-                  PASSWORD
-              ============================================= */}
-
-              <div>
-                <label
-                  htmlFor="password"
+                <p
                   className="
-                    mb-2
-                    block
-                    text-[12px]
-                    font-medium
-                    text-[#1F3768]
-                    sm:text-[13px]
+                    mt-1.5
+                    text-[10px]
+                    leading-4
+                    text-gray-400
+                    sm:text-[11px]
                   "
                 >
                   {t(
-                    "users.modal.password",
-                    "Password"
+                    "users.modal.emailCannotChange",
+                    "Email cannot be changed."
                   )}
-                </label>
-
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder={t(
-                    "users.modal.passwordPlaceholder",
-                    "Enter password"
-                  )}
-                  disabled={loading}
-                  autoComplete="new-password"
-                  className="
-                    h-11
-                    w-full
-                    rounded-xl
-                    border
-                    border-gray-200
-                    bg-white
-                    px-4
-                    text-[13px]
-                    text-gray-700
-                    outline-none
-                    transition
-                    placeholder:text-gray-400
-                    hover:border-gray-300
-                    focus:border-violet-500
-                    focus:ring-2
-                    focus:ring-violet-100
-                    disabled:cursor-not-allowed
-                    disabled:bg-gray-50
-                    sm:h-12
-                    sm:text-[14px]
-                  "
-                />
+                </p>
               </div>
 
               {/* =============================================
@@ -486,7 +460,7 @@ const AddUserModal = ({
 
               <div>
                 <label
-                  htmlFor="phone_number"
+                  htmlFor="edit-phone-number"
                   className="
                     mb-2
                     block
@@ -503,7 +477,7 @@ const AddUserModal = ({
                 </label>
 
                 <input
-                  id="phone_number"
+                  id="edit-phone-number"
                   type="tel"
                   name="phone_number"
                   value={form.phone_number}
@@ -594,7 +568,7 @@ const AddUserModal = ({
               )}
             </button>
 
-            {/* SAVE */}
+            {/* UPDATE */}
 
             <button
               type="submit"
@@ -614,18 +588,18 @@ const AddUserModal = ({
                 disabled:cursor-not-allowed
                 disabled:opacity-60
                 sm:w-auto
-                sm:min-w-[110px]
+                sm:min-w-[120px]
                 sm:text-[14px]
               "
             >
               {loading
                 ? t(
-                    "users.modal.saving",
-                    "Saving..."
+                    "users.modal.updating",
+                    "Updating..."
                   )
                 : t(
-                    "users.modal.save",
-                    "Save"
+                    "users.modal.update",
+                    "Update"
                   )}
             </button>
           </div>
@@ -635,4 +609,4 @@ const AddUserModal = ({
   );
 };
 
-export default AddUserModal;
+export default EditUserModal;

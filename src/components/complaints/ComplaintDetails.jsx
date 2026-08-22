@@ -12,6 +12,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 
+import { useLanguage } from "../../i18n/LanguageContext";
+
 export default function ComplaintDetails({
   complaint,
   otpSent,
@@ -21,6 +23,8 @@ export default function ComplaintDetails({
   onSaveChanges,
   saving = false,
 }) {
+  const { t } = useLanguage();
+
   const [otp, setOtp] = useState("");
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -68,11 +72,17 @@ export default function ComplaintDetails({
   const adminStatusOptions = [
     {
       value: "PENDING",
-      label: "Pending",
+      label: t(
+        "complaints.details.statusOptions.pending",
+        "Pending"
+      ),
     },
     {
       value: "READY_FOR_VERIFICATION",
-      label: "Ready for Verification",
+      label: t(
+        "complaints.details.statusOptions.readyForVerification",
+        "Ready for Verification"
+      ),
     },
   ];
 
@@ -134,6 +144,53 @@ export default function ComplaintDetails({
   };
 
   /* =========================================================
+     STATUS LABEL
+  ========================================================= */
+
+  const getStatusLabel = () => {
+    switch (currentStatus) {
+      case "PENDING":
+        return t(
+          "complaints.details.statusOptions.pending",
+          "Pending"
+        );
+
+      case "READY_FOR_VERIFICATION":
+        return t(
+          "complaints.details.statusOptions.readyForVerification",
+          "Ready for Verification"
+        );
+
+      case "OTP_SENT":
+        return t(
+          "complaints.details.statusOptions.otpSent",
+          "OTP Sent"
+        );
+
+      case "IN_PROGRESS":
+        return t(
+          "complaints.details.statusOptions.inProgress",
+          "In Progress"
+        );
+
+      case "ASSIGNED":
+        return t(
+          "complaints.details.statusOptions.assigned",
+          "Assigned"
+        );
+
+      case "CLOSED":
+        return t(
+          "complaints.details.statusOptions.closed",
+          "Closed"
+        );
+
+      default:
+        return currentStatus || "—";
+    }
+  };
+
+  /* =========================================================
      EMPTY STATE
   ========================================================= */
 
@@ -186,7 +243,10 @@ export default function ComplaintDetails({
                 sm:text-[13px]
               "
             >
-              Select a complaint
+              {t(
+                "complaints.details.empty.title",
+                "Select a complaint"
+              )}
             </p>
 
             <p
@@ -198,8 +258,10 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              Select a complaint from the table
-              to view its details.
+              {t(
+                "complaints.details.empty.description",
+                "Select a complaint from the table to view its details."
+              )}
             </p>
           </div>
         </div>
@@ -225,12 +287,6 @@ export default function ComplaintDetails({
     >
       {/* =====================================================
           SCROLL CONTENT
-          NOTE:
-          Header intentionally removed.
-          The parent modal already provides:
-          - Complaint Details title
-          - Ticket number
-          - Close button
       ===================================================== */}
 
       <div
@@ -259,7 +315,10 @@ export default function ComplaintDetails({
               text-gray-500
             "
           >
-            Ticket Number
+            {t(
+              "complaints.details.ticketNumber",
+              "Ticket Number"
+            )}
           </p>
 
           <div
@@ -302,7 +361,7 @@ export default function ComplaintDetails({
                 ${getStatusBadgeClass()}
               `}
             >
-              {currentStatus || "—"}
+              {getStatusLabel()}
             </span>
           </div>
         </div>
@@ -321,7 +380,10 @@ export default function ComplaintDetails({
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              Title
+              {t(
+                "complaints.details.title",
+                "Title"
+              )}
             </p>
 
             <p
@@ -352,7 +414,10 @@ export default function ComplaintDetails({
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              Category
+              {t(
+                "complaints.details.category",
+                "Category"
+              )}
             </p>
 
             <p
@@ -382,7 +447,10 @@ export default function ComplaintDetails({
 
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
-                Citizen (Phone)
+                {t(
+                  "complaints.details.citizenPhone",
+                  "Citizen (Phone)"
+                )}
               </p>
 
               <p
@@ -415,7 +483,10 @@ export default function ComplaintDetails({
               transition
               hover:bg-violet-50
             "
-            aria-label="Call citizen"
+            aria-label={t(
+              "complaints.details.actions.callCitizen",
+              "Call citizen"
+            )}
           >
             <Phone size={14} />
           </button>
@@ -433,7 +504,10 @@ export default function ComplaintDetails({
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              Address
+              {t(
+                "complaints.details.address",
+                "Address"
+              )}
             </p>
 
             <p
@@ -464,7 +538,10 @@ export default function ComplaintDetails({
 
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
-                Coordinates
+                {t(
+                  "complaints.details.coordinates",
+                  "Coordinates"
+                )}
               </p>
 
               <p
@@ -498,7 +575,10 @@ export default function ComplaintDetails({
               transition
               hover:bg-violet-50
             "
-            aria-label="View coordinates on map"
+            aria-label={t(
+              "complaints.details.actions.viewOnMap",
+              "View coordinates on map"
+            )}
           >
             <Map size={14} />
           </button>
@@ -516,7 +596,10 @@ export default function ComplaintDetails({
             />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              Complaint Image
+              {t(
+                "complaints.details.complaintImage",
+                "Complaint Image"
+              )}
             </p>
           </div>
 
@@ -524,7 +607,13 @@ export default function ComplaintDetails({
             {complaint.image_url ? (
               <img
                 src={complaint.image_url}
-                alt={complaint.title || "Complaint"}
+                alt={
+                  complaint.title ||
+                  t(
+                    "complaints.details.imageAlt",
+                    "Complaint"
+                  )
+                }
                 className="
                   h-[130px]
                   w-full
@@ -551,7 +640,10 @@ export default function ComplaintDetails({
                   sm:text-[11px]
                 "
               >
-                No complaint image
+                {t(
+                  "complaints.details.noImage",
+                  "No complaint image"
+                )}
               </div>
             )}
 
@@ -574,7 +666,10 @@ export default function ComplaintDetails({
                   transition
                   hover:scale-105
                 "
-                aria-label="Expand complaint image"
+                aria-label={t(
+                  "complaints.details.actions.expandImage",
+                  "Expand complaint image"
+                )}
               >
                 <Expand size={14} />
               </button>
@@ -594,7 +689,10 @@ export default function ComplaintDetails({
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              Description
+              {t(
+                "complaints.details.description",
+                "Description"
+              )}
             </p>
 
             <p
@@ -608,7 +706,10 @@ export default function ComplaintDetails({
               "
             >
               {complaint.description ||
-                "No description provided."}
+                t(
+                  "complaints.details.noDescription",
+                  "No description provided."
+                )}
             </p>
           </div>
         </div>
@@ -625,7 +726,10 @@ export default function ComplaintDetails({
             />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              Status
+              {t(
+                "complaints.details.status",
+                "Status"
+              )}
             </p>
           </div>
 
@@ -652,7 +756,10 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              Closed — Citizen Verified
+              {t(
+                "complaints.details.closedVerified",
+                "Closed — Citizen Verified"
+              )}
             </div>
           ) : isOtpSent ? (
             /* =================================================
@@ -677,7 +784,10 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              Verification OTP Sent
+              {t(
+                "complaints.details.verificationOtpSent",
+                "Verification OTP Sent"
+              )}
             </div>
           ) : (
             /* =================================================
@@ -738,7 +848,10 @@ export default function ComplaintDetails({
             />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              Remarks
+              {t(
+                "complaints.details.remarks",
+                "Remarks"
+              )}
             </p>
           </div>
 
@@ -755,8 +868,14 @@ export default function ComplaintDetails({
             }
             placeholder={
               complaint
-                ? "Add remarks..."
-                : "Select a complaint first..."
+                ? t(
+                    "complaints.details.placeholders.addRemarks",
+                    "Add remarks..."
+                  )
+                : t(
+                    "complaints.details.placeholders.selectComplaint",
+                    "Select a complaint first..."
+                  )
             }
             className="
               min-h-[58px]
@@ -833,7 +952,10 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              Cancel
+              {t(
+                "complaints.details.actions.cancel",
+                "Cancel"
+              )}
             </button>
 
             <button
@@ -860,7 +982,15 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {saving
+                ? t(
+                    "complaints.details.actions.saving",
+                    "Saving..."
+                  )
+                : t(
+                    "complaints.details.actions.saveChanges",
+                    "Save Changes"
+                  )}
             </button>
           </div>
         )}
@@ -906,7 +1036,10 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              Request Verification OTP
+              {t(
+                "complaints.details.actions.requestVerification",
+                "Request Verification OTP"
+              )}
             </button>
           )}
 
@@ -924,7 +1057,10 @@ export default function ComplaintDetails({
                   text-gray-500
                 "
               >
-                Enter Verification OTP
+                {t(
+                  "complaints.details.enterOtp",
+                  "Enter Verification OTP"
+                )}
               </p>
 
               <input
@@ -933,7 +1069,10 @@ export default function ComplaintDetails({
                 maxLength={6}
                 value={otp}
                 onChange={handleOTPChange}
-                placeholder="Enter 6-digit OTP"
+                placeholder={t(
+                  "complaints.details.placeholders.otp",
+                  "Enter 6-digit OTP"
+                )}
                 className="
                   h-9
                   w-full
@@ -982,7 +1121,10 @@ export default function ComplaintDetails({
                   sm:text-[11px]
                 "
               >
-                Verify OTP & Close Complaint
+                {t(
+                  "complaints.details.actions.verifyOtp",
+                  "Verify OTP & Close Complaint"
+                )}
               </button>
             </div>
           )}
@@ -1007,8 +1149,10 @@ export default function ComplaintDetails({
                 text-green-700
               "
             >
-              Complaint closed after successful
-              citizen verification.
+              {t(
+                "complaints.details.closedMessage",
+                "Complaint closed after successful citizen verification."
+              )}
             </div>
           )}
         </div>

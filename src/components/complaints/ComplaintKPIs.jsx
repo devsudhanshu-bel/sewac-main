@@ -6,8 +6,11 @@ import {
 } from "lucide-react";
 
 import ComplaintCard from "./ComplaintCard";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintKPIs({ kpis = {} }) {
+  const { t } = useLanguage();
+
   return (
     <div
       className="
@@ -31,9 +34,15 @@ export default function ComplaintKPIs({ kpis = {} }) {
             strokeWidth={2.2}
           />
         }
-        title="Total Complaints"
+        title={t(
+          "complaints.kpis.total",
+          "Total Complaints"
+        )}
         value={kpis.total ?? 0}
-        subtitle="All complaints"
+        subtitle={t(
+          "complaints.kpis.allComplaints",
+          "All complaints"
+        )}
         color="purple"
       />
 
@@ -48,7 +57,10 @@ export default function ComplaintKPIs({ kpis = {} }) {
             strokeWidth={2.2}
           />
         }
-        title="Pending"
+        title={t(
+          "complaints.kpis.pending",
+          "Pending"
+        )}
         value={kpis.pending ?? 0}
         color="yellow"
       />
@@ -64,8 +76,13 @@ export default function ComplaintKPIs({ kpis = {} }) {
             strokeWidth={2.2}
           />
         }
-        title="Ready for Verification"
-        value={kpis.readyForVerification ?? 0}
+        title={t(
+          "complaints.kpis.readyForVerification",
+          "Ready for Verification"
+        )}
+        value={
+          kpis.readyForVerification ?? 0
+        }
         color="blue"
       />
 
@@ -80,9 +97,15 @@ export default function ComplaintKPIs({ kpis = {} }) {
             strokeWidth={2.2}
           />
         }
-        title="Closed"
+        title={t(
+          "complaints.kpis.closed",
+          "Closed"
+        )}
         value={kpis.closed ?? 0}
-        subtitle="Citizen verified"
+        subtitle={t(
+          "complaints.kpis.citizenVerified",
+          "Citizen verified"
+        )}
         color="green"
       />
     </div>

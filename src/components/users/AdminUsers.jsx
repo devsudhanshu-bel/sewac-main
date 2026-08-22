@@ -1,334 +1,1109 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ShieldCheck,
   Plus,
   Search,
   Pencil,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import AddUserModal from "./AddUserModal";
+import EditUserModal from "./EditUserModal";
+import DeleteUserModal from "./DeleteUserModal";
 
-const initialAdminUsers = [
-  {
-    id: 1,
-    name: "Super Admin",
-    email: "superadmin@sewac.com",
-    phone: "9876543210",
-    status: "Active",
-    createdAt: "01 May 2025, 08:30 AM",
-  },
-  {
-    id: 2,
-    name: "Ashutosh Kumar",
-    email: "ashutosh@sewac.com",
-    phone: "9123456780",
-    status: "Active",
-    createdAt: "05 May 2025, 10:15 AM",
-  },
-  {
-    id: 3,
-    name: "Neha Sharma",
-    email: "neha@sewac.com",
-    phone: "9988776655",
-    status: "Active",
-    createdAt: "07 May 2025, 02:45 PM",
-  },
-  {
-    id: 4,
-    name: "Ravi Verma",
-    email: "ravi@sewac.com",
-    phone: "9001122334",
-    status: "Active",
-    createdAt: "10 May 2025, 11:20 AM",
-  },
-];
+import api from "../../api/axios";
+import { useLanguage } from "../../i18n";
 
 const AdminUsers = () => {
+  const { t, language } = useLanguage();
+
+  // =========================================================
+  // MODAL STATE
+  // =========================================================
+
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
-  const [adminUsers, setAdminUsers] = useState(initialAdminUsers);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // =========================================================
+  // DATA STATE
+  // =========================================================
+
+  const [adminUsers, setAdminUsers] = useState([]);
   const [search, setSearch] = useState("");
 
-  const handleAdminCreated = (createdUser) => {
-    const newAdmin = {
-      id: createdUser.id,
-      name: createdUser.full_name,
-      email: createdUser.email,
-      phone: createdUser.phone_number,
-      status: createdUser.status || "ACTIVE",
-      createdAt: createdUser.created_at
-        ? new Date(createdUser.created_at).toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : new Date().toLocaleString("en-IN"),
-    };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    setAdminUsers((prev) => [newAdmin, ...prev]);
+  // =========================================================
+  // PAGINATION
+  // Fixed 10 users per page
+  // No rows-per-page dropdown
+  // =========================================================
+
+  const ROWS_PER_PAGE = 10;
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // =========================================================
+  // FETCH ADMIN LEVEL 1 USERS
+  // =========================================================
+
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/api/users", {
+        params: {
+          type: "ADMIN_LAYER_1",
+        },
+      });
+
+      const users = response?.data?.users || [];
+
+      setAdminUsers(Array.isArray(users) ? users : []);
+    } catch (err) {
+      console.error("Fetch Admin Layer 1 users error:", err);
+
+      // -----------------------------------------------------
+      // IMPORTANT:
+      // Never display backend language/message directly.
+      // Always use the frontend translation.
+      // -----------------------------------------------------
+
+      setError(
+        t(
+          "users.admin.errors.fetchFailed",
+          "Failed to fetch Admin Level 1 users."
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredAdmins = adminUsers.filter((user) => {
+  // =========================================================
+  // INITIAL FETCH
+  // =========================================================
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  // =========================================================
+  // CREATE ADMIN
+  // =========================================================
+
+  const handleAdminCreated = () => {
+    setShowAddAdminModal(false);
+    setCurrentPage(1);
+
+    fetchAdmins();
+  };
+
+  // =========================================================
+  // EDIT ADMIN
+  // =========================================================
+
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  const handleUserUpdated = () => {
+    setShowEditModal(false);
+    setSelectedUser(null);
+
+    fetchAdmins();
+  };
+
+  // =========================================================
+  // DELETE ADMIN
+  // =========================================================
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleUserDeleted = () => {
+    setShowDeleteModal(false);
+    setSelectedUser(null);
+
+    fetchAdmins();
+  };
+
+  // =========================================================
+  // SEARCH
+  // =========================================================
+
+  const filteredAdmins = useMemo(() => {
     const value = search.toLowerCase().trim();
 
-    if (!value) return true;
+    if (!value) {
+      return adminUsers;
+    }
 
-    return (
-      user.name.toLowerCase().includes(value) ||
-      user.email.toLowerCase().includes(value) ||
-      user.phone.includes(value)
-    );
-  });
+    return adminUsers.filter((user) => {
+      return (
+        String(user?.full_name || "")
+          .toLowerCase()
+          .includes(value) ||
+        String(user?.email || "")
+          .toLowerCase()
+          .includes(value) ||
+        String(user?.phone_number || "")
+          .toLowerCase()
+          .includes(value)
+      );
+    });
+  }, [adminUsers, search]);
+
+  // =========================================================
+  // RESET PAGINATION WHEN SEARCH CHANGES
+  // =========================================================
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  // =========================================================
+  // PAGINATION CALCULATIONS
+  // =========================================================
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAdmins.length / ROWS_PER_PAGE)
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const startIndex =
+    (currentPage - 1) * ROWS_PER_PAGE;
+
+  const paginatedAdmins = filteredAdmins.slice(
+    startIndex,
+    startIndex + ROWS_PER_PAGE
+  );
+
+  const showingFrom =
+    filteredAdmins.length === 0
+      ? 0
+      : startIndex + 1;
+
+  const showingTo = Math.min(
+    startIndex + ROWS_PER_PAGE,
+    filteredAdmins.length
+  );
+
+  // =========================================================
+  // STATUS TRANSLATION
+  // =========================================================
+
+  const translateStatus = (status) => {
+    if (!status) {
+      return "-";
+    }
+
+    const normalizedStatus = String(status)
+      .trim()
+      .toLowerCase();
+
+    switch (normalizedStatus) {
+      case "active":
+        return t(
+          "users.table.active",
+          "Active"
+        );
+
+      case "inactive":
+        return t(
+          "users.table.inactive",
+          "Inactive"
+        );
+
+      case "pending":
+        return t(
+          "users.table.pending",
+          "Pending"
+        );
+
+      case "blocked":
+        return t(
+          "users.table.blocked",
+          "Blocked"
+        );
+
+      default:
+        return status;
+    }
+  };
+
+  // =========================================================
+  // DATE LOCALE
+  // =========================================================
+
+  const getDateLocale = () => {
+    switch (language) {
+      case "kn":
+      case "kannada":
+        return "kn-IN";
+
+      case "hi":
+      case "hindi":
+        return "hi-IN";
+
+      case "en":
+      case "english":
+      default:
+        return "en-IN";
+    }
+  };
+
+  // =========================================================
+  // DATE FORMAT
+  // =========================================================
+
+  const formatCreatedAt = (date) => {
+    if (!date) {
+      return "-";
+    }
+
+    try {
+      const parsedDate = new Date(date);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        return "-";
+      }
+
+      return parsedDate.toLocaleString(
+        getDateLocale(),
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+    } catch {
+      return "-";
+    }
+  };
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div
+      className="
+        w-full
+        overflow-hidden
+        rounded-xl
+        border
+        border-gray-200
+        bg-white
+        shadow-sm
+      "
+    >
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100">
+      <div
+        className="
+          border-b
+          border-gray-100
+          px-4
+          py-4
+          sm:px-5
+          sm:py-5
+        "
+      >
+        {/* TITLE */}
 
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          {/* ICON */}
 
-          <div className="flex items-center gap-2">
-
-            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-violet-600" />
-            </div>
-
-            <div>
-
-              <h2 className="text-[16px] font-semibold text-gray-900">
-                Admin Level 1 Users
-              </h2>
-
-              <p className="mt-0.5 text-[12px] text-gray-500">
-                Manage other Admin Level 1 users who have full access to the
-                system.
-              </p>
-
-            </div>
-
+          <div
+            className="
+              flex
+              h-8
+              w-8
+              shrink-0
+              items-center
+              justify-center
+              rounded-lg
+              bg-violet-100
+            "
+          >
+            <ShieldCheck className="h-4 w-4 text-violet-600" />
           </div>
 
+          {/* TITLE + DESCRIPTION */}
+
+          <div className="min-w-0 flex-1">
+            <h2
+              className="
+                text-[15px]
+                font-semibold
+                leading-5
+                text-gray-900
+                sm:text-[16px]
+              "
+            >
+              {t(
+                "users.admin.title",
+                "Admin Level 1 Users"
+              )}
+            </h2>
+
+            <p
+              className="
+                mt-1
+                max-w-2xl
+                text-[11px]
+                leading-4
+                text-gray-500
+                sm:text-[12px]
+                sm:leading-5
+              "
+            >
+              {t(
+                "users.admin.description",
+                "Manage other Admin Level 1 users who have full access to the system."
+              )}
+            </p>
+          </div>
         </div>
 
-        {/* Search + Button */}
-        <div className="mt-4 flex items-center justify-between">
+        {/* SEARCH + ADD */}
 
-          <div className="relative w-[340px]">
+        <div
+          className="
+            mt-4
+            flex
+            w-full
+            flex-col
+            gap-2.5
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+            sm:gap-3
+          "
+        >
+          {/* SEARCH */}
 
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-600" />
+          <div
+            className="
+              relative
+              w-full
+              sm:max-w-[360px]
+              md:w-[340px]
+              md:max-w-none
+            "
+          >
+            <Search
+              className="
+                pointer-events-none
+                absolute
+                right-3
+                top-1/2
+                h-4
+                w-4
+                -translate-y-1/2
+                text-violet-600
+              "
+            />
 
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email or phone..."
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={t(
+                "users.admin.searchPlaceholder",
+                "Search by name, email or phone..."
+              )}
               className="
-                w-full
                 h-10
+                w-full
                 rounded-lg
                 border
                 border-gray-200
+                bg-white
                 pl-4
                 pr-10
-                text-[13px]
+                text-[12px]
+                text-gray-700
                 outline-none
-                focus:border-violet-500
+                transition
+                placeholder:text-gray-400
+                hover:border-gray-300
+                focus:border-violet-400
+                focus:ring-2
+                focus:ring-violet-100
+                sm:text-[13px]
               "
             />
-
           </div>
 
+          {/* ADD ADMIN */}
+
           <button
-            onClick={() => setShowAddAdminModal(true)}
+            type="button"
+            onClick={() =>
+              setShowAddAdminModal(true)
+            }
             className="
+              flex
               h-10
-              px-5
+              w-full
+              shrink-0
+              items-center
+              justify-center
+              gap-2
               rounded-lg
               border
               border-violet-600
+              px-4
+              text-[12px]
+              font-medium
               text-violet-700
+              transition
               hover:bg-violet-600
               hover:text-white
-              transition
-              text-[13px]
-              font-medium
-              flex
-              items-center
-              gap-2
+              active:scale-[0.98]
+              sm:w-auto
+              sm:min-w-[120px]
+              sm:text-[13px]
             "
           >
-            <Plus className="w-4 h-4" />
-            Add Admin
+            <Plus className="h-4 w-4 shrink-0" />
+
+            <span>
+              {t(
+                "users.admin.addButton",
+                "Add Admin"
+              )}
+            </span>
           </button>
-
         </div>
-
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
 
-        <table className="w-full">
+      {error && (
+        <div
+          className="
+            mx-4
+            mt-4
+            rounded-lg
+            border
+            border-red-200
+            bg-red-50
+            px-4
+            py-3
+            text-[12px]
+            text-red-600
+            sm:mx-5
+            sm:text-[13px]
+          "
+        >
+          {error}
+        </div>
+      )}
+
+      {/* =====================================================
+          TABLE
+      ===================================================== */}
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[850px]">
+          {/* TABLE HEADER */}
 
           <thead className="bg-[#F7F5FF]">
-
             <tr>
+              {/* SL.NO */}
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                SL.No
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.table.slNo",
+                  "SL.No"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                Admin Name
+              {/* ADMIN NAME */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.name",
+                  "Admin Name"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                Email
+              {/* EMAIL */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.email",
+                  "Email"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                Phone Number
+              {/* PHONE NUMBER */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.phone",
+                  "Phone Number"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                Status
+              {/* STATUS */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.status",
+                  "Status"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-left text-[12px] font-semibold text-violet-700">
-                Created At
+              {/* CREATED AT */}
+
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-left
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.createdAt",
+                  "Created At"
+                )}
               </th>
 
-              <th className="px-5 py-3 text-center text-[12px] font-semibold text-violet-700">
-                Actions
-              </th>
+              {/* ACTIONS */}
 
+              <th
+                className="
+                  whitespace-nowrap
+                  px-5
+                  py-3
+                  text-center
+                  text-[11px]
+                  font-semibold
+                  text-violet-700
+                  sm:text-[12px]
+                "
+              >
+                {t(
+                  "users.admin.table.actions",
+                  "Actions"
+                )}
+              </th>
             </tr>
-
           </thead>
 
+          {/* TABLE BODY */}
+
           <tbody>
+            {/* LOADING */}
 
-            {filteredAdmins.map((user, index) => (
-
-              <tr
-                key={user.id}
-                className="border-b border-gray-100 hover:bg-gray-50"
-              >
-
-                <td className="px-5 py-4 text-[13px]">
-                  {index + 1}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] font-medium">
-                  {user.name}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.email}
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.phone}
-                </td>
-
-                <td className="px-5 py-4">
-
-                  <span className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-[11px] font-medium">
-                    {user.status}
-                  </span>
-
-                </td>
-
-                <td className="px-5 py-4 text-[13px] text-gray-600">
-                  {user.createdAt}
-                </td>
-
-                <td className="px-5 py-4">
-
-                  <div className="flex justify-center items-center gap-4">
-
-                    <button
-                      type="button"
-                      className="text-violet-600 hover:text-violet-800"
-                      disabled
-                      title="Edit will be wired next"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      className="text-red-500 hover:text-red-700"
-                      disabled
-                      title="Delete will be wired next"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            ))}
-
-            {filteredAdmins.length === 0 && (
-
+            {loading && (
               <tr>
-
                 <td
-                  colSpan="7"
-                  className="px-5 py-10 text-center text-[13px] text-gray-500"
+                  colSpan={7}
+                  className="
+                    px-5
+                    py-10
+                    text-center
+                    text-[12px]
+                    text-gray-500
+                    sm:text-[13px]
+                  "
                 >
-                  No Admin Layer 1 users found.
+                  {t(
+                    "users.admin.loading",
+                    "Loading Admin Level 1 users..."
+                  )}
                 </td>
-
               </tr>
-
             )}
 
+            {/* DATA */}
+
+            {!loading &&
+              paginatedAdmins.map(
+                (user, index) => (
+                  <tr
+                    key={user.id}
+                    className="
+                      border-b
+                      border-gray-100
+                      transition
+                      hover:bg-gray-50
+                    "
+                  >
+                    {/* SL.NO */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-900
+                        sm:text-[13px]
+                      "
+                    >
+                      {startIndex + index + 1}
+                    </td>
+
+                    {/* NAME */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        font-medium
+                        text-gray-900
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.full_name || "-"}
+                    </td>
+
+                    {/* EMAIL */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.email || "-"}
+                    </td>
+
+                    {/* PHONE */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {user.phone_number || "-"}
+                    </td>
+
+                    {/* STATUS */}
+
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <span
+                        className="
+                          inline-flex
+                          items-center
+                          rounded-md
+                          bg-green-100
+                          px-2.5
+                          py-1
+                          text-[10px]
+                          font-medium
+                          text-green-700
+                          sm:text-[11px]
+                        "
+                      >
+                        {translateStatus(
+                          user.status
+                        )}
+                      </span>
+                    </td>
+
+                    {/* CREATED */}
+
+                    <td
+                      className="
+                        whitespace-nowrap
+                        px-5
+                        py-4
+                        text-[12px]
+                        text-gray-600
+                        sm:text-[13px]
+                      "
+                    >
+                      {formatCreatedAt(
+                        user.created_at
+                      )}
+                    </td>
+
+                    {/* ACTIONS */}
+
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-center gap-4">
+                        {/* EDIT */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEditClick(user)
+                          }
+                          className="
+                            text-violet-600
+                            transition
+                            hover:text-violet-800
+                          "
+                          title={t(
+                            "users.actions.edit",
+                            "Edit user"
+                          )}
+                          aria-label={t(
+                            "users.actions.edit",
+                            "Edit user"
+                          )}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+
+                        {/* DELETE */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteClick(user)
+                          }
+                          className="
+                            text-red-500
+                            transition
+                            hover:text-red-700
+                          "
+                          title={t(
+                            "users.actions.delete",
+                            "Delete user"
+                          )}
+                          aria-label={t(
+                            "users.actions.delete",
+                            "Delete user"
+                          )}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              )}
+
+            {/* EMPTY */}
+
+            {!loading &&
+              filteredAdmins.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="
+                      px-5
+                      py-10
+                      text-center
+                      text-[12px]
+                      text-gray-500
+                      sm:text-[13px]
+                    "
+                  >
+                    {t(
+                      "users.admin.empty",
+                      "No Admin Level 1 users found."
+                    )}
+                  </td>
+                </tr>
+              )}
           </tbody>
-
         </table>
-
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-4 text-[12px]">
+      {/* =====================================================
+          FOOTER / PAGINATION
+          Fixed 10 rows
+          Previous / Current / Next only
+      ===================================================== */}
 
-        <p className="text-violet-700 font-medium">
-          Showing {filteredAdmins.length} of {adminUsers.length} entries
+      <div
+        className="
+          flex
+          flex-col
+          gap-3
+          border-t
+          border-gray-100
+          px-4
+          py-3
+          text-[12px]
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          sm:px-5
+          sm:py-4
+        "
+      >
+        {/* SHOWING */}
+
+        <p className="font-medium text-violet-700">
+          {t(
+            "users.admin.pagination.showing",
+            "Showing"
+          )}{" "}
+          {showingFrom}–{showingTo}{" "}
+          {t(
+            "users.admin.pagination.of",
+            "of"
+          )}{" "}
+          {filteredAdmins.length}{" "}
+          {t(
+            "users.admin.pagination.entries",
+            "entries"
+          )}
         </p>
 
-        <div className="flex items-center gap-2">
+        {/* PAGINATION */}
 
-          <span className="text-gray-600">
-            Rows per page:
-          </span>
+        <div className="flex items-center gap-1.5">
+          {/* PREVIOUS */}
 
-          <select className="h-8 rounded-md border border-gray-200 px-2 text-[12px] outline-none">
-            <option>10</option>
-            <option>25</option>
-            <option>50</option>
-          </select>
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => {
+              setCurrentPage((page) =>
+                Math.max(1, page - 1)
+              );
+            }}
+            className="
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-lg
+              border
+              border-gray-200
+              bg-white
+              text-gray-500
+              transition
+              hover:border-violet-300
+              hover:text-violet-600
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+            "
+            title={t(
+              "users.admin.pagination.previous",
+              "Previous page"
+            )}
+            aria-label={t(
+              "users.admin.pagination.previous",
+              "Previous page"
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
+          {/* CURRENT PAGE */}
+
+          <div
+            className="
+              flex
+              h-9
+              min-w-9
+              items-center
+              justify-center
+              rounded-lg
+              bg-violet-600
+              px-3
+              text-[12px]
+              font-medium
+              text-white
+            "
+            aria-current="page"
+          >
+            {currentPage}
+          </div>
+
+          {/* NEXT */}
+
+          <button
+            type="button"
+            disabled={
+              currentPage >= totalPages
+            }
+            onClick={() => {
+              setCurrentPage((page) =>
+                Math.min(
+                  totalPages,
+                  page + 1
+                )
+              );
+            }}
+            className="
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-lg
+              border
+              border-gray-200
+              bg-white
+              text-gray-500
+              transition
+              hover:border-violet-300
+              hover:text-violet-600
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+            "
+            title={t(
+              "users.admin.pagination.next",
+              "Next page"
+            )}
+            aria-label={t(
+              "users.admin.pagination.next",
+              "Next page"
+            )}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-
       </div>
 
-      {/* Add Admin Modal */}
+      {/* =====================================================
+          ADD ADMIN MODAL
+      ===================================================== */}
+
       <AddUserModal
         open={showAddAdminModal}
-        onClose={() => setShowAddAdminModal(false)}
-        title="Add Admin"
+        onClose={() =>
+          setShowAddAdminModal(false)
+        }
+        title={t(
+          "users.admin.modals.addTitle",
+          "Add Admin"
+        )}
         role="ADMIN_LAYER_1"
         onSuccess={handleAdminCreated}
       />
 
+      {/* =====================================================
+          EDIT ADMIN MODAL
+      ===================================================== */}
+
+      <EditUserModal
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        title={t(
+          "users.admin.modals.editTitle",
+          "Edit Admin"
+        )}
+        onSuccess={handleUserUpdated}
+      />
+
+      {/* =====================================================
+          DELETE ADMIN MODAL
+      ===================================================== */}
+
+      <DeleteUserModal
+        open={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={handleUserDeleted}
+      />
     </div>
   );
 };

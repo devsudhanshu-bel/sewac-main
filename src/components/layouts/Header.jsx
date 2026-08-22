@@ -1,24 +1,9 @@
-import {
-  Search,
-  Globe,
-  ChevronDown,
-  Settings,
-  LogOut,
-  Check,
-  X,
-  Menu,
-} from "lucide-react";
+import { Search, Globe, ChevronDown, LogOut, Check, Menu } from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 
 import Calendar from "../Calendar/Calendar";
@@ -77,11 +62,7 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(
-        payload
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
     );
 
     return {
@@ -89,10 +70,7 @@ function getUserFromToken() {
       role: decoded.role || "ADMIN_LAYER_1",
     };
   } catch (error) {
-    console.error(
-      "Failed to decode authentication token:",
-      error
-    );
+    console.error("Failed to decode authentication token:", error);
 
     return {
       name: "Admin",
@@ -102,11 +80,7 @@ function getUserFromToken() {
 }
 
 function getRoleLabel(role) {
-  return (
-    ROLE_LABELS[role] ||
-    role ||
-    "Admin Layer 1"
-  );
+  return ROLE_LABELS[role] || role || "Admin Layer 1";
 }
 
 /* =========================================================
@@ -116,9 +90,11 @@ function getRoleLabel(role) {
 function Dropdown({
   width,
   value,
-  options,
+  options = [],
   onChange,
   placeholder = "Select",
+  getLabel,
+  getKey,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -131,25 +107,15 @@ function Dropdown({
 
   useEffect(() => {
     function close(event) {
-      if (
-        !wrapperRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!wrapperRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
 
-    window.addEventListener(
-      "mousedown",
-      close
-    );
+    window.addEventListener("mousedown", close);
 
     return () => {
-      window.removeEventListener(
-        "mousedown",
-        close
-      );
+      window.removeEventListener("mousedown", close);
     };
   }, []);
 
@@ -158,10 +124,7 @@ function Dropdown({
   ======================================================= */
 
   useEffect(() => {
-    if (
-      open &&
-      menuRef.current
-    ) {
+    if (open && menuRef.current) {
       gsap.fromTo(
         menuRef.current,
         {
@@ -175,21 +138,48 @@ function Dropdown({
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        }
+        },
       );
     }
   }, [open]);
 
+  /* =======================================================
+     OPTION HELPERS
+  ======================================================= */
+
+  const getOptionLabel = (item) => {
+    if (getLabel) {
+      return getLabel(item);
+    }
+
+    return (
+      item?.city_name ||
+      item?.zone_name ||
+      item?.division_name ||
+      item?.ward_name ||
+      String(item ?? "")
+    );
+  };
+
+  const getOptionKey = (item, index) => {
+    if (getKey) {
+      return getKey(item);
+    }
+
+    return (
+      item?.city_id ||
+      item?.zone_id ||
+      item?.division_id ||
+      item?.ward_id ||
+      `${item}-${index}`
+    );
+  };
+
   return (
-    <div
-      ref={wrapperRef}
-      className={`relative shrink-0 ${width}`}
-    >
+    <div ref={wrapperRef} className={`relative shrink-0 ${width}`}>
       <button
         type="button"
-        onClick={() =>
-          setOpen(!open)
-        }
+        onClick={() => setOpen(!open)}
         className="
           w-full
           h-9
@@ -201,8 +191,7 @@ function Dropdown({
           flex
           items-center
           justify-between
-          text-[11px]
-          sm:text-[12px]
+          text-[12px]
           font-medium
           text-[#16295A]
           hover:border-violet-400
@@ -210,66 +199,60 @@ function Dropdown({
           duration-300
         "
       >
-        <span className="truncate">
-          {value || placeholder}
-        </span>
+        <span className="truncate">{value || placeholder}</span>
 
         <ChevronDown
           size={14}
           className={`
             shrink-0
-            ml-2
             transition-transform
             duration-300
-            ${
-              open
-                ? "rotate-180"
-                : ""
-            }
+            ${open ? "rotate-180" : ""}
           `}
         />
       </button>
-
-      {/* ===================================================
-          MENU
-      =================================================== */}
 
       {open && (
         <div
           ref={menuRef}
           className="
-            absolute
-            top-11
-            left-0
-            w-full
-            max-h-[315px]
-            overflow-y-auto
-            rounded-2xl
-            bg-white
-            border
-            border-gray-100
-            shadow-[0_15px_40px_rgba(15,23,42,0.10)]
-            z-[99999]
-            scrollbar-thin
-            scrollbar-thumb-violet-300
-            scrollbar-track-transparent
-          "
-        >
-          {options?.map(
-            (item) => {
-              const label =
-                item?.city_name ||
-                item?.zone_name ||
-                item?.division_name ||
-                item?.ward_name ||
-                item;
+    absolute
+    top-11
+    left-0
+    w-full
+    max-h-[315px]
 
-              const key =
-                item?.city_id ||
-                item?.zone_id ||
-                item?.division_id ||
-                item?.ward_id ||
-                label;
+    overflow-x-auto
+    overflow-y-auto
+
+    rounded-2xl
+    bg-white
+    border
+    border-gray-100
+    shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+    z-[10000]
+
+    scrollbar-thin
+    scrollbar-thumb-violet-300
+    scrollbar-track-transparent
+  "
+        >
+          {options.length === 0 ? (
+            <div
+              className="
+                px-4
+                py-2.5
+                text-[12px]
+                text-gray-400
+              "
+            >
+              No options available
+            </div>
+          ) : (
+            options.map((item, index) => {
+              const label = getOptionLabel(item);
+              const key = getOptionKey(item, index);
+              const isSelected = label === value;
 
               return (
                 <button
@@ -281,35 +264,34 @@ function Dropdown({
                   }}
                   className="
                     w-full
+                    min-w-max
                     px-4
                     py-2.5
                     flex
                     items-center
                     justify-between
+                    gap-6
+                    text-left
                     text-[12px]
+                    text-[#16295A]
                     hover:bg-violet-50
                     transition
-                    text-left
                   "
                 >
-                  <span className="truncate">
-                    {label}
-                  </span>
+                  <span className="whitespace-nowrap min-w-max">{label}</span>
 
-                  {label ===
-                    value && (
+                  {isSelected && (
                     <Check
                       size={14}
                       className="
-                        text-violet-600
                         shrink-0
-                        ml-2
+                        text-violet-600
                       "
                     />
                   )}
                 </button>
               );
-            }
+            })
           )}
         </div>
       )}
@@ -318,62 +300,35 @@ function Dropdown({
 }
 
 /* =========================================================
-   SIDEBAR TOGGLE EVENT
-========================================================= */
-
-const toggleSidebar = () => {
-  window.dispatchEvent(
-    new Event(
-      "sewac-toggle-sidebar"
-    )
-  );
-};
-
-/* =========================================================
    HEADER
 ========================================================= */
 
 export default function Header({
   variant = "dashboard",
 
-  selectedDate =
-    new Date()
-      .toISOString()
-      .split("T")[0],
+  /*
+   * IMPORTANT:
+   * Date is owned by the page.
+   *
+   * WasteGenerators.jsx:
+   *
+   * <Header
+   *   selectedDate={selectedDate}
+   *   setSelectedDate={setSelectedDate}
+   * />
+   *
+   * Overview.jsx does the same.
+   */
+
+  selectedDate = new Date().toISOString().split("T")[0],
 
   setSelectedDate = () => {},
 }) {
-  const navigate =
-    useNavigate();
-
   /* =======================================================
      LANGUAGE
   ======================================================= */
 
-  const {
-    language,
-    setLanguage,
-    t,
-  } = useLanguage();
-
-  /* =======================================================
-     REFS
-  ======================================================= */
-
-  const headerRef =
-    useRef(null);
-
-  const controlsRef =
-    useRef(null);
-
-  const searchRef =
-    useRef(null);
-
-  const profileRef =
-    useRef(null);
-
-  const languageRef =
-    useRef(null);
+  const { language, setLanguage, t } = useLanguage();
 
   /* =======================================================
      FILTER CONTEXT
@@ -381,15 +336,13 @@ export default function Header({
 
   const {
     selectedCity,
-    setSelectedCity,
-
     selectedZone,
-    setSelectedZone,
-
     selectedDivision,
-    setSelectedDivision,
-
     selectedWard,
+
+    setSelectedCity,
+    setSelectedZone,
+    setSelectedDivision,
     setSelectedWard,
 
     cities,
@@ -399,110 +352,132 @@ export default function Header({
   } = useFilters();
 
   /* =======================================================
+     REFS
+  ======================================================= */
+
+  const headerRef = useRef(null);
+
+  const controlsRef = useRef(null);
+
+  const searchRef = useRef(null);
+
+  const profileRef = useRef(null);
+
+  const languageRef = useRef(null);
+
+  const languageMenuRef = useRef(null);
+
+  /* =======================================================
+     LOCAL UI STATE
+  ======================================================= */
+
+  /*
+   * IMPORTANT:
+   * DO NOT create selectedDate state here.
+   *
+   * The date belongs to the parent page.
+   */
+
+  const [dayType, setDayType] = useState("wet");
+
+  const [search, setSearch] = useState("");
+
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const [languageOpen, setLanguageOpen] = useState(false);
+
+  const isDashboard = variant === "dashboard";
+
+  /* =======================================================
      USER
   ======================================================= */
 
-  const [user, setUser] =
-    useState(() =>
-      getUserFromToken()
-    );
+  const user = getUserFromToken();
 
-  const roleLabel =
-    getRoleLabel(
-      user.role
-    );
+  const roleLabel = getRoleLabel(user.role);
 
-  const userInitial =
-    user.name
-      ?.trim()
-      ?.charAt(0)
-      ?.toUpperCase() ||
-    "A";
+  const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "A";
 
-  /* =======================================================
-     STATE
-  ======================================================= */
-
-  const [dayType, setDayType] =
-    useState("wet");
-
-  const [search, setSearch] =
-    useState("");
-
-  const [
-    profileOpen,
-    setProfileOpen,
-  ] = useState(false);
-
-  const [
-    languageOpen,
-    setLanguageOpen,
-  ] = useState(false);
-
-  const isDashboard =
-    variant === "dashboard";
-
-  /* =======================================================
-     DATE
-  ======================================================= */
-
-  const selectedDateObj =
-    selectedDate
-      ? new Date(
-          `${selectedDate}T12:00:00`
-        )
-      : new Date();
-
-  const selectedDay =
-    selectedDateObj.getDay();
+  /* =========================================================
+     DATE / DAY TYPE
+  ========================================================= */
 
   /*
+   * selectedDate comes from the parent.
+   *
+   * Expected format:
+   *
+   * YYYY-MM-DD
+   *
+   * Example:
+   *
+   * 2026-08-21
+   */
+
+  const selectedDateObj = selectedDate
+    ? new Date(`${selectedDate}T12:00:00`)
+    : new Date();
+
+  const selectedDay = selectedDateObj.getDay();
+
+  /*
+   * JavaScript:
+   *
+   * Sunday    = 0
+   * Monday    = 1
+   * Tuesday   = 2
    * Wednesday = 3
+   * Thursday  = 4
+   * Friday    = 5
    * Saturday  = 6
    */
 
-  const isDryDay =
-    selectedDay === 3 ||
-    selectedDay === 6;
+  const isDryDay = selectedDay === 3 || selectedDay === 6;
 
-  /* =======================================================
-     REFRESH USER
-  ======================================================= */
+  /*
+   * IMPORTANT:
+   *
+   * Dry Day exists ONLY on:
+   *
+   * Wednesday
+   * Saturday
+   *
+   * All other days are Wet Day.
+   */
 
   useEffect(() => {
-    setUser(
-      getUserFromToken()
-    );
-  }, []);
+    /*
+     * If selected date is NOT Wednesday
+     * or Saturday, Dry Day must not remain
+     * selected.
+     */
 
-  /* =======================================================
-     HEADER ANIMATION
-  ======================================================= */
+    if (!isDryDay) {
+      setDayType("wet");
+    }
+  }, [selectedDate, isDryDay]);
+
+  /* =========================================================
+     GSAP HEADER ANIMATION
+  ========================================================= */
 
   useLayoutEffect(() => {
-    const tl =
-      gsap.timeline();
-
-    if (
-      headerRef.current
-    ) {
-      tl.from(
-        headerRef.current,
-        {
-          y: -24,
-          opacity: 0,
-          duration: 0.45,
-          ease: "power4.out",
-        }
-      );
+    if (!headerRef.current) {
+      return;
     }
 
-    if (
-      controlsRef.current
-    ) {
+    const tl = gsap.timeline();
+
+    tl.from(headerRef.current, {
+      y: -24,
+      opacity: 0,
+      duration: 0.45,
+      ease: "power4.out",
+    });
+
+    if (controlsRef.current?.children) {
       tl.from(
-        controlsRef.current
-          .children,
+        controlsRef.current.children,
         {
           y: -14,
           opacity: 0,
@@ -510,7 +485,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2"
+        "-=0.2",
       );
     }
 
@@ -519,135 +494,114 @@ export default function Header({
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      CLOSE DROPDOWNS
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
     function close(event) {
-      if (
-        !profileRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!profileRef.current?.contains(event.target)) {
         setProfileOpen(false);
       }
 
-      if (
-        !languageRef.current?.contains(
-          event.target
-        )
-      ) {
+      if (!languageRef.current?.contains(event.target)) {
         setLanguageOpen(false);
       }
     }
 
-    window.addEventListener(
-      "mousedown",
-      close
-    );
+    window.addEventListener("mousedown", close);
 
     return () => {
-      window.removeEventListener(
-        "mousedown",
-        close
-      );
+      window.removeEventListener("mousedown", close);
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      SEARCH SHORTCUT
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
     function shortcut(event) {
-      if (
-        event.key === "/" &&
-        variant !== "dashboard"
-      ) {
+      if (event.key === "/" && variant !== "dashboard") {
         event.preventDefault();
 
         searchRef.current?.focus();
       }
     }
 
-    window.addEventListener(
-      "keydown",
-      shortcut
-    );
+    window.addEventListener("keydown", shortcut);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        shortcut
-      );
+      window.removeEventListener("keydown", shortcut);
     };
   }, [variant]);
 
-  /* =======================================================
+  /* =========================================================
      LOGOUT
-  ======================================================= */
+  ========================================================= */
 
-  const handleLogout =
-    () => {
-      sessionStorage.clear();
+  const handleLogout = () => {
+    sessionStorage.clear();
 
-      window.location.replace(
-        "https://app-authentication-frontend.onrender.com"
-      );
-    };
+    window.location.replace("https://app-authentication-frontend.onrender.com");
+  };
 
-  /* =======================================================
+  /* =========================================================
      DATE FORMAT
-  ======================================================= */
+  ========================================================= */
 
-  const formatLocalDate =
-    (date) => {
-      const year =
-        date.getFullYear();
+  /*
+   * IMPORTANT:
+   * Use local date values instead of toISOString()
+   * when sending the selected date back to the parent.
+   *
+   * This prevents timezone-related one-day shifts.
+   */
 
-      const month =
-        String(
-          date.getMonth() + 1
-        ).padStart(2, "0");
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
 
-      const day =
-        String(
-          date.getDate()
-        ).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
 
-      return `${year}-${month}-${day}`;
-    };
+    const day = String(date.getDate()).padStart(2, "0");
 
-  /* =======================================================
+    return `${year}-${month}-${day}`;
+  };
+
+  /* =========================================================
+     DATE CHANGE HANDLER
+  ========================================================= */
+
+  const handleDateChange = (date) => {
+    if (!date) {
+      return;
+    }
+
+    const formattedDate = formatLocalDate(date);
+
+    setSelectedDate(formattedDate);
+  };
+
+  /* =========================================================
      LANGUAGE HANDLER
-  ======================================================= */
+  ========================================================= */
 
-  const handleLanguageChange =
-    (languageCode) => {
-      setLanguage(
-        languageCode
-      );
+  const handleLanguageChange = (languageCode) => {
+    setLanguage(languageCode);
 
-      setLanguageOpen(
-        false
-      );
-    };
+    setLanguageOpen(false);
+  };
 
-  /* =======================================================
+  /* =========================================================
      CURRENT LANGUAGE
-  ======================================================= */
+  ========================================================= */
 
   const currentLanguageCode =
-    language === "en"
-      ? "EN"
-      : language === "kn"
-        ? "KN"
-        : "HI";
+    language === "en" ? "EN" : language === "kn" ? "KN" : "HI";
 
-  /* =======================================================
-     LOCATION FILTERS
-  ======================================================= */
+  /* =========================================================
+     DYNAMIC LOCATION FILTERS
+  ========================================================= */
 
   const locationFilters = (
     <>
@@ -659,19 +613,14 @@ export default function Header({
         width="
           w-[148px]
           sm:w-[155px]
-          xl:w-[118px]
+          2xl:w-[118px]
         "
-        value={
-          selectedCity?.city_name ||
-          t("filters.city")
-        }
+        value={selectedCity?.city_name || t("filters.city", "Select City")}
         options={cities}
-        onChange={
-          setSelectedCity
-        }
-        placeholder={
-          t("filters.city")
-        }
+        onChange={setSelectedCity}
+        placeholder={t("filters.city", "Select City")}
+        getLabel={(city) => city?.city_name || ""}
+        getKey={(city) => city?.city_id}
       />
 
       {/* =================================================
@@ -682,19 +631,14 @@ export default function Header({
         width="
           w-[220px]
           sm:w-[235px]
-          xl:w-[200px]
+          2xl:w-[200px]
         "
-        value={
-          selectedZone?.zone_name ||
-          t("filters.zone")
-        }
+        value={selectedZone?.zone_name || t("filters.zone", "Select Zone")}
         options={zones}
-        onChange={
-          setSelectedZone
-        }
-        placeholder={
-          t("filters.zone")
-        }
+        onChange={setSelectedZone}
+        placeholder={t("filters.zone", "Select Zone")}
+        getLabel={(zone) => zone?.zone_name || ""}
+        getKey={(zone) => zone?.zone_id}
       />
 
       {/* =================================================
@@ -705,17 +649,14 @@ export default function Header({
         width="
           w-[170px]
           sm:w-[180px]
-          xl:w-[138px]
+          2xl:w-[138px]
         "
-        value={
-          selectedDivision?.division_name ||
-          "Select Division"
-        }
+        value={selectedDivision?.division_name || "Select Division"}
         options={divisions}
-        onChange={
-          setSelectedDivision
-        }
+        onChange={setSelectedDivision}
         placeholder="Select Division"
+        getLabel={(division) => division?.division_name || ""}
+        getKey={(division) => division?.division_id}
       />
 
       {/* =================================================
@@ -726,7 +667,7 @@ export default function Header({
         width="
           w-[155px]
           sm:w-[165px]
-          xl:w-[122px]
+          2xl:w-[122px]
         "
         value={
           selectedWard
@@ -734,29 +675,26 @@ export default function Header({
             : "Select Ward"
         }
         options={wards}
-        onChange={
-          setSelectedWard
-        }
+        onChange={setSelectedWard}
         placeholder="Select Ward"
+        getLabel={(ward) =>
+          ward
+            ? `${ward.ward_name}${
+                ward.ward_no !== undefined ? ` (${ward.ward_no})` : ""
+              }`
+            : ""
+        }
+        getKey={(ward) => ward?.ward_id}
       />
     </>
   );
 
-  /* =======================================================
-     SEARCH COMPONENT
-     
-     Shared by:
-     - tablet inline search
-     - mobile full-width search row
-  ======================================================= */
+  /* =========================================================
+     SEARCH INPUT
+  ========================================================= */
 
   const searchInput = (
-    <div
-      className="
-        relative
-        w-full
-      "
-    >
+    <div className="relative w-[280px]">
       <Search
         size={15}
         className="
@@ -766,7 +704,6 @@ export default function Header({
           -translate-y-1/2
           text-gray-400
           pointer-events-none
-          z-10
         "
       />
 
@@ -774,15 +711,8 @@ export default function Header({
         ref={searchRef}
         type="text"
         value={search}
-        onChange={(event) =>
-          setSearch(
-            event.target.value
-          )
-        }
-        placeholder={t(
-          "header.search"
-        )}
-        aria-label="Search"
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder={t("header.search", "Search...")}
         className="
           w-full
           h-9
@@ -791,51 +721,23 @@ export default function Header({
           border-gray-200
           bg-white
           pl-9
-          pr-8
+          pr-3
           text-[11px]
           text-[#16295A]
-          caret-[#16295A]
           outline-none
-          transition-all
-          duration-300
-          focus:border-violet-500
+          placeholder:text-gray-400
+          focus:border-violet-400
           focus:ring-2
           focus:ring-violet-100
-          placeholder:text-gray-400
+          transition
         "
       />
-
-      {search.length >
-        0 && (
-        <button
-          type="button"
-          onClick={() =>
-            setSearch("")
-          }
-          className="
-            absolute
-            right-2
-            top-1/2
-            -translate-y-1/2
-            flex
-            items-center
-            justify-center
-            text-gray-400
-            hover:text-violet-600
-            transition
-          "
-        >
-          <X
-            size={13}
-          />
-        </button>
-      )}
     </div>
   );
 
-  /* =======================================================
+  /* =========================================================
      RENDER
-  ======================================================= */
+  ========================================================= */
 
   return (
     <header
@@ -848,16 +750,12 @@ export default function Header({
         bg-white
         border-b
         border-gray-100
-
         px-3
         sm:px-4
         xl:px-4
-
         pt-2
         pb-2
-
         xl:h-16
-
         overflow-visible
       "
     >
@@ -889,9 +787,9 @@ export default function Header({
             flex-1
           "
         >
-          {/* ===============================================
+          {/* =================================================
               MOBILE / TABLET BRAND
-          =============================================== */}
+          ================================================= */}
 
           <div
             className="
@@ -902,43 +800,24 @@ export default function Header({
               xl:hidden
             "
           >
-            {/* =============================================
-                MOBILE MENU
-            ============================================= */}
-
             <button
               type="button"
-              onClick={
-                toggleSidebar
-              }
-              aria-label="Open navigation menu"
               className="
-                md:hidden
-                w-9
-                h-9
-                rounded-xl
-                border
-                border-gray-200
-                bg-white
                 flex
+                h-9
+                w-9
                 items-center
                 justify-center
-                text-[#16295A]
-                hover:border-violet-400
-                hover:text-violet-600
-                transition-all
-                duration-200
-                shrink-0
+                rounded-xl
+                bg-violet-50
+                text-violet-600
+                hover:bg-violet-100
+                transition
+                md:hidden
               "
             >
-              <Menu
-                size={19}
-              />
+              <Menu size={17} />
             </button>
-
-            {/* =============================================
-                SEWAC LOGO
-            ============================================= */}
 
             <img
               src={SewacLogo}
@@ -956,15 +835,15 @@ export default function Header({
             />
           </div>
 
-          {/* ===============================================
-              DASHBOARD FILTERS
-          =============================================== */}
+          {/* =================================================
+              DESKTOP DASHBOARD FILTERS
+          ================================================= */}
 
           {isDashboard ? (
             <div
               className="
                 hidden
-                xl:flex
+                2xl:flex
                 items-center
                 gap-2
                 min-w-0
@@ -974,247 +853,115 @@ export default function Header({
               {locationFilters}
             </div>
           ) : (
-            <>
-              {/* =============================================
-                  DESKTOP SEARCH
-                  
-                  xl+
-              ============================================= */}
-
-              <div
-                className="
-                  relative
-                  hidden
-                  xl:block
-                  shrink-0
-                "
-              >
-                <Search
-                  size={16}
-                  className="
-                    absolute
-                    left-3
-                    top-1/2
-                    -translate-y-1/2
-                    text-gray-400
-                    pointer-events-none
-                  "
-                />
-
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(
-                      event.target.value
-                    )
-                  }
-                  placeholder={t(
-                    "header.search"
-                  )}
-                  className="
-                    w-[330px]
-                    h-9
-                    rounded-xl
-                    border
-                    border-gray-200
-                    bg-white
-                    pl-10
-                    pr-9
-                    text-[12px]
-                    text-[#16295A]
-                    outline-none
-                    transition-all
-                    duration-300
-                    focus:border-violet-500
-                    focus:ring-2
-                    focus:ring-violet-100
-                  "
-                />
-
-                {search.length >
-                  0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSearch("")
-                    }
-                    className="
-                      absolute
-                      right-3
-                      top-1/2
-                      -translate-y-1/2
-                      text-gray-400
-                      hover:text-violet-600
-                      transition
-                    "
-                  >
-                    <X
-                      size={14}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {/* =============================================
-                  TABLET SEARCH
-                  
-                  768px - 1279px
-                  
-                  Stays in the primary row.
-              ============================================= */}
-
-              <div
-                className="
-                  hidden
-                  md:flex
-                  xl:hidden
-                  items-center
-                  shrink-0
-                  ml-auto
-                "
-              >
-                <div
-                  className="
-                    relative
-                    w-[220px]
-                    lg:w-[260px]
-                    shrink-0
-                  "
-                >
-                  {searchInput}
-                </div>
-              </div>
-
-              {/* =============================================
-                  SMALL SCREEN SEARCH
-                  
-                  BELOW 768px
-                  
-                  IMPORTANT:
-                  Search is intentionally NOT inside
-                  the primary header row.
-                  
-                  It gets its own full-width row below.
-              ============================================= */}
-            </>
+            <div
+              className="
+                relative
+                hidden
+                xl:block
+              "
+            >
+              {searchInput}
+            </div>
           )}
         </div>
 
         {/* =================================================
-            RIGHT SIDE
+            RIGHT SIDE CONTROLS
         ================================================= */}
 
         <div
           className="
             flex
             items-center
-            gap-1.5
-            sm:gap-2
+            gap-2
             shrink-0
           "
         >
-          {/* ===============================================
-              CALENDAR
-          =============================================== */}
+          {/* =================================================
+              DATE
+          ================================================= */}
 
-          <div
-            className="
-              relative
-              shrink-0
-              [&>div]:shrink-0
-            "
-          >
-            <Calendar
-              value={
-                selectedDateObj
-              }
-              onChange={(date) => {
-                setSelectedDate(
-                  formatLocalDate(
-                    date
-                  )
-                );
-              }}
-            />
+          <div className="relative shrink-0">
+            <Calendar value={selectedDateObj} onChange={handleDateChange} />
           </div>
 
-          {/* ===============================================
-              WET / DRY DAY
-              
-              Dashboard only.
-          =============================================== */}
+          {/* =================================================
+              DAY TYPE
+          ================================================= */}
 
           {isDashboard && (
             <div
               className="
                 hidden
-                sm:flex
+                md:flex
+                items-center
+                h-9
+                overflow-hidden
                 rounded-xl
                 border
                 border-gray-200
-                overflow-hidden
                 shrink-0
               "
             >
+              {/* =============================================
+                  DRY DAY
+                  ONLY WEDNESDAY / SATURDAY
+              ============================================= */}
+
               {isDryDay && (
                 <button
                   type="button"
-                  onClick={() =>
-                    setDayType("dry")
-                  }
+                  onClick={() => setDayType("dry")}
                   className={`
                     h-9
-                    px-3
-                    lg:px-4
+                    px-4
                     text-[11px]
-                    lg:text-[12px]
                     font-semibold
                     transition-all
                     duration-300
+
                     ${
-                      dayType ===
-                      "dry"
+                      dayType === "dry"
                         ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                         : "bg-white text-[#16295A] hover:bg-gray-50"
                     }
                   `}
                 >
-                  Dry Day
+                  {t("header.dryDay", "Dry Day")}
                 </button>
               )}
 
+              {/* =============================================
+                  WET DAY
+                  ALWAYS AVAILABLE
+              ============================================= */}
+
               <button
                 type="button"
-                onClick={() =>
-                  setDayType("wet")
-                }
+                onClick={() => setDayType("wet")}
                 className={`
                   h-9
-                  px-3
-                  lg:px-4
+                  px-4
                   text-[11px]
-                  lg:text-[12px]
                   font-semibold
                   transition-all
                   duration-300
+
                   ${
-                    dayType ===
-                    "wet"
+                    dayType === "wet"
                       ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                       : "bg-white text-[#16295A] hover:bg-gray-50"
                   }
                 `}
               >
-                Wet Day
+                {t("header.wetDay", "Wet Day")}
               </button>
             </div>
           )}
 
-          {/* ===============================================
+          {/* =================================================
               LANGUAGE
-          =============================================== */}
+          ================================================= */}
 
           <div
             ref={languageRef}
@@ -1225,17 +972,10 @@ export default function Header({
           >
             <button
               type="button"
-              onClick={() =>
-                setLanguageOpen(
-                  !languageOpen
-                )
-              }
-              aria-expanded={
-                languageOpen
-              }
+              onClick={() => setLanguageOpen(!languageOpen)}
               className="
                 h-9
-                px-2
+                px-2.5
                 sm:px-3
                 rounded-xl
                 border
@@ -1243,21 +983,14 @@ export default function Header({
                 bg-white
                 flex
                 items-center
-                gap-1
-                sm:gap-1.5
+                gap-1.5
+                sm:gap-2
                 hover:border-violet-400
                 transition-all
                 duration-300
-                shrink-0
               "
             >
-              <Globe
-                size={14}
-                className="
-                  text-violet-600
-                  shrink-0
-                "
-              />
+              <Globe size={15} className="text-violet-600" />
 
               <span
                 className="
@@ -1271,24 +1004,18 @@ export default function Header({
               </span>
 
               <ChevronDown
-                size={12}
+                size={13}
                 className={`
-                  shrink-0
                   transition-transform
                   duration-300
-                  ${
-                    languageOpen
-                      ? "rotate-180"
-                      : ""
-                  }
+                  ${languageOpen ? "rotate-180" : ""}
                 `}
               />
             </button>
 
-            {/* LANGUAGE MENU */}
-
             {languageOpen && (
               <div
+                ref={languageMenuRef}
                 className="
                   absolute
                   right-0
@@ -1298,61 +1025,43 @@ export default function Header({
                   bg-white
                   border
                   border-gray-100
-                  shadow-[0_15px_40px_rgba(15,23,42,0.10)]
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
                   overflow-hidden
-                  z-[99999]
+                  z-[10000]
                 "
               >
-                {languages.map(
-                  (item) => (
-                    <button
-                      type="button"
-                      key={
-                        item.code
-                      }
-                      onClick={() =>
-                        handleLanguageChange(
-                          item.code
-                        )
-                      }
-                      className="
-                        w-full
-                        px-4
-                        py-3
-                        flex
-                        items-center
-                        justify-between
-                        text-[12px]
-                        hover:bg-violet-50
-                        transition
-                        text-left
-                      "
-                    >
-                      <span>
-                        {t(
-                          item.translationKey
-                        )}
-                      </span>
+                {languages.map((item) => (
+                  <button
+                    type="button"
+                    key={item.code}
+                    onClick={() => handleLanguageChange(item.code)}
+                    className="
+                      w-full
+                      px-4
+                      py-3
+                      flex
+                      items-center
+                      justify-between
+                      text-[12px]
+                      text-[#16295A]
+                      hover:bg-violet-50
+                      transition
+                    "
+                  >
+                    {t(item.translationKey)}
 
-                      {language ===
-                        item.code && (
-                        <Check
-                          size={14}
-                          className="
-                            text-violet-600
-                          "
-                        />
-                      )}
-                    </button>
-                  )
-                )}
+                    {language === item.code && (
+                      <Check size={14} className="text-violet-600" />
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* ===============================================
+          {/* =================================================
               PROFILE
-          =============================================== */}
+          ================================================= */}
 
           <div
             ref={profileRef}
@@ -1363,14 +1072,8 @@ export default function Header({
           >
             <button
               type="button"
-              onClick={() =>
-                setProfileOpen(
-                  !profileOpen
-                )
-              }
-              aria-expanded={
-                profileOpen
-              }
+              onClick={() => setProfileOpen(!profileOpen)}
+              aria-expanded={profileOpen}
               className="
                 h-9
                 pl-1
@@ -1384,17 +1087,13 @@ export default function Header({
                 bg-white
                 flex
                 items-center
-                gap-1.5
-                sm:gap-2
+                gap-2
                 hover:border-violet-400
                 transition-all
                 duration-300
-                shrink-0
               "
             >
-              {/* =========================================
-                  AVATAR
-              ========================================= */}
+              {/* AVATAR */}
 
               <div
                 className="
@@ -1405,7 +1104,7 @@ export default function Header({
                   from-violet-600
                   to-fuchsia-600
                   text-white
-                  text-[13px]
+                  text-[14px]
                   font-semibold
                   flex
                   items-center
@@ -1416,66 +1115,55 @@ export default function Header({
                 {userInitial}
               </div>
 
-              {/* =========================================
-                  USER INFO
-                  
-                  Desktop only
-              ========================================= */}
+              {/* USER INFO */}
 
               <div
                 className="
                   hidden
-                  xl:block
+                  sm:block
                   text-left
                   leading-tight
                   min-w-0
                 "
               >
-                <h3
+                <h4
                   className="
+                    text-[12px]
                     font-semibold
-                    text-[13px]
                     text-[#16295A]
                     truncate
+                    max-w-[100px]
                   "
                 >
                   {user.name}
-                </h3>
+                </h4>
 
                 <p
                   className="
                     text-[10px]
                     text-gray-500
-                    mt-0.5
                     truncate
+                    max-w-[100px]
                   "
                 >
                   {roleLabel}
                 </p>
               </div>
 
-              {/* DESKTOP CHEVRON */}
-
               <ChevronDown
-                size={12}
+                size={13}
                 className={`
-                  hidden
-                  xl:block
-                  shrink-0
                   transition-transform
                   duration-300
-                  ${
-                    profileOpen
-                      ? "rotate-180"
-                      : ""
-                  }
+                  ${profileOpen ? "rotate-180" : ""}
                 `}
               />
             </button>
 
-            {/* =============================================
-                PROFILE MENU
-            ============================================= */}
+            {/* =================================================
+                PROFILE DROPDOWN
+                SETTINGS REMOVED
+            ================================================= */}
 
             {profileOpen && (
               <div
@@ -1483,20 +1171,35 @@ export default function Header({
                   absolute
                   right-0
                   top-11
-                  w-56
+                  w-64
                   rounded-2xl
                   bg-white
                   border
                   border-gray-100
-                  shadow-[0_15px_40px_rgba(15,23,42,0.10)]
+                  shadow-[0_15px_40px_rgba(0,0,0,0.08)]
                   overflow-hidden
-                  z-[99999]
+                  z-[10000]
                 "
+                ref={(element) => {
+                  if (element) {
+                    gsap.fromTo(
+                      element,
+                      {
+                        opacity: 0,
+                        scale: 0.96,
+                        y: -8,
+                      },
+                      {
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                        duration: 0.22,
+                        ease: "power3.out",
+                      },
+                    );
+                  }
+                }}
               >
-                {/* =========================================
-                    USER INFORMATION
-                ========================================= */}
-
                 <div
                   className="
                     px-5
@@ -1521,7 +1224,7 @@ export default function Header({
                         from-violet-600
                         to-fuchsia-600
                         text-white
-                        text-[13px]
+                        text-[14px]
                         font-semibold
                         flex
                         items-center
@@ -1532,11 +1235,7 @@ export default function Header({
                       {userInitial}
                     </div>
 
-                    <div
-                      className="
-                        min-w-0
-                      "
-                    >
+                    <div className="min-w-0">
                       <h3
                         className="
                           font-semibold
@@ -1562,54 +1261,14 @@ export default function Header({
                   </div>
                 </div>
 
-                {/* =========================================
-                    SETTINGS
-                ========================================= */}
+                {/* =================================================
+                    LOGOUT ONLY
+                ================================================= */}
 
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(
-                      false
-                    );
-
-                    navigate(
-                      "/dashboard/admin/settings"
-                    );
-                  }}
-                  className="
-                    w-full
-                    px-5
-                    py-3
-                    flex
-                    items-center
-                    gap-3
-                    text-[12px]
-                    text-[#16295A]
-                    hover:bg-violet-50
-                    transition
-                    text-left
-                  "
-                >
-                  <Settings
-                    size={16}
-                  />
-
-                  {t(
-                    "sidebar.settings"
-                  )}
-                </button>
-
-                {/* =========================================
-                    LOGOUT
-                ========================================= */}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileOpen(
-                      false
-                    );
+                    setProfileOpen(false);
 
                     handleLogout();
                   }}
@@ -1627,13 +1286,9 @@ export default function Header({
                     text-left
                   "
                 >
-                  <LogOut
-                    size={16}
-                  />
+                  <LogOut size={16} />
 
-                  {t(
-                    "sidebar.logout"
-                  )}
+                  {t("sidebar.logout")}
                 </button>
               </div>
             )}
@@ -1643,67 +1298,38 @@ export default function Header({
 
       {/* ===================================================
           NON-DASHBOARD SMALL SCREEN SEARCH ROW
-
-          IMPORTANT:
-          This is the main responsive change.
-
-          <= 767px:
-          Search gets its own row.
-
-          This prevents the search box from fighting
-          with the calendar, language and profile controls.
-
-          At 768px+ it disappears and the inline
-          tablet search above takes over.
       =================================================== */}
 
       {!isDashboard && (
         <div
           className="
             md:hidden
-
             w-full
-
             mt-2
-
             px-0.5
           "
         >
-          <div
-            className="
-              w-full
-            "
-          >
-            {searchInput}
-          </div>
+          <div className="w-full">{searchInput}</div>
         </div>
       )}
 
       {/* ===================================================
           DASHBOARD RESPONSIVE FILTER ROW
 
-          Dashboard only.
-
-          Filters stay in their own horizontal row
-          below xl so they do NOT disturb:
-
-          logo
-          calendar
-          day type
-          language
-          profile
+          Below 1536px
       =================================================== */}
 
       {isDashboard && (
         <div
           className="
-            xl:hidden
+            2xl:hidden
             w-full
             overflow-x-auto
             overflow-y-visible
             scrollbar-none
             pt-1
             pb-1
+            mt-1
             -mx-0.5
           "
         >

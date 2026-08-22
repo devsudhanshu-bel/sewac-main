@@ -72,7 +72,7 @@ export default function CitizensFilters() {
             />
 
             <span className="flex-1 text-sm text-gray-700 text-left">
-              20 May 2025 - 20 May 2025
+              20 May 2026 - 20 May 2025
             </span>
 
             <ChevronDown
