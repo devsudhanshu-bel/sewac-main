@@ -104,12 +104,29 @@ async function requestVerification(ticketNumber, adminId) {
     },
   );
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+
+  let data;
+
+  if (contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+
+    data = {
+      success: false,
+      message: text || "Unable to start complaint verification.",
+    };
+  }
 
   if (!response.ok || data.success !== true) {
-    throw new Error(
+    const error = new Error(
       data.message || data.error || "Unable to start complaint verification.",
     );
+
+    error.statusCode = response.status;
+
+    throw error;
   }
 
   // IMPORTANT:
@@ -295,19 +312,17 @@ async function updateComplaint(ticketNumber, updates) {
     if (status === complaint.status) {
       // Allowed.
     } else if (
-
-    /**
-     * PENDING → READY
-     */
+      /**
+       * PENDING → READY
+       */
       complaint.status === "PENDING" &&
       status === "READY_FOR_VERIFICATION"
     ) {
       // Allowed.
     } else {
-
-    /**
-     * Everything else is blocked.
-     */
+      /**
+       * Everything else is blocked.
+       */
       throw new Error(
         `Invalid complaint status transition: ${complaint.status} → ${status}.`,
       );

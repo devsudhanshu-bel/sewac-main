@@ -2,6 +2,9 @@ const express = require("express");
 
 const router = express.Router();
 
+const authMiddleware = require("../middlewares/authMiddleware");
+const checkPermission = require("../middlewares/checkPermission");
+
 const {
   getAllPlants,
   getPlantById,
@@ -9,15 +12,48 @@ const {
   updatePlant,
   deletePlant,
   getPlantDashboard,
-  getPlantLocations
+  getPlantLocations,
 } = require("../controllers/plantController");
 
+/*
+|--------------------------------------------------------------------------
+| PLANTS — VIEW
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/dashboard",
+  getPlantDashboard,
+);
+
+router.get(
+  "/locations",
+  getPlantLocations,
+);
+
 router.get("/", getAllPlants);
-router.get("/dashboard", getPlantDashboard);
-router.get("/locations", getPlantLocations);
+
 router.get("/:id", getPlantById);
-router.post("/", createPlant);
-router.put("/:id", updatePlant);
-router.delete("/:id", deletePlant);
+
+/*
+|--------------------------------------------------------------------------
+| PLANTS — MUTATIONS
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/",
+  createPlant,
+);
+
+router.put(
+  "/:id",
+  updatePlant,
+);
+
+router.delete(
+  "/:id",
+  deletePlant,
+);
 
 module.exports = router;
