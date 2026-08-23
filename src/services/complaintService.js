@@ -3,7 +3,6 @@ const crypto = require("crypto");
 console.log("🔥🔥🔥 ADMIN complaintService.js LOADED 🔥🔥🔥");
 
 const CITIZEN_API = process.env.CITIZEN_API;
-
 const INTERNAL_SECRET = process.env.CITIZEN_INTERNAL_API_SECRET;
 
 const OTP_EXPIRY_MINUTES = 5;
@@ -24,17 +23,6 @@ function generateOTP() {
  * =========================================================
  * REQUEST VERIFICATION
  * =========================================================
- *
- * OTP can ONLY be requested when the complaint is:
- *
- * READY_FOR_VERIFICATION
- *
- * This prevents:
- *
- * PENDING → OTP
- * ASSIGNED → OTP
- * IN_PROGRESS → OTP
- * CLOSED → OTP
  */
 async function requestVerification(ticketNumber, adminId) {
   if (!CITIZEN_API) {
@@ -64,16 +52,15 @@ async function requestVerification(ticketNumber, adminId) {
     Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000,
   ).toISOString();
 
+  const citizenUrl =
+    `${CITIZEN_API}/api/internal/complaints/` +
+    `${encodeURIComponent(ticketNumber)}/request-verification`;
+
   console.log("========== CITIZEN VERIFICATION DEBUG ==========");
 
   console.log("CITIZEN_API:", CITIZEN_API);
 
-  console.log(
-    "URL:",
-    `${CITIZEN_API}/api/internal/complaints/${encodeURIComponent(
-      ticketNumber,
-    )}/request-verification`,
-  );
+  console.log("URL:", citizenUrl);
 
   console.log("HAS SECRET:", Boolean(INTERNAL_SECRET));
 
@@ -81,19 +68,35 @@ async function requestVerification(ticketNumber, adminId) {
 
   console.log("ADMIN ID:", adminId);
 
+  /*
+   * DO NOT LOG THE ACTUAL OTP.
+   *
+   * We deliberately do not print:
+   *
+   * console.log(otp)
+   *
+   * because the OTP must never be exposed
+   * through Admin logs.
+   */
+
+  console.log("OTP GENERATED:", Boolean(otp));
+
+  console.log("OTP EXPIRY:", expiresAt);
+
   console.log("===============================================");
 
-  const response = await fetch(
-    `${CITIZEN_API}/api/internal/complaints/${encodeURIComponent(
-      ticketNumber,
-    )}/request-verification`,
-    {
+  let response;
+
+  try {
+    response = await fetch(citizenUrl, {
       method: "POST",
 
       headers: {
         "Content-Type": "application/json",
 
         "X-Internal-Secret": INTERNAL_SECRET,
+
+        Accept: "application/json",
       },
 
       body: JSON.stringify({
@@ -101,36 +104,140 @@ async function requestVerification(ticketNumber, adminId) {
         expiresAt,
         adminId,
       }),
-    },
-  );
+    });
+  } catch (fetchError) {
+    console.error("========== CITIZEN FETCH FAILED ==========");
 
-  const contentType = response.headers.get("content-type") || "";
+    console.error("Error:", fetchError);
+
+    console.error("Message:", fetchError?.message);
+
+    console.error("==========================================");
+
+    throw fetchError;
+  }
+
+  /**
+   * =======================================================
+   * CAPTURE CITIZEN RESPONSE
+   * =======================================================
+   *
+   * THIS IS THE IMPORTANT DEBUG SECTION.
+   *
+   * We need to know exactly what Citizen sends
+   * back to the Admin backend.
+   */
+
+  const responseContentType = response.headers.get("content-type") || "";
+
+  const responseHeaders = Object.fromEntries(response.headers.entries());
+
+  let responseText = "";
+
+  try {
+    responseText = await response.text();
+  } catch (readError) {
+    console.error("Unable to read Citizen response body:", readError);
+  }
+
+  console.log("========== CITIZEN RESPONSE DEBUG ==========");
+
+  console.log("STATUS:", response.status);
+
+  console.log("STATUS TEXT:", response.statusText);
+
+  console.log("CONTENT TYPE:", responseContentType);
+
+  console.log("BODY:", responseText);
+
+  /*
+   * Safe response headers only.
+   *
+   * We are NOT logging X-Internal-Secret.
+   */
+
+  console.log("HEADERS:", responseHeaders);
+
+  console.log("============================================");
+
+  /**
+   * =======================================================
+   * PARSE RESPONSE
+   * =======================================================
+   */
 
   let data;
 
-  if (contentType.includes("application/json")) {
-    data = await response.json();
-  } else {
-    const text = await response.text();
+  if (responseContentType.includes("application/json")) {
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch (parseError) {
+      console.error("Citizen returned invalid JSON:", parseError);
 
+      data = {
+        success: false,
+        message: responseText || "Citizen returned invalid JSON.",
+      };
+    }
+  } else {
     data = {
       success: false,
-      message: text || "Unable to start complaint verification.",
+      message: responseText || "Unable to start complaint verification.",
     };
   }
 
+  /**
+   * =======================================================
+   * HANDLE CITIZEN ERROR
+   * =======================================================
+   */
+
   if (!response.ok || data.success !== true) {
     const error = new Error(
-      data.message || data.error || "Unable to start complaint verification.",
+      data.message ||
+        data.error ||
+        `Citizen verification request failed with status ${response.status}.`,
     );
 
     error.statusCode = response.status;
 
+    /*
+     * Extra information for debugging.
+     *
+     * This does NOT expose the OTP.
+     */
+
+    console.error("========== CITIZEN VERIFICATION ERROR ==========");
+
+    console.error("STATUS:", response.status);
+
+    console.error("MESSAGE:", error.message);
+
+    console.error("===============================================");
+
     throw error;
   }
 
-  // IMPORTANT:
-  // Never return OTP to admin frontend.
+  /**
+   * =======================================================
+   * SUCCESS
+   * =======================================================
+   *
+   * IMPORTANT:
+   *
+   * OTP is NEVER returned to Admin frontend.
+   */
+
+  console.log("========== CITIZEN VERIFICATION SUCCESS ==========");
+
+  console.log("TICKET:", ticketNumber);
+
+  console.log("STATUS:", data.data?.status);
+
+  console.log("OTP EXPOSED TO ADMIN:", false);
+
+  console.log("==================================================");
+
   return {
     ticketNumber,
     expiresAt,
@@ -172,10 +279,36 @@ async function verifyComplaintOTP(ticketNumber, otp, adminId) {
     },
   );
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+
+  const responseText = await response.text();
+
+  let data;
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = {
+        success: false,
+        message: responseText || "Invalid response from citizen backend.",
+      };
+    }
+  } else {
+    data = {
+      success: false,
+      message: responseText || "Invalid response from citizen backend.",
+    };
+  }
 
   if (!response.ok || data.success !== true) {
-    throw new Error(data.message || data.error || "Invalid verification OTP.");
+    const error = new Error(
+      data.message || data.error || "Invalid verification OTP.",
+    );
+
+    error.statusCode = response.status;
+
+    throw error;
   }
 
   return data.data;
@@ -245,19 +378,6 @@ async function getComplaintByTicket(ticketNumber) {
  * =========================================================
  * UPDATE COMPLAINT
  * =========================================================
- *
- * ADMIN WORKFLOW
- *
- * PENDING
- *    ↓
- * READY_FOR_VERIFICATION
- *    ↓
- * OTP_SENT
- *    ↓
- * CLOSED
- *
- * The service prevents the frontend from bypassing
- * this workflow.
  */
 async function updateComplaint(ticketNumber, updates) {
   const complaint =
@@ -269,12 +389,6 @@ async function updateComplaint(ticketNumber, updates) {
 
   const { status, assigned_to, remarks } = updates;
 
-  /**
-   * -------------------------------------------------------
-   * Validate fields
-   * -------------------------------------------------------
-   */
-
   if (
     status === undefined &&
     assigned_to === undefined &&
@@ -283,62 +397,25 @@ async function updateComplaint(ticketNumber, updates) {
     throw new Error("No complaint changes were provided.");
   }
 
-  /**
-   * -------------------------------------------------------
-   * Status transition rules
-   * -------------------------------------------------------
-   *
-   * Admin may ONLY perform:
-   *
-   * PENDING → READY_FOR_VERIFICATION
-   *
-   * Admin cannot manually:
-   *
-   * READY → OTP_SENT
-   * OTP_SENT → CLOSED
-   * CLOSED → anything
-   *
-   * Those are system/citizen verification transitions.
-   */
-
   if (status !== undefined) {
     if (status !== "PENDING" && status !== "READY_FOR_VERIFICATION") {
       throw new Error("Invalid admin complaint status.");
     }
 
-    /**
-     * No-op status update
-     */
     if (status === complaint.status) {
       // Allowed.
     } else if (
-      /**
-       * PENDING → READY
-       */
       complaint.status === "PENDING" &&
       status === "READY_FOR_VERIFICATION"
     ) {
       // Allowed.
     } else {
-      /**
-       * Everything else is blocked.
-       */
       throw new Error(
         `Invalid complaint status transition: ${complaint.status} → ${status}.`,
       );
     }
   }
 
-  /**
-   * -------------------------------------------------------
-   * CLOSED complaints
-   * -------------------------------------------------------
-   *
-   * Once citizen verification closes the complaint,
-   * admin cannot change its status.
-   *
-   * We still allow remarks/assignment edits if needed.
-   */
   if (
     complaint.status === "CLOSED" &&
     status !== undefined &&
@@ -347,16 +424,6 @@ async function updateComplaint(ticketNumber, updates) {
     throw new Error("Closed complaints cannot have their status changed.");
   }
 
-  /**
-   * -------------------------------------------------------
-   * closed_at
-   * -------------------------------------------------------
-   *
-   * Admin does NOT directly close complaints.
-   *
-   * closed_at remains controlled by the OTP verification
-   * flow.
-   */
   const result = await complaintRepository.updateComplaint(ticketNumber, {
     ...(status !== undefined && {
       status,
