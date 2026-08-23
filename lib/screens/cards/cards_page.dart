@@ -551,8 +551,8 @@ class _CardsPageState extends State<CardsPage>
                             "Collection Analytics",
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -656,7 +656,7 @@ class _CardsPageState extends State<CardsPage>
                             physics: const BouncingScrollPhysics(),
                             children: [
                               AnalyticsCard(
-                                icon: Icons.recycling_rounded,
+                                icon: Icons.water_drop_rounded,
                                 title: "Wet Waste",
                                 value:
                                 "${_analytics?.wetCompleted ?? 0}/${_analytics?.wetTotal ?? 0}",
@@ -664,7 +664,8 @@ class _CardsPageState extends State<CardsPage>
                                 accentColor: const Color(0xFF4CAF50),
                               ),
                               AnalyticsCard(
-                                icon: Icons.delete_outline_rounded,
+                                // Dry Waste
+                                icon: Icons.recycling_rounded,
                                 title: "Dry Waste",
                                 value:
                                 "${_analytics?.dryCompleted ?? 0}/${_analytics?.dryTotal ?? 0}",
