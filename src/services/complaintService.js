@@ -40,9 +40,46 @@ async function requestVerification(ticketNumber, adminId) {
     throw new Error("Complaint not found.");
   }
 
-  if (complaint.status !== "READY_FOR_VERIFICATION") {
+  if (complaint.status === "CLOSED") {
     throw new Error(
-      "Verification OTP can only be requested when the complaint is ready for verification.",
+      "Verification OTP cannot be requested for a closed complaint.",
+    );
+  }
+
+  /*
+   * OTP can be requested when:
+   *
+   * 1. Complaint is READY_FOR_VERIFICATION
+   *    -> first OTP
+   *
+   * 2. Complaint is OTP_SENT and the previous OTP has expired
+   *    -> resend/new OTP
+   */
+
+  if (complaint.status === "READY_FOR_VERIFICATION") {
+    // First OTP request - allowed
+  } else if (complaint.status === "OTP_SENT") {
+    if (!complaint.verification_expires_at) {
+      throw new Error("Existing OTP has no expiry information.");
+    }
+
+    const expiry = new Date(complaint.verification_expires_at);
+
+    if (Number.isNaN(expiry.getTime())) {
+      throw new Error("Existing OTP has an invalid expiry time.");
+    }
+
+    if (expiry > new Date()) {
+      throw new Error(
+        "Current OTP is still valid. Please wait until it expires before requesting a new OTP.",
+      );
+    }
+
+    // Existing OTP has expired.
+    // A new OTP will be generated below.
+  } else {
+    throw new Error(
+      "Verification OTP can only be requested when the complaint is ready for verification or the previous OTP has expired.",
     );
   }
 
@@ -56,34 +93,15 @@ async function requestVerification(ticketNumber, adminId) {
     `${CITIZEN_API}/api/internal/complaints/` +
     `${encodeURIComponent(ticketNumber)}/request-verification`;
 
-  console.log("========== CITIZEN VERIFICATION DEBUG ==========");
-
+  console.log("========== CITIZEN VERIFICATION ==========");
   console.log("CITIZEN_API:", CITIZEN_API);
-
   console.log("URL:", citizenUrl);
-
   console.log("HAS SECRET:", Boolean(INTERNAL_SECRET));
-
   console.log("TICKET:", ticketNumber);
-
   console.log("ADMIN ID:", adminId);
-
-  /*
-   * DO NOT LOG THE ACTUAL OTP.
-   *
-   * We deliberately do not print:
-   *
-   * console.log(otp)
-   *
-   * because the OTP must never be exposed
-   * through Admin logs.
-   */
-
   console.log("OTP GENERATED:", Boolean(otp));
-
   console.log("OTP EXPIRY:", expiresAt);
-
-  console.log("===============================================");
+  console.log("==========================================");
 
   let response;
 
@@ -93,9 +111,7 @@ async function requestVerification(ticketNumber, adminId) {
 
       headers: {
         "Content-Type": "application/json",
-
         "X-Internal-Secret": INTERNAL_SECRET,
-
         Accept: "application/json",
       },
 
@@ -109,7 +125,6 @@ async function requestVerification(ticketNumber, adminId) {
     console.error("========== CITIZEN FETCH FAILED ==========");
 
     console.error("Error:", fetchError);
-
     console.error("Message:", fetchError?.message);
 
     console.error("==========================================");
@@ -117,131 +132,28 @@ async function requestVerification(ticketNumber, adminId) {
     throw fetchError;
   }
 
-  /**
-   * =======================================================
-   * CAPTURE CITIZEN RESPONSE
-   * =======================================================
-   *
-   * THIS IS THE IMPORTANT DEBUG SECTION.
-   *
-   * We need to know exactly what Citizen sends
-   * back to the Admin backend.
-   */
-
-  const responseContentType = response.headers.get("content-type") || "";
-
-  const responseHeaders = Object.fromEntries(response.headers.entries());
-
-  let responseText = "";
-
-  try {
-    responseText = await response.text();
-  } catch (readError) {
-    console.error("Unable to read Citizen response body:", readError);
-  }
-
-  console.log("========== CITIZEN RESPONSE DEBUG ==========");
-
-  console.log("STATUS:", response.status);
-
-  console.log("STATUS TEXT:", response.statusText);
-
-  console.log("CONTENT TYPE:", responseContentType);
-
-  console.log("BODY:", responseText);
-
-  /*
-   * Safe response headers only.
-   *
-   * We are NOT logging X-Internal-Secret.
-   */
-
-  console.log("HEADERS:", responseHeaders);
-
-  console.log("============================================");
-
-  /**
-   * =======================================================
-   * PARSE RESPONSE
-   * =======================================================
-   */
-
   let data;
 
-  if (responseContentType.includes("application/json")) {
-    try {
-      data = responseText ? JSON.parse(responseText) : {};
-    } catch (parseError) {
-      console.error("Citizen returned invalid JSON:", parseError);
-
-      data = {
-        success: false,
-        message: responseText || "Citizen returned invalid JSON.",
-      };
-    }
-  } else {
-    data = {
-      success: false,
-      message: responseText || "Unable to start complaint verification.",
-    };
+  try {
+    data = await response.json();
+  } catch (_) {
+    throw new Error(
+      `Citizen backend returned an invalid response (${response.status}).`,
+    );
   }
-
-  /**
-   * =======================================================
-   * HANDLE CITIZEN ERROR
-   * =======================================================
-   */
 
   if (!response.ok || data.success !== true) {
-    const error = new Error(
-      data.message ||
-        data.error ||
-        `Citizen verification request failed with status ${response.status}.`,
+    throw new Error(
+      data.message || data.error || "Unable to generate verification OTP.",
     );
-
-    error.statusCode = response.status;
-
-    /*
-     * Extra information for debugging.
-     *
-     * This does NOT expose the OTP.
-     */
-
-    console.error("========== CITIZEN VERIFICATION ERROR ==========");
-
-    console.error("STATUS:", response.status);
-
-    console.error("MESSAGE:", error.message);
-
-    console.error("===============================================");
-
-    throw error;
   }
 
-  /**
-   * =======================================================
-   * SUCCESS
-   * =======================================================
-   *
-   * IMPORTANT:
-   *
-   * OTP is NEVER returned to Admin frontend.
-   */
-
-  console.log("========== CITIZEN VERIFICATION SUCCESS ==========");
-
-  console.log("TICKET:", ticketNumber);
-
-  console.log("STATUS:", data.data?.status);
-
-  console.log("OTP EXPOSED TO ADMIN:", false);
-
-  console.log("==================================================");
-
+  // NEVER return the OTP to Admin frontend.
   return {
     ticketNumber,
     expiresAt,
-    status: data.data?.status,
+    status: "OTP_SENT",
+    resent: complaint.status === "OTP_SENT",
   };
 }
 
