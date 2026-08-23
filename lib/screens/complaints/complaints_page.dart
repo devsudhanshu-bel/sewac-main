@@ -162,60 +162,53 @@ class _ComplaintsPageState extends State<ComplaintsPage>
   }
 
 Future<void> _loadComplaints() async {
-  try {
-    final complaints = await _complaintService.getComplaints();
+    try {
+      final complaints = await _complaintService.getComplaints();
 
-    final updatedComplaints = await Future.wait(
-      complaints.map((complaint) async {
-        final ticketNumber = complaint.ticketNumber;
+      if (!mounted) return;
 
-        if (ticketNumber == null ||
-            ticketNumber.isEmpty ||
-            complaint.status.toUpperCase() != "OTP_SENT") {
-          return complaint;
-        }
+      setState(() {
+        _complaints = complaints;
+        _isLoadingComplaints = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
 
-        try {
-          final verification =
-              await _complaintService.getComplaintVerification(
-            ticketNumber,
-          );
+      setState(() {
+        _isLoadingComplaints = false;
+      });
 
-          final code = verification["verification_code"] ??
-              verification["verificationCode"];
-
-          final expiresAtRaw =
-              verification["verification_expires_at"] ??
-              verification["verificationExpiresAt"];
-
-          return complaint.copyWith(
-            verificationCode: code?.toString(),
-            verificationExpiresAt: expiresAtRaw != null
-                ? DateTime.tryParse(expiresAtRaw.toString())
-                : null,
-          );
-        } catch (_) {
-          return complaint;
-        }
-      }),
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _complaints = updatedComplaints;
-      _isLoadingComplaints = false;
-    });
-  } catch (_) {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingComplaints = false;
-    });
-
-    _showSnackBar("Unable to load complaints.");
+      _showSnackBar("Unable to load complaints.");
+    }
   }
-}
+
+  Future<void> _verifyComplaintOtp(
+    String ticketNumber,
+    String otp,
+  ) async {
+    try {
+      await _complaintService.verifyComplaintOtp(
+        ticketNumber: ticketNumber,
+        otp: otp,
+      );
+
+      if (!mounted) return;
+
+      _showSnackBar(
+        "Complaint verified successfully.",
+        isError: false,
+      );
+
+      await _loadComplaints();
+    } catch (e) {
+      if (!mounted) return;
+
+      _showSnackBar(
+        e.toString().replaceFirst("Exception: ", ""),
+      );
+      rethrow;
+    }
+  }
 
   Future<void> _refreshLocation({
     bool forceRefresh = false,
@@ -1281,6 +1274,7 @@ Future<void> _loadComplaints() async {
         return RepaintBoundary(
           child: _HomeComplaintCardItem(
             item: recentItems[index],
+            onVerifyOtp: _verifyComplaintOtp,
           ),
         );
       },
@@ -1337,222 +1331,205 @@ class _StaggeredAnimatedItem extends StatelessWidget {
 }
 
 // ============================================================================
-// COMPACT VERIFICATION CODE INFORMATION PANEL (VIEW ALL PAGE)
+// OTP VERIFICATION INPUT
 // ============================================================================
 
-class _VerificationCodeSection extends StatelessWidget {
-  final String verificationCode;
+class _OtpVerificationSection extends StatefulWidget {
+  final String ticketNumber;
+  final Future<void> Function(String ticketNumber, String otp) onVerify;
 
-  const _VerificationCodeSection({
+  const _OtpVerificationSection({
     super.key,
-    required this.verificationCode,
+    required this.ticketNumber,
+    required this.onVerify,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final digits = verificationCode.split('');
+  State<_OtpVerificationSection> createState() =>
+      _OtpVerificationSectionState();
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Divider(
-            color: Colors.white.withValues(alpha: 0.12),
-            height: 1,
-            thickness: 1,
-          ),
-        ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFC084FC).withValues(alpha: 0.20),
-              width: 0.8,
+class _OtpVerificationSectionState extends State<_OtpVerificationSection> {
+  late final TextEditingController _otpController;
+  bool _isVerifying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _otpController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    final otp = _otpController.text.trim();
+
+    if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFE53935),
+          content: Text(
+            "Enter a valid 6-digit OTP.",
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isVerifying = true);
+
+    try {
+      await widget.onVerify(widget.ticketNumber, otp);
+
+      if (!mounted) return;
+      _otpController.clear();
+    } catch (_) {
+      // Parent callback already shows the backend error.
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifying = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC084FC).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFC084FC).withValues(alpha: 0.30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.verified_user_rounded,
-                    color: Color(0xFFC084FC),
-                    size: 13,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    "Verification Code",
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFC084FC),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
+              const Icon(
+                Icons.verified_user_rounded,
+                color: Color(0xFFC084FC),
+                size: 16,
               ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: digits.map((digit) {
-                  return Container(
-                    width: 28,
-                    height: 34,
-                    margin: const EdgeInsets.only(right: 5),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFC084FC),
-                          Color(0xFFA855F7),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFA855F7).withValues(alpha: 0.25),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      digit,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 6),
+              const SizedBox(width: 6),
               Text(
-                "Share this code with the SEWAC worker.",
+                "Verification Required",
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withValues(alpha: 0.50),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFFC084FC),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-// ============================================================================
-// COMPACT RECENT COMPLAINT VERIFICATION CODE SECTION
-// ============================================================================
-
-class _RecentVerificationCodeSection extends StatelessWidget {
-  final String verificationCode;
-
-  const _RecentVerificationCodeSection({
-    super.key,
-    required this.verificationCode,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final digits = verificationCode.split('');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Divider(
-            color: Colors.white.withValues(alpha: 0.12),
-            height: 1,
-            thickness: 1,
-          ),
-        ),
-        Row(
-          children: [
-            const Icon(
-              Icons.lock_outline_rounded,
-              color: Color(0xFFC084FC),
-              size: 13,
+          const SizedBox(height: 6),
+          Text(
+            "Enter the 6-digit OTP sent to your registered phone number.",
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white.withValues(alpha: 0.58),
+              fontSize: 10.5,
+              height: 1.35,
             ),
-            const SizedBox(width: 4),
-            Text(
-              "Verification Code",
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFC084FC),
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _otpController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            maxLength: 6,
+            obscureText: false,
+            enabled: !_isVerifying,
+            onSubmitted: (_) => _verify(),
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 8,
+            ),
+            decoration: InputDecoration(
+              counterText: "",
+              hintText: "000000",
+              hintStyle: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withValues(alpha: 0.22),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 8,
+              ),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.06),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 11,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Color(0xFFC084FC),
+                  width: 1.4,
+                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: digits.map((digit) {
-            return Container(
-              width: 30,
-              height: 36,
-              margin: const EdgeInsets.only(right: 6),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFC084FC),
-                    Color(0xFFA855F7),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  width: 0.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFA855F7).withValues(alpha: 0.25),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                digit,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "Waiting for citizen verification",
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 10,
-            fontWeight: FontWeight.w400,
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: ElevatedButton(
+              onPressed: _isVerifying ? null : _verify,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA855F7),
+                foregroundColor: Colors.white,
+                disabledBackgroundColor:
+                    const Color(0xFFA855F7).withValues(alpha: 0.35),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: _isVerifying
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      "Verify OTP",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1563,9 +1540,11 @@ class _RecentVerificationCodeSection extends StatelessWidget {
 
 class _HomeComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
+  final Future<void> Function(String ticketNumber, String otp) onVerifyOtp;
 
   const _HomeComplaintCardItem({
     required this.item,
+    required this.onVerifyOtp,
   });
 
   String get formattedDate {
@@ -1598,10 +1577,10 @@ class _HomeComplaintCardItem extends StatelessWidget {
     return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $ampm";
   }
 
-bool get showVerificationCode =>
-    item.status.toUpperCase() == "OTP_SENT" &&
-        item.verificationCode != null &&
-        item.verificationCode!.isNotEmpty;
+bool get showVerificationInput {
+    final status = item.status.toUpperCase();
+    return status == "OTP_SENT" || status == "READY_FOR_VERIFICATION";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1737,12 +1716,13 @@ bool get showVerificationCode =>
                   ),
                 );
               },
-              child: showVerificationCode
-                  ? _RecentVerificationCodeSection(
-                key: ValueKey("verif_recent_${item.id}"),
-                verificationCode: item.verificationCode!,
+              child: showVerificationInput
+                  ? _OtpVerificationSection(
+                key: ValueKey("otp_recent_${item.id}_${item.status}"),
+                ticketNumber: item.ticketNumber ?? "",
+                onVerify: onVerifyOtp,
               )
-                  : const SizedBox.shrink(key: ValueKey("empty_verif_recent")),
+                  : const SizedBox.shrink(key: ValueKey("empty_otp_recent")),
             ),
           ),
         ],
@@ -1780,6 +1760,37 @@ class _ViewAllComplaintsPageState
     _complaints = List.from(widget.complaints);
   }
 
+  Future<void> _verifyComplaintOtp(
+    String ticketNumber,
+    String otp,
+  ) async {
+    try {
+      await _complaintService.verifyComplaintOtp(
+        ticketNumber: ticketNumber,
+        otp: otp,
+      );
+
+      await _handleRefresh();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFE53935),
+          content: Text(
+            e.toString().replaceFirst("Exception: ", ""),
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+      rethrow;
+    }
+  }
+
   Future<void> _handleRefresh() async {
   try {
     final complaints =
@@ -1796,41 +1807,8 @@ class _ViewAllComplaintsPageState
 }
 
   Future<List<ComplaintModel>> _loadComplaintsWithVerification() async {
-  final complaints = await _complaintService.getComplaints();
-
-  return Future.wait(
-    complaints.map((complaint) async {
-      final ticketNumber = complaint.ticketNumber;
-
-      if (ticketNumber == null ||
-          ticketNumber.isEmpty ||
-          complaint.status.toUpperCase() != "OTP_SENT") {
-        return complaint;
-      }
-
-      try {
-        final verification =
-            await _complaintService.getComplaintVerification(ticketNumber);
-
-        final code = verification["verification_code"] ??
-            verification["verificationCode"];
-
-        final expiresAtRaw =
-            verification["verification_expires_at"] ??
-            verification["verificationExpiresAt"];
-
-        return complaint.copyWith(
-          verificationCode: code?.toString(),
-          verificationExpiresAt: expiresAtRaw != null
-              ? DateTime.tryParse(expiresAtRaw.toString())
-              : null,
-        );
-      } catch (_) {
-        return complaint;
-      }
-    }),
-  );
-}
+    return await _complaintService.getComplaints();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1881,8 +1859,8 @@ class _ViewAllComplaintsPageState
                     itemBuilder:
                         (context, index) {
                       return _ViewAllComplaintCardItem(
-                        item:
-                        _complaints[index],
+                        item: _complaints[index],
+                        onVerifyOtp: _verifyComplaintOtp,
                       );
                     },
                   ),
@@ -1980,9 +1958,11 @@ class _ViewAllComplaintsPageState
 
 class _ViewAllComplaintCardItem extends StatelessWidget {
   final ComplaintModel item;
+  final Future<void> Function(String ticketNumber, String otp) onVerifyOtp;
 
   const _ViewAllComplaintCardItem({
     required this.item,
+    required this.onVerifyOtp,
   });
 
   String get formattedDate {
@@ -2026,10 +2006,10 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
     }
   }
 
-bool get showVerificationCode =>
-    item.status.toUpperCase() == "OTP_SENT" &&
-        item.verificationCode != null &&
-        item.verificationCode!.isNotEmpty;
+bool get showVerificationInput {
+    final status = item.status.toUpperCase();
+    return status == "OTP_SENT" || status == "READY_FOR_VERIFICATION";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2196,12 +2176,13 @@ bool get showVerificationCode =>
                         ),
                       );
                     },
-                    child: showVerificationCode
-                        ? _VerificationCodeSection(
-                      key: ValueKey("verif_view_all_${item.id}"),
-                      verificationCode: item.verificationCode!,
+                    child: showVerificationInput
+                        ? _OtpVerificationSection(
+                      key: ValueKey("otp_view_all_${item.id}_${item.status}"),
+                      ticketNumber: item.ticketNumber ?? "",
+                      onVerify: onVerifyOtp,
                     )
-                        : const SizedBox.shrink(key: ValueKey("empty_verif_view_all")),
+                        : const SizedBox.shrink(key: ValueKey("empty_otp_view_all")),
                   ),
                 ),
               ],
