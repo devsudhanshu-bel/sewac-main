@@ -10,6 +10,11 @@ import ComplaintDetails from "../components/complaints/ComplaintDetails";
 import { useLanguage } from "../i18n";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+/* =========================================================
+   API RESPONSE PARSER
+========================================================= */
+
 const parseApiResponse = async (response) => {
   const contentType = response.headers.get("content-type") || "";
 
@@ -65,10 +70,6 @@ const DEFAULT_KPIS = {
 ========================================================= */
 
 export default function Complaints() {
-  /* =======================================================
-     LANGUAGE
-  ======================================================= */
-
   const { t } = useLanguage();
 
   /* =======================================================
@@ -76,9 +77,7 @@ export default function Complaints() {
   ======================================================= */
 
   const [complaints, setComplaints] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   /* =======================================================
@@ -100,6 +99,21 @@ export default function Complaints() {
   const [savingComplaint, setSavingComplaint] = useState(false);
 
   /* =======================================================
+     OTP REQUEST STATE
+  ======================================================= */
+
+  const [requestingOTP, setRequestingOTP] = useState(false);
+
+  /*
+   * Hard lock against duplicate OTP requests.
+   *
+   * useRef is intentional because it changes immediately,
+   * before React performs another render.
+   */
+
+  const otpRequestInProgressRef = useRef(false);
+
+  /* =======================================================
      PAGINATION
   ======================================================= */
 
@@ -110,6 +124,7 @@ export default function Complaints() {
   ======================================================= */
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+
   const searchTimerRef = useRef(null);
 
   /* =======================================================
@@ -145,41 +160,21 @@ export default function Complaints() {
       params.set("page", page);
       params.set("limit", 10);
 
-      /* ===================================================
-         SEARCH
-      =================================================== */
-
       if (activeFilters.search?.trim()) {
         params.set("search", activeFilters.search.trim());
       }
-
-      /* ===================================================
-         STATUS
-      =================================================== */
 
       if (activeFilters.status) {
         params.set("status", activeFilters.status);
       }
 
-      /* ===================================================
-         CATEGORY
-      =================================================== */
-
       if (activeFilters.category) {
         params.set("category", activeFilters.category);
       }
 
-      /* ===================================================
-         DATE FROM
-      =================================================== */
-
       if (activeFilters.dateFrom) {
         params.set("dateFrom", activeFilters.dateFrom);
       }
-
-      /* ===================================================
-         DATE TO
-      =================================================== */
 
       if (activeFilters.dateTo) {
         params.set("dateTo", activeFilters.dateTo);
@@ -189,7 +184,6 @@ export default function Complaints() {
         `${API_BASE_URL}/api/complaints?${params.toString()}`,
         {
           method: "GET",
-
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
@@ -206,15 +200,7 @@ export default function Complaints() {
         );
       }
 
-      /* ===================================================
-         UPDATE COMPLAINTS
-      =================================================== */
-
       setComplaints(result.data?.items || []);
-
-      /* ===================================================
-         UPDATE PAGINATION
-      =================================================== */
 
       setPagination(result.data?.pagination || DEFAULT_PAGINATION);
     } catch (err) {
@@ -248,7 +234,6 @@ export default function Complaints() {
 
       const response = await fetch(`${API_BASE_URL}/api/complaints/kpis`, {
         method: "GET",
-
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
@@ -271,7 +256,7 @@ export default function Complaints() {
   };
 
   /* =======================================================
-     SAVE COMPLAINT CHANGES
+     SAVE COMPLAINT
   ======================================================= */
 
   const saveComplaintChanges = async (updates) => {
@@ -299,13 +284,11 @@ export default function Complaints() {
         )}`,
         {
           method: "PATCH",
-
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-
           body: JSON.stringify({
             status: updates.status,
             remarks: updates.remarks,
@@ -322,21 +305,9 @@ export default function Complaints() {
         );
       }
 
-      /* =================================================
-         UPDATE SELECTED COMPLAINT
-      ================================================= */
-
       setSelectedComplaint(result.data);
 
-      /* =================================================
-         REFRESH TABLE
-      ================================================= */
-
       await fetchComplaints(pagination.page, filters);
-
-      /* =================================================
-         REFRESH KPIs
-      ================================================= */
 
       await fetchKPIs();
 
@@ -364,6 +335,18 @@ export default function Complaints() {
       return;
     }
 
+    /*
+     * Prevent duplicate requests immediately.
+     */
+
+    if (otpRequestInProgressRef.current) {
+      return;
+    }
+
+    otpRequestInProgressRef.current = true;
+
+    setRequestingOTP(true);
+
     try {
       const token = getAdminToken();
 
@@ -376,19 +359,38 @@ export default function Complaints() {
         );
       }
 
+      const ticketNumber = selectedComplaint.ticket_number;
+
+      console.log("Requesting OTP for:", ticketNumber);
+
       const response = await fetch(
         `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-          selectedComplaint.ticket_number,
+          ticketNumber,
         )}/request-verification`,
         {
           method: "POST",
-
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
           },
         },
       );
+
+      /*
+       * IMPORTANT:
+       *
+       * We explicitly handle 429 before trying
+       * to interpret it as a normal API response.
+       */
+
+      if (response.status === 429) {
+        throw new Error(
+          t(
+            "complaints.errors.tooManyRequests",
+            "Too many OTP requests. Please wait a moment before trying again.",
+          ),
+        );
+      }
 
       const result = await parseApiResponse(response);
 
@@ -402,30 +404,29 @@ export default function Complaints() {
         );
       }
 
-      /* =================================================
-           REFRESH TABLE
-        ================================================= */
+      /*
+       * SECURITY:
+       *
+       * We intentionally DO NOT read/display
+       * any OTP value from the response.
+       *
+       * The OTP belongs to the citizen flow.
+       */
 
       await fetchComplaints(pagination.page, filters);
 
-      /* =================================================
-           REFRESH KPIs
-        ================================================= */
-
       await fetchKPIs();
 
-      /* =================================================
-           REFRESH SELECTED COMPLAINT
-        ================================================= */
+      /*
+       * Refresh selected complaint so the UI
+       * changes to OTP_SENT.
+       */
 
       try {
         const detailResponse = await fetch(
-          `${API_BASE_URL}/api/complaints/${encodeURIComponent(
-            selectedComplaint.ticket_number,
-          )}`,
+          `${API_BASE_URL}/api/complaints/${encodeURIComponent(ticketNumber)}`,
           {
             method: "GET",
-
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
@@ -458,6 +459,10 @@ export default function Complaints() {
             "Unable to request verification OTP.",
           ),
       );
+    } finally {
+      otpRequestInProgressRef.current = false;
+
+      setRequestingOTP(false);
     }
   };
 
@@ -496,13 +501,11 @@ export default function Complaints() {
         )}/verify`,
         {
           method: "POST",
-
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-
           body: JSON.stringify({
             otp,
           }),
@@ -520,21 +523,9 @@ export default function Complaints() {
 
       alert(t("complaints.messages.closed", "Complaint closed successfully."));
 
-      /* =================================================
-         REFRESH TABLE
-      ================================================= */
-
       await fetchComplaints(pagination.page, filters);
 
-      /* =================================================
-         REFRESH KPIs
-      ================================================= */
-
       await fetchKPIs();
-
-      /* =================================================
-         CLOSE DETAILS
-      ================================================= */
 
       setSelectedComplaint(null);
 
@@ -563,7 +554,6 @@ export default function Complaints() {
 
     setFilters(nextFilters);
 
-    // Search input: wait until the user stops typing
     if (key === "search") {
       if (searchTimerRef.current) {
         clearTimeout(searchTimerRef.current);
@@ -576,7 +566,6 @@ export default function Complaints() {
       return;
     }
 
-    // Dropdown/date filters can fetch immediately
     fetchComplaints(1, nextFilters);
   };
 
@@ -585,6 +574,10 @@ export default function Complaints() {
   ======================================================= */
 
   const resetFilters = () => {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
     const nextFilters = {
       ...DEFAULT_FILTERS,
     };
@@ -603,11 +596,11 @@ export default function Complaints() {
   };
 
   /* =======================================================
-     CLOSE COMPLAINT DETAILS
+     CLOSE DETAILS
   ======================================================= */
 
   const closeComplaintDetails = () => {
-    if (savingComplaint) {
+    if (savingComplaint || requestingOTP) {
       return;
     }
 
@@ -617,14 +610,6 @@ export default function Complaints() {
   /* =======================================================
      INITIAL LOAD
   ======================================================= */
-
-  useEffect(() => {
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const initialFilters = {
@@ -637,7 +622,19 @@ export default function Complaints() {
   }, []);
 
   /* =======================================================
-     LOCK BACKGROUND SCROLL ON MOBILE DETAILS
+     CLEAN SEARCH TIMER
+  ======================================================= */
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
+
+  /* =======================================================
+     MOBILE SCROLL LOCK
   ======================================================= */
 
   useEffect(() => {
@@ -674,15 +671,7 @@ export default function Complaints() {
         bg-[#F8F9FC]
       "
     >
-      {/* ===================================================
-          HEADER
-      =================================================== */}
-
       <Header variant="default" />
-
-      {/* ===================================================
-          PAGE BODY
-      =================================================== */}
 
       <main
         className="
@@ -692,10 +681,6 @@ export default function Complaints() {
           flex-col
         "
       >
-        {/* =================================================
-            RESPONSIVE CONTENT WRAPPER
-        ================================================= */}
-
         <div
           className="
             flex
@@ -725,23 +710,15 @@ export default function Complaints() {
               flex-1
             "
           >
-            {/* ===============================================
-                PAGE HEADER
-            =============================================== */}
-
             <ComplaintHeader />
 
-            {/* ===============================================
-                KPI CARDS
-            =============================================== */}
+            {/* KPI */}
 
             <div className="mt-5">
               <ComplaintKPIs kpis={kpis} />
             </div>
 
-            {/* ===============================================
-                FILTERS
-            =============================================== */}
+            {/* FILTERS */}
 
             <div className="mt-5">
               <ComplaintFilters
@@ -751,9 +728,7 @@ export default function Complaints() {
               />
             </div>
 
-            {/* ===============================================
-                COMPLAINT TABLE
-            =============================================== */}
+            {/* TABLE */}
 
             <div className="mt-5 min-w-0">
               <ComplaintTable
@@ -768,7 +743,7 @@ export default function Complaints() {
           </section>
 
           {/* =================================================
-              DESKTOP COMPLAINT DETAILS
+              DESKTOP DETAILS
           ================================================= */}
 
           <aside
@@ -782,6 +757,7 @@ export default function Complaints() {
             <ComplaintDetails
               complaint={selectedComplaint}
               saving={savingComplaint}
+              requestingOTP={requestingOTP}
               onRequestVerification={requestVerification}
               onVerifyOTP={verifyOTP}
               onSaveChanges={saveComplaintChanges}
@@ -791,7 +767,7 @@ export default function Complaints() {
       </main>
 
       {/* =====================================================
-          MOBILE COMPLAINT DETAILS DRAWER
+          MOBILE DETAILS
       ===================================================== */}
 
       {selectedComplaint && (
@@ -803,10 +779,6 @@ export default function Complaints() {
             lg:hidden
           "
         >
-          {/* ===============================================
-              BACKDROP
-          =============================================== */}
-
           <button
             type="button"
             aria-label={t(
@@ -814,7 +786,7 @@ export default function Complaints() {
               "Close complaint details",
             )}
             onClick={closeComplaintDetails}
-            disabled={savingComplaint}
+            disabled={savingComplaint || requestingOTP}
             className="
               absolute
               inset-0
@@ -825,10 +797,6 @@ export default function Complaints() {
               backdrop-blur-[2px]
             "
           />
-
-          {/* ===============================================
-              MOBILE DRAWER
-          =============================================== */}
 
           <aside
             className="
@@ -847,9 +815,7 @@ export default function Complaints() {
               sm:max-w-[460px]
             "
           >
-            {/* =============================================
-                MOBILE DRAWER HEADER
-            ============================================= */}
+            {/* DRAWER HEADER */}
 
             <div
               className="
@@ -862,6 +828,7 @@ export default function Complaints() {
                 bg-white
                 px-4
                 py-3
+
                 sm:px-5
               "
             >
@@ -893,7 +860,7 @@ export default function Complaints() {
                 type="button"
                 aria-label={t("complaints.details.close", "Close")}
                 onClick={closeComplaintDetails}
-                disabled={savingComplaint}
+                disabled={savingComplaint || requestingOTP}
                 className="
                   ml-3
                   shrink-0
@@ -918,15 +885,12 @@ export default function Complaints() {
                   strokeLinejoin="round"
                 >
                   <line x1="18" y1="6" x2="6" y2="18" />
-
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
 
-            {/* =============================================
-                MOBILE DETAILS CONTENT
-            ============================================= */}
+            {/* DETAILS */}
 
             <div
               className="
@@ -940,6 +904,7 @@ export default function Complaints() {
               <ComplaintDetails
                 complaint={selectedComplaint}
                 saving={savingComplaint}
+                requestingOTP={requestingOTP}
                 onRequestVerification={requestVerification}
                 onVerifyOTP={verifyOTP}
                 onSaveChanges={saveComplaintChanges}

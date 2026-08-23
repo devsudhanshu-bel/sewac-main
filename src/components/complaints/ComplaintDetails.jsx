@@ -16,7 +16,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintDetails({
   complaint,
-  otpSent,
+  requestingOTP = false,
   onClose,
   onRequestVerification,
   onVerifyOTP,
@@ -42,7 +42,13 @@ export default function ComplaintDetails({
     }
 
     setStatus(complaint.status || "PENDING");
+
     setRemarks(complaint.remarks || "");
+
+    /*
+     * Never preserve an OTP when switching complaints.
+     */
+
     setOtp("");
   }, [complaint]);
 
@@ -58,8 +64,7 @@ export default function ComplaintDetails({
 
   const isPending = currentStatus === "PENDING";
 
-  const isReadyForVerification =
-    currentStatus === "READY_FOR_VERIFICATION";
+  const isReadyForVerification = currentStatus === "READY_FOR_VERIFICATION";
 
   const isOtpSent = currentStatus === "OTP_SENT";
 
@@ -72,16 +77,13 @@ export default function ComplaintDetails({
   const adminStatusOptions = [
     {
       value: "PENDING",
-      label: t(
-        "complaints.details.statusOptions.pending",
-        "Pending"
-      ),
+      label: t("complaints.details.statusOptions.pending", "Pending"),
     },
     {
       value: "READY_FOR_VERIFICATION",
       label: t(
         "complaints.details.statusOptions.readyForVerification",
-        "Ready for Verification"
+        "Ready for Verification",
       ),
     },
   ];
@@ -108,15 +110,13 @@ export default function ComplaintDetails({
   ========================================================= */
 
   const handleOTPChange = (event) => {
-    const value = event.target.value
-      .replace(/\D/g, "")
-      .slice(0, 6);
+    const value = event.target.value.replace(/\D/g, "").slice(0, 6);
 
     setOtp(value);
   };
 
   /* =========================================================
-     STATUS BADGE
+     STATUS BADGE CLASS
   ========================================================= */
 
   const getStatusBadgeClass = () => {
@@ -132,14 +132,6 @@ export default function ComplaintDetails({
       return "bg-[#F3E8FF] text-[#7C3AED]";
     }
 
-    if (currentStatus === "IN_PROGRESS") {
-      return "bg-[#EAF2FF] text-[#2563EB]";
-    }
-
-    if (currentStatus === "ASSIGNED") {
-      return "bg-[#EEF2FF] text-[#4F46E5]";
-    }
-
     return "bg-[#FFF5D9] text-[#D99100]";
   };
 
@@ -150,40 +142,19 @@ export default function ComplaintDetails({
   const getStatusLabel = () => {
     switch (currentStatus) {
       case "PENDING":
-        return t(
-          "complaints.details.statusOptions.pending",
-          "Pending"
-        );
+        return t("complaints.details.statusOptions.pending", "Pending");
 
       case "READY_FOR_VERIFICATION":
         return t(
           "complaints.details.statusOptions.readyForVerification",
-          "Ready for Verification"
+          "Ready for Verification",
         );
 
       case "OTP_SENT":
-        return t(
-          "complaints.details.statusOptions.otpSent",
-          "OTP Sent"
-        );
-
-      case "IN_PROGRESS":
-        return t(
-          "complaints.details.statusOptions.inProgress",
-          "In Progress"
-        );
-
-      case "ASSIGNED":
-        return t(
-          "complaints.details.statusOptions.assigned",
-          "Assigned"
-        );
+        return t("complaints.details.statusOptions.otpSent", "OTP Sent");
 
       case "CLOSED":
-        return t(
-          "complaints.details.statusOptions.closed",
-          "Closed"
-        );
+        return t("complaints.details.statusOptions.closed", "Closed");
 
       default:
         return currentStatus || "—";
@@ -243,10 +214,7 @@ export default function ComplaintDetails({
                 sm:text-[13px]
               "
             >
-              {t(
-                "complaints.details.empty.title",
-                "Select a complaint"
-              )}
+              {t("complaints.details.empty.title", "Select a complaint")}
             </p>
 
             <p
@@ -260,7 +228,7 @@ export default function ComplaintDetails({
             >
               {t(
                 "complaints.details.empty.description",
-                "Select a complaint from the table to view its details."
+                "Select a complaint from the table to view its details.",
               )}
             </p>
           </div>
@@ -285,10 +253,6 @@ export default function ComplaintDetails({
         bg-white
       "
     >
-      {/* =====================================================
-          SCROLL CONTENT
-      ===================================================== */}
-
       <div
         className="
           min-h-0
@@ -315,10 +279,7 @@ export default function ComplaintDetails({
               text-gray-500
             "
           >
-            {t(
-              "complaints.details.ticketNumber",
-              "Ticket Number"
-            )}
+            {t("complaints.details.ticketNumber", "Ticket Number")}
           </p>
 
           <div
@@ -373,17 +334,11 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4 flex gap-2.5">
-          <Tag
-            size={14}
-            className="mt-0.5 shrink-0 text-gray-500"
-          />
+          <Tag size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.title",
-                "Title"
-              )}
+              {t("complaints.details.title", "Title")}
             </p>
 
             <p
@@ -407,17 +362,11 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4 flex gap-2.5">
-          <FolderOpen
-            size={14}
-            className="mt-0.5 shrink-0 text-gray-500"
-          />
+          <FolderOpen size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.category",
-                "Category"
-              )}
+              {t("complaints.details.category", "Category")}
             </p>
 
             <p
@@ -440,17 +389,11 @@ export default function ComplaintDetails({
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex min-w-0 gap-2.5">
-            <Phone
-              size={14}
-              className="mt-0.5 shrink-0 text-gray-500"
-            />
+            <Phone size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
-                {t(
-                  "complaints.details.citizenPhone",
-                  "Citizen (Phone)"
-                )}
+                {t("complaints.details.citizenPhone", "Citizen (Phone)")}
               </p>
 
               <p
@@ -485,7 +428,7 @@ export default function ComplaintDetails({
             "
             aria-label={t(
               "complaints.details.actions.callCitizen",
-              "Call citizen"
+              "Call citizen",
             )}
           >
             <Phone size={14} />
@@ -497,17 +440,11 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4 flex gap-2.5">
-          <MapPin
-            size={14}
-            className="mt-0.5 shrink-0 text-gray-500"
-          />
+          <MapPin size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.address",
-                "Address"
-              )}
+              {t("complaints.details.address", "Address")}
             </p>
 
             <p
@@ -531,17 +468,11 @@ export default function ComplaintDetails({
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex min-w-0 gap-2.5">
-            <Map
-              size={14}
-              className="mt-0.5 shrink-0 text-gray-500"
-            />
+            <Map size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-gray-500">
-                {t(
-                  "complaints.details.coordinates",
-                  "Coordinates"
-                )}
+                {t("complaints.details.coordinates", "Coordinates")}
               </p>
 
               <p
@@ -553,8 +484,7 @@ export default function ComplaintDetails({
                   sm:text-[12px]
                 "
               >
-                {complaint.latitude ?? "—"},{" "}
-                {complaint.longitude ?? "—"}
+                {complaint.latitude ?? "—"}, {complaint.longitude ?? "—"}
               </p>
             </div>
           </div>
@@ -577,7 +507,7 @@ export default function ComplaintDetails({
             "
             aria-label={t(
               "complaints.details.actions.viewOnMap",
-              "View coordinates on map"
+              "View coordinates on map",
             )}
           >
             <Map size={14} />
@@ -590,16 +520,10 @@ export default function ComplaintDetails({
 
         <div className="mb-4">
           <div className="mb-2 flex items-center gap-2.5">
-            <ImageIcon
-              size={14}
-              className="shrink-0 text-gray-500"
-            />
+            <ImageIcon size={14} className="shrink-0 text-gray-500" />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.complaintImage",
-                "Complaint Image"
-              )}
+              {t("complaints.details.complaintImage", "Complaint Image")}
             </p>
           </div>
 
@@ -609,10 +533,7 @@ export default function ComplaintDetails({
                 src={complaint.image_url}
                 alt={
                   complaint.title ||
-                  t(
-                    "complaints.details.imageAlt",
-                    "Complaint"
-                  )
+                  t("complaints.details.imageAlt", "Complaint")
                 }
                 className="
                   h-[130px]
@@ -640,10 +561,7 @@ export default function ComplaintDetails({
                   sm:text-[11px]
                 "
               >
-                {t(
-                  "complaints.details.noImage",
-                  "No complaint image"
-                )}
+                {t("complaints.details.noImage", "No complaint image")}
               </div>
             )}
 
@@ -668,7 +586,7 @@ export default function ComplaintDetails({
                 "
                 aria-label={t(
                   "complaints.details.actions.expandImage",
-                  "Expand complaint image"
+                  "Expand complaint image",
                 )}
               >
                 <Expand size={14} />
@@ -682,17 +600,11 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div className="mb-4 flex gap-2.5">
-          <FileText
-            size={14}
-            className="mt-0.5 shrink-0 text-gray-500"
-          />
+          <FileText size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.description",
-                "Description"
-              )}
+              {t("complaints.details.description", "Description")}
             </p>
 
             <p
@@ -708,7 +620,7 @@ export default function ComplaintDetails({
               {complaint.description ||
                 t(
                   "complaints.details.noDescription",
-                  "No description provided."
+                  "No description provided.",
                 )}
             </p>
           </div>
@@ -720,22 +632,14 @@ export default function ComplaintDetails({
 
         <div className="mb-4">
           <div className="mb-1.5 flex items-center gap-2.5">
-            <ClipboardList
-              size={14}
-              className="shrink-0 text-gray-500"
-            />
+            <ClipboardList size={14} className="shrink-0 text-gray-500" />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.status",
-                "Status"
-              )}
+              {t("complaints.details.status", "Status")}
             </p>
           </div>
 
-          {/* =================================================
-              CLOSED
-          ================================================= */}
+          {/* CLOSED */}
 
           {isClosed ? (
             <div
@@ -758,13 +662,11 @@ export default function ComplaintDetails({
             >
               {t(
                 "complaints.details.closedVerified",
-                "Closed — Citizen Verified"
+                "Closed — Citizen Verified",
               )}
             </div>
           ) : isOtpSent ? (
-            /* =================================================
-               OTP SENT
-            ================================================= */
+            /* OTP SENT */
 
             <div
               className="
@@ -786,24 +688,16 @@ export default function ComplaintDetails({
             >
               {t(
                 "complaints.details.verificationOtpSent",
-                "Verification OTP Sent"
+                "Verification OTP Sent",
               )}
             </div>
           ) : (
-            /* =================================================
-               ADMIN STATUS SELECT
-            ================================================= */
+            /* PENDING / READY */
 
             <select
               value={status}
-              onChange={(event) =>
-                setStatus(event.target.value)
-              }
-              disabled={
-                !complaint ||
-                saving ||
-                !isPending
-              }
+              onChange={(event) => setStatus(event.target.value)}
+              disabled={!complaint || saving || !isPending || requestingOTP}
               className="
                 h-9
                 w-full
@@ -825,10 +719,7 @@ export default function ComplaintDetails({
               "
             >
               {adminStatusOptions.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
@@ -842,39 +733,28 @@ export default function ComplaintDetails({
 
         <div className="mb-4">
           <div className="mb-1.5 flex items-center gap-2.5">
-            <FileText
-              size={14}
-              className="shrink-0 text-gray-500"
-            />
+            <FileText size={14} className="shrink-0 text-gray-500" />
 
             <p className="text-[10px] font-semibold text-gray-500">
-              {t(
-                "complaints.details.remarks",
-                "Remarks"
-              )}
+              {t("complaints.details.remarks", "Remarks")}
             </p>
           </div>
 
           <textarea
             value={remarks}
-            onChange={(event) =>
-              setRemarks(event.target.value)
-            }
+            onChange={(event) => setRemarks(event.target.value)}
             disabled={
-              !complaint ||
-              saving ||
-              isClosed ||
-              isOtpSent
+              !complaint || saving || isClosed || isOtpSent || requestingOTP
             }
             placeholder={
               complaint
                 ? t(
                     "complaints.details.placeholders.addRemarks",
-                    "Add remarks..."
+                    "Add remarks...",
                   )
                 : t(
                     "complaints.details.placeholders.selectComplaint",
-                    "Select a complaint first..."
+                    "Select a complaint first...",
                   )
             }
             className="
@@ -908,89 +788,76 @@ export default function ComplaintDetails({
         {!isClosed && !isOtpSent && (
           <div
             className="
-              flex
-              flex-col
-              gap-2
-              pt-1
-              pb-2
-              min-[420px]:flex-row
-              min-[420px]:justify-end
-            "
+                flex
+                flex-col
+                gap-2
+                pt-1
+                pb-2
+                min-[420px]:flex-row
+                min-[420px]:justify-end
+              "
           >
             <button
               type="button"
-              disabled={!complaint || saving}
+              disabled={!complaint || saving || requestingOTP}
               onClick={() => {
                 if (!complaint) {
                   return;
                 }
 
-                setStatus(
-                  complaint.status || "PENDING"
-                );
+                setStatus(complaint.status || "PENDING");
 
-                setRemarks(
-                  complaint.remarks || ""
-                );
+                setRemarks(complaint.remarks || "");
               }}
               className="
-                h-9
-                w-full
-                rounded-lg
-                border
-                border-gray-200
-                bg-white
-                px-4
-                text-[10px]
-                font-semibold
-                text-gray-600
-                transition
-                hover:bg-gray-50
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-                min-[420px]:w-auto
-                sm:text-[11px]
-              "
+                  h-9
+                  w-full
+                  rounded-lg
+                  border
+                  border-gray-200
+                  bg-white
+                  px-4
+                  text-[10px]
+                  font-semibold
+                  text-gray-600
+                  transition
+                  hover:bg-gray-50
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  min-[420px]:w-auto
+                  sm:text-[11px]
+                "
             >
-              {t(
-                "complaints.details.actions.cancel",
-                "Cancel"
-              )}
+              {t("complaints.details.actions.cancel", "Cancel")}
             </button>
 
             <button
               type="button"
-              disabled={!complaint || saving}
+              disabled={!complaint || saving || requestingOTP}
               onClick={handleSave}
               className="
-                h-9
-                w-full
-                rounded-lg
-                bg-gradient-to-r
-                from-violet-600
-                to-fuchsia-600
-                px-4
-                text-[10px]
-                font-semibold
-                text-white
-                shadow-sm
-                transition
-                hover:opacity-95
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-                min-[420px]:w-auto
-                sm:text-[11px]
-              "
+                  h-9
+                  w-full
+                  rounded-lg
+                  bg-gradient-to-r
+                  from-violet-600
+                  to-fuchsia-600
+                  px-4
+                  text-[10px]
+                  font-semibold
+                  text-white
+                  shadow-sm
+                  transition
+                  hover:opacity-95
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  min-[420px]:w-auto
+                  sm:text-[11px]
+                "
             >
               {saving
-                ? t(
-                    "complaints.details.actions.saving",
-                    "Saving..."
-                  )
-                : t(
-                    "complaints.details.actions.saveChanges",
-                    "Save Changes"
-                  )}
+                ? t("complaints.details.actions.saving", "Saving...")
+                : t("complaints.details.actions.saveChanges", "Save Changes")}
             </button>
           </div>
         )}
@@ -1011,16 +878,17 @@ export default function ComplaintDetails({
               READY → REQUEST OTP
           ================================================= */}
 
-          {isReadyForVerification && !otpSent && (
+          {isReadyForVerification && (
             <button
               type="button"
-              disabled={!complaint || saving}
-              onClick={() =>
-                onRequestVerification?.()
-              }
+              disabled={!complaint || saving || requestingOTP}
+              onClick={() => onRequestVerification?.()}
               className="
+                flex
                 h-9
                 w-full
+                items-center
+                justify-center
                 rounded-lg
                 bg-gradient-to-r
                 from-violet-600
@@ -1036,10 +904,12 @@ export default function ComplaintDetails({
                 sm:text-[11px]
               "
             >
-              {t(
-                "complaints.details.actions.requestVerification",
-                "Request Verification OTP"
-              )}
+              {requestingOTP
+                ? "Sending OTP..."
+                : t(
+                    "complaints.details.actions.requestVerification",
+                    "Request Verification OTP",
+                  )}
             </button>
           )}
 
@@ -1057,21 +927,19 @@ export default function ComplaintDetails({
                   text-gray-500
                 "
               >
-                {t(
-                  "complaints.details.enterOtp",
-                  "Enter Verification OTP"
-                )}
+                {t("complaints.details.enterOtp", "Enter Verification OTP")}
               </p>
 
               <input
                 type="text"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 maxLength={6}
                 value={otp}
                 onChange={handleOTPChange}
                 placeholder={t(
                   "complaints.details.placeholders.otp",
-                  "Enter 6-digit OTP"
+                  "Enter 6-digit OTP",
                 )}
                 className="
                   h-9
@@ -1096,13 +964,8 @@ export default function ComplaintDetails({
 
               <button
                 type="button"
-                disabled={
-                  !complaint ||
-                  otp.length !== 6
-                }
-                onClick={() =>
-                  onVerifyOTP?.(otp)
-                }
+                disabled={!complaint || otp.length !== 6}
+                onClick={() => onVerifyOTP?.(otp)}
                 className="
                   mt-2
                   h-9
@@ -1123,14 +986,14 @@ export default function ComplaintDetails({
               >
                 {t(
                   "complaints.details.actions.verifyOtp",
-                  "Verify OTP & Close Complaint"
+                  "Verify OTP & Close Complaint",
                 )}
               </button>
             </div>
           )}
 
           {/* =================================================
-              CLOSED MESSAGE
+              CLOSED
           ================================================= */}
 
           {isClosed && (
@@ -1151,13 +1014,11 @@ export default function ComplaintDetails({
             >
               {t(
                 "complaints.details.closedMessage",
-                "Complaint closed after successful citizen verification."
+                "Complaint closed after successful citizen verification.",
               )}
             </div>
           )}
         </div>
-
-        {/* Bottom spacing */}
 
         <div className="h-2" />
       </div>
