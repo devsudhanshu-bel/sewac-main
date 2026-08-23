@@ -42,8 +42,8 @@ class ApiConstants {
   static String complaintByTicket(String ticketNumber) =>
       "$complaint/$ticketNumber";
 
-  static String complaintVerification(String ticketNumber) =>
-    "$complaint/$ticketNumber/verification";
+ static String verifyComplaintOtp(String ticketNumber) =>
+    "$complaint/$ticketNumber/verify"; 
   
   /// =====================================================================
   /// ANALYTICS
