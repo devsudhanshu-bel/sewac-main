@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Tag,
@@ -12,6 +12,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 
+import gsap from "gsap";
+
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintDetails({
@@ -23,7 +25,7 @@ export default function ComplaintDetails({
   onSaveChanges,
   saving = false,
 
-  // NEW:
+  // OTP expiry props from Complaints.jsx
   otpExpired = false,
   otpExpiresAt = null,
 }) {
@@ -34,15 +36,232 @@ export default function ComplaintDetails({
   const [remarks, setRemarks] = useState("");
   const [otpRequested, setOtpRequested] = useState(false);
 
-  /*
-   * Local expiry state.
-   *
-   * The parent already calculates expiry, but we also
-   * calculate it here so the component stays responsive.
-   */
   const [localOtpExpired, setLocalOtpExpired] = useState(false);
 
   const [remainingSeconds, setRemainingSeconds] = useState(null);
+
+  /* =========================================================
+     GSAP REFS
+  ========================================================= */
+
+  const pageRef = useRef(null);
+  const ticketRef = useRef(null);
+  const sectionsRef = useRef([]);
+  const verificationRef = useRef(null);
+  const actionButtonsRef = useRef(null);
+  const imageRef = useRef(null);
+
+  const previousComplaintRef = useRef(null);
+
+  /* =========================================================
+     ADD SECTION REF
+  ========================================================= */
+
+  const addSectionRef = (element) => {
+    if (element && !sectionsRef.current.includes(element)) {
+      sectionsRef.current.push(element);
+    }
+  };
+
+  /* =========================================================
+     PAGE ENTRANCE ANIMATION
+  ========================================================= */
+
+  useEffect(() => {
+    if (!complaint || !pageRef.current) {
+      return;
+    }
+
+    /*
+     * Reset previous references so sections don't
+     * accumulate across complaint selections.
+     */
+    sectionsRef.current = sectionsRef.current.filter(
+      (element) => element && document.body.contains(element),
+    );
+
+    const ctx = gsap.context(() => {
+      const timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
+
+      gsap.set(
+        [ticketRef.current, ...sectionsRef.current, verificationRef.current],
+        {
+          opacity: 0,
+          y: 16,
+        },
+      );
+
+      timeline
+        .to(ticketRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: 0.45,
+        })
+        .to(
+          sectionsRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.35,
+            stagger: 0.055,
+          },
+          "-=0.18",
+        )
+        .to(
+          verificationRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+          },
+          "-=0.12",
+        );
+    }, pageRef);
+
+    return () => {
+      ctx.revert();
+    };
+  }, [complaint?.ticket_number]);
+
+  /* =========================================================
+     OTP STATE ANIMATION
+  ========================================================= */
+
+  useEffect(() => {
+    if (!verificationRef.current) {
+      return;
+    }
+
+    if (complaint?.status === "OTP_SENT" && !effectiveOtpExpired) {
+      gsap.fromTo(
+        verificationRef.current,
+        {
+          opacity: 0.5,
+          y: 8,
+          scale: 0.99,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.4,
+          ease: "power2.out",
+        },
+      );
+    }
+  }, [complaint?.status, localOtpExpired, otpExpired]);
+
+  /* =========================================================
+     EXPIRED OTP ANIMATION
+  ========================================================= */
+
+  useEffect(() => {
+    if (!verificationRef.current || !effectiveOtpExpired) {
+      return;
+    }
+
+    gsap.fromTo(
+      verificationRef.current,
+      {
+        opacity: 0,
+        y: 12,
+        scale: 0.98,
+      },
+      {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.45,
+        ease: "back.out(1.4)",
+      },
+    );
+  }, [localOtpExpired, otpExpired]);
+
+  /* =========================================================
+     BUTTON MICRO ANIMATIONS
+  ========================================================= */
+
+  useEffect(() => {
+    if (!pageRef.current) {
+      return;
+    }
+
+    const buttons = pageRef.current.querySelectorAll("button");
+
+    const cleanups = [];
+
+    buttons.forEach((button) => {
+      const handleEnter = () => {
+        if (button.disabled) {
+          return;
+        }
+
+        gsap.to(button, {
+          scale: 1.025,
+          duration: 0.18,
+          ease: "power2.out",
+        });
+      };
+
+      const handleLeave = () => {
+        gsap.to(button, {
+          scale: 1,
+          duration: 0.18,
+          ease: "power2.out",
+        });
+      };
+
+      const handleDown = () => {
+        if (button.disabled) {
+          return;
+        }
+
+        gsap.to(button, {
+          scale: 0.97,
+          duration: 0.08,
+          ease: "power2.out",
+        });
+      };
+
+      const handleUp = () => {
+        if (button.disabled) {
+          return;
+        }
+
+        gsap.to(button, {
+          scale: 1.025,
+          duration: 0.12,
+          ease: "power2.out",
+        });
+      };
+
+      button.addEventListener("mouseenter", handleEnter);
+
+      button.addEventListener("mouseleave", handleLeave);
+
+      button.addEventListener("mousedown", handleDown);
+
+      button.addEventListener("mouseup", handleUp);
+
+      cleanups.push(() => {
+        button.removeEventListener("mouseenter", handleEnter);
+
+        button.removeEventListener("mouseleave", handleLeave);
+
+        button.removeEventListener("mousedown", handleDown);
+
+        button.removeEventListener("mouseup", handleUp);
+      });
+    });
+
+    return () => {
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [complaint, requestingOTP, saving, effectiveOtpExpired]);
 
   /* =========================================================
      SYNC FORM WITH SELECTED COMPLAINT
@@ -65,10 +284,6 @@ export default function ComplaintDetails({
 
     setOtp("");
 
-    /*
-     * If backend says OTP_SENT, OTP input is available
-     * unless the OTP has expired.
-     */
     setOtpRequested(complaint.status === "OTP_SENT");
   }, [complaint]);
 
@@ -139,23 +354,7 @@ export default function ComplaintDetails({
 
   const isClosed = currentStatus === "CLOSED";
 
-  /*
-   * OTP is actively usable only when:
-   *
-   * status = OTP_SENT
-   * AND OTP has not expired
-   */
   const hasActiveOtp = isOtpSent && !effectiveOtpExpired;
-
-  /*
-   * OTP can be requested again when:
-   *
-   * 1. Complaint is READY_FOR_VERIFICATION
-   * OR
-   * 2. Complaint is OTP_SENT but expired
-   */
-  const canRequestOtp =
-    isReadyForVerification || (isOtpSent && effectiveOtpExpired);
 
   /* =========================================================
      ADMIN STATUS OPTIONS
@@ -200,6 +399,20 @@ export default function ComplaintDetails({
     const value = event.target.value.replace(/\D/g, "").slice(0, 6);
 
     setOtp(value);
+
+    if (value.length === 6) {
+      gsap.fromTo(
+        event.target,
+        {
+          scale: 0.985,
+        },
+        {
+          scale: 1,
+          duration: 0.18,
+          ease: "power2.out",
+        },
+      );
+    }
   };
 
   /* =========================================================
@@ -212,28 +425,76 @@ export default function ComplaintDetails({
     }
 
     try {
-      /*
-       * Clear old OTP immediately.
-       */
       setOtp("");
+
+      if (verificationRef.current) {
+        gsap.to(verificationRef.current, {
+          opacity: 0.65,
+          scale: 0.99,
+          duration: 0.2,
+          ease: "power2.out",
+        });
+      }
 
       await onRequestVerification?.();
 
-      /*
-       * Parent will update:
-       * otpExpiresAt
-       * otpExpired
-       * selectedComplaint
-       *
-       * We keep otpRequested true so
-       * the component knows OTP was requested.
-       */
       setOtpRequested(true);
-
       setLocalOtpExpired(false);
+
+      if (verificationRef.current) {
+        gsap.fromTo(
+          verificationRef.current,
+          {
+            opacity: 0,
+            y: 15,
+            scale: 0.98,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.5,
+            ease: "back.out(1.4)",
+          },
+        );
+      }
     } catch (error) {
       console.error("OTP request failed:", error);
+
+      if (verificationRef.current) {
+        gsap.to(verificationRef.current, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.2,
+        });
+      }
     }
+  };
+
+  /* =========================================================
+     VERIFY OTP ANIMATION
+  ========================================================= */
+
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6 || effectiveOtpExpired) {
+      return;
+    }
+
+    const button = verificationRef.current?.querySelector(
+      "[data-verify-button]",
+    );
+
+    if (button) {
+      gsap.to(button, {
+        scale: 0.96,
+        duration: 0.08,
+        yoyo: true,
+        repeat: 1,
+        ease: "power2.inOut",
+      });
+    }
+
+    await onVerifyOTP?.(otp);
   };
 
   /* =========================================================
@@ -388,6 +649,7 @@ export default function ComplaintDetails({
 
   return (
     <div
+      ref={pageRef}
       className="
         flex
         h-full
@@ -415,7 +677,7 @@ export default function ComplaintDetails({
             TICKET
         =================================================== */}
 
-        <div className="mb-4">
+        <div ref={ticketRef} className="mb-4">
           <p
             className="
               mb-1.5
@@ -478,7 +740,7 @@ export default function ComplaintDetails({
             TITLE
         =================================================== */}
 
-        <div className="mb-4 flex gap-2.5">
+        <div ref={addSectionRef} className="mb-4 flex gap-2.5">
           <Tag size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
@@ -506,7 +768,7 @@ export default function ComplaintDetails({
             CATEGORY
         =================================================== */}
 
-        <div className="mb-4 flex gap-2.5">
+        <div ref={addSectionRef} className="mb-4 flex gap-2.5">
           <FolderOpen size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
@@ -532,7 +794,10 @@ export default function ComplaintDetails({
             PHONE
         =================================================== */}
 
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div
+          ref={addSectionRef}
+          className="mb-4 flex items-center justify-between gap-3"
+        >
           <div className="flex min-w-0 gap-2.5">
             <Phone size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
@@ -584,7 +849,7 @@ export default function ComplaintDetails({
             ADDRESS
         =================================================== */}
 
-        <div className="mb-4 flex gap-2.5">
+        <div ref={addSectionRef} className="mb-4 flex gap-2.5">
           <MapPin size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
@@ -611,7 +876,10 @@ export default function ComplaintDetails({
             COORDINATES
         =================================================== */}
 
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div
+          ref={addSectionRef}
+          className="mb-4 flex items-center justify-between gap-3"
+        >
           <div className="flex min-w-0 gap-2.5">
             <Map size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
@@ -663,7 +931,7 @@ export default function ComplaintDetails({
             IMAGE
         =================================================== */}
 
-        <div className="mb-4">
+        <div ref={addSectionRef} className="mb-4">
           <div className="mb-2 flex items-center gap-2.5">
             <ImageIcon size={14} className="shrink-0 text-gray-500" />
 
@@ -672,7 +940,14 @@ export default function ComplaintDetails({
             </p>
           </div>
 
-          <div className="relative overflow-hidden">
+          <div
+            ref={imageRef}
+            className="
+              relative
+              overflow-hidden
+              rounded-xl
+            "
+          >
             {complaint.image_url ? (
               <img
                 src={complaint.image_url}
@@ -685,6 +960,9 @@ export default function ComplaintDetails({
                   w-full
                   rounded-xl
                   object-cover
+                  transition-transform
+                  duration-500
+                  hover:scale-[1.03]
                   sm:h-[145px]
                 "
               />
@@ -727,7 +1005,7 @@ export default function ComplaintDetails({
                   text-violet-600
                   shadow-md
                   transition
-                  hover:scale-105
+                  hover:bg-violet-50
                 "
                 aria-label={t(
                   "complaints.details.actions.expandImage",
@@ -744,7 +1022,7 @@ export default function ComplaintDetails({
             DESCRIPTION
         =================================================== */}
 
-        <div className="mb-4 flex gap-2.5">
+        <div ref={addSectionRef} className="mb-4 flex gap-2.5">
           <FileText size={14} className="mt-0.5 shrink-0 text-gray-500" />
 
           <div className="min-w-0 flex-1">
@@ -775,7 +1053,7 @@ export default function ComplaintDetails({
             STATUS
         =================================================== */}
 
-        <div className="mb-4">
+        <div ref={addSectionRef} className="mb-4">
           <div className="mb-1.5 flex items-center gap-2.5">
             <ClipboardList size={14} className="shrink-0 text-gray-500" />
 
@@ -783,8 +1061,6 @@ export default function ComplaintDetails({
               {t("complaints.details.status", "Status")}
             </p>
           </div>
-
-          {/* CLOSED */}
 
           {isClosed ? (
             <div
@@ -811,8 +1087,6 @@ export default function ComplaintDetails({
               )}
             </div>
           ) : isOtpSent ? (
-            /* OTP SENT / EXPIRED */
-
             <div
               className={`
                 flex
@@ -826,7 +1100,6 @@ export default function ComplaintDetails({
                 text-[10px]
                 font-semibold
                 sm:text-[11px]
-
                 ${
                   effectiveOtpExpired
                     ? "border-red-200 bg-red-50 text-red-600"
@@ -842,8 +1115,6 @@ export default function ComplaintDetails({
                   )}
             </div>
           ) : (
-            /* PENDING / READY */
-
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
@@ -881,7 +1152,7 @@ export default function ComplaintDetails({
             REMARKS
         =================================================== */}
 
-        <div className="mb-4">
+        <div ref={addSectionRef} className="mb-4">
           <div className="mb-1.5 flex items-center gap-2.5">
             <FileText size={14} className="shrink-0 text-gray-500" />
 
@@ -937,6 +1208,7 @@ export default function ComplaintDetails({
 
         {!isClosed && !isOtpSent && (
           <div
+            ref={actionButtonsRef}
             className="
                 flex
                 flex-col
@@ -1017,6 +1289,7 @@ export default function ComplaintDetails({
         =================================================== */}
 
         <div
+          ref={verificationRef}
           className="
             mt-2
             border-t
@@ -1166,8 +1439,9 @@ export default function ComplaintDetails({
 
               <button
                 type="button"
+                data-verify-button
                 disabled={!complaint || otp.length !== 6 || requestingOTP}
-                onClick={() => onVerifyOTP?.(otp)}
+                onClick={handleVerifyOTP}
                 className="
                   mt-2
                   h-9
@@ -1230,8 +1504,8 @@ export default function ComplaintDetails({
                       sm:text-[10px]
                     "
                 >
-                  The previous OTP is no longer valid. Request a new OTP from
-                  the citizen verification system.
+                  The previous OTP is no longer valid. Request a new OTP to
+                  continue citizen verification.
                 </p>
               </div>
 

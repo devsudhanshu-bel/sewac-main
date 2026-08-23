@@ -1,5 +1,6 @@
 import Header from "../components/layouts/Header";
 import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
@@ -73,6 +74,12 @@ export default function Complaints() {
   const { t } = useLanguage();
 
   /* =======================================================
+     GSAP PAGE REF
+  ======================================================= */
+
+  const pageRef = useRef(null);
+
+  /* =======================================================
      COMPLAINT DATA
   ======================================================= */
 
@@ -117,7 +124,6 @@ export default function Complaints() {
   /*
    * Hard lock against duplicate OTP requests.
    */
-
   const otpRequestInProgressRef = useRef(false);
 
   /* =======================================================
@@ -133,6 +139,44 @@ export default function Complaints() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const searchTimerRef = useRef(null);
+
+  /* =======================================================
+     GSAP PAGE ENTRANCE
+  ======================================================= */
+
+  useEffect(() => {
+    if (!pageRef.current) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const sections = pageRef.current.querySelectorAll("[data-page-section]");
+
+      if (!sections.length) {
+        return;
+      }
+
+      gsap.fromTo(
+        sections,
+        {
+          opacity: 0,
+          y: 18,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.09,
+          ease: "power3.out",
+          clearProps: "transform",
+        },
+      );
+    }, pageRef);
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
 
   /* =======================================================
      ADMIN TOKEN
@@ -486,6 +530,7 @@ export default function Complaints() {
         responseExpiry || new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
       setOtpExpiresAt(newExpiry);
+
       setOtpExpired(false);
 
       /*
@@ -745,7 +790,9 @@ export default function Complaints() {
     }
 
     setSelectedComplaint(null);
+
     setOtpExpiresAt(null);
+
     setOtpExpired(false);
   };
 
@@ -803,6 +850,7 @@ export default function Complaints() {
 
   return (
     <div
+      ref={pageRef}
       className="
         flex
         min-h-screen
@@ -852,13 +900,21 @@ export default function Complaints() {
               flex-1
             "
           >
-            <ComplaintHeader />
+            {/* PAGE HEADER */}
 
-            <div className="mt-5">
+            <div data-page-section>
+              <ComplaintHeader />
+            </div>
+
+            {/* KPI CARDS */}
+
+            <div data-page-section className="mt-5">
               <ComplaintKPIs kpis={kpis} />
             </div>
 
-            <div className="mt-5">
+            {/* FILTERS */}
+
+            <div data-page-section className="mt-5">
               <ComplaintFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
@@ -866,7 +922,9 @@ export default function Complaints() {
               />
             </div>
 
-            <div className="mt-5 min-w-0">
+            {/* TABLE */}
+
+            <div data-page-section className="mt-5 min-w-0">
               <ComplaintTable
                 complaints={complaints}
                 loading={loading}
@@ -1021,6 +1079,7 @@ export default function Complaints() {
                   strokeLinejoin="round"
                 >
                   <line x1="18" y1="6" x2="6" y2="18" />
+
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>

@@ -1,18 +1,15 @@
-import {
-  Search,
-  CalendarDays,
-  RotateCcw,
-  ChevronDown,
-} from "lucide-react";
+import { Search, CalendarDays, RotateCcw, ChevronDown } from "lucide-react";
+
+import { useEffect, useRef } from "react";
+
+import gsap from "gsap";
 
 import { useLanguage } from "../../i18n/LanguageContext";
 
-export default function ComplaintFilters({
-  filters,
-  onFilterChange,
-  onReset,
-}) {
+export default function ComplaintFilters({ filters, onFilterChange, onReset }) {
   const { t } = useLanguage();
+
+  const filtersRef = useRef(null);
 
   const categoryOptions = [
     {
@@ -45,8 +42,49 @@ export default function ComplaintFilters({
     },
   ];
 
+  useEffect(() => {
+    if (!filtersRef.current) return;
+
+    const elements = filtersRef.current.querySelectorAll("[data-filter-item]");
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        filtersRef.current,
+        {
+          opacity: 0,
+          y: 18,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.45,
+          ease: "power3.out",
+        },
+      );
+
+      gsap.fromTo(
+        elements,
+        {
+          opacity: 0,
+          y: 8,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.3,
+          stagger: 0.06,
+          delay: 0.12,
+          ease: "power2.out",
+        },
+      );
+    }, filtersRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <div
+      ref={filtersRef}
       className="
         w-full
         rounded-2xl
@@ -58,9 +96,7 @@ export default function ComplaintFilters({
         sm:p-4
       "
     >
-      {/* =====================================================
-          TOP ROW
-      ===================================================== */}
+      {/* TOP ROW */}
 
       <div
         className="
@@ -72,11 +108,16 @@ export default function ComplaintFilters({
           sm:gap-3
         "
       >
-        {/* ===================================================
-            SEARCH
-        =================================================== */}
+        {/* SEARCH */}
 
-        <div className="relative min-w-0 flex-1">
+        <div
+          data-filter-item
+          className="
+            relative
+            min-w-0
+            flex-1
+          "
+        >
           <Search
             size={14}
             className="
@@ -92,12 +133,8 @@ export default function ComplaintFilters({
           <input
             type="text"
             value={filters?.search || ""}
-            onChange={(e) =>
-              onFilterChange("search", e.target.value)
-            }
-            placeholder={t(
-              "complaints.filters.searchPlaceholder"
-            )}
+            onChange={(e) => onFilterChange("search", e.target.value)}
+            placeholder={t("complaints.filters.searchPlaceholder")}
             className="
               h-9
               w-full
@@ -115,31 +152,32 @@ export default function ComplaintFilters({
               focus:border-violet-400
               focus:ring-2
               focus:ring-violet-100
-
               sm:text-[11px]
             "
           />
         </div>
 
-        {/* ===================================================
-            CATEGORY
-        =================================================== */}
+        {/* CATEGORY */}
 
-        <div className="w-full shrink-0 sm:w-[150px] md:w-[160px]">
+        <div
+          data-filter-item
+          className="
+            w-full
+            shrink-0
+            sm:w-[150px]
+            md:w-[160px]
+          "
+        >
           <FilterSelect
             label={t("complaints.filters.category")}
             value={filters?.category || ""}
-            onChange={(value) =>
-              onFilterChange("category", value)
-            }
+            onChange={(value) => onFilterChange("category", value)}
             options={categoryOptions}
           />
         </div>
       </div>
 
-      {/* =====================================================
-          BOTTOM ROW
-      ===================================================== */}
+      {/* BOTTOM ROW */}
 
       <div
         className="
@@ -147,7 +185,6 @@ export default function ComplaintFilters({
           flex
           flex-col
           gap-2.5
-
           sm:mt-3
           sm:flex-row
           sm:flex-wrap
@@ -155,11 +192,18 @@ export default function ComplaintFilters({
           sm:gap-3
         "
       >
-        {/* ===================================================
-            DATE FROM
-        =================================================== */}
+        {/* DATE FROM */}
 
-        <div className="relative w-full shrink-0 sm:w-[150px] md:w-[160px]">
+        <div
+          data-filter-item
+          className="
+            relative
+            w-full
+            shrink-0
+            sm:w-[150px]
+            md:w-[160px]
+          "
+        >
           <CalendarDays
             size={14}
             className="
@@ -175,9 +219,7 @@ export default function ComplaintFilters({
           <input
             type="date"
             value={filters?.dateFrom || ""}
-            onChange={(e) =>
-              onFilterChange("dateFrom", e.target.value)
-            }
+            onChange={(e) => onFilterChange("dateFrom", e.target.value)}
             className="
               h-9
               w-full
@@ -194,34 +236,38 @@ export default function ComplaintFilters({
               focus:border-violet-400
               focus:ring-2
               focus:ring-violet-100
-
               sm:text-[11px]
             "
           />
         </div>
 
-        {/* ===================================================
-            TO LABEL
-        =================================================== */}
+        {/* TO */}
 
         <span
+          data-filter-item
           className="
             hidden
             shrink-0
             text-[10px]
             text-gray-400
-
             sm:block
           "
         >
           {t("complaints.filters.to")}
         </span>
 
-        {/* ===================================================
-            DATE TO
-        =================================================== */}
+        {/* DATE TO */}
 
-        <div className="relative w-full shrink-0 sm:w-[150px] md:w-[160px]">
+        <div
+          data-filter-item
+          className="
+            relative
+            w-full
+            shrink-0
+            sm:w-[150px]
+            md:w-[160px]
+          "
+        >
           <CalendarDays
             size={14}
             className="
@@ -237,9 +283,7 @@ export default function ComplaintFilters({
           <input
             type="date"
             value={filters?.dateTo || ""}
-            onChange={(e) =>
-              onFilterChange("dateTo", e.target.value)
-            }
+            onChange={(e) => onFilterChange("dateTo", e.target.value)}
             className="
               h-9
               w-full
@@ -256,17 +300,15 @@ export default function ComplaintFilters({
               focus:border-violet-400
               focus:ring-2
               focus:ring-violet-100
-
               sm:text-[11px]
             "
           />
         </div>
 
-        {/* ===================================================
-            RESET FILTERS
-        =================================================== */}
+        {/* RESET */}
 
         <button
+          data-filter-item
           type="button"
           onClick={onReset}
           className="
@@ -289,8 +331,6 @@ export default function ComplaintFilters({
             hover:border-violet-300
             hover:bg-violet-50
             hover:text-violet-600
-            active:scale-[0.98]
-
             sm:w-auto
             sm:text-[11px]
           "
@@ -308,12 +348,7 @@ export default function ComplaintFilters({
    FILTER SELECT
 ========================================================= */
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}) {
+function FilterSelect({ label, value, onChange, options }) {
   return (
     <div className="relative w-full">
       <select
@@ -339,23 +374,15 @@ function FilterSelect({
           focus:border-violet-400
           focus:ring-2
           focus:ring-violet-100
-
           sm:text-[11px]
         "
       >
         {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-          >
+          <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
-
-      {/* ===================================================
-          FLOATING LABEL
-      =================================================== */}
 
       <span
         className="
@@ -373,10 +400,6 @@ function FilterSelect({
       >
         {label}
       </span>
-
-      {/* ===================================================
-          DROPDOWN ICON
-      =================================================== */}
 
       <ChevronDown
         size={12}
