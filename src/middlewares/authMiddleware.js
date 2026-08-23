@@ -5,7 +5,7 @@ module.exports = (req, res, next) => {
 
   if (!authHeader) {
     return res.status(401).json({
-      error: "No token provided"
+      error: "No token provided",
     });
   }
 
@@ -17,12 +17,17 @@ module.exports = (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    req.user = decoded;
+    // Normalize user ID so the rest of the application
+    // consistently uses req.user.id.
+    req.user = {
+      ...decoded,
+      id: decoded.id ?? decoded.adminId,
+    };
 
     next();
   } catch (error) {
     return res.status(401).json({
-      error: "Invalid token"
+      error: "Invalid token",
     });
   }
 };
