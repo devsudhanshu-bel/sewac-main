@@ -105,10 +105,17 @@ export default function Complaints() {
   const [requestingOTP, setRequestingOTP] = useState(false);
 
   /*
-   * Hard lock against duplicate OTP requests.
+   * Tracks the current OTP expiry in the Admin UI.
    *
-   * useRef is intentional because it changes immediately,
-   * before React performs another render.
+   * This does NOT replace backend expiry validation.
+   * Backend remains the source of truth.
+   */
+  const [otpExpiresAt, setOtpExpiresAt] = useState(null);
+
+  const [otpExpired, setOtpExpired] = useState(false);
+
+  /*
+   * Hard lock against duplicate OTP requests.
    */
 
   const otpRequestInProgressRef = useRef(false);
@@ -134,6 +141,70 @@ export default function Complaints() {
   const getAdminToken = () => {
     return sessionStorage.getItem("token");
   };
+
+  /* =======================================================
+     CHECK OTP EXPIRY
+  ======================================================= */
+
+  useEffect(() => {
+    if (!otpExpiresAt) {
+      setOtpExpired(false);
+      return;
+    }
+
+    const expiryTime = new Date(otpExpiresAt).getTime();
+
+    if (Number.isNaN(expiryTime)) {
+      setOtpExpired(false);
+      return;
+    }
+
+    const checkExpiry = () => {
+      const now = Date.now();
+
+      if (now >= expiryTime) {
+        setOtpExpired(true);
+      } else {
+        setOtpExpired(false);
+      }
+    };
+
+    checkExpiry();
+
+    const interval = setInterval(checkExpiry, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [otpExpiresAt]);
+
+  /* =======================================================
+     SYNC OTP EXPIRY FROM SELECTED COMPLAINT
+  ======================================================= */
+
+  useEffect(() => {
+    if (!selectedComplaint) {
+      setOtpExpiresAt(null);
+      setOtpExpired(false);
+      return;
+    }
+
+    /*
+     * Support both possible API naming conventions.
+     */
+
+    const expiry =
+      selectedComplaint.verification_expires_at ||
+      selectedComplaint.verificationExpiresAt ||
+      null;
+
+    if (expiry) {
+      setOtpExpiresAt(expiry);
+    } else if (selectedComplaint.status !== "OTP_SENT") {
+      setOtpExpiresAt(null);
+      setOtpExpired(false);
+    }
+  }, [selectedComplaint]);
 
   /* =======================================================
      FETCH COMPLAINTS
@@ -327,7 +398,7 @@ export default function Complaints() {
   };
 
   /* =======================================================
-     REQUEST VERIFICATION OTP
+     REQUEST / RESEND VERIFICATION OTP
   ======================================================= */
 
   const requestVerification = async () => {
@@ -376,13 +447,6 @@ export default function Complaints() {
         },
       );
 
-      /*
-       * IMPORTANT:
-       *
-       * We explicitly handle 429 before trying
-       * to interpret it as a normal API response.
-       */
-
       if (response.status === 429) {
         throw new Error(
           t(
@@ -405,12 +469,27 @@ export default function Complaints() {
       }
 
       /*
-       * SECURITY:
+       * The backend may return expiresAt.
        *
-       * We intentionally DO NOT read/display
-       * any OTP value from the response.
-       *
-       * The OTP belongs to the citizen flow.
+       * If it does, use it directly.
+       * Otherwise calculate the same 5-minute
+       * window used by the backend.
+       */
+
+      const responseExpiry =
+        result.data?.expiresAt ||
+        result.data?.verification_expires_at ||
+        result.data?.verificationExpiresAt ||
+        null;
+
+      const newExpiry =
+        responseExpiry || new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+      setOtpExpiresAt(newExpiry);
+      setOtpExpired(false);
+
+      /*
+       * Refresh complaint list.
        */
 
       await fetchComplaints(pagination.page, filters);
@@ -418,8 +497,7 @@ export default function Complaints() {
       await fetchKPIs();
 
       /*
-       * Refresh selected complaint so the UI
-       * changes to OTP_SENT.
+       * Refresh selected complaint.
        */
 
       try {
@@ -437,17 +515,39 @@ export default function Complaints() {
         const detailResult = await parseApiResponse(detailResponse);
 
         if (detailResponse.ok && detailResult.success === true) {
-          setSelectedComplaint(detailResult.data);
+          const refreshedComplaint = detailResult.data;
+
+          setSelectedComplaint(refreshedComplaint);
+
+          /*
+           * If the refreshed complaint
+           * contains the real expiry,
+           * prefer that over our fallback.
+           */
+
+          const refreshedExpiry =
+            refreshedComplaint?.verification_expires_at ||
+            refreshedComplaint?.verificationExpiresAt ||
+            null;
+
+          if (refreshedExpiry) {
+            setOtpExpiresAt(refreshedExpiry);
+          }
         }
       } catch (detailError) {
         console.error("Refresh complaint details error:", detailError);
       }
 
       alert(
-        t(
-          "complaints.messages.otpSent",
-          "OTP sent successfully to the citizen.",
-        ),
+        otpExpired
+          ? t(
+              "complaints.messages.otpResent",
+              "New OTP sent successfully to the citizen.",
+            )
+          : t(
+              "complaints.messages.otpSent",
+              "OTP sent successfully to the citizen.",
+            ),
       );
     } catch (err) {
       console.error("Request verification error:", err);
@@ -480,6 +580,22 @@ export default function Complaints() {
     if (!otp || otp.length !== 6) {
       throw new Error(
         t("complaints.errors.invalidOtp", "Please enter a valid 6-digit OTP."),
+      );
+    }
+
+    /*
+     * Prevent frontend submission of an
+     * already-expired OTP.
+     */
+
+    if (otpExpiresAt && Date.now() >= new Date(otpExpiresAt).getTime()) {
+      setOtpExpired(true);
+
+      throw new Error(
+        t(
+          "complaints.errors.otpExpired",
+          "This OTP has expired. Please request a new OTP.",
+        ),
       );
     }
 
@@ -520,6 +636,13 @@ export default function Complaints() {
             t("complaints.errors.verifyOtp", "Failed to verify OTP."),
         );
       }
+
+      /*
+       * Complaint is now closed.
+       */
+
+      setOtpExpiresAt(null);
+      setOtpExpired(false);
 
       alert(t("complaints.messages.closed", "Complaint closed successfully."));
 
@@ -593,6 +716,23 @@ export default function Complaints() {
 
   const handleSelectComplaint = (complaint) => {
     setSelectedComplaint(complaint);
+
+    /*
+     * Immediately initialize expiry
+     * from the selected complaint.
+     */
+
+    const expiry =
+      complaint?.verification_expires_at ||
+      complaint?.verificationExpiresAt ||
+      null;
+
+    if (expiry) {
+      setOtpExpiresAt(expiry);
+    } else {
+      setOtpExpiresAt(null);
+      setOtpExpired(false);
+    }
   };
 
   /* =======================================================
@@ -605,6 +745,8 @@ export default function Complaints() {
     }
 
     setSelectedComplaint(null);
+    setOtpExpiresAt(null);
+    setOtpExpired(false);
   };
 
   /* =======================================================
@@ -712,13 +854,9 @@ export default function Complaints() {
           >
             <ComplaintHeader />
 
-            {/* KPI */}
-
             <div className="mt-5">
               <ComplaintKPIs kpis={kpis} />
             </div>
-
-            {/* FILTERS */}
 
             <div className="mt-5">
               <ComplaintFilters
@@ -727,8 +865,6 @@ export default function Complaints() {
                 onReset={resetFilters}
               />
             </div>
-
-            {/* TABLE */}
 
             <div className="mt-5 min-w-0">
               <ComplaintTable
@@ -758,6 +894,8 @@ export default function Complaints() {
               complaint={selectedComplaint}
               saving={savingComplaint}
               requestingOTP={requestingOTP}
+              otpExpired={otpExpired}
+              otpExpiresAt={otpExpiresAt}
               onRequestVerification={requestVerification}
               onVerifyOTP={verifyOTP}
               onSaveChanges={saveComplaintChanges}
@@ -815,8 +953,6 @@ export default function Complaints() {
               sm:max-w-[460px]
             "
           >
-            {/* DRAWER HEADER */}
-
             <div
               className="
                 flex
@@ -890,8 +1026,6 @@ export default function Complaints() {
               </button>
             </div>
 
-            {/* DETAILS */}
-
             <div
               className="
                 min-h-0
@@ -905,6 +1039,8 @@ export default function Complaints() {
                 complaint={selectedComplaint}
                 saving={savingComplaint}
                 requestingOTP={requestingOTP}
+                otpExpired={otpExpired}
+                otpExpiresAt={otpExpiresAt}
                 onRequestVerification={requestVerification}
                 onVerifyOTP={verifyOTP}
                 onSaveChanges={saveComplaintChanges}

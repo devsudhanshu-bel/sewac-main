@@ -22,6 +22,10 @@ export default function ComplaintDetails({
   onVerifyOTP,
   onSaveChanges,
   saving = false,
+
+  // NEW:
+  otpExpired = false,
+  otpExpiresAt = null,
 }) {
   const { t } = useLanguage();
 
@@ -29,6 +33,16 @@ export default function ComplaintDetails({
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [otpRequested, setOtpRequested] = useState(false);
+
+  /*
+   * Local expiry state.
+   *
+   * The parent already calculates expiry, but we also
+   * calculate it here so the component stays responsive.
+   */
+  const [localOtpExpired, setLocalOtpExpired] = useState(false);
+
+  const [remainingSeconds, setRemainingSeconds] = useState(null);
 
   /* =========================================================
      SYNC FORM WITH SELECTED COMPLAINT
@@ -40,16 +54,72 @@ export default function ComplaintDetails({
       setRemarks("");
       setOtp("");
       setOtpRequested(false);
+      setLocalOtpExpired(false);
+      setRemainingSeconds(null);
       return;
     }
 
     setStatus(complaint.status || "PENDING");
+
     setRemarks(complaint.remarks || "");
+
     setOtp("");
 
-    // Preserve OTP input state if backend status is already OTP_SENT.
+    /*
+     * If backend says OTP_SENT, OTP input is available
+     * unless the OTP has expired.
+     */
     setOtpRequested(complaint.status === "OTP_SENT");
   }, [complaint]);
+
+  /* =========================================================
+     OTP EXPIRY TIMER
+  ========================================================= */
+
+  useEffect(() => {
+    if (!complaint || complaint.status !== "OTP_SENT" || !otpExpiresAt) {
+      setLocalOtpExpired(false);
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const expiryTime = new Date(otpExpiresAt).getTime();
+
+    if (Number.isNaN(expiryTime)) {
+      setLocalOtpExpired(false);
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const difference = expiryTime - Date.now();
+
+      if (difference <= 0) {
+        setLocalOtpExpired(true);
+        setRemainingSeconds(0);
+        return;
+      }
+
+      const seconds = Math.ceil(difference / 1000);
+
+      setLocalOtpExpired(false);
+      setRemainingSeconds(seconds);
+    };
+
+    updateTimer();
+
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [complaint, otpExpiresAt]);
+
+  /* =========================================================
+     EFFECTIVE OTP EXPIRY
+  ========================================================= */
+
+  const effectiveOtpExpired = otpExpired || localOtpExpired;
 
   /* =========================================================
      CURRENT STATUS
@@ -68,6 +138,24 @@ export default function ComplaintDetails({
   const isOtpSent = currentStatus === "OTP_SENT";
 
   const isClosed = currentStatus === "CLOSED";
+
+  /*
+   * OTP is actively usable only when:
+   *
+   * status = OTP_SENT
+   * AND OTP has not expired
+   */
+  const hasActiveOtp = isOtpSent && !effectiveOtpExpired;
+
+  /*
+   * OTP can be requested again when:
+   *
+   * 1. Complaint is READY_FOR_VERIFICATION
+   * OR
+   * 2. Complaint is OTP_SENT but expired
+   */
+  const canRequestOtp =
+    isReadyForVerification || (isOtpSent && effectiveOtpExpired);
 
   /* =========================================================
      ADMIN STATUS OPTIONS
@@ -115,6 +203,40 @@ export default function ComplaintDetails({
   };
 
   /* =========================================================
+     REQUEST / RESEND OTP
+  ========================================================= */
+
+  const handleRequestOTP = async () => {
+    if (!complaint || requestingOTP) {
+      return;
+    }
+
+    try {
+      /*
+       * Clear old OTP immediately.
+       */
+      setOtp("");
+
+      await onRequestVerification?.();
+
+      /*
+       * Parent will update:
+       * otpExpiresAt
+       * otpExpired
+       * selectedComplaint
+       *
+       * We keep otpRequested true so
+       * the component knows OTP was requested.
+       */
+      setOtpRequested(true);
+
+      setLocalOtpExpired(false);
+    } catch (error) {
+      console.error("OTP request failed:", error);
+    }
+  };
+
+  /* =========================================================
      STATUS BADGE CLASS
   ========================================================= */
 
@@ -128,6 +250,10 @@ export default function ComplaintDetails({
     }
 
     if (currentStatus === "OTP_SENT") {
+      if (effectiveOtpExpired) {
+        return "bg-[#FFF1F2] text-[#DC2626]";
+      }
+
       return "bg-[#F3E8FF] text-[#7C3AED]";
     }
 
@@ -150,6 +276,10 @@ export default function ComplaintDetails({
         );
 
       case "OTP_SENT":
+        if (effectiveOtpExpired) {
+          return "OTP Expired";
+        }
+
         return t("complaints.details.statusOptions.otpSent", "OTP Sent");
 
       case "CLOSED":
@@ -158,6 +288,22 @@ export default function ComplaintDetails({
       default:
         return currentStatus || "—";
     }
+  };
+
+  /* =========================================================
+     FORMAT REMAINING TIME
+  ========================================================= */
+
+  const formatRemainingTime = (seconds) => {
+    if (seconds === null || seconds === undefined) {
+      return "";
+    }
+
+    const minutes = Math.floor(seconds / 60);
+
+    const remaining = seconds % 60;
+
+    return `${minutes}:${String(remaining).padStart(2, "0")}`;
   };
 
   /* =========================================================
@@ -665,30 +811,35 @@ export default function ComplaintDetails({
               )}
             </div>
           ) : isOtpSent ? (
-            /* OTP SENT */
+            /* OTP SENT / EXPIRED */
 
             <div
-              className="
+              className={`
                 flex
                 min-h-9
                 w-full
                 items-center
                 rounded-lg
                 border
-                border-violet-200
-                bg-violet-50
                 px-3
                 py-2
                 text-[10px]
                 font-semibold
-                text-violet-700
                 sm:text-[11px]
-              "
+
+                ${
+                  effectiveOtpExpired
+                    ? "border-red-200 bg-red-50 text-red-600"
+                    : "border-violet-200 bg-violet-50 text-violet-700"
+                }
+              `}
             >
-              {t(
-                "complaints.details.verificationOtpSent",
-                "Verification OTP Sent",
-              )}
+              {effectiveOtpExpired
+                ? "Verification OTP Expired"
+                : t(
+                    "complaints.details.verificationOtpSent",
+                    "Verification OTP Sent",
+                  )}
             </div>
           ) : (
             /* PENDING / READY */
@@ -881,14 +1032,7 @@ export default function ComplaintDetails({
             <button
               type="button"
               disabled={!complaint || saving || requestingOTP}
-              onClick={async () => {
-                try {
-                  await onRequestVerification?.();
-                  setOtpRequested(true);
-                } catch (error) {
-                  console.error("OTP request failed:", error);
-                }
-              }}
+              onClick={handleRequestOTP}
               className="
                 flex
                 h-9
@@ -920,11 +1064,63 @@ export default function ComplaintDetails({
           )}
 
           {/* =================================================
-              OTP INPUT
+              ACTIVE OTP
           ================================================= */}
 
-          {(isOtpSent || otpRequested) && (
+          {hasActiveOtp && (
             <div className="mt-1">
+              <div
+                className="
+                  mb-3
+                  rounded-lg
+                  border
+                  border-violet-100
+                  bg-violet-50
+                  px-3
+                  py-2
+                "
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className="
+                      text-[10px]
+                      font-semibold
+                      text-violet-700
+                    "
+                  >
+                    Verification OTP Sent
+                  </p>
+
+                  {remainingSeconds !== null && (
+                    <span
+                      className="
+                        rounded-full
+                        bg-white
+                        px-2
+                        py-0.5
+                        text-[9px]
+                        font-semibold
+                        text-violet-600
+                      "
+                    >
+                      Expires in {formatRemainingTime(remainingSeconds)}
+                    </span>
+                  )}
+                </div>
+
+                <p
+                  className="
+                    mt-1
+                    text-[9px]
+                    leading-4
+                    text-violet-500
+                  "
+                >
+                  Ask the citizen to share the verification OTP shown in the
+                  SEWAC citizen app.
+                </p>
+              </div>
+
               <p
                 className="
                   mb-1.5
@@ -970,7 +1166,7 @@ export default function ComplaintDetails({
 
               <button
                 type="button"
-                disabled={!complaint || otp.length !== 6}
+                disabled={!complaint || otp.length !== 6 || requestingOTP}
                 onClick={() => onVerifyOTP?.(otp)}
                 className="
                   mt-2
@@ -994,6 +1190,78 @@ export default function ComplaintDetails({
                   "complaints.details.actions.verifyOtp",
                   "Verify OTP & Close Complaint",
                 )}
+              </button>
+            </div>
+          )}
+
+          {/* =================================================
+              EXPIRED OTP
+          ================================================= */}
+
+          {isOtpSent && effectiveOtpExpired && (
+            <div className="mt-1">
+              <div
+                className="
+                    rounded-lg
+                    border
+                    border-red-200
+                    bg-red-50
+                    px-3
+                    py-3
+                  "
+              >
+                <p
+                  className="
+                      text-[10px]
+                      font-semibold
+                      text-red-600
+                      sm:text-[11px]
+                    "
+                >
+                  Verification OTP Expired
+                </p>
+
+                <p
+                  className="
+                      mt-1
+                      text-[9px]
+                      leading-4
+                      text-red-500
+                      sm:text-[10px]
+                    "
+                >
+                  The previous OTP is no longer valid. Request a new OTP from
+                  the citizen verification system.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={!complaint || saving || requestingOTP}
+                onClick={handleRequestOTP}
+                className="
+                    mt-2
+                    flex
+                    h-9
+                    w-full
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-gradient-to-r
+                    from-violet-600
+                    to-fuchsia-600
+                    text-[10px]
+                    font-semibold
+                    text-white
+                    shadow-sm
+                    transition
+                    hover:opacity-95
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+                    sm:text-[11px]
+                  "
+              >
+                {requestingOTP ? "Sending New OTP..." : "Request New OTP"}
               </button>
             </div>
           )}
