@@ -292,7 +292,7 @@ export const verifyInternalOTPAndCloseComplaint = async ({
     throw new Error("Complaint has already been closed.");
   }
 
-  if (complaint.status !== "READY_FOR_VERIFICATION") {
+  if (complaint.status !== "OTP_SENT") {
     throw new Error("Complaint is not ready for verification.");
   }
 

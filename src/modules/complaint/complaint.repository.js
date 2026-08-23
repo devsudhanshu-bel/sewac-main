@@ -75,6 +75,7 @@ export const updateVerificationOTP = async (id, code, expiresAt) => {
       verification_code: code,
       verification_expires_at: expiresAt,
       otp_verified: false,
+      status: "OTP_SENT",
     },
   });
 };
