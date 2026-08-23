@@ -68,13 +68,22 @@ export const getComplaintByTicketOnly = async (ticketNumber) => {
 /**
  * Save verification OTP
  */
+/**
+ * Save / replace verification OTP
+ */
 export const updateVerificationOTP = async (id, code, expiresAt) => {
   return await sewacPrisma.citizen_complaints.update({
     where: { id },
+
     data: {
       verification_code: code,
       verification_expires_at: expiresAt,
+
       otp_verified: false,
+
+      // IMPORTANT:
+      // This tells Flutter that an OTP
+      // is currently available.
       status: "OTP_SENT",
     },
   });

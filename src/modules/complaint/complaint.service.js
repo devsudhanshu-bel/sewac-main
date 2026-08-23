@@ -266,6 +266,19 @@ export const internalAuth = (req, res, next) => {
  * Verify OTP received from Admin Backend
  * and close the complaint.
  */
+/**
+ * Verify OTP received from Admin Backend
+ * and close the complaint.
+ *
+ * Flow:
+ * OTP_SENT
+ *   ↓
+ * validate OTP
+ *   ↓
+ * validate expiry
+ *   ↓
+ * close complaint
+ */
 export const verifyInternalOTPAndCloseComplaint = async ({
   ticketNumber,
   otp,
@@ -278,7 +291,9 @@ export const verifyInternalOTPAndCloseComplaint = async ({
     throw new Error("OTP is required.");
   }
 
-  if (!/^\d{6}$/.test(String(otp))) {
+  const normalizedOtp = String(otp).trim();
+
+  if (!/^\d{6}$/.test(normalizedOtp)) {
     throw new Error("OTP must be a 6-digit number.");
   }
 
@@ -288,39 +303,68 @@ export const verifyInternalOTPAndCloseComplaint = async ({
     throw new Error("Complaint not found.");
   }
 
+  // Already closed
   if (complaint.status === "CLOSED") {
     throw new Error("Complaint has already been closed.");
   }
 
+  // OTP must have been generated.
+  // After generation the complaint is OTP_SENT.
   if (complaint.status !== "OTP_SENT") {
-    throw new Error("Complaint is not ready for verification.");
+    throw new Error("Complaint does not have an active verification OTP.");
   }
 
+  // Make sure an OTP exists.
   if (!complaint.verification_code) {
     throw new Error("No OTP has been generated for this complaint.");
   }
 
-  if (
-    !complaint.verification_expires_at ||
-    complaint.verification_expires_at < new Date()
-  ) {
-    throw new Error("OTP has expired.");
+  // Make sure an expiry exists.
+  if (!complaint.verification_expires_at) {
+    throw new Error("OTP expiry information is missing.");
   }
 
-  if (complaint.verification_code !== String(otp)) {
+  const expiry = new Date(complaint.verification_expires_at);
+
+  if (Number.isNaN(expiry.getTime())) {
+    throw new Error("OTP expiry information is invalid.");
+  }
+
+  // OTP expired
+  if (expiry <= new Date()) {
+    throw new Error("OTP has expired. Please request a new OTP.");
+  }
+
+  // OTP does not match
+  if (String(complaint.verification_code) !== normalizedOtp) {
     throw new Error("Invalid OTP.");
   }
 
+  // OTP is correct → close complaint
   const closedComplaint = await repository.closeComplaint(complaint.id);
 
   return {
     ticketNumber: closedComplaint.ticket_number,
+
     status: closedComplaint.status,
+
     closedAt: closedComplaint.closed_at,
+
     message: "Complaint closed successfully.",
   };
 };
 
+/**
+ * Store / replace a verification OTP.
+ *
+ * Allowed states:
+ *
+ * READY_FOR_VERIFICATION
+ *   → first OTP
+ *
+ * OTP_SENT + expired
+ *   → resend OTP
+ */
 export const storeInternalVerificationOTP = async ({
   ticketNumber,
   otp,
@@ -338,7 +382,9 @@ export const storeInternalVerificationOTP = async ({
     throw new Error("OTP expiry is required.");
   }
 
-  if (!/^\d{6}$/.test(String(otp))) {
+  const normalizedOtp = String(otp).trim();
+
+  if (!/^\d{6}$/.test(normalizedOtp)) {
     throw new Error("OTP must be a 6-digit number.");
   }
 
@@ -352,8 +398,48 @@ export const storeInternalVerificationOTP = async ({
     throw new Error("This complaint has already been closed.");
   }
 
-  if (complaint.status !== "READY_FOR_VERIFICATION") {
-    throw new Error("Complaint is not ready for verification.");
+  /*
+   * FIRST OTP
+   *
+   * READY_FOR_VERIFICATION
+   * → allow OTP generation
+   */
+  if (complaint.status === "READY_FOR_VERIFICATION") {
+    // Allowed.
+  } else if (complaint.status === "OTP_SENT") {
+
+  /*
+   * RESEND OTP
+   *
+   * OTP_SENT
+   * → only allow replacement if old OTP expired
+   */
+    if (!complaint.verification_expires_at) {
+      throw new Error("Existing OTP has no expiry information.");
+    }
+
+    const existingExpiry = new Date(complaint.verification_expires_at);
+
+    if (Number.isNaN(existingExpiry.getTime())) {
+      throw new Error("Existing OTP expiry information is invalid.");
+    }
+
+    // Old OTP is still valid.
+    if (existingExpiry > new Date()) {
+      throw new Error(
+        "Current OTP is still valid. Please wait until it expires before requesting a new OTP.",
+      );
+    }
+
+    // Old OTP has expired → resend allowed.
+  } else {
+
+  /*
+   * Any other status is invalid.
+   */
+    throw new Error(
+      "Verification OTP can only be requested when the complaint is ready for verification or the previous OTP has expired.",
+    );
   }
 
   const verificationExpiresAt = new Date(expiresAt);
@@ -362,15 +448,28 @@ export const storeInternalVerificationOTP = async ({
     throw new Error("Invalid OTP expiry time.");
   }
 
+  if (verificationExpiresAt <= new Date()) {
+    throw new Error("OTP expiry time must be in the future.");
+  }
+
+  /*
+   * Save the new OTP.
+   *
+   * IMPORTANT:
+   * updateVerificationOTP() should set
+   * status = OTP_SENT.
+   */
   await repository.updateVerificationOTP(
     complaint.id,
-    String(otp),
+    normalizedOtp,
     verificationExpiresAt,
   );
 
   return {
     ticketNumber: complaint.ticket_number,
-    status: complaint.status,
+
+    status: "OTP_SENT",
+
     expiresAt: verificationExpiresAt,
   };
 };
