@@ -41,29 +41,35 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildProfileRow(String title, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             flex: 2,
             child: Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
+
+          const SizedBox(width: 12),
+
           Expanded(
             flex: 3,
             child: Text(
               value,
               textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -71,7 +77,6 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
-
   Future<void> _loadProfile() async {
     try {
       final citizen = await AuthService.getCurrentCitizen();
@@ -229,13 +234,22 @@ class _HomePageState extends State<HomePage>
       barrierColor: Colors.black.withValues(alpha: 0.65),
       builder: (modalContext) {
         return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(
+            sigmaX: 16,
+            sigmaY: 16,
+          ),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.fromLTRB(
+              24,
+              18,
+              24,
+              16,
+            ),
             decoration: BoxDecoration(
-              color: const Color(0xFF260548).withValues(alpha: 0.95),
-              borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(32)),
+              color: const Color(0xFF260548).withValues(alpha: 0.97),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.18),
                 width: 1.2,
@@ -252,82 +266,135 @@ class _HomePageState extends State<HomePage>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
+                // ============================================================
+                // TOP HANDLE
+                // ============================================================
+
                 Center(
                   child: Container(
-                    width: 44,
-                    height: 5,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2.5),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 22),
+
+                // ============================================================
+                // PROFILE HEADER + ICON
+                // ============================================================
+
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+
+                    // Profile icon
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC084FC).withValues(alpha: 0.2),
                         shape: BoxShape.circle,
+                        color: const Color(0xFFC084FC)
+                            .withValues(alpha: 0.16),
                         border: Border.all(
-                          color: const Color(0xFFC084FC).withValues(alpha: 0.4),
+                          color: const Color(0xFFC084FC)
+                              .withValues(alpha: 0.38),
+                          width: 1,
                         ),
                       ),
                       child: const Icon(
                         Icons.person_rounded,
                         color: Color(0xFFC084FC),
-                        size: 28,
+                        size: 24,
                       ),
                     ),
+
                     const SizedBox(width: 14),
+
+                    // Profile title
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Profile",
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          const SizedBox(height: 10),
 
-                          _buildProfileRow(
-                            "Name",
-                            _citizen?.personName ?? "-",
-                          ),
+                          const SizedBox(height: 3),
 
-                          _buildProfileRow(
-                            "Citizen ID",
-                            _citizen?.id.toString() ?? "-",
-                          ),
-
-                          _buildProfileRow(
-                            "Phone Number",
-                            "+91 ${_citizen?.phoneNumber ?? "-"}",
-                          ),
-
-                          _buildProfileRow(
-                            "Wet RFID",
-                            _citizen?.wetSlno ?? "-",
-                          ),
-
-                          _buildProfileRow(
-                            "Dry RFID",
-                            _citizen?.drySlno ?? "-",
+                          Text(
+                            "Citizen Information",
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white
+                                  .withValues(alpha: 0.45),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Divider(color: Colors.white12, height: 1),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 18),
+
+                // ============================================================
+                // PROFILE INFORMATION
+                // ============================================================
+
+                _buildProfileRow(
+                  "Name",
+                  _citizen?.personName ?? "-",
+                ),
+
+                _buildProfileRow(
+                  "Citizen ID",
+                  _citizen?.id.toString() ?? "-",
+                ),
+
+                _buildProfileRow(
+                  "Phone Number",
+                  "+91 ${_citizen?.phoneNumber ?? "-"}",
+                ),
+
+                _buildProfileRow(
+                  "Wet RFID",
+                  _citizen?.wetSlno ?? "-",
+                ),
+
+                _buildProfileRow(
+                  "Dry RFID",
+                  _citizen?.drySlno ?? "-",
+                ),
+
+                const SizedBox(height: 10),
+
+                // ============================================================
+                // DIVIDER
+                // ============================================================
+
+                Divider(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  height: 1,
+                ),
+
+                const SizedBox(height: 14),
+
+                // ============================================================
+                // LOGOUT BUTTON
+                // ============================================================
+
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -336,39 +403,68 @@ class _HomePageState extends State<HomePage>
                       _showLogoutConfirmationDialog(context);
                     },
                     borderRadius: BorderRadius.circular(16),
+                    splashColor:
+                    const Color(0xFFEF5350).withValues(alpha: 0.10),
+                    highlightColor: Colors.transparent,
                     child: Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+                        horizontal: 16,
+                        vertical: 13,
+                      ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE53935).withValues(alpha: 0.12),
+                        color: const Color(0xFFE53935)
+                            .withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color:
-                          const Color(0xFFE53935).withValues(alpha: 0.35),
+                          color: const Color(0xFFE53935)
+                              .withValues(alpha: 0.30),
+                          width: 1,
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.logout_rounded,
-                            color: Color(0xFFEF5350),
-                            size: 20,
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE53935)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.logout_rounded,
+                              color: Color(0xFFEF5350),
+                              size: 18,
+                            ),
                           ),
+
                           const SizedBox(width: 12),
+
                           Text(
                             "Logout",
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFFEF5350),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+
+                          const Spacer(),
+
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: const Color(0xFFEF5350)
+                                .withValues(alpha: 0.55),
+                            size: 14,
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 4),
               ],
             ),
           ),
@@ -480,7 +576,7 @@ class _HomePageState extends State<HomePage>
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 85),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 85),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -504,14 +600,34 @@ class _HomePageState extends State<HomePage>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
-                            child: Text(
-                              '♻️ Today\'s Collection',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFA855F7).withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFA855F7).withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_shipping_rounded,
+                                    color: Color(0xFFC084FC),
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Today\'s Collection',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           _ProfileIconButton(
@@ -609,11 +725,11 @@ class _HomePageState extends State<HomePage>
                           _calendarData?.dry.completed ?? 0,
                           total: _calendarData?.dry.total ?? 0,
                           subtitle: "Collections this month",
-                          icon: Icons.local_shipping_rounded,
+                          icon: Icons.recycling_rounded,
                           accentColor: const Color(0xFFFF9800),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: WasteSummaryCard(
                           title: "Wet Waste Collection",
@@ -672,20 +788,41 @@ class _HomePageState extends State<HomePage>
         key: key,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildPillBadge('🟢 Wet Waste', const Color(0xFF2E7D32)),
-          const SizedBox(width: 8),
-          _buildPillBadge('🟠 Dry Waste', const Color(0xFFE65100)),
+          _buildPillBadge(
+            'Wet Waste',
+            const Color(0xFF2E7D32),
+            icon: Icons.water_drop_rounded,
+          ),
+
+          _buildPillBadge(
+            'Dry Waste',
+            const Color(0xFFE65100),
+            icon: Icons.recycling_rounded,
+          ),
         ],
       );
     } else {
-      return _buildPillBadge('🟢 Wet Waste', const Color(0xFF2E7D32), key: key);
+      return _buildPillBadge(
+        'Wet Waste',
+        const Color(0xFF2E7D32),
+        key: key,
+        icon: Icons.water_drop_rounded,
+      );
     }
   }
 
-  Widget _buildPillBadge(String label, Color color, {Key? key}) {
+  Widget _buildPillBadge(
+      String label,
+      Color color, {
+        Key? key,
+        required IconData icon,
+      }) {
     return Container(
       key: key,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(12),
@@ -694,17 +831,27 @@ class _HomePageState extends State<HomePage>
           width: 1,
         ),
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: color.withValues(alpha: 0.95),
+            size: 15,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
-
   Widget _buildGlassChip({
     required IconData icon,
     required Color iconColor,
