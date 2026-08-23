@@ -6,7 +6,7 @@ import Header from "../components/layouts/Header";
 
 import OverviewKPIs from "../components/overview/OverviewKPIs";
 import VehicleStats from "../components/overview/VehicleStats";
-import RouteMap from "../components/overview/RouteMap";
+import CityOverviewMap from "../components/overview/CityOverviewMap";
 
 import { useFilters } from "../contexts/FilterContext";
 
@@ -21,21 +21,25 @@ export default function Overview() {
     new Date().toISOString().split("T")[0],
   );
 
-  // ==========================================================
-  // FILTER CONTEXT
-  // ==========================================================
+  /*
+   * =========================================================
+   * FILTER CONTEXT
+   * =========================================================
+   */
 
   const { selectedCity, selectedZone, selectedDivision, selectedWard } =
     useFilters();
 
-  // ==========================================================
-  // FETCH OVERVIEW
-  // ==========================================================
+  /*
+   * =========================================================
+   * FETCH OVERVIEW
+   * =========================================================
+   */
 
   useEffect(() => {
     /*
-     * Wait until cascading filters
-     * are completely resolved.
+     * Wait until the cascading geographic filters
+     * have finished loading.
      */
 
     if (!selectedCity || !selectedZone || !selectedDivision || !selectedWard) {
@@ -50,49 +54,81 @@ export default function Overview() {
 
         setError("");
 
-        // ==================================================
-        // MAIN QUERY
-        // ==================================================
+        /*
+         * =====================================================
+         * SELECTED FILTER IDS
+         * =====================================================
+         */
+
+        const cityId = selectedCity.city_id;
+
+        const zoneId = selectedZone.zone_id;
+
+        const divisionId = selectedDivision.division_id;
+
+        const wardId = selectedWard.ward_id;
+
+        /*
+         * =====================================================
+         * MAIN QUERY
+         * =====================================================
+         *
+         * Used by:
+         *
+         * Summary
+         * Vehicle Summary
+         * Route Map
+         *
+         * Complete Header scope:
+         *
+         * Date
+         * City
+         * Zone
+         * Division
+         * Ward
+         */
 
         const params = new URLSearchParams();
 
         params.set("date", selectedDate);
 
-        params.set("cityId", String(selectedCity.city_id));
+        params.set("cityId", String(cityId));
 
-        params.set("zoneId", String(selectedZone.zone_id));
+        params.set("zoneId", String(zoneId));
 
-        params.set("divisionId", String(selectedDivision.division_id));
+        params.set("divisionId", String(divisionId));
 
-        params.set("wardId", String(selectedWard.ward_id));
+        params.set("wardId", String(wardId));
 
         const queryString = params.toString();
 
-        // ==================================================
-        // GENERATION TREND
-        // ==================================================
-        //
-        // Trend remains division-wise.
-        //
-        // Therefore wardId is intentionally
-        // excluded.
-        // ==================================================
+        /*
+         * =====================================================
+         * GENERATION TREND QUERY
+         * =====================================================
+         *
+         * Generation Trend remains division-wise.
+         *
+         * Therefore wardId is intentionally NOT included.
+         */
 
         const trendParams = new URLSearchParams();
 
         trendParams.set("date", selectedDate);
 
-        trendParams.set("cityId", String(selectedCity.city_id));
+        trendParams.set("cityId", String(cityId));
 
-        trendParams.set("zoneId", String(selectedZone.zone_id));
+        trendParams.set("zoneId", String(zoneId));
 
-        trendParams.set("divisionId", String(selectedDivision.division_id));
+        trendParams.set("divisionId", String(divisionId));
 
         const trendQueryString = trendParams.toString();
 
-        // ==================================================
-        // DEBUG
-        // ==================================================
+        /*
+         * =====================================================
+         * DEBUG
+         * =====================================================
+         */
 
         console.log("=================================================");
 
@@ -118,15 +154,17 @@ export default function Overview() {
 
         console.log("Date:", selectedDate);
 
-        console.log("Summary Query:", queryString);
+        console.log("Summary / Vehicle / Map Query:", queryString);
 
         console.log("Trend Query:", trendQueryString);
 
         console.log("=================================================");
 
-        // ==================================================
-        // API REQUESTS
-        // ==================================================
+        /*
+         * =====================================================
+         * API REQUESTS
+         * =====================================================
+         */
 
         const [
           summaryResponse,
@@ -134,29 +172,53 @@ export default function Overview() {
           generationTrendResponse,
           mapResponse,
         ] = await Promise.all([
+          /*
+           * SUMMARY
+           */
+
           api.get(`/api/admin/overview/summary?${queryString}`),
 
+          /*
+           * VEHICLE SUMMARY
+           */
+
           api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
+
+          /*
+           * GENERATION TREND
+           *
+           * Division-wise.
+           */
 
           api.get(`/api/admin/overview/generation-trend?${trendQueryString}`),
 
           /*
-           * ROUTE MAP
+           * ROUTE MAP DATA
            *
-           * IMPORTANT:
-           * Uses the COMPLETE Header state.
+           * Complete Header scope.
+           *
+           * The CityOverviewMap dropdown will use
+           * this data when Route Maps is selected.
            */
 
           api.get(`/api/admin/overview/map?${queryString}`),
         ]);
 
+        /*
+         * =====================================================
+         * COMPONENT UNMOUNTED
+         * =====================================================
+         */
+
         if (!mounted) {
           return;
         }
 
-        // ==================================================
-        // SAFE RESPONSE EXTRACTION
-        // ==================================================
+        /*
+         * =====================================================
+         * SAFE RESPONSE EXTRACTION
+         * =====================================================
+         */
 
         const summaryData = summaryResponse?.data?.data || {};
 
@@ -168,6 +230,12 @@ export default function Overview() {
           ? generationTrendResponse.data.data
           : [];
 
+        /*
+         * =====================================================
+         * ROUTE MAP RESPONSE
+         * =====================================================
+         */
+
         const mapData = mapResponse?.data?.data || {
           defaultView: "route-map",
 
@@ -178,9 +246,11 @@ export default function Overview() {
           totalRoutePoints: 0,
         };
 
-        // ==================================================
-        // NORMALIZED SUMMARY
-        // ==================================================
+        /*
+         * =====================================================
+         * NORMALIZED SUMMARY
+         * =====================================================
+         */
 
         const normalizedSummary = {
           totalWasteCollected: Number(summaryData.totalWasteCollected) || 0,
@@ -194,9 +264,11 @@ export default function Overview() {
           notGiven: Number(summaryData.notGiven) || 0,
         };
 
-        // ==================================================
-        // NORMALIZED VEHICLE SUMMARY
-        // ==================================================
+        /*
+         * =====================================================
+         * NORMALIZED VEHICLE SUMMARY
+         * =====================================================
+         */
 
         const normalizedVehicleSummary = {
           totalVehicles: Number(vehicleSummaryData.totalVehicles) || 0,
@@ -213,9 +285,18 @@ export default function Overview() {
             Number(vehicleSummaryData.inactivityThresholdMinutes) || 30,
         };
 
-        // ==================================================
-        // STORE
-        // ==================================================
+        /*
+         * =====================================================
+         * STORE EVERYTHING
+         * =====================================================
+         *
+         * IMPORTANT:
+         *
+         * map is restored here.
+         *
+         * CityOverviewMap receives this data and keeps
+         * responsibility for the dropdown and map switching.
+         */
 
         setOverviewData({
           summary: normalizedSummary,
@@ -235,12 +316,22 @@ export default function Overview() {
 
         console.error("Overview API Error:", err);
 
+        /*
+         * =====================================================
+         * BACKEND ERROR
+         * =====================================================
+         */
+
         const backendMessage =
           err?.response?.data?.message || err?.message || "";
 
         /*
-         * Missing dynamic day table
-         * is a valid zero-data state.
+         * =====================================================
+         * MISSING DYNAMIC TABLE
+         * =====================================================
+         *
+         * Missing telemetry for a selected date is a
+         * valid zero-data state.
          */
 
         const isMissingDayTable =
@@ -276,6 +367,11 @@ export default function Overview() {
 
             generationTrend: [],
 
+            /*
+             * Keep map available even when the selected
+             * date has no route data.
+             */
+
             map: {
               defaultView: "route-map",
 
@@ -291,6 +387,12 @@ export default function Overview() {
 
           return;
         }
+
+        /*
+         * =====================================================
+         * REAL ERROR
+         * =====================================================
+         */
 
         setOverviewData(null);
 
@@ -319,17 +421,23 @@ export default function Overview() {
     selectedWard?.ward_id,
   ]);
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
+  /*
+   * =========================================================
+   * RENDER
+   * =========================================================
+   */
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
-      {/* ====================================================
+      {/* =====================================================
           LOADING
-      ==================================================== */}
+      ===================================================== */}
 
       {loading && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -339,9 +447,9 @@ export default function Overview() {
         </main>
       )}
 
-      {/* ====================================================
-          ERROR
-      ==================================================== */}
+      {/* =====================================================
+          REAL ERROR
+      ===================================================== */}
 
       {!loading && error && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -351,32 +459,49 @@ export default function Overview() {
         </main>
       )}
 
-      {/* ====================================================
+      {/* =====================================================
           DASHBOARD
-      ==================================================== */}
+      ===================================================== */}
 
       {!loading && !error && overviewData && (
-        <main className="space-y-6 px-8 py-6">
-          {/* ================================================
-                KPI
-            ================================================ */}
+        <main className="space-y-2 px-8 py-6">
+          {/* =================================================
+                KPI CARDS
+            ================================================= */}
 
           <OverviewKPIs data={overviewData.summary} />
 
-          {/* ================================================
-                VEHICLES
-            ================================================ */}
+          {/* =================================================
+                VEHICLES + GENERATION TREND
+            ================================================= */}
 
           <VehicleStats
             vehicleData={overviewData.vehicleSummary}
             trendData={overviewData.generationTrend}
           />
 
-          {/* ================================================
-                ROUTE MAP
-            ================================================ */}
+          {/* =================================================
+                ALL MAP TYPES
+            =================================================
+            
+            IMPORTANT:
+            
+            CityOverviewMap owns the dropdown:
+            
+            City Overview Map
+            Route Maps
+            GVP Points
+            Plants
+            Customer Grievances
+            
+            We pass mapData so Route Maps can consume
+            the newly fetched heartbeat route data.
+            ================================================= */}
 
-          <RouteMap mapData={overviewData.map} selectedDate={selectedDate} />
+          <CityOverviewMap
+            mapData={overviewData.map}
+            selectedDate={selectedDate}
+          />
         </main>
       )}
     </div>
