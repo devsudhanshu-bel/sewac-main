@@ -74,7 +74,7 @@ export default function Complaints() {
   const { t } = useLanguage();
 
   /* =======================================================
-     GSAP PAGE REF
+     GSAP
   ======================================================= */
 
   const pageRef = useRef(null);
@@ -112,18 +112,17 @@ export default function Complaints() {
   const [requestingOTP, setRequestingOTP] = useState(false);
 
   /*
-   * Tracks the current OTP expiry in the Admin UI.
-   *
-   * This does NOT replace backend expiry validation.
-   * Backend remains the source of truth.
+   * Current OTP expiry shown/used by admin UI.
    */
+
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
 
   const [otpExpired, setOtpExpired] = useState(false);
 
   /*
-   * Hard lock against duplicate OTP requests.
+   * Prevent duplicate OTP requests.
    */
+
   const otpRequestInProgressRef = useRef(false);
 
   /* =======================================================
@@ -141,7 +140,15 @@ export default function Complaints() {
   const searchTimerRef = useRef(null);
 
   /* =======================================================
-     GSAP PAGE ENTRANCE
+     ADMIN TOKEN
+  ======================================================= */
+
+  const getAdminToken = () => {
+    return sessionStorage.getItem("token");
+  };
+
+  /* =======================================================
+     PAGE GSAP ANIMATION
   ======================================================= */
 
   useEffect(() => {
@@ -156,35 +163,25 @@ export default function Complaints() {
         return;
       }
 
-      gsap.fromTo(
-        sections,
-        {
-          opacity: 0,
-          y: 18,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          stagger: 0.09,
-          ease: "power3.out",
-          clearProps: "transform",
-        },
-      );
+      gsap.set(sections, {
+        opacity: 0,
+        y: 18,
+      });
+
+      gsap.to(sections, {
+        opacity: 1,
+        y: 0,
+        duration: 0.45,
+        stagger: 0.08,
+        ease: "power3.out",
+        clearProps: "transform",
+      });
     }, pageRef);
 
     return () => {
       ctx.revert();
     };
   }, []);
-
-  /* =======================================================
-     ADMIN TOKEN
-  ======================================================= */
-
-  const getAdminToken = () => {
-    return sessionStorage.getItem("token");
-  };
 
   /* =======================================================
      CHECK OTP EXPIRY
@@ -232,10 +229,6 @@ export default function Complaints() {
       setOtpExpired(false);
       return;
     }
-
-    /*
-     * Support both possible API naming conventions.
-     */
 
     const expiry =
       selectedComplaint.verification_expires_at ||
@@ -371,7 +364,7 @@ export default function Complaints() {
   };
 
   /* =======================================================
-     SAVE COMPLAINT
+     SAVE COMPLAINT CHANGES
   ======================================================= */
 
   const saveComplaintChanges = async (updates) => {
@@ -491,6 +484,10 @@ export default function Complaints() {
         },
       );
 
+      /*
+       * Explicit 429 handling.
+       */
+
       if (response.status === 429) {
         throw new Error(
           t(
@@ -513,11 +510,12 @@ export default function Complaints() {
       }
 
       /*
-       * The backend may return expiresAt.
+       * SECURITY:
        *
-       * If it does, use it directly.
-       * Otherwise calculate the same 5-minute
-       * window used by the backend.
+       * Do not read or display OTP
+       * from the admin API response.
+       *
+       * OTP is shown to the citizen.
        */
 
       const responseExpiry =
@@ -526,6 +524,14 @@ export default function Complaints() {
         result.data?.verificationExpiresAt ||
         null;
 
+      /*
+       * If backend returns expiry,
+       * use it.
+       *
+       * Otherwise use the known 5-minute
+       * OTP window for the UI timer.
+       */
+
       const newExpiry =
         responseExpiry || new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -533,17 +539,21 @@ export default function Complaints() {
 
       setOtpExpired(false);
 
-      /*
-       * Refresh complaint list.
-       */
+      /* ===============================================
+           REFRESH TABLE
+        =============================================== */
 
       await fetchComplaints(pagination.page, filters);
 
+      /* ===============================================
+           REFRESH KPIs
+        =============================================== */
+
       await fetchKPIs();
 
-      /*
-       * Refresh selected complaint.
-       */
+      /* ===============================================
+           REFRESH SELECTED COMPLAINT
+        =============================================== */
 
       try {
         const detailResponse = await fetch(
@@ -563,12 +573,6 @@ export default function Complaints() {
           const refreshedComplaint = detailResult.data;
 
           setSelectedComplaint(refreshedComplaint);
-
-          /*
-           * If the refreshed complaint
-           * contains the real expiry,
-           * prefer that over our fallback.
-           */
 
           const refreshedExpiry =
             refreshedComplaint?.verification_expires_at ||
@@ -629,8 +633,8 @@ export default function Complaints() {
     }
 
     /*
-     * Prevent frontend submission of an
-     * already-expired OTP.
+     * Do not allow frontend verification
+     * after the known expiry time.
      */
 
     if (otpExpiresAt && Date.now() >= new Date(otpExpiresAt).getTime()) {
@@ -691,9 +695,21 @@ export default function Complaints() {
 
       alert(t("complaints.messages.closed", "Complaint closed successfully."));
 
+      /* ===============================================
+         REFRESH TABLE
+      =============================================== */
+
       await fetchComplaints(pagination.page, filters);
 
+      /* ===============================================
+         REFRESH KPIs
+      =============================================== */
+
       await fetchKPIs();
+
+      /* ===============================================
+         CLOSE DETAILS
+      =============================================== */
 
       setSelectedComplaint(null);
 
@@ -761,11 +777,6 @@ export default function Complaints() {
 
   const handleSelectComplaint = (complaint) => {
     setSelectedComplaint(complaint);
-
-    /*
-     * Immediately initialize expiry
-     * from the selected complaint.
-     */
 
     const expiry =
       complaint?.verification_expires_at ||
@@ -906,7 +917,7 @@ export default function Complaints() {
               <ComplaintHeader />
             </div>
 
-            {/* KPI CARDS */}
+            {/* KPI */}
 
             <div data-page-section className="mt-5">
               <ComplaintKPIs kpis={kpis} />
@@ -975,6 +986,8 @@ export default function Complaints() {
             lg:hidden
           "
         >
+          {/* BACKDROP */}
+
           <button
             type="button"
             aria-label={t(
@@ -994,6 +1007,8 @@ export default function Complaints() {
             "
           />
 
+          {/* DRAWER */}
+
           <aside
             className="
               absolute
@@ -1011,6 +1026,8 @@ export default function Complaints() {
               sm:max-w-[460px]
             "
           >
+            {/* DRAWER HEADER */}
+
             <div
               className="
                 flex
@@ -1084,6 +1101,8 @@ export default function Complaints() {
                 </svg>
               </button>
             </div>
+
+            {/* DETAILS */}
 
             <div
               className="
