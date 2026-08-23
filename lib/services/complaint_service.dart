@@ -156,32 +156,37 @@ class ComplaintService {
 ///
 /// The backend must verify that the authenticated citizen
 /// owns this complaint before returning any OTP.
-Future<Map<String, dynamic>> getComplaintVerification(
-  String ticketNumber,
-) async {
-  final url =
-      ApiConstants.complaintVerification(ticketNumber);
+/// Verifies the OTP entered by the citizen and closes the complaint.
+Future<Map<String, dynamic>> verifyComplaintOtp({
+  required String ticketNumber,
+  required String otp,
+}) async {
+  if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+    throw Exception("OTP must be a 6-digit number.");
+  }
 
-  final response = await ApiClient.get(url);
+  final url = ApiConstants.verifyComplaintOtp(ticketNumber);
+
+  final response = await ApiClient.post(
+    url,
+    body: {
+      "otp": otp,
+    },
+  );
 
   dynamic jsonResponse;
 
   try {
     jsonResponse = jsonDecode(response.body);
   } catch (_) {
-    throw Exception(
-      "Invalid response format from server.",
-    );
+    throw Exception("Invalid response format from server.");
   }
 
   if (response.statusCode == 200 &&
       jsonResponse["success"] == true) {
-    final data = jsonResponse["data"];
-
-    if (data != null &&
-        data is Map<String, dynamic>) {
-      return data;
-    }
+    return Map<String, dynamic>.from(
+      jsonResponse["data"] ?? {},
+    );
   }
 
   _handleHttpError(
@@ -190,8 +195,6 @@ Future<Map<String, dynamic>> getComplaintVerification(
     response.body,
   );
 
-  throw Exception(
-    "Verification information unavailable.",
-  );
+  throw Exception("OTP verification failed.");
 }
 }
