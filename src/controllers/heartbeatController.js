@@ -144,12 +144,9 @@ const recordHeartbeat = async (req, res) => {
       heartbeatTable,
 
       data: {
-        id: heartbeat.id,
-
+        id: heartbeat.id.toString(),
         latitude: heartbeat.latitude,
-
         longitude: heartbeat.longitude,
-
         created_at: heartbeat.created_at,
       },
     });
