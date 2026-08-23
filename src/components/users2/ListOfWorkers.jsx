@@ -7,6 +7,7 @@ import {
   X,
   Pencil,
   UsersRound,
+  AlertTriangle,
 } from "lucide-react";
 
 import api from "../../api/axios";
@@ -53,6 +54,14 @@ export default function ListOfWorkers() {
   const [showEditModal, setShowEditModal] = useState(false);
 
   const [selectedWorker, setSelectedWorker] = useState(null);
+
+  // =========================
+  // DELETE CONFIRMATION MODAL
+  // =========================
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [workerToDelete, setWorkerToDelete] = useState(null);
 
   // =========================
   // STATES
@@ -374,25 +383,30 @@ export default function ListOfWorkers() {
   // DELETE WORKER
   // =========================================================
 
-  const handleDeleteWorker = async (worker) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${worker.full_name}?`
-    );
+  const handleDeleteWorker = (worker) => {
+    setWorkerToDelete(worker);
+    setShowDeleteModal(true);
+    setError("");
+    setSuccessMessage("");
+  };
 
-    if (!confirmed) {
-      setActiveMenu(null);
-      return;
-    }
+  const closeDeleteModal = () => {
+    if (deleting) return;
+
+    setShowDeleteModal(false);
+    setWorkerToDelete(null);
+  };
+
+  const confirmDeleteWorker = async () => {
+    if (!workerToDelete) return;
 
     try {
       setDeleting(true);
-
       setError("");
-
       setSuccessMessage("");
 
       await api.delete(
-        `/api/users/${worker.id}`,
+        `/api/users/${workerToDelete.id}`,
         {
           headers: getHeaders(),
         }
@@ -401,6 +415,9 @@ export default function ListOfWorkers() {
       setSuccessMessage(
         "Worker deleted successfully."
       );
+
+      setShowDeleteModal(false);
+      setWorkerToDelete(null);
 
       await fetchWorkers();
     } catch (err) {
@@ -1651,6 +1668,170 @@ export default function ListOfWorkers() {
                 {saving
                   ? "Updating..."
                   : "Update"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================
+          DELETE WORKER CONFIRMATION MODAL
+      ======================================================= */}
+
+      {showDeleteModal && workerToDelete && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[1000]
+            flex
+            items-center
+            justify-center
+            bg-black/25
+            p-4
+            backdrop-blur-sm
+          "
+        >
+          <div
+            className="
+              relative
+              w-[430px]
+              max-w-full
+              overflow-hidden
+              rounded-[24px]
+              border
+              border-[#E8ECF5]
+              bg-white
+              shadow-2xl
+            "
+          >
+            {/* HEADER */}
+
+            <div
+              className="
+                flex
+                items-center
+                gap-4
+                border-b
+                border-[#EEF2F7]
+                px-7
+                py-5
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-11
+                  w-11
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-red-100
+                  text-red-500
+                "
+              >
+                <AlertTriangle size={22} />
+              </div>
+
+              <h2 className="text-[22px] font-bold text-[#16295A]">
+                Delete Worker
+              </h2>
+
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleting}
+                className="
+                  ml-auto
+                  rounded-lg
+                  p-1.5
+                  text-[#667085]
+                  transition
+                  hover:bg-gray-100
+                  hover:text-[#16295A]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+                aria-label="Close delete confirmation"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* BODY */}
+
+            <div className="px-7 py-6">
+              <p className="text-[14px] leading-6 text-[#667085]">
+                Are you sure you want to permanently delete
+              </p>
+
+              <p className="mt-0.5 text-[15px] font-semibold text-[#16295A]">
+                {workerToDelete.full_name}?
+              </p>
+
+              <p className="mt-3 text-[12px] leading-5 text-[#98A2B3]">
+                This action will permanently remove this worker
+                from the system and cannot be undone.
+              </p>
+            </div>
+
+            {/* FOOTER */}
+
+            <div
+              className="
+                flex
+                justify-end
+                gap-3
+                border-t
+                border-[#EEF2F7]
+                px-7
+                py-5
+              "
+            >
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleting}
+                className="
+                  h-11
+                  rounded-xl
+                  border
+                  border-[#E4E7EC]
+                  bg-white
+                  px-6
+                  text-[14px]
+                  font-medium
+                  text-[#16295A]
+                  transition
+                  hover:bg-gray-50
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDeleteWorker}
+                disabled={deleting}
+                className="
+                  flex
+                  h-11
+                  items-center
+                  gap-2
+                  rounded-xl
+                  bg-red-600
+                  px-6
+                  text-[14px]
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-red-700
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              >
+                <Trash2 size={16} />
+
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
