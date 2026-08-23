@@ -42,9 +42,13 @@ class ApiConstants {
   static String complaintByTicket(String ticketNumber) =>
       "$complaint/$ticketNumber";
 
- static String verifyComplaintOtp(String ticketNumber) =>
-    "$complaint/$ticketNumber/verify"; 
-  
+  /// Fetches the verification OTP for a complaint.
+  ///
+  /// The citizen app uses this endpoint to display the OTP
+  /// after the admin requests verification.
+  static String complaintVerification(String ticketNumber) =>
+      "$complaint/$ticketNumber/verification";
+
   /// =====================================================================
   /// ANALYTICS
   /// =====================================================================
@@ -62,9 +66,9 @@ class ApiConstants {
 
   /// Returns nearest vehicle location to given coordinates
   static String nearestVehicle(
-      double latitude,
-      double longitude,
-      ) =>
+    double latitude,
+    double longitude,
+  ) =>
       "$baseUrl/citizen/map/nearest?latitude=$latitude&longitude=$longitude";
 
   /// Returns a specific vehicle
