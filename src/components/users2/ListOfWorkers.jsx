@@ -5,12 +5,11 @@ import {
   Search,
   MoreHorizontal,
   Trash2,
-  ChevronDown,
   X,
   Pencil,
 } from "lucide-react";
 
-import API_BASE_URL from "../../services/api";
+import api from "../../api/axios";
 
 function getAuthToken() {
   return (
@@ -103,12 +102,6 @@ export default function ListOfWorkers() {
   const menuRef = useRef(null);
 
   // =========================================================
-  // API URL
-  // =========================================================
-
-  const usersUrl = `${API_BASE_URL}/api/users`;
-
-  // =========================================================
   // AUTH HEADERS
   // =========================================================
 
@@ -135,28 +128,23 @@ export default function ListOfWorkers() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${usersUrl}?type=WORKER&page=1&limit=100`,
+      const response = await api.get(
+        "/api/users?type=WORKER&page=1&limit=100",
         {
-          method: "GET",
           headers: getHeaders(),
         }
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Failed to fetch workers."
-        );
-      }
+      const data = response.data;
 
       setWorkers(data?.users || []);
     } catch (err) {
       console.error("Fetch Workers Error:", err);
 
       setError(
-        err?.message || "Failed to fetch workers."
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to fetch workers."
       );
     } finally {
       setLoading(false);
@@ -309,31 +297,19 @@ export default function ListOfWorkers() {
         return;
       }
 
-      const response = await fetch(usersUrl, {
-        method: "POST",
-
-        headers: getHeaders(),
-
-        body: JSON.stringify({
+      await api.post(
+        "/api/users",
+        {
           full_name: form.full_name.trim(),
-
           email: form.email.trim(),
-
           phone_number: form.phone_number.trim(),
-
           password: form.password,
-
           role: "WORKER",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Failed to create worker."
-        );
-      }
+        },
+        {
+          headers: getHeaders(),
+        }
+      );
 
       setSuccessMessage(
         "Worker created successfully."
@@ -350,7 +326,9 @@ export default function ListOfWorkers() {
       console.error("Create Worker Error:", err);
 
       setError(
-        err?.message || "Failed to create worker."
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to create worker."
       );
     } finally {
       setSaving(false);
@@ -381,29 +359,17 @@ export default function ListOfWorkers() {
         return;
       }
 
-      const response = await fetch(
-        `${usersUrl}/${selectedWorker.id}`,
+      await api.put(
+        `/api/users/${selectedWorker.id}`,
         {
-          method: "PUT",
-
+          full_name: editForm.full_name.trim(),
+          phone_number:
+            editForm.phone_number.trim(),
+        },
+        {
           headers: getHeaders(),
-
-          body: JSON.stringify({
-            full_name: editForm.full_name.trim(),
-
-            phone_number:
-              editForm.phone_number.trim(),
-          }),
         }
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Failed to update worker."
-        );
-      }
 
       setSuccessMessage(
         "Worker updated successfully."
@@ -424,7 +390,9 @@ export default function ListOfWorkers() {
       console.error("Update Worker Error:", err);
 
       setError(
-        err?.message || "Failed to update worker."
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to update worker."
       );
     } finally {
       setSaving(false);
@@ -452,22 +420,12 @@ export default function ListOfWorkers() {
 
       setSuccessMessage("");
 
-      const response = await fetch(
-        `${usersUrl}/${worker.id}`,
+      await api.delete(
+        `/api/users/${worker.id}`,
         {
-          method: "DELETE",
-
           headers: getHeaders(),
         }
       );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Failed to delete worker."
-        );
-      }
 
       setSuccessMessage(
         "Worker deleted successfully."
@@ -476,23 +434,13 @@ export default function ListOfWorkers() {
       setActiveMenu(null);
 
       await fetchWorkers();
-
-      // Keep page valid after deletion.
-      setCurrentPage((previousPage) => {
-        const newTotal = workers.length - 1;
-
-        const maxPage = Math.max(
-          Math.ceil(newTotal / rowsPerPage),
-          1
-        );
-
-        return Math.min(previousPage, maxPage);
-      });
     } catch (err) {
       console.error("Delete Worker Error:", err);
 
       setError(
-        err?.message || "Failed to delete worker."
+        err?.response?.data?.error ||
+          err?.message ||
+          "Failed to delete worker."
       );
     } finally {
       setDeleting(false);
