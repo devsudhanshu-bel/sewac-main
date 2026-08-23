@@ -169,6 +169,10 @@ exports.createUser = async (req, res) => {
     const { full_name, email, phone_number, password, role } = req.body;
 
     const loggedInUser = req.user;
+    console.log("=== CREATE USER DEBUG ===");
+console.log("Logged-in user:", loggedInUser);
+console.log("Logged-in user ID:", loggedInUser?.id);
+console.log("Logged-in user role:", loggedInUser?.role);
 
     // ===========================
     // Required Fields Validation
@@ -275,10 +279,12 @@ exports.createUser = async (req, res) => {
       parentAdminId = loggedInUser.id;
     }
 
+    console.log("New user role:", role);
+console.log("Calculated parentAdminId:", parentAdminId);
     // ===========================
     // Create User
     // ===========================
-
+console.log("Creating user with parent_admin_id:", parentAdminId);
     const newUser = await prisma.admins.create({
       data: {
         full_name,
