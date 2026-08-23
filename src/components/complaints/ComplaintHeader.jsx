@@ -1,35 +1,10 @@
-import { useEffect, useRef } from "react";
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintHeader() {
   const { t } = useLanguage();
 
-  const headerRef = useRef(null);
-
-  useEffect(() => {
-    if (!headerRef.current) return;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        headerRef.current,
-        {
-          opacity: 0,
-          y: -18,
-        },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.55,
-          ease: "power3.out",
-        },
-      );
-    }, headerRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <div ref={headerRef} className="w-full">
+    <div className="w-full">
       {/* =====================================================
           PAGE TITLE
       ===================================================== */}

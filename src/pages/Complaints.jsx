@@ -1,6 +1,5 @@
 import Header from "../components/layouts/Header";
 import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
 
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
@@ -74,12 +73,6 @@ export default function Complaints() {
   const { t } = useLanguage();
 
   /* =======================================================
-     GSAP
-  ======================================================= */
-
-  const pageRef = useRef(null);
-
-  /* =======================================================
      COMPLAINT DATA
   ======================================================= */
 
@@ -112,15 +105,17 @@ export default function Complaints() {
   const [requestingOTP, setRequestingOTP] = useState(false);
 
   /*
-   * Current OTP expiry shown/used by admin UI.
+   * Tracks the current OTP expiry in the Admin UI.
+   *
+   * This does NOT replace backend expiry validation.
+   * Backend remains the source of truth.
    */
-
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
 
   const [otpExpired, setOtpExpired] = useState(false);
 
   /*
-   * Prevent duplicate OTP requests.
+   * Hard lock against duplicate OTP requests.
    */
 
   const otpRequestInProgressRef = useRef(false);
@@ -146,42 +141,6 @@ export default function Complaints() {
   const getAdminToken = () => {
     return sessionStorage.getItem("token");
   };
-
-  /* =======================================================
-     PAGE GSAP ANIMATION
-  ======================================================= */
-
-  useEffect(() => {
-    if (!pageRef.current) {
-      return;
-    }
-
-    const ctx = gsap.context(() => {
-      const sections = pageRef.current.querySelectorAll("[data-page-section]");
-
-      if (!sections.length) {
-        return;
-      }
-
-      gsap.set(sections, {
-        opacity: 0,
-        y: 18,
-      });
-
-      gsap.to(sections, {
-        opacity: 1,
-        y: 0,
-        duration: 0.45,
-        stagger: 0.08,
-        ease: "power3.out",
-        clearProps: "transform",
-      });
-    }, pageRef);
-
-    return () => {
-      ctx.revert();
-    };
-  }, []);
 
   /* =======================================================
      CHECK OTP EXPIRY
@@ -229,6 +188,10 @@ export default function Complaints() {
       setOtpExpired(false);
       return;
     }
+
+    /*
+     * Support both possible API naming conventions.
+     */
 
     const expiry =
       selectedComplaint.verification_expires_at ||
@@ -364,7 +327,7 @@ export default function Complaints() {
   };
 
   /* =======================================================
-     SAVE COMPLAINT CHANGES
+     SAVE COMPLAINT
   ======================================================= */
 
   const saveComplaintChanges = async (updates) => {
@@ -484,10 +447,6 @@ export default function Complaints() {
         },
       );
 
-      /*
-       * Explicit 429 handling.
-       */
-
       if (response.status === 429) {
         throw new Error(
           t(
@@ -510,12 +469,11 @@ export default function Complaints() {
       }
 
       /*
-       * SECURITY:
+       * The backend may return expiresAt.
        *
-       * Do not read or display OTP
-       * from the admin API response.
-       *
-       * OTP is shown to the citizen.
+       * If it does, use it directly.
+       * Otherwise calculate the same 5-minute
+       * window used by the backend.
        */
 
       const responseExpiry =
@@ -524,36 +482,23 @@ export default function Complaints() {
         result.data?.verificationExpiresAt ||
         null;
 
-      /*
-       * If backend returns expiry,
-       * use it.
-       *
-       * Otherwise use the known 5-minute
-       * OTP window for the UI timer.
-       */
-
       const newExpiry =
         responseExpiry || new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
       setOtpExpiresAt(newExpiry);
-
       setOtpExpired(false);
 
-      /* ===============================================
-           REFRESH TABLE
-        =============================================== */
+      /*
+       * Refresh complaint list.
+       */
 
       await fetchComplaints(pagination.page, filters);
 
-      /* ===============================================
-           REFRESH KPIs
-        =============================================== */
-
       await fetchKPIs();
 
-      /* ===============================================
-           REFRESH SELECTED COMPLAINT
-        =============================================== */
+      /*
+       * Refresh selected complaint.
+       */
 
       try {
         const detailResponse = await fetch(
@@ -573,6 +518,12 @@ export default function Complaints() {
           const refreshedComplaint = detailResult.data;
 
           setSelectedComplaint(refreshedComplaint);
+
+          /*
+           * If the refreshed complaint
+           * contains the real expiry,
+           * prefer that over our fallback.
+           */
 
           const refreshedExpiry =
             refreshedComplaint?.verification_expires_at ||
@@ -633,8 +584,8 @@ export default function Complaints() {
     }
 
     /*
-     * Do not allow frontend verification
-     * after the known expiry time.
+     * Prevent frontend submission of an
+     * already-expired OTP.
      */
 
     if (otpExpiresAt && Date.now() >= new Date(otpExpiresAt).getTime()) {
@@ -695,21 +646,9 @@ export default function Complaints() {
 
       alert(t("complaints.messages.closed", "Complaint closed successfully."));
 
-      /* ===============================================
-         REFRESH TABLE
-      =============================================== */
-
       await fetchComplaints(pagination.page, filters);
 
-      /* ===============================================
-         REFRESH KPIs
-      =============================================== */
-
       await fetchKPIs();
-
-      /* ===============================================
-         CLOSE DETAILS
-      =============================================== */
 
       setSelectedComplaint(null);
 
@@ -778,6 +717,11 @@ export default function Complaints() {
   const handleSelectComplaint = (complaint) => {
     setSelectedComplaint(complaint);
 
+    /*
+     * Immediately initialize expiry
+     * from the selected complaint.
+     */
+
     const expiry =
       complaint?.verification_expires_at ||
       complaint?.verificationExpiresAt ||
@@ -801,9 +745,7 @@ export default function Complaints() {
     }
 
     setSelectedComplaint(null);
-
     setOtpExpiresAt(null);
-
     setOtpExpired(false);
   };
 
@@ -861,7 +803,6 @@ export default function Complaints() {
 
   return (
     <div
-      ref={pageRef}
       className="
         flex
         min-h-screen
@@ -911,21 +852,13 @@ export default function Complaints() {
               flex-1
             "
           >
-            {/* PAGE HEADER */}
+            <ComplaintHeader />
 
-            <div data-page-section>
-              <ComplaintHeader />
-            </div>
-
-            {/* KPI */}
-
-            <div data-page-section className="mt-5">
+            <div className="mt-5">
               <ComplaintKPIs kpis={kpis} />
             </div>
 
-            {/* FILTERS */}
-
-            <div data-page-section className="mt-5">
+            <div className="mt-5">
               <ComplaintFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
@@ -933,9 +866,7 @@ export default function Complaints() {
               />
             </div>
 
-            {/* TABLE */}
-
-            <div data-page-section className="mt-5 min-w-0">
+            <div className="mt-5 min-w-0">
               <ComplaintTable
                 complaints={complaints}
                 loading={loading}
@@ -986,8 +917,6 @@ export default function Complaints() {
             lg:hidden
           "
         >
-          {/* BACKDROP */}
-
           <button
             type="button"
             aria-label={t(
@@ -1007,8 +936,6 @@ export default function Complaints() {
             "
           />
 
-          {/* DRAWER */}
-
           <aside
             className="
               absolute
@@ -1026,8 +953,6 @@ export default function Complaints() {
               sm:max-w-[460px]
             "
           >
-            {/* DRAWER HEADER */}
-
             <div
               className="
                 flex
@@ -1096,13 +1021,10 @@ export default function Complaints() {
                   strokeLinejoin="round"
                 >
                   <line x1="18" y1="6" x2="6" y2="18" />
-
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
-
-            {/* DETAILS */}
 
             <div
               className="
