@@ -27,6 +27,7 @@ const getSummary = async (req, res) => {
 const getVehicleSummary = async (req, res) => {
   try {
     const data = await overviewService.getVehicleSummary(
+      req.query.date,
       req.query.cityId,
       req.query.zoneId,
       req.query.divisionId,
