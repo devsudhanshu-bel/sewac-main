@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   PlusCircle,
   Search,
-  MoreHorizontal,
   Trash2,
   X,
   Pencil,
+  UsersRound,
 } from "lucide-react";
 
 import api from "../../api/axios";
@@ -39,8 +39,6 @@ export default function ListOfWorkers() {
   const [workers, setWorkers] = useState([]);
 
   const [search, setSearch] = useState("");
-
-  const [activeMenu, setActiveMenu] = useState(null);
 
   // =========================
   // ADD MODAL
@@ -98,8 +96,6 @@ export default function ListOfWorkers() {
     email: "",
     phone_number: "",
   });
-
-  const menuRef = useRef(null);
 
   // =========================================================
   // AUTH HEADERS
@@ -160,33 +156,6 @@ export default function ListOfWorkers() {
   }, []);
 
   // =========================================================
-  // CLICK OUTSIDE ACTION MENU
-  // =========================================================
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target)
-      ) {
-        setActiveMenu(null);
-      }
-    }
-
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
-
-    return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
-    };
-  }, []);
-
-  // =========================================================
   // FORM CHANGE
   // =========================================================
 
@@ -240,8 +209,6 @@ export default function ListOfWorkers() {
   // =========================================================
 
   const openEditModal = (worker) => {
-    setActiveMenu(null);
-
     setSelectedWorker(worker);
 
     setEditForm({
@@ -318,6 +285,10 @@ export default function ListOfWorkers() {
       setShowModal(false);
 
       resetAddForm();
+
+      // Clear the active search filter so the newly created
+      // worker is immediately visible after refresh.
+      setSearch("");
 
       setCurrentPage(1);
 
@@ -431,8 +402,6 @@ export default function ListOfWorkers() {
         "Worker deleted successfully."
       );
 
-      setActiveMenu(null);
-
       await fetchWorkers();
     } catch (err) {
       console.error("Delete Worker Error:", err);
@@ -540,9 +509,26 @@ export default function ListOfWorkers() {
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-[24px] font-bold text-[#16295A]">
-              List of Workers
-            </h2>
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-violet-100
+                  text-violet-700
+                "
+              >
+                <UsersRound size={20} />
+              </div>
+
+              <h2 className="text-[24px] font-bold text-[#16295A]">
+                List of Workers
+              </h2>
+            </div>
 
             <div className="relative w-[500px]">
               <input
@@ -914,16 +900,13 @@ export default function ListOfWorkers() {
 
                       {/* ACTIONS */}
 
-                      <td className="relative px-4 py-5">
-                        <div className="flex justify-center">
+                      <td className="px-4 py-5">
+                        <div className="flex items-center justify-center gap-4">
+                          {/* EDIT */}
+
                           <button
                             onClick={() =>
-                              setActiveMenu(
-                                activeMenu ===
-                                  worker.id
-                                  ? null
-                                  : worker.id
-                              )
+                              openEditModal(worker)
                             }
                             className="
                               flex
@@ -936,96 +919,36 @@ export default function ListOfWorkers() {
                               transition
                               hover:bg-violet-100
                             "
+                            title="Edit"
                           >
-                            <MoreHorizontal
-                              size={18}
-                            />
+                            <Pencil size={18} />
+                          </button>
+
+                          {/* DELETE */}
+
+                          <button
+                            disabled={deleting}
+                            onClick={() =>
+                              handleDeleteWorker(worker)
+                            }
+                            className="
+                              flex
+                              h-9
+                              w-9
+                              items-center
+                              justify-center
+                              rounded-xl
+                              text-red-500
+                              transition
+                              hover:bg-red-50
+                              disabled:cursor-not-allowed
+                              disabled:opacity-50
+                            "
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
                           </button>
                         </div>
-
-                        {activeMenu ===
-                          worker.id && (
-                          <div
-                            ref={menuRef}
-                            className="
-                              absolute
-                              right-[65px]
-                              top-1/2
-                              z-50
-                              w-[170px]
-                              -translate-y-1/2
-                              rounded-2xl
-                              border
-                              border-[#E8ECF5]
-                              bg-white
-                              py-2
-                              shadow-2xl
-                            "
-                          >
-                            {/* EDIT */}
-
-                            <button
-                              onClick={() =>
-                                openEditModal(
-                                  worker
-                                )
-                              }
-                              className="
-                                flex
-                                w-full
-                                items-center
-                                gap-3
-                                px-5
-                                py-3
-                                text-[14px]
-                                font-medium
-                                text-violet-700
-                                transition
-                                hover:bg-violet-50
-                              "
-                            >
-                              <Pencil
-                                size={16}
-                              />
-
-                              Edit
-                            </button>
-
-                            {/* DELETE */}
-
-                            <button
-                              disabled={deleting}
-                              onClick={() =>
-                                handleDeleteWorker(
-                                  worker
-                                )
-                              }
-                              className="
-                                flex
-                                w-full
-                                items-center
-                                gap-3
-                                px-5
-                                py-3
-                                text-[14px]
-                                font-medium
-                                text-red-500
-                                transition
-                                hover:bg-red-50
-                                disabled:cursor-not-allowed
-                                disabled:opacity-50
-                              "
-                            >
-                              <Trash2
-                                size={16}
-                              />
-
-                              {deleting
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   )

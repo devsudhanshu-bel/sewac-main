@@ -47,7 +47,7 @@ const Users = () => {
         <div className="mt-8 pb-3 text-center text-[12px] text-gray-500">
           {t(
             "users.footer",
-            "© 2026SEWAC. All rights reserved."
+            "© 2026 SEWAC. All rights reserved."
           )}
         </div>
 
