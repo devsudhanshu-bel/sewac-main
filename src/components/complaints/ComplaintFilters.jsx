@@ -2,8 +2,6 @@ import { Search, CalendarDays, RotateCcw, ChevronDown } from "lucide-react";
 
 import { useEffect, useRef } from "react";
 
-import { gsap } from "gsap";
-
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintFilters({ filters, onFilterChange, onReset }) {

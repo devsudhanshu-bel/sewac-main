@@ -12,8 +12,6 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-import { gsap } from "gsap";
-
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function ComplaintDetails({

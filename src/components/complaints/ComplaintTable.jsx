@@ -2,8 +2,6 @@ import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useEffect, useRef } from "react";
 
-import { gsap } from "gsap";
-
 import { useLanguage } from "../../i18n";
 
 /* =========================================================
