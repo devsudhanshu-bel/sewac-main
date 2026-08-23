@@ -6,7 +6,7 @@ import Header from "../components/layouts/Header";
 
 import OverviewKPIs from "../components/overview/OverviewKPIs";
 import VehicleStats from "../components/overview/VehicleStats";
-import CityOverviewMap from "../components/overview/CityOverviewMap";
+import RouteMap from "../components/overview/RouteMap";
 
 import { useFilters } from "../contexts/FilterContext";
 
@@ -21,25 +21,21 @@ export default function Overview() {
     new Date().toISOString().split("T")[0],
   );
 
-  /*
-   * =========================================================
-   * FILTER CONTEXT
-   * =========================================================
-   */
+  // ==========================================================
+  // FILTER CONTEXT
+  // ==========================================================
 
   const { selectedCity, selectedZone, selectedDivision, selectedWard } =
     useFilters();
 
-  /*
-   * =========================================================
-   * FETCH OVERVIEW
-   * =========================================================
-   */
+  // ==========================================================
+  // FETCH OVERVIEW
+  // ==========================================================
 
   useEffect(() => {
     /*
-     * Wait until the cascading geographic filters
-     * have finished loading.
+     * Wait until cascading filters
+     * are completely resolved.
      */
 
     if (!selectedCity || !selectedZone || !selectedDivision || !selectedWard) {
@@ -54,81 +50,49 @@ export default function Overview() {
 
         setError("");
 
-        /*
-         * =====================================================
-         * SELECTED FILTER IDS
-         * =====================================================
-         */
-
-        const cityId = selectedCity.city_id;
-
-        const zoneId = selectedZone.zone_id;
-
-        const divisionId = selectedDivision.division_id;
-
-        const wardId = selectedWard.ward_id;
-
-        /*
-         * =====================================================
-         * SUMMARY / VEHICLE QUERY
-         * =====================================================
-         *
-         * These endpoints use the complete selected scope:
-         *
-         * City
-         *   ↓
-         * Zone
-         *   ↓
-         * Division
-         *   ↓
-         * Ward
-         */
+        // ==================================================
+        // MAIN QUERY
+        // ==================================================
 
         const params = new URLSearchParams();
 
         params.set("date", selectedDate);
 
-        params.set("cityId", String(cityId));
+        params.set("cityId", String(selectedCity.city_id));
 
-        params.set("zoneId", String(zoneId));
+        params.set("zoneId", String(selectedZone.zone_id));
 
-        params.set("divisionId", String(divisionId));
+        params.set("divisionId", String(selectedDivision.division_id));
 
-        params.set("wardId", String(wardId));
+        params.set("wardId", String(selectedWard.ward_id));
 
         const queryString = params.toString();
 
-        /*
-         * =====================================================
-         * GENERATION TREND QUERY
-         * =====================================================
-         *
-         * Generation Trend is division-wise.
-         *
-         * Therefore the selected ward is intentionally
-         * NOT sent here.
-         *
-         * Backend itself resolves all wards belonging
-         * to the selected division.
-         */
+        // ==================================================
+        // GENERATION TREND
+        // ==================================================
+        //
+        // Trend remains division-wise.
+        //
+        // Therefore wardId is intentionally
+        // excluded.
+        // ==================================================
 
         const trendParams = new URLSearchParams();
 
         trendParams.set("date", selectedDate);
 
-        trendParams.set("cityId", String(cityId));
+        trendParams.set("cityId", String(selectedCity.city_id));
 
-        trendParams.set("zoneId", String(zoneId));
+        trendParams.set("zoneId", String(selectedZone.zone_id));
 
-        trendParams.set("divisionId", String(divisionId));
+        trendParams.set("divisionId", String(selectedDivision.division_id));
 
         const trendQueryString = trendParams.toString();
 
-        /*
-         * =====================================================
-         * DEBUG
-         * =====================================================
-         */
+        // ==================================================
+        // DEBUG
+        // ==================================================
 
         console.log("=================================================");
 
@@ -160,37 +124,39 @@ export default function Overview() {
 
         console.log("=================================================");
 
-        /*
-         * =====================================================
-         * API REQUESTS
-         * =====================================================
-         */
+        // ==================================================
+        // API REQUESTS
+        // ==================================================
 
         const [
           summaryResponse,
           vehicleSummaryResponse,
           generationTrendResponse,
+          mapResponse,
         ] = await Promise.all([
           api.get(`/api/admin/overview/summary?${queryString}`),
 
           api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
 
           api.get(`/api/admin/overview/generation-trend?${trendQueryString}`),
-        ]);
 
-        /*
-         * Component was unmounted while requests were running.
-         */
+          /*
+           * ROUTE MAP
+           *
+           * IMPORTANT:
+           * Uses the COMPLETE Header state.
+           */
+
+          api.get(`/api/admin/overview/map?${queryString}`),
+        ]);
 
         if (!mounted) {
           return;
         }
 
-        /*
-         * =====================================================
-         * SAFE RESPONSE EXTRACTION
-         * =====================================================
-         */
+        // ==================================================
+        // SAFE RESPONSE EXTRACTION
+        // ==================================================
 
         const summaryData = summaryResponse?.data?.data || {};
 
@@ -202,25 +168,19 @@ export default function Overview() {
           ? generationTrendResponse.data.data
           : [];
 
-        /*
-         * =====================================================
-         * NORMALIZED DEFAULTS
-         * =====================================================
-         *
-         * IMPORTANT:
-         *
-         * No telemetry is NOT an application error.
-         *
-         * If the selected date has no telemetry:
-         *
-         * waste             → 0
-         * collection points → 0
-         * citizens           → backend value
-         * vehicles           → 0 / available registered count
-         * generation trend   → []
-         *
-         * The dashboard must still render.
-         */
+        const mapData = mapResponse?.data?.data || {
+          defaultView: "route-map",
+
+          routes: [],
+
+          totalVehicles: 0,
+
+          totalRoutePoints: 0,
+        };
+
+        // ==================================================
+        // NORMALIZED SUMMARY
+        // ==================================================
 
         const normalizedSummary = {
           totalWasteCollected: Number(summaryData.totalWasteCollected) || 0,
@@ -233,6 +193,10 @@ export default function Overview() {
 
           notGiven: Number(summaryData.notGiven) || 0,
         };
+
+        // ==================================================
+        // NORMALIZED VEHICLE SUMMARY
+        // ==================================================
 
         const normalizedVehicleSummary = {
           totalVehicles: Number(vehicleSummaryData.totalVehicles) || 0,
@@ -249,21 +213,9 @@ export default function Overview() {
             Number(vehicleSummaryData.inactivityThresholdMinutes) || 30,
         };
 
-        /*
-         * =====================================================
-         * STORE DATA
-         * =====================================================
-         *
-         * IMPORTANT:
-         *
-         * There is intentionally NO:
-         *
-         * hasNoData
-         *
-         * flag.
-         *
-         * Zero telemetry is valid dashboard state.
-         */
+        // ==================================================
+        // STORE
+        // ==================================================
 
         setOverviewData({
           summary: normalizedSummary,
@@ -271,6 +223,8 @@ export default function Overview() {
           vehicleSummary: normalizedVehicleSummary,
 
           generationTrend: generationTrendData,
+
+          map: mapData,
         });
 
         setError("");
@@ -281,27 +235,12 @@ export default function Overview() {
 
         console.error("Overview API Error:", err);
 
-        /*
-         * =====================================================
-         * BACKEND ERROR MESSAGE
-         * =====================================================
-         */
-
         const backendMessage =
           err?.response?.data?.message || err?.message || "";
 
         /*
-         * =====================================================
-         * MISSING DAY TABLE
-         * =====================================================
-         *
-         * Normally the backend already handles PostgreSQL
-         * 42P01 by returning empty data.
-         *
-         * This frontend fallback exists only as a safety net.
-         *
-         * A missing telemetry day is NOT treated as a
-         * dashboard error.
+         * Missing dynamic day table
+         * is a valid zero-data state.
          */
 
         const isMissingDayTable =
@@ -336,18 +275,22 @@ export default function Overview() {
             },
 
             generationTrend: [],
+
+            map: {
+              defaultView: "route-map",
+
+              routes: [],
+
+              totalVehicles: 0,
+
+              totalRoutePoints: 0,
+            },
           });
 
           setError("");
 
           return;
         }
-
-        /*
-         * =====================================================
-         * REAL ERROR
-         * =====================================================
-         */
 
         setOverviewData(null);
 
@@ -376,27 +319,17 @@ export default function Overview() {
     selectedWard?.ward_id,
   ]);
 
-  /*
-   * =========================================================
-   * RENDER
-   * =========================================================
-   *
-   * Header ALWAYS remains visible.
-   *
-   * Dashboard renders even when telemetry is zero.
-   */
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#FAFAFC]">
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
       <Header selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
 
-      {/* =====================================================
+      {/* ====================================================
           LOADING
-      ===================================================== */}
+      ==================================================== */}
 
       {loading && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -406,9 +339,9 @@ export default function Overview() {
         </main>
       )}
 
-      {/* =====================================================
-          REAL ERROR
-      ===================================================== */}
+      {/* ====================================================
+          ERROR
+      ==================================================== */}
 
       {!loading && error && (
         <main className="flex min-h-[calc(100vh-80px)] items-center justify-center px-8 py-6">
@@ -418,35 +351,32 @@ export default function Overview() {
         </main>
       )}
 
-      {/* =====================================================
+      {/* ====================================================
           DASHBOARD
-      ===================================================== */}
+      ==================================================== */}
 
       {!loading && !error && overviewData && (
-        <main className="space-y-2 px-8 py-6">
-          {/* =================================================
-              KPI CARDS
-          ================================================= */}
+        <main className="space-y-6 px-8 py-6">
+          {/* ================================================
+                KPI
+            ================================================ */}
 
           <OverviewKPIs data={overviewData.summary} />
 
-          {/* =================================================
-              VEHICLES + GENERATION TREND
-          ================================================= */}
+          {/* ================================================
+                VEHICLES
+            ================================================ */}
 
           <VehicleStats
             vehicleData={overviewData.vehicleSummary}
             trendData={overviewData.generationTrend}
           />
 
-          {/* =================================================
-              CITY / WARD MAP
-          ================================================= */}
+          {/* ================================================
+                ROUTE MAP
+            ================================================ */}
 
-          <CityOverviewMap
-            mapData={overviewData.map}
-            selectedDate={selectedDate}
-          />
+          <RouteMap mapData={overviewData.map} selectedDate={selectedDate} />
         </main>
       )}
     </div>
