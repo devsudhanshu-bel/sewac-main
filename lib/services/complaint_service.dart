@@ -157,44 +157,4 @@ class ComplaintService {
 /// The backend must verify that the authenticated citizen
 /// owns this complaint before returning any OTP.
 /// Verifies the OTP entered by the citizen and closes the complaint.
-Future<Map<String, dynamic>> verifyComplaintOtp({
-  required String ticketNumber,
-  required String otp,
-}) async {
-  if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
-    throw Exception("OTP must be a 6-digit number.");
-  }
-
-  final url = ApiConstants.verifyComplaintOtp(ticketNumber);
-
-  final response = await ApiClient.post(
-    url,
-    body: {
-      "otp": otp,
-    },
-  );
-
-  dynamic jsonResponse;
-
-  try {
-    jsonResponse = jsonDecode(response.body);
-  } catch (_) {
-    throw Exception("Invalid response format from server.");
-  }
-
-  if (response.statusCode == 200 &&
-      jsonResponse["success"] == true) {
-    return Map<String, dynamic>.from(
-      jsonResponse["data"] ?? {},
-    );
-  }
-
-  _handleHttpError(
-    response.statusCode,
-    jsonResponse,
-    response.body,
-  );
-
-  throw Exception("OTP verification failed.");
-}
 }
