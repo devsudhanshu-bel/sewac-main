@@ -157,4 +157,42 @@ class ComplaintService {
 /// The backend must verify that the authenticated citizen
 /// owns this complaint before returning any OTP.
 /// Verifies the OTP entered by the citizen and closes the complaint.
+  /// Fetches the verification OTP for a complaint.
+///
+/// The backend verifies that the authenticated citizen
+/// owns this complaint before returning the OTP.
+Future<String?> getComplaintVerification(
+  String ticketNumber,
+) async {
+  final response = await ApiClient.get(
+    ApiConstants.complaintVerification(ticketNumber),
+  );
+
+  dynamic jsonResponse;
+
+  try {
+    jsonResponse = jsonDecode(response.body);
+  } catch (_) {
+    throw Exception("Invalid response format from server.");
+  }
+
+  if (response.statusCode == 200 &&
+      jsonResponse["success"] == true) {
+    final data = jsonResponse["data"];
+
+    if (data is Map<String, dynamic>) {
+      return data["verificationCode"]?.toString();
+    }
+
+    return null;
+  }
+
+  _handleHttpError(
+    response.statusCode,
+    jsonResponse,
+    response.body,
+  );
+
+  return null;
+}
 }
