@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLanguage } from "../../i18n/LanguageContext";
-import gsap from "gsap";
+import { gsap } from "gsap";
 
 export default function ComplaintHeader() {
   const { t } = useLanguage();

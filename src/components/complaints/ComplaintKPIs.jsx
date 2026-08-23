@@ -2,7 +2,7 @@ import { MessageCircleMore, Clock3, ShieldCheck, Check } from "lucide-react";
 
 import { useEffect, useRef } from "react";
 
-import gsap from "gsap";
+import { gsap } from "gsap";
 
 import ComplaintCard from "./ComplaintCard";
 import { useLanguage } from "../../i18n/LanguageContext";

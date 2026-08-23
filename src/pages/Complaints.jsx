@@ -1,6 +1,6 @@
 import Header from "../components/layouts/Header";
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
+import { gsap } from "gsap";
 
 import ComplaintHeader from "../components/complaints/ComplaintHeader";
 import ComplaintKPIs from "../components/complaints/ComplaintKPIs";
