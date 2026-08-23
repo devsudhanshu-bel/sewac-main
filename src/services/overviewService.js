@@ -691,7 +691,7 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 
 const VEHICLE_INACTIVITY_MINUTES = 30;
 
-const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
+const getVehicleSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   /*
    * =========================================================
    * 1. RESOLVE HEADER FILTERS
@@ -705,7 +705,19 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 2. RESOLVE GEOGRAPHIC SCOPE
+   * 2. RESOLVE SELECTED DATE
+   * =========================================================
+   *
+   * The date comes from the Header.
+   *
+   * If no date is supplied, use the current date.
+   */
+
+  const { date: selectedDateObject } = validateDate(date);
+
+  /*
+   * =========================================================
+   * 3. RESOLVE GEOGRAPHIC SCOPE
    * =========================================================
    */
 
@@ -724,11 +736,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
       .filter((wardNo) => Number.isInteger(wardNo));
 
     /*
-     * Selected geographic scope exists,
-     * but contains no wards.
-     *
-     * Therefore there can be no vehicles
-     * for this scope.
+     * If the selected geographic scope has
+     * no wards, there are no vehicles in scope.
      */
 
     if (wardNos.length === 0) {
@@ -744,131 +753,22 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 3. GET TODAY'S DYNAMIC TELEMETRY TABLES
+   * 4. GET REGISTERED VEHICLES
    * =========================================================
-   */
-
-  const today = new Date();
-
-  let todayVehicleTables = [];
-
-  try {
-    todayVehicleTables = await getVehicleTablesForDate(today, wardNos);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: today's telemetry lookup failed:",
-      error.message,
-    );
-
-    /*
-     * Genuine DB error:
-     * preserve existing error handling.
-     */
-
-    throw error;
-  }
-
-  /*
-   * =========================================================
-   * 4. CRITICAL ZERO-DATA RULE
-   * =========================================================
-   *
-   * If the selected/current day has NO dynamic
-   * vehicle telemetry tables:
-   *
-   *      totalVehicles = 0
-   *      running       = 0
-   *      inactive      = 0
-   *
-   * DO NOT fall back to vehicle_master here.
-   *
-   * This is intentional and matches the Overview
-   * "no dynamic table = zero KPI" behavior.
-   */
-
-  if (!Array.isArray(todayVehicleTables) || todayVehicleTables.length === 0) {
-    return {
-      totalVehicles: 0,
-
-      runningVehicles: 0,
-
-      inactiveVehicles: 0,
-
-      vehicleStatus: [],
-
-      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
-    };
-  }
-
-  /*
-   * =========================================================
-   * 5. GET YESTERDAY'S TABLES
-   * =========================================================
-   *
-   * Yesterday is only needed to correctly determine
-   * whether a vehicle's latest packet is still within
-   * the 30-minute active window around midnight.
    *
    * IMPORTANT:
    *
-   * We do NOT use yesterday as a fallback when today's
-   * dynamic table does not exist.
+   * Total Registered Vehicles ALWAYS comes from
+   * vehicle_master.
    *
-   * If today's dynamic table is absent, the KPI remains 0.
-   */
-
-  const yesterday = new Date(today);
-
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  let yesterdayVehicleTables = [];
-
-  try {
-    yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, wardNos);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: yesterday's telemetry lookup failed:",
-      error.message,
-    );
-
-    /*
-     * Yesterday's table is supplementary.
-     * If it doesn't exist, simply continue with
-     * today's data.
-     */
-
-    yesterdayVehicleTables = [];
-  }
-
-  /*
-   * =========================================================
-   * 6. COMBINE TODAY + YESTERDAY
-   * =========================================================
-   */
-
-  const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
-
-  /*
-   * =========================================================
-   * 7. REMOVE DUPLICATE TABLES
-   * =========================================================
-   */
-
-  const uniqueVehicleTables = Array.from(
-    new Map(
-      allVehicleTables
-        .filter((vehicle) => vehicle && vehicle.vehicleTableName)
-        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
-    ).values(),
-  );
-
-  /*
-   * =========================================================
-   * 8. GET REGISTERED VEHICLES
-   * =========================================================
+   * It does NOT depend on:
    *
-   * We only reach this point when today's dynamic
-   * telemetry tables actually exist.
+   * - dynamic telemetry tables
+   * - selected date
+   * - latest telemetry
+   * - vehicle_master.status
+   *
+   * =========================================================
    */
 
   let registeredVehiclesResult;
@@ -908,17 +808,28 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
       vehicleId: String(vehicle.vehicle_id).trim(),
 
-      wardNo: vehicle.ward_no === null ? null : Number(vehicle.ward_no),
+      wardNo:
+        vehicle.ward_no === null || vehicle.ward_no === undefined
+          ? null
+          : Number(vehicle.ward_no),
     }))
     .filter((vehicle) => vehicle.vehicleId);
 
   /*
    * =========================================================
-   * 9. IF NO REGISTERED VEHICLES
+   * 5. TOTAL REGISTERED VEHICLES
    * =========================================================
    */
 
-  if (registeredVehicles.length === 0) {
+  const totalVehicles = registeredVehicles.length;
+
+  /*
+   * =========================================================
+   * 6. NO REGISTERED VEHICLES
+   * =========================================================
+   */
+
+  if (totalVehicles === 0) {
     return {
       totalVehicles: 0,
 
@@ -932,12 +843,164 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     };
   }
 
-  const totalVehicles = registeredVehicles.length;
+  /*
+   * =========================================================
+   * 7. GET TELEMETRY TABLES FOR SELECTED DATE
+   * =========================================================
+   */
+
+  let selectedDateVehicleTables = [];
+
+  try {
+    selectedDateVehicleTables = await getVehicleTablesForDate(
+      selectedDateObject,
+      wardNos,
+    );
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: selected-date telemetry lookup failed:",
+      error.message,
+    );
+
+    /*
+     * Telemetry failure should not destroy the
+     * registered vehicle count.
+     *
+     * We simply treat all registered vehicles
+     * as not running.
+     */
+
+    return {
+      totalVehicles,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: totalVehicles,
+
+      vehicleStatus: registeredVehicles.map((vehicle) => ({
+        vehicleId: vehicle.vehicleId,
+
+        wardNo: vehicle.wardNo,
+
+        status: "INACTIVE",
+
+        lastReceivedTimestamp: null,
+      })),
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
 
   /*
    * =========================================================
-   * 10. ACTIVE THRESHOLD
+   * 8. NO DYNAMIC TABLE FOR SELECTED DATE
    * =========================================================
+   *
+   * IMPORTANT:
+   *
+   * We DO NOT return totalVehicles = 0 here.
+   *
+   * The registered count must still come from
+   * vehicle_master.
+   *
+   * Therefore:
+   *
+   * total     = actual registered count
+   * running   = 0
+   * inactive  = total
+   *
+   * =========================================================
+   */
+
+  if (
+    !Array.isArray(selectedDateVehicleTables) ||
+    selectedDateVehicleTables.length === 0
+  ) {
+    return {
+      totalVehicles,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: totalVehicles,
+
+      vehicleStatus: registeredVehicles.map((vehicle) => ({
+        vehicleId: vehicle.vehicleId,
+
+        wardNo: vehicle.wardNo,
+
+        status: "INACTIVE",
+
+        lastReceivedTimestamp: null,
+      })),
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
+  /*
+   * =========================================================
+   * 9. GET PREVIOUS DATE
+   * =========================================================
+   *
+   * Previous day is checked only when the selected
+   * date actually has a dynamic telemetry table.
+   *
+   * This allows us to correctly handle telemetry
+   * around midnight.
+   * =========================================================
+   */
+
+  const previousDate = new Date(selectedDateObject);
+
+  previousDate.setDate(previousDate.getDate() - 1);
+
+  let previousDateVehicleTables = [];
+
+  try {
+    previousDateVehicleTables = await getVehicleTablesForDate(
+      previousDate,
+      wardNos,
+    );
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: previous-date telemetry lookup failed:",
+      error.message,
+    );
+
+    previousDateVehicleTables = [];
+  }
+
+  /*
+   * =========================================================
+   * 10. COMBINE TELEMETRY TABLES
+   * =========================================================
+   */
+
+  const allVehicleTables = [
+    ...selectedDateVehicleTables,
+    ...previousDateVehicleTables,
+  ];
+
+  /*
+   * =========================================================
+   * 11. REMOVE DUPLICATE TABLES
+   * =========================================================
+   */
+
+  const uniqueVehicleTables = Array.from(
+    new Map(
+      allVehicleTables
+        .filter((vehicle) => vehicle && vehicle.vehicleTableName)
+        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
+    ).values(),
+  );
+
+  /*
+   * =========================================================
+   * 12. ACTIVE THRESHOLD
+   * =========================================================
+   *
+   * Latest telemetry within 30 minutes = RUNNING.
    */
 
   const now = new Date();
@@ -948,11 +1011,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 11. REGISTERED VEHICLE SET
+   * 13. REGISTERED VEHICLE SET
    * =========================================================
-   *
-   * This prevents telemetry from unregistered vehicles
-   * from affecting the KPI.
    */
 
   const registeredVehicleIds = new Set(
@@ -961,7 +1021,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 12. FIND LATEST TELEMETRY PACKET
+   * 14. FIND LATEST PACKET PER VEHICLE
    * =========================================================
    */
 
@@ -982,8 +1042,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
               MAX(receivedtimestamp)
                 AS "lastReceivedTimestamp"
             FROM ${table}
-            WHERE vehiclenumber
-                  IS NOT NULL
+            WHERE vehiclenumber IS NOT NULL
             GROUP BY vehiclenumber
           `,
       );
@@ -997,7 +1056,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
         /*
          * Ignore telemetry from vehicles
-         * outside the registered vehicle set.
+         * that are not registered.
          */
 
         if (!registeredVehicleIds.has(vehicleNumber)) {
@@ -1012,6 +1071,10 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
         const existing = latestPacketByVehicle.get(vehicleNumber);
 
+        /*
+         * Keep the latest packet.
+         */
+
         if (!existing || lastReceived > existing.lastReceivedTimestamp) {
           latestPacketByVehicle.set(vehicleNumber, {
             vehicleNumber,
@@ -1022,8 +1085,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
       }
     } catch (error) {
       /*
-       * A missing individual telemetry table
-       * should not destroy the complete KPI.
+       * If an individual telemetry table
+       * disappears, ignore that table.
        */
 
       if (error?.code === "42P01") {
@@ -1043,7 +1106,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 13. ACTIVE / INACTIVE
+   * 15. CALCULATE RUNNING / INACTIVE
    * =========================================================
    */
 
@@ -1055,10 +1118,9 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     const latest = latestPacketByVehicle.get(vehicle.vehicleId);
 
     /*
-     * Registered vehicle exists,
-     * but has no telemetry packet.
+     * No telemetry:
      *
-     * Therefore INACTIVE.
+     * Registered but not running.
      */
 
     if (!latest) {
@@ -1076,13 +1138,14 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     }
 
     /*
-     * Latest packet within 30 minutes
-     * = RUNNING / ACTIVE.
+     * Latest packet within 30 minutes:
+     *
+     * RUNNING.
      */
 
-    const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
+    const isRunning = latest.lastReceivedTimestamp >= inactivityLimit;
 
-    if (isActive) {
+    if (isRunning) {
       runningVehicles += 1;
     }
 
@@ -1091,7 +1154,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
       wardNo: vehicle.wardNo,
 
-      status: isActive ? "ACTIVE" : "INACTIVE",
+      status: isRunning ? "ACTIVE" : "INACTIVE",
 
       lastReceivedTimestamp: latest.lastReceivedTimestamp,
     });
@@ -1099,11 +1162,17 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 14. FINAL COUNTS
+   * 16. FINAL COUNTS
    * =========================================================
    */
 
   const inactiveVehicles = Math.max(totalVehicles - runningVehicles, 0);
+
+  /*
+   * =========================================================
+   * 17. RETURN
+   * =========================================================
+   */
 
   return {
     totalVehicles,
