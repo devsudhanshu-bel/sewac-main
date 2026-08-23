@@ -28,6 +28,7 @@ export default function ComplaintDetails({
   const [otp, setOtp] = useState("");
   const [status, setStatus] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [otpRequested, setOtpRequested] = useState(false);
 
   /* =========================================================
      SYNC FORM WITH SELECTED COMPLAINT
@@ -38,18 +39,16 @@ export default function ComplaintDetails({
       setStatus("");
       setRemarks("");
       setOtp("");
+      setOtpRequested(false);
       return;
     }
 
     setStatus(complaint.status || "PENDING");
-
     setRemarks(complaint.remarks || "");
-
-    /*
-     * Never preserve an OTP when switching complaints.
-     */
-
     setOtp("");
+
+    // Preserve OTP input state if backend status is already OTP_SENT.
+    setOtpRequested(complaint.status === "OTP_SENT");
   }, [complaint]);
 
   /* =========================================================
@@ -882,7 +881,14 @@ export default function ComplaintDetails({
             <button
               type="button"
               disabled={!complaint || saving || requestingOTP}
-              onClick={() => onRequestVerification?.()}
+              onClick={async () => {
+                try {
+                  await onRequestVerification?.();
+                  setOtpRequested(true);
+                } catch (error) {
+                  console.error("OTP request failed:", error);
+                }
+              }}
               className="
                 flex
                 h-9
@@ -917,7 +923,7 @@ export default function ComplaintDetails({
               OTP INPUT
           ================================================= */}
 
-          {isOtpSent && (
+          {(isOtpSent || otpRequested) && (
             <div className="mt-1">
               <p
                 className="
