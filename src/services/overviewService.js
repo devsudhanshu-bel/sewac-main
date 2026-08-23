@@ -699,16 +699,13 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
    */
 
   const selectedCityId = parseId(cityId, "cityId");
-
   const selectedZoneId = parseId(zoneId, "zoneId");
-
   const selectedDivisionId = parseId(divisionId, "divisionId");
-
   const selectedWardId = parseId(wardId, "wardId");
 
   /*
    * =========================================================
-   * 2. FIND THE WARDS IN THE SELECTED SCOPE
+   * 2. RESOLVE GEOGRAPHIC SCOPE
    * =========================================================
    */
 
@@ -717,11 +714,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
   if (selectedCityId) {
     const scope = await getSelectedWardScope({
       cityId: selectedCityId,
-
       zoneId: selectedZoneId,
-
       divisionId: selectedDivisionId,
-
       wardId: selectedWardId,
     });
 
@@ -730,19 +724,19 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
       .filter((wardNo) => Number.isInteger(wardNo));
 
     /*
-     * Selected scope has no wards.
+     * Selected geographic scope exists,
+     * but contains no wards.
+     *
+     * Therefore there can be no vehicles
+     * for this scope.
      */
 
     if (wardNos.length === 0) {
       return {
         totalVehicles: 0,
-
         runningVehicles: 0,
-
         inactiveVehicles: 0,
-
         vehicleStatus: [],
-
         inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
       };
     }
@@ -750,16 +744,131 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 3. GET REGISTERED VEHICLES
+   * 3. GET TODAY'S DYNAMIC TELEMETRY TABLES
    * =========================================================
+   */
+
+  const today = new Date();
+
+  let todayVehicleTables = [];
+
+  try {
+    todayVehicleTables = await getVehicleTablesForDate(today, wardNos);
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: today's telemetry lookup failed:",
+      error.message,
+    );
+
+    /*
+     * Genuine DB error:
+     * preserve existing error handling.
+     */
+
+    throw error;
+  }
+
+  /*
+   * =========================================================
+   * 4. CRITICAL ZERO-DATA RULE
+   * =========================================================
+   *
+   * If the selected/current day has NO dynamic
+   * vehicle telemetry tables:
+   *
+   *      totalVehicles = 0
+   *      running       = 0
+   *      inactive      = 0
+   *
+   * DO NOT fall back to vehicle_master here.
+   *
+   * This is intentional and matches the Overview
+   * "no dynamic table = zero KPI" behavior.
+   */
+
+  if (!Array.isArray(todayVehicleTables) || todayVehicleTables.length === 0) {
+    return {
+      totalVehicles: 0,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: 0,
+
+      vehicleStatus: [],
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
+  /*
+   * =========================================================
+   * 5. GET YESTERDAY'S TABLES
+   * =========================================================
+   *
+   * Yesterday is only needed to correctly determine
+   * whether a vehicle's latest packet is still within
+   * the 30-minute active window around midnight.
    *
    * IMPORTANT:
    *
-   * vehicle_master.vehicle_id
-   * is the actual vehicle identifier.
+   * We do NOT use yesterday as a fallback when today's
+   * dynamic table does not exist.
    *
-   * vehicle_master.ward_no
-   * is used for geographic filtering.
+   * If today's dynamic table is absent, the KPI remains 0.
+   */
+
+  const yesterday = new Date(today);
+
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  let yesterdayVehicleTables = [];
+
+  try {
+    yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, wardNos);
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: yesterday's telemetry lookup failed:",
+      error.message,
+    );
+
+    /*
+     * Yesterday's table is supplementary.
+     * If it doesn't exist, simply continue with
+     * today's data.
+     */
+
+    yesterdayVehicleTables = [];
+  }
+
+  /*
+   * =========================================================
+   * 6. COMBINE TODAY + YESTERDAY
+   * =========================================================
+   */
+
+  const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
+
+  /*
+   * =========================================================
+   * 7. REMOVE DUPLICATE TABLES
+   * =========================================================
+   */
+
+  const uniqueVehicleTables = Array.from(
+    new Map(
+      allVehicleTables
+        .filter((vehicle) => vehicle && vehicle.vehicleTableName)
+        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
+    ).values(),
+  );
+
+  /*
+   * =========================================================
+   * 8. GET REGISTERED VEHICLES
+   * =========================================================
+   *
+   * We only reach this point when today's dynamic
+   * telemetry tables actually exist.
    */
 
   let registeredVehiclesResult;
@@ -771,42 +880,24 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
             id,
             vehicle_id,
             ward_no
-
           FROM vehicle_master
-
           WHERE ward_no =
                 ANY($1::integer[])
-
-            AND vehicle_id
-                IS NOT NULL
-
-            AND TRIM(vehicle_id)
-                <> ''
-
+            AND vehicle_id IS NOT NULL
+            AND TRIM(vehicle_id) <> ''
           ORDER BY id ASC
         `,
       [wardNos],
     );
   } else {
-    /*
-     * No header filter:
-     * return all registered vehicles.
-     */
-
     registeredVehiclesResult = await mainDb.query(`
         SELECT
           id,
           vehicle_id,
           ward_no
-
         FROM vehicle_master
-
-        WHERE vehicle_id
-              IS NOT NULL
-
-          AND TRIM(vehicle_id)
-              <> ''
-
+        WHERE vehicle_id IS NOT NULL
+          AND TRIM(vehicle_id) <> ''
         ORDER BY id ASC
       `);
   }
@@ -821,11 +912,31 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     }))
     .filter((vehicle) => vehicle.vehicleId);
 
+  /*
+   * =========================================================
+   * 9. IF NO REGISTERED VEHICLES
+   * =========================================================
+   */
+
+  if (registeredVehicles.length === 0) {
+    return {
+      totalVehicles: 0,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: 0,
+
+      vehicleStatus: [],
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
   const totalVehicles = registeredVehicles.length;
 
   /*
    * =========================================================
-   * 4. 30-MINUTE INACTIVITY LIMIT
+   * 10. ACTIVE THRESHOLD
    * =========================================================
    */
 
@@ -837,69 +948,11 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 5. TODAY'S TELEMETRY
-   * =========================================================
-   */
-
-  const today = new Date();
-
-  let todayVehicleTables = [];
-
-  try {
-    todayVehicleTables = await getVehicleTablesForDate(today, null);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: today's telemetry table unavailable:",
-      error.message,
-    );
-  }
-
-  /*
-   * =========================================================
-   * 6. YESTERDAY'S TELEMETRY
+   * 11. REGISTERED VEHICLE SET
    * =========================================================
    *
-   * Needed around midnight.
-   */
-
-  const yesterday = new Date(today);
-
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  let yesterdayVehicleTables = [];
-
-  try {
-    yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, null);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: yesterday's telemetry table unavailable:",
-      error.message,
-    );
-  }
-
-  /*
-   * =========================================================
-   * 7. COMBINE TELEMETRY TABLES
-   * =========================================================
-   */
-
-  const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
-
-  const uniqueVehicleTables = Array.from(
-    new Map(
-      allVehicleTables
-        .filter((vehicle) => vehicle.vehicleTableName)
-        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
-    ).values(),
-  );
-
-  /*
-   * =========================================================
-   * 8. REGISTERED VEHICLE SET
-   * =========================================================
-   *
-   * This guarantees that telemetry from a vehicle
-   * outside the selected geographic scope is ignored.
+   * This prevents telemetry from unregistered vehicles
+   * from affecting the KPI.
    */
 
   const registeredVehicleIds = new Set(
@@ -908,7 +961,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 9. FIND LATEST PACKET PER REGISTERED VEHICLE
+   * 12. FIND LATEST TELEMETRY PACKET
    * =========================================================
    */
 
@@ -926,18 +979,12 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
         `
             SELECT
               vehiclenumber,
-
-              MAX(
-                receivedtimestamp
-              ) AS "lastReceivedTimestamp"
-
+              MAX(receivedtimestamp)
+                AS "lastReceivedTimestamp"
             FROM ${table}
-
             WHERE vehiclenumber
                   IS NOT NULL
-
-            GROUP BY
-              vehiclenumber
+            GROUP BY vehiclenumber
           `,
       );
 
@@ -949,11 +996,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
         const vehicleNumber = String(row.vehiclenumber).trim();
 
         /*
-         * IMPORTANT:
-         *
-         * Ignore telemetry belonging to
-         * vehicles outside the selected
-         * header scope.
+         * Ignore telemetry from vehicles
+         * outside the registered vehicle set.
          */
 
         if (!registeredVehicleIds.has(vehicleNumber)) {
@@ -977,6 +1021,19 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
         }
       }
     } catch (error) {
+      /*
+       * A missing individual telemetry table
+       * should not destroy the complete KPI.
+       */
+
+      if (error?.code === "42P01") {
+        console.warn(
+          `Vehicle summary: telemetry table ${vehicle.vehicleTableName} does not exist.`,
+        );
+
+        continue;
+      }
+
       console.warn(
         `Vehicle summary: unable to inspect ${vehicle.vehicleTableName}:`,
         error.message,
@@ -986,7 +1043,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 10. ACTIVE / INACTIVE
+   * 13. ACTIVE / INACTIVE
    * =========================================================
    */
 
@@ -998,7 +1055,10 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     const latest = latestPacketByVehicle.get(vehicle.vehicleId);
 
     /*
-     * Vehicle has never sent a packet.
+     * Registered vehicle exists,
+     * but has no telemetry packet.
+     *
+     * Therefore INACTIVE.
      */
 
     if (!latest) {
@@ -1016,9 +1076,8 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     }
 
     /*
-     * Vehicle is active only if the
-     * latest packet was received within
-     * the previous 30 minutes.
+     * Latest packet within 30 minutes
+     * = RUNNING / ACTIVE.
      */
 
     const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
@@ -1040,7 +1099,7 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
   /*
    * =========================================================
-   * 11. FINAL COUNTS
+   * 14. FINAL COUNTS
    * =========================================================
    */
 
