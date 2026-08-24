@@ -49,10 +49,10 @@ const vehicleIcon = L.divIcon({
 });
 
 /* ============================================================
-   GEOJSON NORMALIZER
+   BASIC GEOJSON PARSER
 ============================================================ */
 
-function normalizeGeoJSON(value) {
+function parseGeoJSON(value) {
   if (value === null || value === undefined) {
     return null;
   }
@@ -67,6 +67,249 @@ function normalizeGeoJSON(value) {
     } catch {
       return null;
     }
+  }
+
+  return null;
+}
+
+/* ============================================================
+   GEOJSON COORDINATE HELPERS
+============================================================ */
+
+/*
+ * IMPORTANT:
+ *
+ * Standard GeoJSON uses:
+ *
+ * [longitude, latitude]
+ *
+ * But the SEWAC boundary data can contain:
+ *
+ * [latitude, longitude]
+ *
+ * Example:
+ *
+ * [12.9716, 77.5946]
+ *
+ * which must become:
+ *
+ * [77.5946, 12.9716]
+ *
+ * We detect this using the Bengaluru coordinate range:
+ *
+ * latitude  ≈ 12-14
+ * longitude ≈ 76-78
+ *
+ * More generally:
+ *
+ * first  <= 30
+ * second >= 60
+ *
+ * means it is very likely [lat, lng].
+ */
+
+/* ============================================================
+   IS COORDINATE PAIR
+============================================================ */
+
+function isCoordinatePair(value) {
+  return (
+    Array.isArray(value) &&
+    value.length >= 2 &&
+    Number.isFinite(Number(value[0])) &&
+    Number.isFinite(Number(value[1]))
+  );
+}
+
+/* ============================================================
+   NORMALIZE SINGLE BOUNDARY COORDINATE
+============================================================ */
+
+function normalizeCoordinatePair(pair) {
+  if (!isCoordinatePair(pair)) {
+    return pair;
+  }
+
+  const first = Number(pair[0]);
+
+  const second = Number(pair[1]);
+
+  /*
+   * Looks like:
+   *
+   * [latitude, longitude]
+   *
+   * Example:
+   *
+   * [12.9716, 77.5946]
+   *
+   * Convert to:
+   *
+   * [77.5946, 12.9716]
+   */
+
+  if (Math.abs(first) <= 30 && Math.abs(second) >= 60) {
+    return [second, first, ...pair.slice(2)];
+  }
+
+  /*
+   * Already looks like:
+   *
+   * [longitude, latitude]
+   *
+   * Example:
+   *
+   * [77.5946, 12.9716]
+   *
+   * Leave unchanged.
+   */
+
+  return pair;
+}
+
+/* ============================================================
+   NORMALIZE NESTED COORDINATES
+============================================================ */
+
+function normalizeCoordinates(value) {
+  /*
+   * Direct coordinate pair
+   */
+
+  if (isCoordinatePair(value)) {
+    return normalizeCoordinatePair(value);
+  }
+
+  /*
+   * Polygon / MultiPolygon /
+   * LineString / MultiLineString
+   *
+   * Recursively process all
+   * coordinate levels.
+   */
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeCoordinates);
+  }
+
+  return value;
+}
+
+/* ============================================================
+   NORMALIZE GEOJSON
+============================================================ */
+
+function normalizeGeoJSON(value) {
+  const parsed = parseGeoJSON(value);
+
+  if (!parsed) {
+    return null;
+  }
+
+  /* ==========================================================
+     FEATURE COLLECTION
+  ========================================================== */
+
+  if (parsed.type === "FeatureCollection") {
+    return {
+      ...parsed,
+
+      features: Array.isArray(parsed.features)
+        ? parsed.features.map(normalizeGeoJSON).filter(Boolean)
+        : [],
+    };
+  }
+
+  /* ==========================================================
+     FEATURE
+  ========================================================== */
+
+  if (parsed.type === "Feature") {
+    if (!parsed.geometry) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+
+      geometry: normalizeGeoJSON(parsed.geometry),
+    };
+  }
+
+  /* ==========================================================
+     GEOMETRY COLLECTION
+  ========================================================== */
+
+  if (parsed.type === "GeometryCollection") {
+    return {
+      ...parsed,
+
+      geometries: Array.isArray(parsed.geometries)
+        ? parsed.geometries.map(normalizeGeoJSON).filter(Boolean)
+        : [],
+    };
+  }
+
+  /* ==========================================================
+     STANDARD GEOMETRY
+  ========================================================== */
+
+  if (parsed.type && parsed.coordinates) {
+    return {
+      ...parsed,
+
+      coordinates: normalizeCoordinates(parsed.coordinates),
+    };
+  }
+
+  /* ==========================================================
+     RAW COORDINATE ARRAY
+  ========================================================== */
+
+  if (Array.isArray(parsed)) {
+    return {
+      type: "Feature",
+
+      properties: {},
+
+      geometry: {
+        type: "Polygon",
+
+        coordinates: normalizeCoordinates(parsed),
+      },
+    };
+  }
+
+  /* ==========================================================
+     OBJECT WITH GEOMETRY
+  ========================================================== */
+
+  if (parsed.geometry && typeof parsed.geometry === "object") {
+    return normalizeGeoJSON({
+      type: "Feature",
+
+      properties: parsed.properties || {},
+
+      geometry: parsed.geometry,
+    });
+  }
+
+  /* ==========================================================
+     OBJECT WITH COORDINATES
+  ========================================================== */
+
+  if (parsed.coordinates) {
+    return {
+      type: "Feature",
+
+      properties: parsed.properties || {},
+
+      geometry: {
+        type: parsed.type || "Polygon",
+
+        coordinates: normalizeCoordinates(parsed.coordinates),
+      },
+    };
   }
 
   return null;
@@ -138,25 +381,20 @@ function getBoundary(
 ============================================================ */
 
 /*
- * IMPORTANT
+ * IMPORTANT:
  *
- * Your HB telemetry values are reversed:
+ * HB telemetry schema:
  *
- * point.latitude  -> actual LONGITUDE
- * point.longitude -> actual LATITUDE
+ * latitude
+ * longitude
+ *
+ * These values are standard geographic coordinates.
  *
  * Leaflet expects:
  *
- * [LATITUDE, LONGITUDE]
+ * [latitude, longitude]
  *
- * Therefore:
- *
- * actualLongitude = point.latitude
- * actualLatitude  = point.longitude
- *
- * and finally:
- *
- * [actualLatitude, actualLongitude]
+ * Therefore DO NOT SWAP THEM.
  */
 
 function normalizeGpsPoint(point) {
@@ -164,15 +402,21 @@ function normalizeGpsPoint(point) {
     return null;
   }
 
-  const actualLongitude = Number(point.latitude);
+  const latitude = Number(point.latitude);
 
-  const actualLatitude = Number(point.longitude);
+  const longitude = Number(point.longitude);
 
-  if (!Number.isFinite(actualLatitude) || !Number.isFinite(actualLongitude)) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
   }
 
-  return [actualLatitude, actualLongitude];
+  /*
+   * Leaflet:
+   *
+   * [lat, lng]
+   */
+
+  return [latitude, longitude];
 }
 
 /* ============================================================
@@ -216,10 +460,8 @@ function RouteBounds({ routes, boundary }) {
 
   useEffect(() => {
     /*
-     * Boundary takes priority.
-     *
-     * IMPORTANT:
-     * GeoJSON boundary coordinates are NOT modified.
+     * If a selected boundary exists,
+     * use it as the geographic context.
      */
 
     if (boundary) {
@@ -245,8 +487,8 @@ function RouteBounds({ routes, boundary }) {
     }
 
     /*
-     * No boundary:
-     * fit to GPS route points.
+     * No valid boundary:
+     * fit to GPS routes.
      */
 
     if (!Array.isArray(routes) || routes.length === 0) {
@@ -361,9 +603,7 @@ const RouteMap = ({
 
   const defaultCenter = useMemo(() => {
     /*
-     * Try selected boundary first.
-     *
-     * GeoJSON is left untouched.
+     * First try the selected boundary.
      */
 
     if (selectedBoundary) {
@@ -383,11 +623,8 @@ const RouteMap = ({
     }
 
     /*
-     * Then use first GPS point.
-     *
-     * normalizeGpsPoint()
-     * performs the required
-     * coordinate inversion.
+     * Then try the first valid
+     * vehicle GPS point.
      */
 
     for (const route of routes) {
@@ -498,7 +735,7 @@ const RouteMap = ({
         )}
 
         {/* ==================================================
-            FIT TO FILTERED BOUNDARY
+            FIT TO SELECTED BOUNDARY
         ================================================== */}
 
         <SelectedBoundaryController
@@ -522,11 +759,15 @@ const RouteMap = ({
           /*
            * IMPORTANT:
            *
+           * HB GPS:
+           *
+           * latitude
+           * longitude
+           *
            * normalizeGpsPoint()
            * returns:
            *
-           * [actualLatitude,
-           *  actualLongitude]
+           * [latitude, longitude]
            */
 
           const positions = points
@@ -570,7 +811,7 @@ const RouteMap = ({
               )}
 
               {/* ==========================================
-                    START POSITION
+                    START POINT
                 ========================================== */}
 
               <CircleMarker
