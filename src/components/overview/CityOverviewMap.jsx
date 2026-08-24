@@ -17,6 +17,7 @@ import {
 } from "react-leaflet";
 
 import RouteMap from "./RouteMap";
+import LiveMap from "./LiveMap";
 
 import L from "leaflet";
 
@@ -25,6 +26,7 @@ import {
   ChevronUp,
   Map as MapIcon,
   Route,
+  RadioTower,
   RotateCcw,
   MapPinned,
   Factory,
@@ -1734,6 +1736,14 @@ export default function CityMapOverview({
     },
 
     {
+      id: "live",
+
+      label: t("overview.cityOverviewMap.liveMaps", "Live Maps"),
+
+      icon: RadioTower,
+    },
+
+    {
       id: "gvp",
 
       label: t("overview.cityOverviewMap.gvpPoints", "GVP Points"),
@@ -2052,6 +2062,34 @@ export default function CityMapOverview({
             "
           >
             <RouteMap
+              mapData={mapData}
+              selectedDate={selectedDate}
+              selectedCity={headerSelectedCity}
+              selectedZone={headerSelectedZone}
+              selectedDivision={headerSelectedDivision}
+              selectedWard={headerSelectedWard}
+            />
+          </div>
+        )}
+
+        {/* ====================================================
+    LIVE MAPS
+==================================================== */}
+
+        {mapView === "live" && (
+          <div
+            className="
+      absolute
+      inset-0
+      z-[1]
+      h-full
+      min-h-full
+      w-full
+      overflow-hidden
+      bg-[#EEF1F3]
+    "
+          >
+            <LiveMap
               mapData={mapData}
               selectedDate={selectedDate}
               selectedCity={headerSelectedCity}
