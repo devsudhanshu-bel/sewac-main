@@ -61,17 +61,6 @@ CREATE TABLE IF NOT EXISTS "${tableName}" (
 // ==========================================================
 // MASTER TELEMETRY BUFFER INSERT
 // ==========================================================
-//
-// IMPORTANT:
-//
-// cumulativeWeight is intentionally inserted as NULL.
-//
-// It is calculated inside the final transaction and then
-// updated using the returned master telemetry ID.
-//
-// processing_status starts as PROCESSING.
-//
-// ==========================================================
 
 const insertMasterTelemetry = () => `
 INSERT INTO master_telemetry (
@@ -246,11 +235,20 @@ CREATE TABLE IF NOT EXISTS "${tableName}" (
 
     vehicle_table_name VARCHAR(100) NOT NULL,
 
+    vehicle_table_name_hb VARCHAR(100) NOT NULL,
+
     ward_no INTEGER,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 );
+`;
+
+const addDayHeartbeatColumn = (tableName) => `
+ALTER TABLE "${tableName}"
+
+ADD COLUMN IF NOT EXISTS
+vehicle_table_name_hb VARCHAR(100);
 `;
 
 const registerVehicleInDayTable = (tableName) => `
@@ -259,6 +257,8 @@ INSERT INTO "${tableName}" (
     vehicle_number,
 
     vehicle_table_name,
+
+    vehicle_table_name_hb,
 
     ward_no
 
@@ -270,7 +270,9 @@ VALUES (
 
     $2,
 
-    $3
+    $3,
+
+    $4
 
 )
 
@@ -280,7 +282,47 @@ DO UPDATE SET
 
     vehicle_table_name = EXCLUDED.vehicle_table_name,
 
+    vehicle_table_name_hb = EXCLUDED.vehicle_table_name_hb,
+
     ward_no = EXCLUDED.ward_no;
+`;
+
+// ==========================================================
+// DAILY VEHICLE HEARTBEAT TABLE
+// ==========================================================
+
+const createHeartbeatTable = (tableName) => `
+CREATE TABLE IF NOT EXISTS "${tableName}" (
+
+    id BIGSERIAL PRIMARY KEY,
+
+    latitude DECIMAL(10,7) NOT NULL,
+
+    longitude DECIMAL(10,7) NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+);
+`;
+
+const insertHeartbeat = (tableName) => `
+INSERT INTO "${tableName}" (
+
+    latitude,
+
+    longitude
+
+)
+
+VALUES (
+
+    $1,
+
+    $2
+
+)
+
+RETURNING id, latitude, longitude, created_at;
 `;
 
 // ==========================================================
@@ -445,12 +487,6 @@ DEFAULT 'COMPLETED';
 // ==========================================================
 // MASTER TELEMETRY CUMULATIVE COLUMN
 // ==========================================================
-//
-// Your current database already has this column.
-// IF NOT EXISTS makes this safe for fresh deployments too.
-//
-// IMPORTANT: column name is camelCase, therefore quoted.
-// ==========================================================
 
 const addMasterTelemetryCumulativeColumn = () => `
 ALTER TABLE master_telemetry
@@ -503,16 +539,6 @@ WHERE id = $1;
 // ==========================================================
 // MASTER BUFFER CLEANUP
 // ==========================================================
-//
-// TOTAL BUFFER >= 2000
-//        ↓
-// DELETE OLDEST 1000 COMPLETED
-//
-// PROCESSING → KEEP
-// FAILED     → KEEP
-// COMPLETED  → DELETE ELIGIBLE
-//
-// ==========================================================
 
 const cleanupCompletedMasterTelemetry = () => `
 DELETE FROM master_telemetry
@@ -550,23 +576,48 @@ AND (
 
 module.exports = {
   createVehicleTelemetryTable,
+
   insertMasterTelemetry,
+
   updateMasterTelemetryCumulative,
+
   insertVehicleTelemetry,
+
   createDayTable,
+
+  addDayHeartbeatColumn,
+
+  createHeartbeatTable,
+
+  insertHeartbeat,
+
   createWeekTable,
+
   createMonthTable,
+
   createYearTable,
+
   registerVehicleInDayTable,
+
   registerDayInWeekTable,
+
   registerWeekInMonthTable,
+
   registerMonthInYearTable,
+
   createVehicleCumulativeTable,
+
   updateVehicleCumulative,
+
   addMasterTelemetryStatusColumn,
+
   addMasterTelemetryCumulativeColumn,
+
   createMasterTelemetryStatusIndex,
+
   markMasterTelemetryCompleted,
+
   markMasterTelemetryFailed,
+
   cleanupCompletedMasterTelemetry,
 };

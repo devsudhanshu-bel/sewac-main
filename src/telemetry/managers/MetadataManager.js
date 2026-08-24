@@ -5,40 +5,8 @@ const queries = require("../queries/query");
 // =====================================================
 // VEHICLE → WARD CACHE
 // =====================================================
-//
-// Cache structure:
-//
-// KA05AB1234 -> 1
-// KA05AB1235 -> 2
-// KA05AB1236 -> 20
-//
-// IMPORTANT:
-//
-// null is also cached.
-//
-// That means an unregistered vehicle is NOT repeatedly
-// queried against vehicle_master on every retry.
-//
-// =====================================================
 
 const vehicleWardCache = new Map();
-
-// =====================================================
-// LOOKUP PROMISE CACHE
-// =====================================================
-//
-// Prevents multiple simultaneous packets for the same
-// vehicle from issuing duplicate vehicle_master queries.
-//
-// Example:
-//
-// Packet 1 -> lookup KA05AB1234
-// Packet 2 -> same vehicle arrives immediately
-//
-// Packet 2 waits for Packet 1's lookup instead of
-// creating another DB query.
-//
-// =====================================================
 
 const vehicleWardPromises = new Map();
 
@@ -80,17 +48,6 @@ class MetadataManager {
   // =====================================================
   // VEHICLE WARD LOOKUP
   // =====================================================
-  //
-  // FIRST REQUEST:
-  //     main DB query
-  //
-  // FUTURE REQUESTS:
-  //     memory cache
-  //
-  // UNREGISTERED:
-  //     null cached
-  //
-  // =====================================================
 
   async getVehicleWard(vehicleNumber) {
     const key = String(vehicleNumber || "").trim();
@@ -98,10 +55,6 @@ class MetadataManager {
     if (!key) {
       throw new UnregisteredVehicleError(key, "Invalid vehicle ID");
     }
-
-    // ---------------------------------------------------
-    // CACHE HIT
-    // ---------------------------------------------------
 
     if (vehicleWardCache.has(key)) {
       const cachedWard = vehicleWardCache.get(key);
@@ -113,10 +66,6 @@ class MetadataManager {
       return cachedWard;
     }
 
-    // ---------------------------------------------------
-    // LOOKUP ALREADY IN PROGRESS
-    // ---------------------------------------------------
-
     if (vehicleWardPromises.has(key)) {
       const ward = await vehicleWardPromises.get(key);
 
@@ -127,27 +76,19 @@ class MetadataManager {
       return ward;
     }
 
-    // ---------------------------------------------------
-    // CREATE ONE LOOKUP PROMISE
-    // ---------------------------------------------------
-
     const lookupPromise = (async () => {
       try {
         console.log(`🔎 Vehicle master lookup: ${key}`);
 
         const result = await mainDb.query(
           `
-            SELECT ward_no
-            FROM vehicle_master
-            WHERE vehicle_id = $1
-            LIMIT 1;
-            `,
+                SELECT ward_no
+                FROM vehicle_master
+                WHERE vehicle_id = $1
+                LIMIT 1;
+              `,
           [key],
         );
-
-        // -----------------------------------------------
-        // VEHICLE NOT FOUND
-        // -----------------------------------------------
 
         if (result.rows.length === 0) {
           vehicleWardCache.set(key, null);
@@ -159,10 +100,6 @@ class MetadataManager {
 
         const wardNo = result.rows[0].ward_no;
 
-        // -----------------------------------------------
-        // VEHICLE EXISTS BUT WARD IS MISSING
-        // -----------------------------------------------
-
         if (wardNo === null || wardNo === undefined) {
           vehicleWardCache.set(key, null);
 
@@ -171,27 +108,12 @@ class MetadataManager {
           return null;
         }
 
-        // -----------------------------------------------
-        // VALID VEHICLE
-        // -----------------------------------------------
-
         vehicleWardCache.set(key, Number(wardNo));
 
         console.log(`✅ Vehicle master: ${key} → Ward ${wardNo}`);
 
         return Number(wardNo);
       } catch (error) {
-        // ------------------------------------------------
-        // IMPORTANT:
-        //
-        // A database/network error is NOT the same thing
-        // as an unregistered vehicle.
-        //
-        // Do NOT cache the failure.
-        //
-        // This allows the packet to be retried later.
-        // ------------------------------------------------
-
         console.error(`❌ vehicle_master lookup failed [${key}]:`, error);
 
         throw error;
@@ -228,25 +150,49 @@ class MetadataManager {
   async ensureDayTable(tx, date = new Date()) {
     const tableName = this.getDayTableName(date);
 
-    return this.ensureTable(tx, tableName, queries.createDayTable);
+    await this.ensureTable(tx, tableName, queries.createDayTable);
+
+    await tx.$executeRawUnsafe(queries.addDayHeartbeatColumn(tableName));
+
+    return tableName;
+  }
+
+  // =====================================================
+  // HEARTBEAT TABLE
+  // =====================================================
+
+  getHeartbeatTableName(vehicleNumber, date = new Date()) {
+    const cleanVehicle = String(vehicleNumber || "").trim();
+
+    const dd = String(date.getDate()).padStart(2, "0");
+
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+
+    const yyyy = date.getFullYear();
+
+    return `${cleanVehicle}_HB${dd}${mm}${yyyy}`;
+  }
+
+  async ensureHeartbeatTable(tx, vehicleNumber, date = new Date()) {
+    const tableName = this.getHeartbeatTableName(vehicleNumber, date);
+
+    return this.ensureTable(tx, tableName, queries.createHeartbeatTable);
   }
 
   // =====================================================
   // VEHICLE → DAY
   // =====================================================
 
-  async registerVehicleInDayTable(tx, dayTable, vehicleNumber, vehicleTable) {
-    // ===================================================
-    // FETCH WARD
-    // ===================================================
-
+  async registerVehicleInDayTable(
+    tx,
+    dayTable,
+    vehicleNumber,
+    vehicleTable,
+    heartbeatTable,
+  ) {
     const wardNo = await this.getVehicleWard(vehicleNumber);
 
     console.log(`Vehicle Ward Resolved: ${vehicleNumber} → Ward ${wardNo}`);
-
-    // ===================================================
-    // REGISTER VEHICLE + WARD
-    // ===================================================
 
     await tx.$executeRawUnsafe(
       queries.registerVehicleInDayTable(dayTable),
@@ -254,6 +200,8 @@ class MetadataManager {
       vehicleNumber,
 
       vehicleTable,
+
+      heartbeatTable,
 
       wardNo,
     );
@@ -322,7 +270,6 @@ class MetadataManager {
   async registerMonthInYearTable(tx, yearTable, monthTable) {
     await tx.$executeRawUnsafe(
       queries.registerMonthInYearTable(yearTable),
-
       monthTable,
     );
   }
@@ -334,7 +281,6 @@ class MetadataManager {
   async registerWeekInMonthTable(tx, monthTable, weekTable) {
     await tx.$executeRawUnsafe(
       queries.registerWeekInMonthTable(monthTable),
-
       weekTable,
     );
   }
@@ -346,7 +292,6 @@ class MetadataManager {
   async registerDayInWeekTable(tx, weekTable, dayTable) {
     await tx.$executeRawUnsafe(
       queries.registerDayInWeekTable(weekTable),
-
       dayTable,
     );
   }
@@ -357,57 +302,29 @@ class MetadataManager {
 
   async registerHierarchy(
     tx,
-    { dayTable, weekTable, monthTable, yearTable, vehicleNumber, vehicleTable },
+    {
+      dayTable,
+      weekTable,
+      monthTable,
+      yearTable,
+      vehicleNumber,
+      vehicleTable,
+      heartbeatTable,
+    },
   ) {
-    // ---------------------------------------------------
-    // 1. VEHICLE → DAY
-    // ---------------------------------------------------
-
     await this.registerVehicleInDayTable(
       tx,
-
       dayTable,
-
       vehicleNumber,
-
       vehicleTable,
+      heartbeatTable,
     );
 
-    // ---------------------------------------------------
-    // 2. DAY → WEEK
-    // ---------------------------------------------------
+    await this.registerDayInWeekTable(tx, weekTable, dayTable);
 
-    await this.registerDayInWeekTable(
-      tx,
+    await this.registerWeekInMonthTable(tx, monthTable, weekTable);
 
-      weekTable,
-
-      dayTable,
-    );
-
-    // ---------------------------------------------------
-    // 3. WEEK → MONTH
-    // ---------------------------------------------------
-
-    await this.registerWeekInMonthTable(
-      tx,
-
-      monthTable,
-
-      weekTable,
-    );
-
-    // ---------------------------------------------------
-    // 4. MONTH → YEAR
-    // ---------------------------------------------------
-
-    await this.registerMonthInYearTable(
-      tx,
-
-      yearTable,
-
-      monthTable,
-    );
+    await this.registerMonthInYearTable(tx, yearTable, monthTable);
 
     return {
       dayTable,
@@ -417,6 +334,8 @@ class MetadataManager {
       monthTable,
 
       yearTable,
+
+      heartbeatTable,
     };
   }
 }

@@ -7,129 +7,159 @@ const logEdit = require("../utils/editLogger");
 exports.getUsers = async (req, res) => {
   try {
     const { role, id } = req.user;
-    const { type, search, page = 1, limit = 10 } = req.query;
-    const currentPage = Number(page);
-    const pageSize = Number(limit);
+
+    const {
+      type,
+      search = "",
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const pageSize = Math.min(Math.max(Number(limit) || 10, 1), 100);
+
     const skip = (currentPage - 1) * pageSize;
 
-    let users = [];
+    const normalizedSearch = String(search).trim();
 
-    // ===============================
+    let where = {};
+
+    // =========================================================
     // ADMIN LAYER 1
-    // ===============================
+    // =========================================================
     if (role === "ADMIN_LAYER_1") {
       const targetRole =
-        type === "ADMIN_LAYER_1" ? "ADMIN_LAYER_1" : "ADMIN_LAYER_2";
+        type === "ADMIN_LAYER_1"
+          ? "ADMIN_LAYER_1"
+          : "ADMIN_LAYER_2";
 
-      users = await prisma.admins.findMany({
-        where: {
-          role: targetRole,
-          status: "ACTIVE",
+      where = {
+        role: targetRole,
+        status: "ACTIVE",
+      };
 
-          ...(search && {
-            OR: [
-              {
-                full_name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                email: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone_number: {
-                  contains: search,
-                },
-              },
-            ],
-          }),
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          full_name: true,
-          email: true,
-          phone_number: true,
-          role: true,
-          status: true,
-          created_at: true,
-        },
-      });
+      if (normalizedSearch) {
+        where.OR = [
+          {
+            full_name: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            phone_number: {
+              contains: normalizedSearch,
+            },
+          },
+        ];
+      }
     }
 
-    // ===============================
+    // =========================================================
     // ADMIN LAYER 2
-    // ===============================
+    // =========================================================
     else if (role === "ADMIN_LAYER_2") {
-      users = await prisma.admins.findMany({
-        where: {
-          role: "WORKER",
-          parent_admin_id: id,
-          status: "ACTIVE",
+      where = {
+        role: "WORKER",
+        parent_admin_id: id,
+        status: "ACTIVE",
+      };
 
-          ...(search && {
-            OR: [
-              {
-                full_name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                email: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                phone_number: {
-                  contains: search,
-                },
-              },
-            ],
-          }),
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-        skip,
-        take: pageSize,
-        select: {
-          id: true,
-          full_name: true,
-          email: true,
-          phone_number: true,
-          role: true,
-          status: true,
-          created_at: true,
-        },
-      });
-    } else {
+      if (normalizedSearch) {
+        where.OR = [
+          {
+            full_name: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            email: {
+              contains: normalizedSearch,
+              mode: "insensitive",
+            },
+          },
+          {
+            phone_number: {
+              contains: normalizedSearch,
+            },
+          },
+        ];
+      }
+    }
+
+    // =========================================================
+    // OTHER ROLES
+    // =========================================================
+    else {
       return res.status(403).json({
-        error: "Unauthorized",
+        success: false,
+        error: "Unauthorized.",
       });
     }
+
+    // =========================================================
+    // TOTAL COUNT
+    // =========================================================
+    const total = await prisma.admins.count({
+      where,
+    });
+
+    // =========================================================
+    // FETCH USERS
+    // =========================================================
+    const users = await prisma.admins.findMany({
+      where,
+
+      orderBy: {
+        created_at: "desc",
+      },
+
+      skip,
+      take: pageSize,
+
+      select: {
+  id: true,
+  full_name: true,
+  email: true,
+  phone_number: true,
+  role: true,
+  status: true,
+  created_at: true,
+  parent_admin_id: true,
+},
+    });
+
+    const totalPages =
+      total === 0 ? 0 : Math.ceil(total / pageSize);
 
     return res.status(200).json({
       success: true,
+
       page: currentPage,
+
       limit: pageSize,
+
       count: users.length,
+
+      total,
+
+      totalPages,
+
       users,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get Users Error:", error);
 
     return res.status(500).json({
-      error: "Failed to fetch users",
+      success: false,
+      error: "Failed to fetch users.",
     });
   }
 };
@@ -324,6 +354,17 @@ exports.deleteUser = async (req, res) => {
     const loggedInUser = req.user;
 
     // ===========================
+    // Validate User ID
+    // ===========================
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID.",
+      });
+    }
+
+    // ===========================
     // Prevent Self Delete
     // ===========================
 
@@ -352,7 +393,52 @@ exports.deleteUser = async (req, res) => {
     }
 
     // ===========================
-    // Prevent deleting last Admin
+    // RBAC Validation
+    // ===========================
+
+    // Admin Layer 1 can manage:
+    // - Admin Layer 1
+    // - Admin Layer 2 / Contractor
+    if (loggedInUser.role === "ADMIN_LAYER_1") {
+      if (
+        existingUser.role !== "ADMIN_LAYER_1" &&
+        existingUser.role !== "ADMIN_LAYER_2"
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "Admin Layer 1 cannot manage Workers.",
+        });
+      }
+    }
+
+    // Admin Layer 2 can manage:
+    // - Only Workers belonging to them
+    if (loggedInUser.role === "ADMIN_LAYER_2") {
+      if (
+        existingUser.role !== "WORKER" ||
+        existingUser.parent_admin_id !== loggedInUser.id
+      ) {
+        return res.status(403).json({
+          success: false,
+          error: "You are not allowed to delete this user.",
+        });
+      }
+    }
+
+    // Other roles
+    if (
+      loggedInUser.role !== "ADMIN_LAYER_1" &&
+      loggedInUser.role !== "ADMIN_LAYER_2"
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized.",
+      });
+    }
+
+    // ===========================
+    // Prevent Deleting Last
+    // Admin Layer 1
     // ===========================
 
     if (existingUser.role === "ADMIN_LAYER_1") {
@@ -369,46 +455,66 @@ exports.deleteUser = async (req, res) => {
           error: "Cannot delete the last Admin Layer 1.",
         });
       }
-    }
 
-    // ===========================
-    // RBAC Validation
-    // ===========================
-    if (loggedInUser.role === "ADMIN_LAYER_1") {
-      if (
-        existingUser.role !== "ADMIN_LAYER_1" &&
-        existingUser.role !== "ADMIN_LAYER_2"
-      ) {
-        return res.status(403).json({
+      // ===========================
+      // Protect Contractors
+      // ===========================
+      //
+      // An Admin Layer 1 may have created
+      // Admin Layer 2 / Contractor accounts.
+      //
+      // Never delete the parent while dependent
+      // contractor accounts still exist.
+
+      const contractorCount = await prisma.admins.count({
+        where: {
+          role: "ADMIN_LAYER_2",
+          parent_admin_id: userId,
+        },
+      });
+
+      if (contractorCount > 0) {
+        return res.status(409).json({
           success: false,
-          error: "Admin Layer 1 cannot manage Workers.",
+          error:
+            "Cannot delete this Admin Layer 1 because contractors are assigned to this account.",
+          code: "DEPENDENT_CONTRACTORS",
+          dependentCount: contractorCount,
         });
       }
     }
 
-    if (loggedInUser.role === "ADMIN_LAYER_2") {
-      if (
-        existingUser.role !== "WORKER" ||
-        existingUser.parent_admin_id !== loggedInUser.id
-      ) {
-        return res.status(403).json({
+    // ===========================
+    // Protect Workers
+    // When deleting Contractor
+    // ===========================
+
+    if (existingUser.role === "ADMIN_LAYER_2") {
+      const workerCount = await prisma.admins.count({
+        where: {
+          role: "WORKER",
+          parent_admin_id: userId,
+        },
+      });
+
+      if (workerCount > 0) {
+        return res.status(409).json({
           success: false,
-          error: "You are not allowed to delete this user.",
+          error:
+            "Cannot delete this Contractor because workers are assigned to this account.",
+          code: "DEPENDENT_WORKERS",
+          dependentCount: workerCount,
         });
       }
     }
 
     // ===========================
-    // Soft Delete
+    // HARD DELETE
     // ===========================
 
-    await prisma.admins.update({
+    await prisma.admins.delete({
       where: {
         id: userId,
-      },
-
-      data: {
-        status: "INACTIVE",
       },
     });
 
@@ -427,20 +533,38 @@ exports.deleteUser = async (req, res) => {
 
       recordId: userId.toString(),
 
-      description: `${loggedInUser.full_name} deactivated ${existingUser.full_name}.`,
+      description: `${loggedInUser.full_name} permanently deleted ${existingUser.full_name}.`,
     });
+
+    // ===========================
+    // Response
+    // ===========================
 
     return res.status(200).json({
       success: true,
 
-      message: "User deleted successfully.",
+      message: "User permanently deleted.",
+
+      userId,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Delete User Error:", error);
+
+    // ===========================
+    // Prisma Foreign Key Protection
+    // ===========================
+
+    if (error?.code === "P2003") {
+      return res.status(409).json({
+        success: false,
+        error:
+          "This user cannot be deleted because dependent records still exist.",
+        code: "DEPENDENCY_CONFLICT",
+      });
+    }
 
     return res.status(500).json({
       success: false,
-
       error: "Failed to delete user.",
     });
   }
@@ -452,7 +576,7 @@ exports.updateUser = async (req, res) => {
 
     const loggedInUser = req.user;
 
-    const { full_name, phone_number, status } = req.body;
+    const { full_name, phone_number } = req.body;
 
     const existingUser = await prisma.admins.findUnique({
       where: {
@@ -532,8 +656,6 @@ exports.updateUser = async (req, res) => {
         full_name,
 
         phone_number,
-
-        status,
       },
     });
 

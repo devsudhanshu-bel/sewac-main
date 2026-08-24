@@ -2,12 +2,19 @@ const { PrismaClient } = require("../generated/sewac");
 
 const prisma = new PrismaClient();
 
+/**
+ * =========================================================
+ * GET COMPLAINTS
+ * =========================================================
+ */
 async function getComplaints({
   page = 1,
   limit = 10,
   search = "",
   status,
   category,
+  dateFrom,
+  dateTo,
 }) {
   const skip = (page - 1) * limit;
 
@@ -19,6 +26,18 @@ async function getComplaints({
 
   if (category) {
     where.category = category;
+  }
+
+  if (dateFrom || dateTo) {
+    where.created_at = {};
+
+    if (dateFrom) {
+      where.created_at.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+    }
+
+    if (dateTo) {
+      where.created_at.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
   }
 
   if (search) {
@@ -71,6 +90,11 @@ async function getComplaints({
   };
 }
 
+/**
+ * =========================================================
+ * GET SINGLE COMPLAINT
+ * =========================================================
+ */
 async function getComplaintByTicket(ticketNumber) {
   return prisma.citizen_complaints.findUnique({
     where: {
@@ -79,60 +103,81 @@ async function getComplaintByTicket(ticketNumber) {
   });
 }
 
+/**
+ * =========================================================
+ * UPDATE COMPLAINT
+ * =========================================================
+ *
+ * Only these fields are allowed to be changed:
+ *
+ * - status
+ * - assigned_to
+ * - remarks
+ *
+ * Security/internal fields are NEVER accepted here.
+ */
+async function updateComplaint(ticketNumber, { status, remarks, closed_at }) {
+  return prisma.citizen_complaints.update({
+    where: {
+      ticket_number: ticketNumber,
+    },
+
+    data: {
+      ...(status !== undefined && {
+        status,
+      }),
+
+      ...(remarks !== undefined && {
+        remarks,
+      }),
+
+      ...(closed_at !== undefined && {
+        closed_at,
+      }),
+
+      updated_at: new Date(),
+    },
+  });
+}
+
+/**
+ * =========================================================
+ * KPI DATA
+ * =========================================================
+ */
 async function getComplaintKPIs() {
-  const [
-    total,
-    pending,
-    assigned,
-    inProgress,
-    readyForVerification,
-    otpSent,
-    closed,
-  ] = await Promise.all([
-    prisma.citizen_complaints.count(),
+  const [total, pending, readyForVerification, otpSent, closed] =
+    await Promise.all([
+      prisma.citizen_complaints.count(),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "PENDING",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "PENDING",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "ASSIGNED",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "READY_FOR_VERIFICATION",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "IN_PROGRESS",
-      },
-    }),
+      prisma.citizen_complaints.count({
+        where: {
+          status: "OTP_SENT",
+        },
+      }),
 
-    prisma.citizen_complaints.count({
-      where: {
-        status: "READY_FOR_VERIFICATION",
-      },
-    }),
-
-    prisma.citizen_complaints.count({
-      where: {
-        status: "OTP_SENT",
-      },
-    }),
-
-    prisma.citizen_complaints.count({
-      where: {
-        status: "CLOSED",
-      },
-    }),
-  ]);
+      prisma.citizen_complaints.count({
+        where: {
+          status: "CLOSED",
+        },
+      }),
+    ]);
 
   return {
     total,
     pending,
-    assigned,
-    inProgress,
     readyForVerification,
     otpSent,
     closed,
@@ -142,5 +187,6 @@ async function getComplaintKPIs() {
 module.exports = {
   getComplaints,
   getComplaintByTicket,
+  updateComplaint,
   getComplaintKPIs,
 };

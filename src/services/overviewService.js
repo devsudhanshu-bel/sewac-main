@@ -3,7 +3,17 @@ const mainDb = require("../config/mainDb");
 const telemetryDb = require("../config/telemetryDb");
 const masterCitizenPrisma = require("../config/masterCitizenPrisma");
 
+// ============================================================
+// CONSTANTS
+// ============================================================
+
 const IDENTIFIER_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+const VEHICLE_INACTIVITY_MINUTES = 30;
+
+// ============================================================
+// SAFE IDENTIFIER
+// ============================================================
 
 const quoteIdentifier = (identifier) => {
   if (typeof identifier !== "string" || !IDENTIFIER_REGEX.test(identifier)) {
@@ -12,6 +22,10 @@ const quoteIdentifier = (identifier) => {
 
   return `"${identifier.replace(/"/g, '""')}"`;
 };
+
+// ============================================================
+// ID PARSER
+// ============================================================
 
 const parseId = (value, fieldName) => {
   if (value === undefined || value === null || value === "") {
@@ -27,6 +41,10 @@ const parseId = (value, fieldName) => {
   return parsed;
 };
 
+// ============================================================
+// DATE VALIDATION
+// ============================================================
+
 const validateDate = (date) => {
   const selectedDate = date || new Date().toISOString().split("T")[0];
 
@@ -40,17 +58,21 @@ const validateDate = (date) => {
     throw new Error("Invalid date");
   }
 
+  const normalized = parsed.toISOString().split("T")[0];
+
+  if (normalized !== selectedDate) {
+    throw new Error("Invalid date");
+  }
+
   return {
     value: selectedDate,
     date: parsed,
   };
 };
 
-/*
-|--------------------------------------------------------------------------
-| DAY TABLE
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// DAY TABLE NAME
+// ============================================================
 
 const getDayTableName = (date) => {
   const dd = String(date.getDate()).padStart(2, "0");
@@ -62,11 +84,9 @@ const getDayTableName = (date) => {
   return `day_${dd}${mm}${yyyy}`;
 };
 
-/*
-|--------------------------------------------------------------------------
-| GEOGRAPHIC HIERARCHY
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// ALL WARDS
+// ============================================================
 
 const getAllWardScope = async () => {
   const cities = await masterCitizenPrisma.city_table.findMany({
@@ -84,14 +104,16 @@ const getAllWardScope = async () => {
 
     const cityTable = quoteIdentifier(city.city_table_name);
 
-    const zones = await masterCitizenPrisma.$queryRawUnsafe(`
-        SELECT
-          zone_id,
-          zone_name,
-          zone_table_name
-        FROM ${cityTable}
-        ORDER BY zone_id ASC
-      `);
+    const zones = await masterCitizenPrisma.$queryRawUnsafe(
+      `
+          SELECT
+            zone_id,
+            zone_name,
+            zone_table_name
+          FROM ${cityTable}
+          ORDER BY zone_id ASC
+        `,
+    );
 
     for (const zone of zones) {
       if (!zone.zone_table_name) {
@@ -100,14 +122,16 @@ const getAllWardScope = async () => {
 
       const zoneTable = quoteIdentifier(zone.zone_table_name);
 
-      const divisions = await masterCitizenPrisma.$queryRawUnsafe(`
-          SELECT
-            division_id,
-            division_name,
-            division_table_name
-          FROM ${zoneTable}
-          ORDER BY division_id ASC
-        `);
+      const divisions = await masterCitizenPrisma.$queryRawUnsafe(
+        `
+            SELECT
+              division_id,
+              division_name,
+              division_table_name
+            FROM ${zoneTable}
+            ORDER BY division_id ASC
+          `,
+      );
 
       for (const division of divisions) {
         if (!division.division_table_name) {
@@ -116,15 +140,17 @@ const getAllWardScope = async () => {
 
         const divisionTable = quoteIdentifier(division.division_table_name);
 
-        const wardRows = await masterCitizenPrisma.$queryRawUnsafe(`
-            SELECT
-              ward_id,
-              ward_no,
-              ward_name,
-              ward_table_name
-            FROM ${divisionTable}
-            ORDER BY ward_no ASC
-          `);
+        const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
+          `
+              SELECT
+                ward_id,
+                ward_no,
+                ward_name,
+                ward_table_name
+              FROM ${divisionTable}
+              ORDER BY ward_no ASC
+            `,
+        );
 
         for (const ward of wardRows) {
           wards.push({
@@ -142,7 +168,7 @@ const getAllWardScope = async () => {
 
             wardId: Number(ward.ward_id),
 
-            wardNo: Number(ward.ward_no),
+            wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
 
             wardName: ward.ward_name,
 
@@ -156,11 +182,9 @@ const getAllWardScope = async () => {
   return wards;
 };
 
-/*
-|--------------------------------------------------------------------------
-| SELECTED GEOGRAPHIC SCOPE
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// SELECTED WARD SCOPE
+// ============================================================
 
 const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   const selectedCityId = parseId(cityId, "cityId");
@@ -183,9 +207,9 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
     throw new Error("wardId requires divisionId");
   }
 
-  /*
-   * No geographic filter.
-   */
+  // ----------------------------------------------------------
+  // NO FILTER
+  // ----------------------------------------------------------
 
   if (!selectedCityId) {
     return {
@@ -193,6 +217,10 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
       wards: await getAllWardScope(),
     };
   }
+
+  // ----------------------------------------------------------
+  // CITY
+  // ----------------------------------------------------------
 
   const city = await masterCitizenPrisma.city_table.findUnique({
     where: {
@@ -210,29 +238,20 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
   const cityTable = quoteIdentifier(city.city_table_name);
 
-  /*
-   * City → Zones
-   */
+  // ----------------------------------------------------------
+  // ZONES
+  // ----------------------------------------------------------
 
   const zones = await masterCitizenPrisma.$queryRawUnsafe(
-    selectedZoneId
-      ? `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM ${cityTable}
-          WHERE zone_id = $1
-          ORDER BY zone_id ASC
-        `
-      : `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM ${cityTable}
-          ORDER BY zone_id ASC
-        `,
+    `
+        SELECT
+          zone_id,
+          zone_name,
+          zone_table_name
+        FROM ${cityTable}
+        ${selectedZoneId ? "WHERE zone_id = $1" : ""}
+        ORDER BY zone_id ASC
+      `,
     ...(selectedZoneId ? [selectedZoneId] : []),
   );
 
@@ -242,6 +261,10 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
   const wards = [];
 
+  // ----------------------------------------------------------
+  // ZONE → DIVISION → WARD
+  // ----------------------------------------------------------
+
   for (const zone of zones) {
     if (!zone.zone_table_name) {
       continue;
@@ -249,29 +272,16 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
     const zoneTable = quoteIdentifier(zone.zone_table_name);
 
-    /*
-     * Zone → Divisions
-     */
-
     const divisions = await masterCitizenPrisma.$queryRawUnsafe(
-      selectedDivisionId
-        ? `
-            SELECT
-              division_id,
-              division_name,
-              division_table_name
-            FROM ${zoneTable}
-            WHERE division_id = $1
-            ORDER BY division_id ASC
-          `
-        : `
-            SELECT
-              division_id,
-              division_name,
-              division_table_name
-            FROM ${zoneTable}
-            ORDER BY division_id ASC
-          `,
+      `
+          SELECT
+            division_id,
+            division_name,
+            division_table_name
+          FROM ${zoneTable}
+          ${selectedDivisionId ? "WHERE division_id = $1" : ""}
+          ORDER BY division_id ASC
+        `,
       ...(selectedDivisionId ? [selectedDivisionId] : []),
     );
 
@@ -286,31 +296,17 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
       const divisionTable = quoteIdentifier(division.division_table_name);
 
-      /*
-       * Division → Wards
-       */
-
       const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
-        selectedWardId
-          ? `
-              SELECT
-                ward_id,
-                ward_no,
-                ward_name,
-                ward_table_name
-              FROM ${divisionTable}
-              WHERE ward_id = $1
-              ORDER BY ward_no ASC
-            `
-          : `
-              SELECT
-                ward_id,
-                ward_no,
-                ward_name,
-                ward_table_name
-              FROM ${divisionTable}
-              ORDER BY ward_no ASC
-            `,
+        `
+            SELECT
+              ward_id,
+              ward_no,
+              ward_name,
+              ward_table_name
+            FROM ${divisionTable}
+            ${selectedWardId ? "WHERE ward_id = $1" : ""}
+            ORDER BY ward_no ASC
+          `,
         ...(selectedWardId ? [selectedWardId] : []),
       );
 
@@ -334,7 +330,7 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
 
           wardId: Number(ward.ward_id),
 
-          wardNo: Number(ward.ward_no),
+          wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
 
           wardName: ward.ward_name,
 
@@ -350,111 +346,91 @@ const getSelectedWardScope = async ({ cityId, zoneId, divisionId, wardId }) => {
   };
 };
 
-/*
-|--------------------------------------------------------------------------
-| DAY TABLE → VEHICLE TABLES
-|--------------------------------------------------------------------------
-|
-| vehicle_master.vehicle_id
-|          ↕
-| day_table.vehicle_number
-|          ↕
-| telemetry_table.vehiclenumber
-|
-*/
+// ============================================================
+// DAY TABLE → VEHICLES
+// ============================================================
+//
+// IMPORTANT NEW FIELD:
+//
+// vehicle_table_name_hb
+//
+// This points to:
+//
+// KA05AB1237_HB23082026
+//
+// etc.
+//
+// ============================================================
 
 const getVehicleTablesForDate = async (date, wardNos = null) => {
   const dayTable = getDayTableName(date);
 
   const dayIdentifier = quoteIdentifier(dayTable);
 
-  /*
-   * If a geographic filter was supplied but no wards
-   * belong to it, there is simply no telemetry.
-   */
   if (Array.isArray(wardNos) && wardNos.length === 0) {
     return [];
   }
 
-  try {
-    let rows;
+  let rows;
 
+  try {
     if (Array.isArray(wardNos)) {
       rows = await telemetryDb.$queryRawUnsafe(
         `
-          SELECT
-            vehicle_number,
-            vehicle_table_name,
-            ward_no
-          FROM ${dayIdentifier}
-          WHERE ward_no = ANY($1::integer[])
-          ORDER BY vehicle_number ASC
-        `,
+            SELECT
+              vehicle_number,
+              vehicle_table_name,
+              vehicle_table_name_hb,
+              ward_no
+            FROM ${dayIdentifier}
+            WHERE ward_no =
+                  ANY($1::integer[])
+            ORDER BY
+              vehicle_number ASC
+          `,
         wardNos,
       );
     } else {
       rows = await telemetryDb.$queryRawUnsafe(
         `
-          SELECT
-            vehicle_number,
-            vehicle_table_name,
-            ward_no
-          FROM ${dayIdentifier}
-          ORDER BY vehicle_number ASC
-        `,
+            SELECT
+              vehicle_number,
+              vehicle_table_name,
+              vehicle_table_name_hb,
+              ward_no
+            FROM ${dayIdentifier}
+            ORDER BY
+              vehicle_number ASC
+          `,
       );
     }
-
-    return rows.map((row) => ({
-      vehicleNumber:
-        row.vehicle_number === null || row.vehicle_number === undefined
-          ? null
-          : String(row.vehicle_number).trim(),
-
-      vehicleTableName: row.vehicle_table_name,
-
-      wardNo: row.ward_no === null ? null : Number(row.ward_no),
-    }));
   } catch (error) {
-    /*
-     * PostgreSQL 42P01 =
-     * relation/table does not exist.
-     *
-     * Example:
-     * day_15082026 does not exist
-     *
-     * This simply means telemetry has not been
-     * created for the selected date.
-     *
-     * DO NOT throw this error to the controller.
-     * Return an empty result instead.
-     */
-
     if (error?.code === "42P01") {
-      console.warn(
-        `Overview: telemetry day table ${dayTable} does not exist. Returning no data.`,
-      );
+      console.warn(`Overview: ${dayTable} does not exist.`);
 
       return [];
     }
 
-    /*
-     * Any other database error is a genuine error
-     * and should still be reported normally.
-     */
-
     throw error;
   }
+
+  return rows.map((row) => ({
+    vehicleNumber: row.vehicle_number,
+
+    vehicleTableName: row.vehicle_table_name,
+
+    heartbeatTableName: row.vehicle_table_name_hb,
+
+    wardNo: row.ward_no === null ? null : Number(row.ward_no),
+  }));
 };
 
-/*
-|--------------------------------------------------------------------------
-| DYNAMIC TELEMETRY UNION
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// VEHICLE TELEMETRY UNION
+// ============================================================
 
 const buildTelemetryUnion = (vehicleTables) => {
-  if (!vehicleTables.length) {
+  if (!Array.isArray(vehicleTables) || vehicleTables.length === 0) {
     return null;
   }
 
@@ -485,11 +461,9 @@ const buildTelemetryUnion = (vehicleTables) => {
     .join("\nUNION ALL\n");
 };
 
-/*
-|--------------------------------------------------------------------------
-| TELEMETRY QUERY
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// TELEMETRY ROWS
+// ============================================================
 
 const getTelemetryRows = async (vehicleTables, selectedDate) => {
   const unionSql = buildTelemetryUnion(vehicleTables);
@@ -498,8 +472,9 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
     return [];
   }
 
-  const result = await telemetryDb.$queryRawUnsafe(
-    `
+  try {
+    return await telemetryDb.$queryRawUnsafe(
+      `
         SELECT
           id,
 
@@ -534,26 +509,30 @@ const getTelemetryRows = async (vehicleTables, selectedDate) => {
           ${unionSql}
         ) telemetry
 
-        WHERE iottimestamp >=
-              $1::date
+        WHERE
+          iottimestamp >=
+            $1::date
 
           AND iottimestamp <
-              (
-                $1::date +
-                INTERVAL '1 day'
-              )
+            (
+              $1::date +
+              INTERVAL '1 day'
+            )
       `,
-    selectedDate,
-  );
+      selectedDate,
+    );
+  } catch (error) {
+    if (error?.code === "42P01") {
+      return [];
+    }
 
-  return result;
+    throw error;
+  }
 };
 
-/*
-|--------------------------------------------------------------------------
-| TOTAL CITIZENS
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// TOTAL CITIZENS
+// ============================================================
 
 const getTotalCitizens = async () => {
   const result = await helperDb.query(`
@@ -561,14 +540,12 @@ const getTotalCitizens = async () => {
         FROM master_citizen_data
       `);
 
-  return Number(result.rows[0].total);
+  return Number(result.rows[0]?.total || 0);
 };
 
-/*
-|--------------------------------------------------------------------------
-| SUMMARY
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// SUMMARY
+// ============================================================
 
 const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   const { value: selectedDate, date: dateObject } = validateDate(date);
@@ -580,7 +557,9 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
     wardId,
   });
 
-  const wardNos = wardScope.wards.map((ward) => ward.wardNo);
+  const wardNos = wardScope.wards
+    .map((ward) => Number(ward.wardNo))
+    .filter((wardNo) => Number.isInteger(wardNo));
 
   const [totalCitizens, vehicleTables] = await Promise.all([
     getTotalCitizens(),
@@ -590,10 +569,6 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
 
   const telemetryRows = await getTelemetryRows(vehicleTables, selectedDate);
 
-  /*
-   * Wet + dry + other
-   */
-
   const totalWasteCollected = telemetryRows.reduce(
     (total, row) =>
       total +
@@ -602,10 +577,6 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
       Number(row.otherWeight || 0),
     0,
   );
-
-  /*
-   * Distinct collection points
-   */
 
   const collectionPoints = new Set(
     telemetryRows
@@ -618,10 +589,6 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
       )
       .map((row) => `${row.latitude},${row.longitude}`),
   ).size;
-
-  /*
-   * Distinct citizens who gave trash
-   */
 
   const trashGiven = new Set(
     telemetryRows
@@ -649,54 +616,12 @@ const getSummary = async (date, cityId, zoneId, divisionId, wardId) => {
   };
 };
 
-/*
-|--------------------------------------------------------------------------
-| LIVE VEHICLE SUMMARY
-|--------------------------------------------------------------------------
-|
-| HEADER FILTERS:
-|
-| cityId
-| zoneId
-| divisionId
-| wardId
-|
-| VEHICLE SCOPE:
-|
-| vehicle_master.ward_no
-|
-| VEHICLE ID:
-|
-| vehicle_master.vehicle_id
-|          ↕
-| telemetry.vehiclenumber
-|
-| LIVE STATUS:
-|
-| latest receivedtimestamp <= 30 minutes
-|                         ↓
-|                      ACTIVE
-|
-| latest receivedtimestamp > 30 minutes
-|                         ↓
-|                     INACTIVE
-|
-| no packet
-|                         ↓
-|                     INACTIVE
-|
-| vehicle_master.status is NOT used.
-|
-*/
+// ============================================================
+// VEHICLE SUMMARY
+// ============================================================
 
-const VEHICLE_INACTIVITY_MINUTES = 30;
-
-const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
-  /*
-   * =========================================================
-   * 1. RESOLVE HEADER FILTERS
-   * =========================================================
-   */
+const getVehicleSummary = async (date, cityId, zoneId, divisionId, wardId) => {
+  const { date: selectedDateObject } = validateDate(date);
 
   const selectedCityId = parseId(cityId, "cityId");
 
@@ -705,12 +630,6 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
   const selectedDivisionId = parseId(divisionId, "divisionId");
 
   const selectedWardId = parseId(wardId, "wardId");
-
-  /*
-   * =========================================================
-   * 2. FIND THE WARDS IN THE SELECTED SCOPE
-   * =========================================================
-   */
 
   let wardNos = null;
 
@@ -729,10 +648,6 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
       .map((ward) => Number(ward.wardNo))
       .filter((wardNo) => Number.isInteger(wardNo));
 
-    /*
-     * Selected scope has no wards.
-     */
-
     if (wardNos.length === 0) {
       return {
         totalVehicles: 0,
@@ -748,86 +663,183 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     }
   }
 
-  /*
-   * =========================================================
-   * 3. GET REGISTERED VEHICLES
-   * =========================================================
-   *
-   * IMPORTANT:
-   *
-   * vehicle_master.vehicle_id
-   * is the actual vehicle identifier.
-   *
-   * vehicle_master.ward_no
-   * is used for geographic filtering.
-   */
+  // --------------------------------------------------------
+  // REGISTERED VEHICLES
+  // --------------------------------------------------------
 
-  let registeredVehiclesResult;
+  let registeredResult;
 
   if (Array.isArray(wardNos)) {
-    registeredVehiclesResult = await mainDb.query(
+    registeredResult = await mainDb.query(
       `
-          SELECT
-            id,
-            vehicle_id,
-            ward_no
-
-          FROM vehicle_master
-
-          WHERE ward_no =
-                ANY($1::integer[])
-
-            AND vehicle_id
-                IS NOT NULL
-
-            AND TRIM(vehicle_id)
-                <> ''
-
-          ORDER BY id ASC
-        `,
+            SELECT
+              id,
+              vehicle_id,
+              ward_no
+            FROM vehicle_master
+            WHERE ward_no =
+                  ANY($1::integer[])
+              AND vehicle_id
+                  IS NOT NULL
+              AND TRIM(vehicle_id)
+                  <> ''
+            ORDER BY id ASC
+          `,
       [wardNos],
     );
   } else {
-    /*
-     * No header filter:
-     * return all registered vehicles.
-     */
-
-    registeredVehiclesResult = await mainDb.query(`
-        SELECT
-          id,
-          vehicle_id,
-          ward_no
-
-        FROM vehicle_master
-
-        WHERE vehicle_id
-              IS NOT NULL
-
-          AND TRIM(vehicle_id)
-              <> ''
-
-        ORDER BY id ASC
-      `);
+    registeredResult = await mainDb.query(
+      `
+            SELECT
+              id,
+              vehicle_id,
+              ward_no
+            FROM vehicle_master
+            WHERE vehicle_id
+                  IS NOT NULL
+              AND TRIM(vehicle_id)
+                  <> ''
+            ORDER BY id ASC
+          `,
+    );
   }
 
-  const registeredVehicles = registeredVehiclesResult.rows
+  const registeredVehicles = registeredResult.rows
     .map((vehicle) => ({
       id: vehicle.id,
 
       vehicleId: String(vehicle.vehicle_id).trim(),
 
-      wardNo: vehicle.ward_no === null ? null : Number(vehicle.ward_no),
+      wardNo:
+        vehicle.ward_no === null || vehicle.ward_no === undefined
+          ? null
+          : Number(vehicle.ward_no),
     }))
     .filter((vehicle) => vehicle.vehicleId);
 
   const totalVehicles = registeredVehicles.length;
 
-  /*
-   * =========================================================
-   * 4. 30-MINUTE INACTIVITY LIMIT
-   * =========================================================
-   */
+  if (totalVehicles === 0) {
+    return {
+      totalVehicles: 0,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: 0,
+
+      vehicleStatus: [],
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
+  // --------------------------------------------------------
+  // SELECTED DATE TELEMETRY
+  // --------------------------------------------------------
+
+  let selectedDateVehicleTables = [];
+
+  try {
+    selectedDateVehicleTables = await getVehicleTablesForDate(
+      selectedDateObject,
+      wardNos,
+    );
+  } catch (error) {
+    console.warn("Vehicle summary telemetry lookup failed:", error.message);
+
+    return {
+      totalVehicles,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: totalVehicles,
+
+      vehicleStatus: registeredVehicles.map((vehicle) => ({
+        vehicleId: vehicle.vehicleId,
+
+        wardNo: vehicle.wardNo,
+
+        status: "INACTIVE",
+
+        lastReceivedTimestamp: null,
+      })),
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
+  // --------------------------------------------------------
+  // NO DYNAMIC TABLE
+  // --------------------------------------------------------
+
+  if (!selectedDateVehicleTables.length) {
+    return {
+      totalVehicles,
+
+      runningVehicles: 0,
+
+      inactiveVehicles: totalVehicles,
+
+      vehicleStatus: registeredVehicles.map((vehicle) => ({
+        vehicleId: vehicle.vehicleId,
+
+        wardNo: vehicle.wardNo,
+
+        status: "INACTIVE",
+
+        lastReceivedTimestamp: null,
+      })),
+
+      inactivityThresholdMinutes: VEHICLE_INACTIVITY_MINUTES,
+    };
+  }
+
+  // --------------------------------------------------------
+  // LATEST TELEMETRY
+  // --------------------------------------------------------
+
+  const registeredVehicleIds = new Set(
+    registeredVehicles.map((vehicle) => vehicle.vehicleId),
+  );
+
+  const latestPacketByVehicle = new Map();
+
+  const telemetryRows = await getTelemetryRows(
+    selectedDateVehicleTables,
+    validateDate(date).value,
+  );
+
+  for (const row of telemetryRows) {
+    if (!row.vehicleNumber) {
+      continue;
+    }
+
+    const vehicleNumber = String(row.vehicleNumber).trim();
+
+    if (!registeredVehicleIds.has(vehicleNumber)) {
+      continue;
+    }
+
+    if (!row.receivedTimestamp) {
+      continue;
+    }
+
+    const received = new Date(row.receivedTimestamp);
+
+    if (Number.isNaN(received.getTime())) {
+      continue;
+    }
+
+    const existing = latestPacketByVehicle.get(vehicleNumber);
+
+    if (!existing || received > existing.lastReceivedTimestamp) {
+      latestPacketByVehicle.set(vehicleNumber, {
+        vehicleNumber,
+
+        lastReceivedTimestamp: received,
+      });
+    }
+  }
 
   const now = new Date();
 
@@ -835,171 +847,12 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
     now.getTime() - VEHICLE_INACTIVITY_MINUTES * 60 * 1000,
   );
 
-  /*
-   * =========================================================
-   * 5. TODAY'S TELEMETRY
-   * =========================================================
-   */
-
-  const today = new Date();
-
-  let todayVehicleTables = [];
-
-  try {
-    todayVehicleTables = await getVehicleTablesForDate(today, null);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: today's telemetry table unavailable:",
-      error.message,
-    );
-  }
-
-  /*
-   * =========================================================
-   * 6. YESTERDAY'S TELEMETRY
-   * =========================================================
-   *
-   * Needed around midnight.
-   */
-
-  const yesterday = new Date(today);
-
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  let yesterdayVehicleTables = [];
-
-  try {
-    yesterdayVehicleTables = await getVehicleTablesForDate(yesterday, null);
-  } catch (error) {
-    console.warn(
-      "Vehicle summary: yesterday's telemetry table unavailable:",
-      error.message,
-    );
-  }
-
-  /*
-   * =========================================================
-   * 7. COMBINE TELEMETRY TABLES
-   * =========================================================
-   */
-
-  const allVehicleTables = [...todayVehicleTables, ...yesterdayVehicleTables];
-
-  const uniqueVehicleTables = Array.from(
-    new Map(
-      allVehicleTables
-        .filter((vehicle) => vehicle.vehicleTableName)
-        .map((vehicle) => [vehicle.vehicleTableName, vehicle]),
-    ).values(),
-  );
-
-  /*
-   * =========================================================
-   * 8. REGISTERED VEHICLE SET
-   * =========================================================
-   *
-   * This guarantees that telemetry from a vehicle
-   * outside the selected geographic scope is ignored.
-   */
-
-  const registeredVehicleIds = new Set(
-    registeredVehicles.map((vehicle) => vehicle.vehicleId),
-  );
-
-  /*
-   * =========================================================
-   * 9. FIND LATEST PACKET PER REGISTERED VEHICLE
-   * =========================================================
-   */
-
-  const latestPacketByVehicle = new Map();
-
-  for (const vehicle of uniqueVehicleTables) {
-    if (!vehicle.vehicleTableName) {
-      continue;
-    }
-
-    const table = quoteIdentifier(vehicle.vehicleTableName);
-
-    try {
-      const result = await telemetryDb.$queryRawUnsafe(
-        `
-            SELECT
-              vehiclenumber,
-
-              MAX(
-                receivedtimestamp
-              ) AS "lastReceivedTimestamp"
-
-            FROM ${table}
-
-            WHERE vehiclenumber
-                  IS NOT NULL
-
-            GROUP BY
-              vehiclenumber
-          `,
-      );
-
-      for (const row of result) {
-        if (!row.vehiclenumber || !row.lastReceivedTimestamp) {
-          continue;
-        }
-
-        const vehicleNumber = String(row.vehiclenumber).trim();
-
-        /*
-         * IMPORTANT:
-         *
-         * Ignore telemetry belonging to
-         * vehicles outside the selected
-         * header scope.
-         */
-
-        if (!registeredVehicleIds.has(vehicleNumber)) {
-          continue;
-        }
-
-        const lastReceived = new Date(row.lastReceivedTimestamp);
-
-        if (Number.isNaN(lastReceived.getTime())) {
-          continue;
-        }
-
-        const existing = latestPacketByVehicle.get(vehicleNumber);
-
-        if (!existing || lastReceived > existing.lastReceivedTimestamp) {
-          latestPacketByVehicle.set(vehicleNumber, {
-            vehicleNumber,
-
-            lastReceivedTimestamp: lastReceived,
-          });
-        }
-      }
-    } catch (error) {
-      console.warn(
-        `Vehicle summary: unable to inspect ${vehicle.vehicleTableName}:`,
-        error.message,
-      );
-    }
-  }
-
-  /*
-   * =========================================================
-   * 10. ACTIVE / INACTIVE
-   * =========================================================
-   */
-
   let runningVehicles = 0;
 
   const vehicleStatus = [];
 
   for (const vehicle of registeredVehicles) {
     const latest = latestPacketByVehicle.get(vehicle.vehicleId);
-
-    /*
-     * Vehicle has never sent a packet.
-     */
 
     if (!latest) {
       vehicleStatus.push({
@@ -1015,15 +868,9 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
       continue;
     }
 
-    /*
-     * Vehicle is active only if the
-     * latest packet was received within
-     * the previous 30 minutes.
-     */
+    const isRunning = latest.lastReceivedTimestamp >= inactivityLimit;
 
-    const isActive = latest.lastReceivedTimestamp >= inactivityLimit;
-
-    if (isActive) {
+    if (isRunning) {
       runningVehicles += 1;
     }
 
@@ -1032,17 +879,11 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
 
       wardNo: vehicle.wardNo,
 
-      status: isActive ? "ACTIVE" : "INACTIVE",
+      status: isRunning ? "ACTIVE" : "INACTIVE",
 
       lastReceivedTimestamp: latest.lastReceivedTimestamp,
     });
   }
-
-  /*
-   * =========================================================
-   * 11. FINAL COUNTS
-   * =========================================================
-   */
 
   const inactiveVehicles = Math.max(totalVehicles - runningVehicles, 0);
 
@@ -1059,43 +900,19 @@ const getVehicleSummary = async (cityId, zoneId, divisionId, wardId) => {
   };
 };
 
-/*
-|--------------------------------------------------------------------------
-| GENERATION TREND
-|--------------------------------------------------------------------------
-|
-| One point per ward.
-|
-| Selected division:
-|
-| Division
-|   ↓
-| all wards
-|   ↓
-| telemetry
-|   ↓
-| waste generated
-|
-| Backend returns KG.
-| Frontend converts KG → tons.
-|
-*/
+// ============================================================
+// GENERATION TREND
+// ============================================================
 
 const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
   const { value: selectedDate, date: dateObject } = validateDate(date);
-
-  /*
-   * The graph is division-wise.
-   *
-   * The selected ward does not reduce
-   * the graph to one point.
-   */
 
   const wardScope = await getSelectedWardScope({
     cityId,
     zoneId,
     divisionId,
 
+    // Division-wise graph.
     wardId: null,
   });
 
@@ -1140,11 +957,6 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
 
       divisionName: ward.divisionName,
 
-      /*
-       * Backend returns KG.
-       * Frontend converts to tons.
-       */
-
       wasteGenerated,
 
       threshold: 5000,
@@ -1154,239 +966,186 @@ const getGenerationTrend = async (date, cityId, zoneId, divisionId, wardId) => {
   return results.sort((a, b) => Number(a.wardNo) - Number(b.wardNo));
 };
 
-const normalizeGeoBoundary = (value) => {
-  if (!value) {
-    return null;
-  }
+// ============================================================
+// ROUTE MAP
+// ============================================================
+//
+// NEW ARCHITECTURE:
+//
+// selected date
+//      ↓
+// day_DDMMYYYY
+//      ↓
+// vehicle_table_name_hb
+//      ↓
+// vehicle heartbeat table
+//      ↓
+// latitude + longitude + created_at
+//      ↓
+// route
+//
+// ============================================================
 
-  /*
-   * PostgreSQL JSON/JSONB may already arrive
-   * as a JavaScript object.
-   */
+const getMapData = async (date, cityId, zoneId, divisionId, wardId) => {
+  const { value: selectedDate, date: dateObject } = validateDate(date);
 
-  if (typeof value === "object") {
-    return value;
-  }
-
-  /*
-   * In case the database driver returns
-   * the geometry as a JSON string.
-   */
-
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.warn("Unable to parse geo_boundary:", error.message);
-
-      return null;
-    }
-  }
-
-  return null;
-};
-
-const getMapData = async (cityId, zoneId) => {
-  const selectedCityId = parseId(cityId, "cityId");
-  const selectedZoneId = parseId(zoneId, "zoneId");
-
-  if (!selectedCityId) {
-    throw new Error("cityId is required");
-  }
-
-  if (!selectedZoneId) {
-    throw new Error("zoneId is required");
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | CITY
-  |--------------------------------------------------------------------------
-  */
-
-  const city = await masterCitizenPrisma.city_table.findUnique({
-    where: {
-      city_id: selectedCityId,
-    },
+  const wardScope = await getSelectedWardScope({
+    cityId,
+    zoneId,
+    divisionId,
+    wardId,
   });
 
-  if (!city) {
-    throw new Error("City not found");
+  const wardNos = wardScope.wards
+    .map((ward) => Number(ward.wardNo))
+    .filter((wardNo) => Number.isInteger(wardNo));
+
+  if (wardNos.length === 0) {
+    return {
+      defaultView: "route-map",
+
+      date: selectedDate,
+
+      routes: [],
+
+      totalVehicles: 0,
+
+      totalRoutePoints: 0,
+    };
   }
 
-  if (!city.city_table_name) {
-    throw new Error("City has no dynamic table registered");
+  const vehicleTables = await getVehicleTablesForDate(dateObject, wardNos);
+
+  if (vehicleTables.length === 0) {
+    return {
+      defaultView: "route-map",
+
+      date: selectedDate,
+
+      routes: [],
+
+      totalVehicles: 0,
+
+      totalRoutePoints: 0,
+    };
   }
 
-  const cityTable = quoteIdentifier(city.city_table_name);
+  const routes = [];
 
-  /*
-  |--------------------------------------------------------------------------
-  | SELECTED ZONE
-  |--------------------------------------------------------------------------
-  */
+  for (const vehicle of vehicleTables) {
+    const heartbeatTable = vehicle.heartbeatTableName;
 
-  const zones = await masterCitizenPrisma.$queryRawUnsafe(
-    `
-      SELECT
-        zone_id,
-        zone_name,
-        zone_table_name,
-        geo_boundary
-      FROM ${cityTable}
-      WHERE zone_id = $1
-      ORDER BY zone_id ASC
-    `,
-    selectedZoneId,
-  );
-
-  if (zones.length === 0) {
-    throw new Error("Zone not found in selected city");
-  }
-
-  const zone = zones[0];
-
-  /*
-  |--------------------------------------------------------------------------
-  | ZONE BOUNDARY
-  |--------------------------------------------------------------------------
-  */
-
-  const zoneBoundary = normalizeGeoBoundary(zone.geo_boundary);
-
-  /*
-  |--------------------------------------------------------------------------
-  | DIVISIONS
-  |--------------------------------------------------------------------------
-  */
-
-  let divisionRows = [];
-
-  if (zone.zone_table_name) {
-    const zoneTable = quoteIdentifier(zone.zone_table_name);
-
-    divisionRows = await masterCitizenPrisma.$queryRawUnsafe(
-      `
-          SELECT
-            division_id,
-            division_name,
-            division_table_name,
-            geo_boundary
-          FROM ${zoneTable}
-          ORDER BY division_id ASC
-        `,
-    );
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | DIVISIONS + WARDS
-  |--------------------------------------------------------------------------
-  */
-
-  const divisions = [];
-
-  const allWards = [];
-
-  for (const division of divisionRows) {
-    let wards = [];
-
-    /*
-     * ------------------------------------------------------
-     * WARDS BELONGING TO THIS DIVISION
-     * ------------------------------------------------------
-     */
-
-    if (division.division_table_name) {
-      const divisionTable = quoteIdentifier(division.division_table_name);
-
-      const wardRows = await masterCitizenPrisma.$queryRawUnsafe(
-        `
-            SELECT
-              ward_id,
-              ward_no,
-              ward_name,
-              geo_boundary,
-              ward_table_name
-            FROM ${divisionTable}
-            ORDER BY ward_no ASC
-          `,
-      );
-
-      wards = wardRows.map((ward) => ({
-        wardId: Number(ward.ward_id),
-
-        wardNo: ward.ward_no === null ? null : Number(ward.ward_no),
-
-        wardName: ward.ward_name,
-
-        geoBoundary: normalizeGeoBoundary(ward.geo_boundary),
-
-        wardTableName: ward.ward_table_name,
-      }));
+    if (!heartbeatTable) {
+      continue;
     }
 
-    /*
-     * Add wards to global ward collection.
-     */
+    const table = quoteIdentifier(heartbeatTable);
 
-    allWards.push(
-      ...wards.map((ward) => ({
-        ...ward,
+    let heartbeatRows;
 
-        divisionId: Number(division.division_id),
+    try {
+      heartbeatRows = await telemetryDb.$queryRawUnsafe(
+        `
+            SELECT
+              id,
+              latitude,
+              longitude,
+              created_at
+            FROM ${table}
+            WHERE
+              latitude IS NOT NULL
+              AND longitude IS NOT NULL
+            ORDER BY
+              created_at ASC,
+              id ASC
+          `,
+      );
+    } catch (error) {
+      console.error("❌ ROUTE MAP HEARTBEAT QUERY FAILED", {
+        vehicleNumber: vehicle.vehicleNumber,
 
-        divisionName: division.division_name,
+        heartbeatTable,
 
-        zoneId: Number(zone.zone_id),
+        errorCode: error?.code,
 
-        zoneName: zone.zone_name,
-      })),
-    );
+        errorMessage: error?.message,
 
-    /*
-     * Division object
-     */
+        errorMeta: error?.meta,
+      });
 
-    divisions.push({
-      divisionId: Number(division.division_id),
+      if (error?.code === "42P01") {
+        console.warn(
+          `Route map: heartbeat table ${heartbeatTable} does not exist.`,
+        );
 
-      divisionName: division.division_name,
+        continue;
+      }
 
-      geoBoundary: normalizeGeoBoundary(division.geo_boundary),
+      throw error;
+    }
 
-      wards,
+    const points = heartbeatRows
+      .map((row) => {
+        const latitude = Number(row.latitude);
+
+        const longitude = Number(row.longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          return null;
+        }
+
+        return {
+          latitude,
+
+          longitude,
+
+          timestamp: row.created_at
+            ? new Date(row.created_at).toISOString()
+            : null,
+        };
+      })
+      .filter(Boolean);
+
+    if (points.length === 0) {
+      continue;
+    }
+
+    routes.push({
+      vehicleNumber: vehicle.vehicleNumber,
+
+      wardNo: vehicle.wardNo,
+
+      heartbeatTableName: heartbeatTable,
+
+      pointCount: points.length,
+
+      points,
+
+      startPoint: points[0],
+
+      endPoint: points[points.length - 1],
     });
   }
-
-  /*
-  |--------------------------------------------------------------------------
-  | FINAL MAP RESPONSE
-  |--------------------------------------------------------------------------
-  */
 
   return {
     defaultView: "route-map",
 
-    city: {
-      cityId: Number(city.city_id),
+    date: selectedDate,
 
-      cityName: city.city_name,
-    },
+    routes,
 
-    zone: {
-      zoneId: Number(zone.zone_id),
+    totalVehicles: routes.length,
 
-      zoneName: zone.zone_name,
-
-      geoBoundary: zoneBoundary,
-    },
-
-    divisions,
-
-    wards: allWards,
+    totalRoutePoints: routes.reduce(
+      (total, route) => total + Number(route.pointCount || 0),
+      0,
+    ),
   };
 };
+
+// ============================================================
+// LEGACY OVERVIEW FILTERS
+// ============================================================
 
 const getOverviewFilters = async () => {
   const citiesResult = await helperDb.query(`
@@ -1410,10 +1169,18 @@ const getOverviewFilters = async () => {
   };
 };
 
+// ============================================================
+// EXPORTS
+// ============================================================
+
 module.exports = {
   getSummary,
+
   getVehicleSummary,
+
   getGenerationTrend,
+
   getMapData,
+
   getOverviewFilters,
 };
