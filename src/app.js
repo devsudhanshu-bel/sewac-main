@@ -6,6 +6,7 @@ import morgan from "morgan";
 
 import routes from "./routes/routes.js";
 import internalRoutes from "./routes/internal.routes.js";
+import mapRoutes from "./modules/map/map.routes.js";
 
 const app = express();
 
@@ -47,7 +48,29 @@ app.get("/health", (req, res) => {
  */
 
 app.use("/api/citizen", routes);
+
 app.use("/api/internal", internalRoutes);
+
+/**
+ * =====================================================
+ * LIVE VEHICLE ROUTE MAP
+ * =====================================================
+ *
+ * GET:
+ *
+ * /api/route-map/live
+ *
+ * This uses the existing map module.
+ *
+ * Existing citizen map routes remain untouched:
+ *
+ * /api/citizen/map/nearest
+ * /api/citizen/map/truck/:vehicleId
+ *
+ */
+
+app.use("/api/route-map", mapRoutes);
+
 /**
  * =====================================================
  * 404 Handler
