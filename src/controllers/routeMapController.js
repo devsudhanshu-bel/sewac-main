@@ -1,105 +1,33 @@
-const routeMapService =
-  require("../services/routeMapService");
+const routeMapService = require("../services/routeMapService");
 
-/*
-|--------------------------------------------------------------------------
-| GET ROUTE MAP
-|--------------------------------------------------------------------------
-|
-| GET
-|
-| /api/admin/route-map?date=2026-08-16&wardNo=20
-|
-|--------------------------------------------------------------------------
-*/
-
-exports.getRouteMap = async (
-  req,
-  res
-) => {
+const getLiveRouteMap = async (req, res) => {
   try {
-    const {
-      date,
-      wardNo,
-    } = req.query;
+    const { latitude, longitude, cityId, zoneId, divisionId, wardId } =
+      req.query;
 
-    const data =
-      await routeMapService.getRouteMap({
-        date,
-        wardNo,
-      });
+    const data = await routeMapService.getLiveRouteMap({
+      latitude,
+      longitude,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
 
-    /*
-    |--------------------------------------------------------------------------
-    | DAY TABLE DOES NOT EXIST
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      data.reason ===
-      "DAY_TABLE_NOT_FOUND"
-    ) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-
-          message:
-            `No telemetry day table exists for ${date}.`,
-
-          data,
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | NO VEHICLES
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      data.reason ===
-      "NO_VEHICLES"
-    ) {
-      return res
-        .status(200)
-        .json({
-          success: true,
-
-          message:
-            `No vehicles found for Ward ${wardNo} on ${date}.`,
-
-          data,
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SUCCESS
-    |--------------------------------------------------------------------------
-    */
-
-    return res
-      .status(200)
-      .json({
-        success: true,
-
-        data,
-      });
-
+    return res.status(200).json({
+      success: true,
+      data,
+    });
   } catch (error) {
-    console.error(
-      "❌ Route Map Error:",
-      error
-    );
+    console.error("GET /api/route-map/live error:", error);
 
-    return res
-      .status(400)
-      .json({
-        success: false,
-
-        message:
-          error.message,
-      });
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Unable to load live route map",
+    });
   }
+};
+
+module.exports = {
+  getLiveRouteMap,
 };

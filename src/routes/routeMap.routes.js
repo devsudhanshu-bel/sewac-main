@@ -1,34 +1,30 @@
-const express =
-  require("express");
+const express = require("express");
 
-const router =
-  express.Router();
+const router = express.Router();
 
-const routeMapController =
-  require("../controllers/routeMapController");
+const { getLiveRouteMap } = require("../controllers/routeMapController");
 
 /*
 |--------------------------------------------------------------------------
-| ROUTE MAP
+| LIVE ROUTE MAP
 |--------------------------------------------------------------------------
 |
-| Example:
-|
 | GET
-| /api/admin/route-map
+|
+| /api/route-map/live
 |
 | Query:
 |
-| ?date=2026-08-16
-| &wardNo=20
+| latitude
+| longitude
+| cityId
+| zoneId
+| divisionId
+| wardId
 |
 |--------------------------------------------------------------------------
 */
 
-router.get(
-  "/",
-  routeMapController.getRouteMap
-);
+router.get("/live", getLiveRouteMap);
 
-module.exports =
-  router;
+module.exports = router;
