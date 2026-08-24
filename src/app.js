@@ -6,99 +6,142 @@ import morgan from "morgan";
 
 import routes from "./routes/routes.js";
 import internalRoutes from "./routes/internal.routes.js";
-import mapRoutes from "./modules/map/map.routes.js";
 
-const app = express();
 
-/**
- * =====================================================
- * Middlewares
- * =====================================================
- */
+const app =
+  express();
 
-app.use(cors());
 
-app.use(helmet());
+// =====================================================
+// MIDDLEWARES
+// =====================================================
 
-app.use(compression());
+app.use(
+  cors()
+);
 
-app.use(morgan("dev"));
+app.use(
+  helmet()
+);
 
-app.use(express.json());
+app.use(
+  compression()
+);
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  morgan("dev")
+);
 
-/**
- * =====================================================
- * Health Check
- * =====================================================
- */
+app.use(
+  express.json()
+);
 
-app.get("/health", (req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "Citizen Backend Running 🚀",
-  });
-});
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
 
-/**
- * =====================================================
- * API Routes
- * =====================================================
- */
 
-app.use("/api/citizen", routes);
+// =====================================================
+// HEALTH
+// =====================================================
 
-app.use("/api/internal", internalRoutes);
+app.get(
+  "/health",
+  (req, res) => {
 
-/**
- * =====================================================
- * LIVE VEHICLE ROUTE MAP
- * =====================================================
- *
- * GET:
- *
- * /api/route-map/live
- *
- * This uses the existing map module.
- *
- * Existing citizen map routes remain untouched:
- *
- * /api/citizen/map/nearest
- * /api/citizen/map/truck/:vehicleId
- *
- */
+    return res
+      .status(200)
+      .json({
 
-app.use("/api/route-map", mapRoutes);
+        success: true,
 
-/**
- * =====================================================
- * 404 Handler
- * =====================================================
- */
+        message:
+          "Citizen Backend Running 🚀",
 
-app.use((req, res) => {
-  return res.status(404).json({
-    success: false,
-    message: "Route not found.",
-    data: null,
-  });
-});
+      });
 
-/**
- * =====================================================
- * Global Error Handler
- * =====================================================
- */
+  }
+);
 
-app.use((err, req, res, next) => {
-  console.error(err);
 
-  return res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-    data: null,
-  });
-});
+// =====================================================
+// CITIZEN API
+// =====================================================
+
+app.use(
+  "/api/citizen",
+  routes
+);
+
+
+// =====================================================
+// INTERNAL API
+// =====================================================
+
+app.use(
+  "/api/internal",
+  internalRoutes
+);
+
+
+// =====================================================
+// 404
+// =====================================================
+
+app.use(
+  (req, res) => {
+
+    return res
+      .status(404)
+      .json({
+
+        success: false,
+
+        message:
+          "Route not found.",
+
+        data: null,
+
+      });
+
+  }
+);
+
+
+// =====================================================
+// GLOBAL ERROR HANDLER
+// =====================================================
+
+app.use(
+  (
+    err,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(err);
+
+    return res
+      .status(
+        err.status || 500
+      )
+      .json({
+
+        success: false,
+
+        message:
+          err.message ||
+          "Internal Server Error",
+
+        data: null,
+
+      });
+
+  }
+);
+
 
 export default app;

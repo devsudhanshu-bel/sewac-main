@@ -1,35 +1,33 @@
-import { Router } from "express";
+import {
+  Router
+} from "express";
 
-import authRoutes from "../modules/auth/auth.routes.js";
-import homeRoutes from "../modules/home/home.routes.js";
-import statsRoutes from "../modules/stats/stats.routes.js";
-import complaintRoutes from "../modules/complaint/complaint.routes.js";
-import mapRoutes from "../modules/map/map.routes.js";
+
+import authRoutes
+  from "../modules/auth/auth.routes.js";
+
+import homeRoutes
+  from "../modules/home/home.routes.js";
+
+import statsRoutes
+  from "../modules/stats/stats.routes.js";
+
+import complaintRoutes
+  from "../modules/complaint/complaint.routes.js";
+
+import mapRoutes
+  from "../modules/map/map.routes.js";
 
 import adminComplaintsRoutes
   from "../modules/admin_complaints/admin_complaints.routes.js";
 
 
-const router = Router();
+const router =
+  Router();
 
 
 // =====================================================
-// CITIZEN ROUTES
-// =====================================================
-
-
-// =====================================================
-// CITIZEN AUTHENTICATION
-// =====================================================
-//
-// /api/citizen/auth/*
-//
-// Examples:
-//
-// POST /api/citizen/auth/login
-// GET  /api/citizen/auth/me
-// POST /api/citizen/auth/logout
-//
+// AUTH
 // =====================================================
 
 router.use(
@@ -39,11 +37,7 @@ router.use(
 
 
 // =====================================================
-// CITIZEN HOME
-// =====================================================
-//
-// /api/citizen/home/*
-//
+// HOME
 // =====================================================
 
 router.use(
@@ -53,68 +47,52 @@ router.use(
 
 
 // =====================================================
-// CITIZEN STATISTICS
+// STATS
 // =====================================================
 //
-// /api/citizen/stats/*
+// Final:
+//
+// /api/citizen/stats/analytics
 //
 // =====================================================
 
 router.use(
-  "/citizen/stats",
+  "/stats",
   statsRoutes
 );
 
 
 // =====================================================
-// CITIZEN COMPLAINTS
-// =====================================================
-//
-// /api/citizen/complaint/*
-//
+// COMPLAINT
 // =====================================================
 
 router.use(
-  "/citizen/complaint",
+  "/complaint",
   complaintRoutes
 );
 
 
 // =====================================================
-// CITIZEN LIVE MAP
-// =====================================================
-//
-// /api/citizen/map/*
-//
+// MAP
 // =====================================================
 
 router.use(
-  "/citizen/map",
+  "/map",
   mapRoutes
 );
-
-
-// =====================================================
-// ADMIN ROUTES
-// =====================================================
-//
-// Only Admin Complaints remain.
-//
-// Admin Maps has been completely removed.
-//
-// =====================================================
 
 
 // =====================================================
 // ADMIN COMPLAINTS
 // =====================================================
 //
-// /api/admin/*
+// Because this router is mounted at:
 //
-// =====================================================
+// /api/citizen
 //
-// Existing routes provided by:
-// admin_complaints.routes.js
+// this becomes:
+//
+// /api/citizen/admin/*
 //
 // =====================================================
 

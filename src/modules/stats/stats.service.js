@@ -1,169 +1,451 @@
-import statsRepository from "./stats.repository.js";
-import { STATS_MESSAGES } from "./stats.constants.js";
+import statsRepository
+  from "./stats.repository.js";
+
+import {
+  STATS_MESSAGES
+} from "./stats.constants.js";
+
+
+// =====================================================
+// STATS SERVICE
+// =====================================================
 
 class StatsService {
+
+
+  // ===================================================
+  // ANALYTICS
+  // ===================================================
+
   async getAnalytics(
     citizenId,
+    phoneNumber,
     startDate,
     endDate
   ) {
-    // -----------------------------
-    // Validate Dates
-    // -----------------------------
-    if (!startDate || isNaN(Date.parse(startDate))) {
+
+
+    // ================================================
+    // VALIDATE START DATE
+    // ================================================
+
+    if (
+      !startDate ||
+      isNaN(
+        Date.parse(startDate)
+      )
+    ) {
+
       throw new Error(
         STATS_MESSAGES.INVALID_START_DATE
       );
+
     }
 
-    if (!endDate || isNaN(Date.parse(endDate))) {
+
+    // ================================================
+    // VALIDATE END DATE
+    // ================================================
+
+    if (
+      !endDate ||
+      isNaN(
+        Date.parse(endDate)
+      )
+    ) {
+
       throw new Error(
         STATS_MESSAGES.INVALID_END_DATE
       );
+
     }
 
-    const start = new Date(startDate);
 
-    const end = new Date(endDate);
+    // ================================================
+    // CREATE DATE OBJECTS
+    // ================================================
 
-    // Include the complete end day
-    end.setHours(23, 59, 59, 999);
+    const start =
+      new Date(startDate);
 
-    if (start > end) {
+
+    // -----------------------------------------------
+    // Start of selected day
+    // -----------------------------------------------
+
+    start.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+
+    const end =
+      new Date(endDate);
+
+
+    // -----------------------------------------------
+    // Include complete end day
+    // -----------------------------------------------
+
+    end.setHours(
+      23,
+      59,
+      59,
+      999
+    );
+
+
+    // ================================================
+    // VALIDATE RANGE
+    // ================================================
+
+    if (
+      start > end
+    ) {
+
       throw new Error(
         STATS_MESSAGES.INVALID_DATE_RANGE
       );
+
     }
 
-    // -----------------------------
-    // Fetch Telemetry Logs
-    // -----------------------------
-    const collections =
-      await statsRepository.getAnalyticsLogs(
-        citizenId,
-        start,
-        end
-      );
 
-    // -----------------------------
-    // Statistics
-    // -----------------------------
+    console.log(
+      `[Stats Service] Analytics range: ${start.toISOString()} -> ${end.toISOString()}`
+    );
+
+
+    // ================================================
+    // FETCH HISTORICAL COLLECTIONS
+    // ================================================
+
+    const collections =
+      await statsRepository
+        .getAnalyticsLogs(
+
+          citizenId,
+
+          phoneNumber,
+
+          start,
+
+          end
+
+        );
+
+
+    // ================================================
+    // STATISTICS
+    // ================================================
+
     let dryCompleted = 0;
 
     let wetCompleted = 0;
 
-    const attendedDays = new Set();
 
-    collections.forEach((collection) => {
-      if (collection.remarks === "D") {
-        dryCompleted++;
-      } else if (collection.remarks === "W") {
-        wetCompleted++;
+    const attendedDates =
+      new Set();
+
+
+    // ================================================
+    // PROCESS COLLECTIONS
+    // ================================================
+
+    collections.forEach(
+      collection => {
+
+        // --------------------------------------------
+        // DRY
+        // --------------------------------------------
+
+        if (
+          collection.remarks === "D"
+        ) {
+
+          dryCompleted++;
+
+        }
+
+
+        // --------------------------------------------
+        // WET
+        // --------------------------------------------
+
+        else if (
+          collection.remarks === "W"
+        ) {
+
+          wetCompleted++;
+
+        }
+
+
+        // --------------------------------------------
+        // ATTENDED DATE
+        // --------------------------------------------
+
+        const collectionDate =
+          new Date(
+            collection.iot_timestamp
+          );
+
+
+        const dateKey =
+          collectionDate
+            .toISOString()
+            .split("T")[0];
+
+
+        attendedDates.add(
+          dateKey
+        );
+
       }
+    );
 
-      attendedDays.add(
-        new Date(collection.iot_timestamp)
-          .toISOString()
-          .split("T")[0]
-      );
-    });
-        // -----------------------------
-    // Calculate Expected Collections
-    // -----------------------------
+
+    // ================================================
+    // EXPECTED COLLECTIONS
+    // ================================================
+    //
+    // Same logic as Home:
+    //
+    // Wednesday + Saturday = DRY
+    //
+    // All other days = WET
+    //
+    // ================================================
+
     let dryTotal = 0;
 
     let wetTotal = 0;
 
-    for (
-      let current = new Date(start);
-      current <= end;
-      current.setDate(current.getDate() + 1)
-    ) {
-      const weekday = current.getDay();
 
-      if (weekday === 3 || weekday === 6) {
+    const current =
+      new Date(start);
+
+
+    current.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+
+    const finalDate =
+      new Date(end);
+
+
+    finalDate.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+
+    while (
+      current <= finalDate
+    ) {
+
+      const weekday =
+        current.getDay();
+
+
+      if (
+        weekday === 3 ||
+        weekday === 6
+      ) {
+
         dryTotal++;
-      } else {
-        wetTotal++;
+
       }
+
+      else {
+
+        wetTotal++;
+
+      }
+
+
+      current.setDate(
+        current.getDate() + 1
+      );
+
     }
 
-    // -----------------------------
-    // Participation Score
-    // -----------------------------
+
+    // ================================================
+    // PARTICIPATION
+    // ================================================
+
     const totalExpected =
-      dryTotal + wetTotal;
+      dryTotal +
+      wetTotal;
+
 
     const totalCompleted =
-      attendedDays.size;
+      attendedDates.size;
+
 
     const participation =
       totalExpected === 0
+
         ? 0
+
         : Math.round(
-            (totalCompleted / totalExpected) * 100
+
+            (
+              totalCompleted /
+              totalExpected
+            ) * 100
+
           );
 
-    // -----------------------------
-    // Attendance Streak
-    // -----------------------------
+
+    // ================================================
+    // ATTENDANCE STREAK
+    // ================================================
+
     let streak = 0;
 
-    const attendedDates = [...attendedDays].sort();
 
-    if (attendedDates.length > 0) {
+    const sortedDates =
+      [
+        ...attendedDates
+      ]
+      .sort();
+
+
+    if (
+      sortedDates.length > 0
+    ) {
+
       streak = 1;
 
+
       for (
-        let i = attendedDates.length - 1;
+        let i =
+          sortedDates.length - 1;
+
         i > 0;
+
         i--
       ) {
-        const currentDate = new Date(attendedDates[i]);
 
-        const previousDate = new Date(
-          attendedDates[i - 1]
-        );
+        const currentDate =
+          new Date(
+            `${sortedDates[i]}T00:00:00`
+          );
+
+
+        const previousDate =
+          new Date(
+            `${sortedDates[i - 1]}T00:00:00`
+          );
+
 
         const difference =
-          (currentDate - previousDate) /
-          (1000 * 60 * 60 * 24);
+          Math.round(
 
-        if (difference === 1) {
+            (
+              currentDate -
+              previousDate
+            )
+            /
+            (
+              1000 *
+              60 *
+              60 *
+              24
+            )
+
+          );
+
+
+        if (
+          difference === 1
+        ) {
+
           streak++;
-        } else {
-          break;
+
         }
+
+        else {
+
+          break;
+
+        }
+
       }
+
     }
-        // -----------------------------
-    // Return Response
-    // -----------------------------
+
+
+    // ================================================
+    // RESPONSE
+    // ================================================
+
     return {
+
       success: true,
-      message: STATS_MESSAGES.ANALYTICS_FETCHED,
+
+      message:
+        STATS_MESSAGES
+          .ANALYTICS_FETCHED,
+
       data: {
+
         range: {
+
           startDate,
+
           endDate,
+
         },
+
 
         dry: {
-          completed: dryCompleted,
-          total: dryTotal,
+
+          completed:
+            dryCompleted,
+
+          total:
+            dryTotal,
+
         },
 
+
         wet: {
-          completed: wetCompleted,
-          total: wetTotal,
+
+          completed:
+            wetCompleted,
+
+          total:
+            wetTotal,
+
         },
+
 
         streak,
 
+
         participation,
-      },
+
+      }
+
     };
+
   }
+
 }
+
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 export default new StatsService();
