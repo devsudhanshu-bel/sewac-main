@@ -16,6 +16,43 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 /* ============================================================
+   VEHICLE TRAIL COLORS
+============================================================ */
+
+const VEHICLE_TRAIL_COLORS = [
+  "#10B981", // Green
+  "#2563EB", // Blue
+  "#F59E0B", // Amber
+  "#DC2626", // Red
+  "#7C3AED", // Violet
+  "#DB2777", // Pink
+  "#0891B2", // Cyan
+  "#EA580C", // Orange
+  "#4F46E5", // Indigo
+  "#65A30D", // Lime
+];
+
+/* ============================================================
+   GET DETERMINISTIC VEHICLE COLOR
+============================================================ */
+
+function getVehicleTrailColor(vehicleId) {
+  const id = String(vehicleId || "");
+
+  let hash = 0;
+
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+
+    hash |= 0;
+  }
+
+  const index = Math.abs(hash) % VEHICLE_TRAIL_COLORS.length;
+
+  return VEHICLE_TRAIL_COLORS[index];
+}
+
+/* ============================================================
    VEHICLE ICON
 ============================================================ */
 
@@ -76,42 +113,6 @@ function parseGeoJSON(value) {
    GEOJSON COORDINATE HELPERS
 ============================================================ */
 
-/*
- * IMPORTANT:
- *
- * Standard GeoJSON uses:
- *
- * [longitude, latitude]
- *
- * But the SEWAC boundary data can contain:
- *
- * [latitude, longitude]
- *
- * Example:
- *
- * [12.9716, 77.5946]
- *
- * which must become:
- *
- * [77.5946, 12.9716]
- *
- * We detect this using the Bengaluru coordinate range:
- *
- * latitude  ≈ 12-14
- * longitude ≈ 76-78
- *
- * More generally:
- *
- * first  <= 30
- * second >= 60
- *
- * means it is very likely [lat, lng].
- */
-
-/* ============================================================
-   IS COORDINATE PAIR
-============================================================ */
-
 function isCoordinatePair(value) {
   return (
     Array.isArray(value) &&
@@ -134,35 +135,9 @@ function normalizeCoordinatePair(pair) {
 
   const second = Number(pair[1]);
 
-  /*
-   * Looks like:
-   *
-   * [latitude, longitude]
-   *
-   * Example:
-   *
-   * [12.9716, 77.5946]
-   *
-   * Convert to:
-   *
-   * [77.5946, 12.9716]
-   */
-
   if (Math.abs(first) <= 30 && Math.abs(second) >= 60) {
     return [second, first, ...pair.slice(2)];
   }
-
-  /*
-   * Already looks like:
-   *
-   * [longitude, latitude]
-   *
-   * Example:
-   *
-   * [77.5946, 12.9716]
-   *
-   * Leave unchanged.
-   */
 
   return pair;
 }
@@ -172,21 +147,9 @@ function normalizeCoordinatePair(pair) {
 ============================================================ */
 
 function normalizeCoordinates(value) {
-  /*
-   * Direct coordinate pair
-   */
-
   if (isCoordinatePair(value)) {
     return normalizeCoordinatePair(value);
   }
-
-  /*
-   * Polygon / MultiPolygon /
-   * LineString / MultiLineString
-   *
-   * Recursively process all
-   * coordinate levels.
-   */
 
   if (Array.isArray(value)) {
     return value.map(normalizeCoordinates);
@@ -326,14 +289,15 @@ function getBoundary(
   selectedWard,
 ) {
   /*
-   * Most specific selected boundary wins.
+   * Most specific selected
+   * boundary wins.
    *
    * Ward
-   *   ↓
+   * ↓
    * Division
-   *   ↓
+   * ↓
    * Zone
-   *   ↓
+   * ↓
    * City
    */
 
@@ -381,20 +345,14 @@ function getBoundary(
 ============================================================ */
 
 /*
- * IMPORTANT:
- *
- * HB telemetry schema:
+ * HB telemetry:
  *
  * latitude
  * longitude
  *
- * These values are standard geographic coordinates.
- *
- * Leaflet expects:
+ * Leaflet:
  *
  * [latitude, longitude]
- *
- * Therefore DO NOT SWAP THEM.
  */
 
 function normalizeGpsPoint(point) {
@@ -409,12 +367,6 @@ function normalizeGpsPoint(point) {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
   }
-
-  /*
-   * Leaflet:
-   *
-   * [lat, lng]
-   */
 
   return [latitude, longitude];
 }
@@ -460,8 +412,7 @@ function RouteBounds({ routes, boundary }) {
 
   useEffect(() => {
     /*
-     * If a selected boundary exists,
-     * use it as the geographic context.
+     * Selected boundary first.
      */
 
     if (boundary) {
@@ -482,13 +433,13 @@ function RouteBounds({ routes, boundary }) {
           return;
         }
       } catch {
-        // Fall through to route bounds.
+        // Fall through.
       }
     }
 
     /*
-     * No valid boundary:
-     * fit to GPS routes.
+     * Otherwise fit route
+     * GPS points.
      */
 
     if (!Array.isArray(routes) || routes.length === 0) {
@@ -552,7 +503,8 @@ function SelectedBoundaryController({ boundary, boundaryKey }) {
         });
       }
     } catch {
-      // Invalid boundary should not break route map.
+      // Invalid boundary
+      // should not break map.
     }
   }, [map, boundary, boundaryKey]);
 
@@ -603,7 +555,7 @@ const RouteMap = ({
 
   const defaultCenter = useMemo(() => {
     /*
-     * First try the selected boundary.
+     * Selected boundary.
      */
 
     if (selectedBoundary) {
@@ -618,13 +570,12 @@ const RouteMap = ({
           return [center.lat, center.lng];
         }
       } catch {
-        // Fall through.
+        // Continue.
       }
     }
 
     /*
-     * Then try the first valid
-     * vehicle GPS point.
+     * First valid GPS point.
      */
 
     for (const route of routes) {
@@ -757,17 +708,10 @@ const RouteMap = ({
           const points = Array.isArray(route.points) ? route.points : [];
 
           /*
-           * IMPORTANT:
-           *
            * HB GPS:
            *
            * latitude
            * longitude
-           *
-           * normalizeGpsPoint()
-           * returns:
-           *
-           * [latitude, longitude]
            */
 
           const positions = points
@@ -782,22 +726,33 @@ const RouteMap = ({
 
           const endPosition = positions[positions.length - 1];
 
+          /*
+           * Stable vehicle key.
+           */
+
           const vehicleKey =
             route.vehicleNumber ||
             route.heartbeatTableName ||
             `route-${routeIndex}`;
 
+          /*
+           * UNIQUE COLOR FOR
+           * THIS VEHICLE.
+           */
+
+          const trailColor = getVehicleTrailColor(vehicleKey);
+
           return (
             <React.Fragment key={vehicleKey}>
-              {/* ==========================================
+              {/* ========================================
                     TRACED ROUTE
-                ========================================== */}
+                ======================================== */}
 
               {positions.length > 1 && (
                 <Polyline
                   positions={positions}
                   pathOptions={{
-                    color: "#10B981",
+                    color: trailColor,
 
                     weight: 5,
 
@@ -810,9 +765,9 @@ const RouteMap = ({
                 />
               )}
 
-              {/* ==========================================
+              {/* ========================================
                     START POINT
-                ========================================== */}
+                ======================================== */}
 
               <CircleMarker
                 center={startPosition}
@@ -828,7 +783,7 @@ const RouteMap = ({
                 }}
               >
                 <Popup>
-                  <div className="text-sm">
+                  <div className="min-w-[190px] text-sm">
                     <div className="font-semibold">Route Start</div>
 
                     <div className="mt-1">
@@ -836,17 +791,35 @@ const RouteMap = ({
                     </div>
 
                     <div>Ward: {route.wardNo ?? "N/A"}</div>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <span
+                        style={{
+                          display: "inline-block",
+
+                          width: "28px",
+
+                          height: "4px",
+
+                          borderRadius: "999px",
+
+                          backgroundColor: trailColor,
+                        }}
+                      />
+
+                      <span>Route color</span>
+                    </div>
                   </div>
                 </Popup>
               </CircleMarker>
 
-              {/* ==========================================
+              {/* ========================================
                     CURRENT / LAST POSITION
-                ========================================== */}
+                ======================================== */}
 
               <Marker position={endPosition} icon={vehicleIcon}>
                 <Popup>
-                  <div className="min-w-[200px] text-sm">
+                  <div className="min-w-[220px] text-sm">
                     <div className="mb-2 text-base font-semibold text-[#16295A]">
                       Vehicle Details
                     </div>
@@ -866,6 +839,30 @@ const RouteMap = ({
                       {route.endPoint?.timestamp
                         ? new Date(route.endPoint.timestamp).toLocaleString()
                         : "N/A"}
+                    </div>
+
+                    {/* ==================================
+                          TRAIL COLOR INDICATOR
+                      ================================== */}
+
+                    <div className="mt-3 flex items-center gap-2 border-t border-[#E5EAF0] pt-2">
+                      <span
+                        style={{
+                          display: "inline-block",
+
+                          width: "32px",
+
+                          height: "5px",
+
+                          borderRadius: "999px",
+
+                          backgroundColor: trailColor,
+                        }}
+                      />
+
+                      <span className="text-xs text-[#8AA1BB]">
+                        Vehicle route
+                      </span>
                     </div>
                   </div>
                 </Popup>
