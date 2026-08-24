@@ -34,6 +34,7 @@ import SewacLogo from "../../assets/sewac_logo.svg";
    Kannada  -> ಕನ್ನಡ
    Hindi    -> हिंदी
    Telugu   -> తెలుగు
+   Tamil    -> தமிழ்
 
    These labels always remain in their own language,
    regardless of the currently selected application language.
@@ -55,6 +56,10 @@ const languages = [
   {
     code: "te",
     label: "తెలుగు",
+  },
+  {
+    code: "ta",
+    label: "தமிழ்",
   },
 ];
 
@@ -891,6 +896,7 @@ export default function Header({
      KN -> ಕನ್ನಡ
      HI -> हिंदी
      TE -> తెలుగు
+     TA -> தமிழ்
   ========================================================= */
 
   const currentLanguageCode =
@@ -902,6 +908,8 @@ export default function Header({
       ? "HI"
       : language === "te"
       ? "TE"
+      : language === "ta"
+      ? "TA"
       : "EN";
 
   /* =========================================================

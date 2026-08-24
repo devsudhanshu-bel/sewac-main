@@ -10,6 +10,7 @@ import en from "./translations/en";
 import kn from "./translations/kn";
 import hi from "./translations/hi";
 import te from "./translations/te";
+import ta from "./translations/ta";
 
 /* =========================================================
    TRANSLATIONS
@@ -20,6 +21,7 @@ const translations = {
   kn,
   hi,
   te,
+  ta,
 };
 
 /* =========================================================
@@ -83,7 +85,7 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      CHANGE LANGUAGE
-  ======================================================= */
+     ======================================================= */
 
   const setLanguage = (newLanguage) => {
     if (!translations[newLanguage]) {
@@ -111,7 +113,7 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      TRANSLATION FUNCTION
-  ======================================================= */
+     ======================================================= */
 
   const t = (key, fallback) => {
     const value = getNestedValue(
@@ -149,7 +151,7 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      UPDATE HTML LANGUAGE
-  ======================================================= */
+     ======================================================= */
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -157,7 +159,7 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      CONTEXT VALUE
-  ======================================================= */
+     ======================================================= */
 
   const value = useMemo(
     () => ({
@@ -186,6 +188,10 @@ export const LanguageProvider = ({ children }) => {
           code: "te",
           name: "తెలుగు",
         },
+        {
+          code: "ta",
+          name: "தமிழ்",
+        },
       ],
     }),
     [language]
@@ -193,7 +199,7 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      PROVIDER
-  ======================================================= */
+     ======================================================= */
 
   return (
     <LanguageContext.Provider value={value}>
