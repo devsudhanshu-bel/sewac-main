@@ -105,6 +105,28 @@ const getDayTableName = (date) => {
 |
 |--------------------------------------------------------------------------
 */
+console.log("CITY:", {
+  cityId: selectedCityId,
+  cityName: city.city_name,
+  cityTableName: city.city_table_name,
+});
+
+console.log("ZONE:", {
+  zoneId: selectedZoneId,
+  zoneName: zone.zone_name,
+  zoneTableName: zone.zone_table_name,
+});
+
+console.log("DIVISION:", {
+  divisionId: selectedDivisionId,
+  divisionName: division.division_name,
+  divisionTableName: division.division_table_name,
+});
+
+console.log("LOOKING FOR WARD:", {
+  wardId: selectedWardId,
+  divisionTable: division.division_table_name,
+});
 
 const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   const selectedCityId = parsePositiveInteger(cityId, "cityId");
