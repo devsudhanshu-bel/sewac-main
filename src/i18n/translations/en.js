@@ -1079,50 +1079,132 @@ cityOverviewMap: {
   mapFilters: "MAP FILTERS",
 
   cityOverview: "City Overview Map",
+
   routeMaps: "Route Maps",
+
+  liveMaps: "Live Maps",
+
   gvpPoints: "GVP Points",
+
   plants: "Plants",
-  customerGrievances: "Customer Grievances",
+
+  customerGrievances: {
+    title: "Customer Grievances",
+
+    loading:
+      "Loading customer grievances...",
+
+    error:
+      "Unable to load customer grievances.",
+
+    empty:
+      "No customer grievances found.",
+
+    complaints:
+      "Complaints",
+
+    ticket:
+      "Ticket",
+
+    status:
+      "Status",
+
+    category:
+      "Category",
+
+    phone:
+      "Phone",
+
+    description:
+      "Description",
+
+    address:
+      "Address",
+
+    latitude:
+      "Latitude",
+
+    longitude:
+      "Longitude",
+
+    date:
+      "Date",
+  },
 
   zone: "ZONE",
+
   division: "DIVISION",
+
   ward: "WARD",
 
   allZones: "All Zones",
+
   allDivisions: "All Divisions",
+
   allWards: "All Wards",
 
-  selectZoneFirst: "Select a Zone First",
-  selectDivisionFirst: "Select a Division First",
+  selectZoneFirst:
+    "Select a Zone First",
 
-  loadingDivisions: "Loading Divisions...",
-  loadingWards: "Loading Wards...",
+  selectDivisionFirst:
+    "Select a Division First",
 
-  noDivisions: "No Divisions",
-  noWards: "No Wards",
+  loadingDivisions:
+    "Loading Divisions...",
 
-  loadingDivisionsFor: "Loading divisions for",
-  loadingWardsFor: "Loading wards for",
+  loadingWards:
+    "Loading Wards...",
 
-  resetMap: "Reset Map",
+  noDivisions:
+    "No Divisions",
 
-  selectedZone: "Selected Zone",
-  selectedDivision: "Selected Division",
-  selectedWard: "Selected Ward",
+  noWards:
+    "No Wards",
 
-  city: "City",
-  divisions: "Divisions",
-  wards: "Wards",
+  loadingDivisionsFor:
+    "Loading divisions for",
 
-  wardId: "Ward ID",
+  loadingWardsFor:
+    "Loading wards for",
 
-  plantLocations: "Plant Locations",
-  loadingPlants: "Loading plant locations...",
-  unableLoadPlants: "Unable to Load Plants",
+  resetMap:
+    "Reset Map",
 
-  changeMapView: "Change map view",
+  selectedZone:
+    "Selected Zone",
 
-  loading: "Loading city map...",
+  selectedDivision:
+    "Selected Division",
+
+  selectedWard:
+    "Selected Ward",
+
+  city:
+    "City",
+
+  divisions:
+    "Divisions",
+
+  wards:
+    "Wards",
+
+  wardId:
+    "Ward ID",
+
+  plantLocations:
+    "Plant Locations",
+
+  loadingPlants:
+    "Loading plant locations...",
+
+  unableLoadPlants:
+    "Unable to Load Plants",
+
+  changeMapView:
+    "Change map view",
+
+  loading:
+    "Loading city map...",
 },
 
 gvpMap: {

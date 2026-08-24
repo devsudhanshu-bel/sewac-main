@@ -1714,68 +1714,84 @@ export default function CityMapOverview({
     [onViewChange],
   );
 
-  /* ==========================================================
-     VIEW OPTIONS
-  ========================================================== */
+/* ==========================================================
+   VIEW OPTIONS
+========================================================== */
 
-  const mapViewOptions = [
-    {
-      id: "overview",
+const mapViewOptions = [
+  {
+    id: "overview",
 
-      label: t("overview.cityOverviewMap.cityOverview", "City Overview Map"),
+    label: t(
+      "overview.cityOverviewMap.cityOverview",
+      "City Overview Map",
+    ),
 
-      icon: MapIcon,
-    },
+    icon: MapIcon,
+  },
 
-    {
-      id: "route",
+  {
+    id: "route",
 
-      label: t("overview.cityOverviewMap.routeMaps", "Route Maps"),
+    label: t(
+      "overview.cityOverviewMap.routeMaps",
+      "Route Maps",
+    ),
 
-      icon: Route,
-    },
+    icon: Route,
+  },
 
-    {
-      id: "live",
+  {
+    id: "live",
 
-      label: t("overview.cityOverviewMap.liveMaps", "Live Maps"),
+    label: t(
+      "overview.cityOverviewMap.liveMaps",
+      "Live Maps",
+    ),
 
-      icon: RadioTower,
-    },
+    icon: RadioTower,
+  },
 
-    {
-      id: "gvp",
+  {
+    id: "gvp",
 
-      label: t("overview.cityOverviewMap.gvpPoints", "GVP Points"),
+    label: t(
+      "overview.cityOverviewMap.gvpPoints",
+      "GVP Points",
+    ),
 
-      icon: MapPinned,
-    },
+    icon: MapPinned,
+  },
 
-    {
-      id: "plants",
+  {
+    id: "plants",
 
-      label: t("overview.cityOverviewMap.plants", "Plants"),
+    label: t(
+      "overview.cityOverviewMap.plants",
+      "Plants",
+    ),
 
-      icon: Factory,
-    },
+    icon: Factory,
+  },
 
-    {
-      id: "grievances",
+  {
+    id: "grievances",
 
-      label: t(
-        "overview.cityOverviewMap.customerGrievances",
-        "Customer Grievances",
-      ),
+    label: t(
+      "overview.cityOverviewMap.customerGrievances.title",
+      "Customer Grievances",
+    ),
 
-      icon: MessageSquareWarning,
-    },
-  ];
+    icon: MessageSquareWarning,
+  },
+];
 
-  const currentView =
-    mapViewOptions.find((option) => option.id === mapView) || mapViewOptions[0];
+const currentView =
+  mapViewOptions.find(
+    (option) => option.id === mapView,
+  ) || mapViewOptions[0];
 
-  const CurrentViewIcon = currentView.icon;
-
+const CurrentViewIcon = currentView.icon;
   /* ==========================================================
      RENDER
   ========================================================== */
