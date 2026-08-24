@@ -33,7 +33,7 @@ const router = Router();
 // =====================================================
 
 router.use(
-  "/citizen/auth",
+  "/auth",
   authRoutes
 );
 

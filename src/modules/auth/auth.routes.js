@@ -18,11 +18,15 @@ const router =
 // =====================================================
 
 router.post(
+
   "/login",
 
-  authController.login.bind(
-    authController
-  )
+  authController
+    .login
+    .bind(
+      authController
+    )
+
 );
 
 
@@ -31,13 +35,17 @@ router.post(
 // =====================================================
 
 router.get(
+
   "/me",
 
   authMiddleware,
 
-  authController.me.bind(
-    authController
-  )
+  authController
+    .me
+    .bind(
+      authController
+    )
+
 );
 
 
@@ -46,13 +54,17 @@ router.get(
 // =====================================================
 
 router.post(
+
   "/logout",
 
   authMiddleware,
 
-  authController.logout.bind(
-    authController
-  )
+  authController
+    .logout
+    .bind(
+      authController
+    )
+
 );
 
 

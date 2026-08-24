@@ -6,9 +6,9 @@ import masterCitizenPrisma
 // AUTH REPOSITORY
 // =====================================================
 //
-// AUTHENTICATION FLOW
+// AUTHENTICATION FLOW:
 //
-// Phone
+// phone
 //   ↓
 // master_citizen_map
 //   ↓
@@ -16,43 +16,34 @@ import masterCitizenPrisma
 //   ↓
 // ACTUAL WARD NUMBER
 //   ↓
-// City
+// ward registry
 //   ↓
-// Zone
+// wardNo
 //   ↓
-// Division
+// wardTableName
 //   ↓
-// Ward
-//   ↓
-// ward_no
-//   ↓
-// ward_table_name
-//   ↓
-// Citizen Profile
+// citizen profile
 //
 // IMPORTANT:
 //
-// master_citizen_map.ward_id is the ACTUAL WARD NUMBER.
+// master_citizen_map.ward_id IS THE ACTUAL WARD NUMBER.
 //
 // Example:
 //
-// master_citizen_map:
+// master_citizen_map
+//     ward_id = 216
 //
-// phone_number = +919901015589
-// ward_id      = 216
-//
-// Ward registry:
-//
-// ward_id = 3
-// ward_no = 216
+// ward registry
+//     wardNo = 216
+//     id     = 3
 //
 // Therefore:
 //
-// mapping.ward_id === ward.ward_no
+// mapping.ward_id === ward.wardNo
 //
 // NOT:
 //
-// mapping.ward_id === ward.ward_id
+// mapping.ward_id === ward.id
 //
 // =====================================================
 
@@ -84,9 +75,7 @@ class AuthRepository {
       ).trim();
 
 
-    if (
-      !value
-    ) {
+    if (!value) {
 
       return null;
 
@@ -101,12 +90,7 @@ class AuthRepository {
 
 
     // -------------------------------------------------
-    // +919901015589
-    // 919901015589
-    //
-    // →
-    //
-    // 9901015589
+    // Remove Indian country code
     // -------------------------------------------------
 
     if (
@@ -119,6 +103,10 @@ class AuthRepository {
 
     }
 
+
+    // -------------------------------------------------
+    // Only valid 10 digit number
+    // -------------------------------------------------
 
     if (
       digits.length !== 10
@@ -135,96 +123,35 @@ class AuthRepository {
 
 
   // ===================================================
-  // NORMALIZE WARD NUMBER
+  // PHONE FORMATS
   // ===================================================
 
-  normalizeWardNumber(
-    wardNo
+  getPhoneFormats(
+    phoneNumber
   ) {
 
-    if (
-      wardNo === undefined ||
-      wardNo === null
-    ) {
-
-      return null;
-
-    }
-
-
-    const value =
-      Number(
-        wardNo
+    const localPhone =
+      this.normalizePhone(
+        phoneNumber
       );
 
 
-    if (
-      !Number.isInteger(value) ||
-      value <= 0
-    ) {
+    if (!localPhone) {
 
-      return null;
+      return [];
 
     }
 
 
-    return value;
+    return [
 
-  }
+      localPhone,
 
+      `+91${localPhone}`,
 
-  // ===================================================
-  // VALIDATE DYNAMIC TABLE NAME
-  // ===================================================
+      `91${localPhone}`,
 
-  validateTableName(
-    tableName
-  ) {
-
-    if (
-      typeof tableName !== "string"
-    ) {
-
-      throw new Error(
-        "Invalid dynamic table name"
-      );
-
-    }
-
-
-    const trimmed =
-      tableName.trim();
-
-
-    if (
-      !trimmed
-    ) {
-
-      throw new Error(
-        "Invalid dynamic table name"
-      );
-
-    }
-
-
-    // -------------------------------------------------
-    // PostgreSQL identifier validation
-    // -------------------------------------------------
-
-    if (
-      !/^[A-Za-z_][A-Za-z0-9_]*$/.test(
-        trimmed
-      )
-    ) {
-
-      throw new Error(
-        `Unsafe dynamic table name: ${trimmed}`
-      );
-
-    }
-
-
-    return trimmed;
+    ];
 
   }
 
@@ -232,91 +159,94 @@ class AuthRepository {
   // ===================================================
   // FIND PHONE → WARD MAPPING
   // ===================================================
-  //
-  // PRIMARY:
-  //
-  // master_citizen_map
-  //
-  // BACKUP:
-  //
-  // master_citizen_map_backup
-  //
-  // ===================================================
 
   async findCitizenMappingByPhone(
     phoneNumber
   ) {
 
+    const formats =
+      this.getPhoneFormats(
+        phoneNumber
+      );
+
+
+    if (!formats.length) {
+
+      return null;
+
+    }
+
+
     // =================================================
     // PRIMARY MAPPING
     // =================================================
 
-    const primaryMapping =
-      await masterCitizenPrisma
-        .master_citizen_map
-        .findUnique({
-
-          where: {
-
-            phone_number:
-              phoneNumber,
-
-          },
-
-          select: {
-
-            id:
-              true,
-
-            phone_number:
-              true,
-
-            ward_id:
-              true,
-
-            created_at:
-              true,
-
-            updated_at:
-              true,
-
-          },
-
-        });
-
-
-    if (
-      primaryMapping
+    for (
+      const formattedPhone
+      of formats
     ) {
 
-      console.log(
+      const mapping =
+        await masterCitizenPrisma
+          .master_citizen_map
+          .findFirst({
 
-        `[Auth Repository] Phone mapping found: ${phoneNumber} → Ward Number ${primaryMapping.ward_id}`
+            where: {
 
-      );
+              phone_number:
+                formattedPhone,
+
+            },
+
+            select: {
+
+              id: true,
+
+              phone_number: true,
+
+              ward_id: true,
+
+              created_at: true,
+
+              updated_at: true,
+
+            },
+
+          });
 
 
-      return {
+      if (mapping) {
 
-        source:
-          "PRIMARY",
+        console.log(
 
-        id:
-          primaryMapping.id,
+          `[Auth Repository] Phone mapping found: ${phoneNumber} → Ward Number ${mapping.ward_id}`
 
-        phoneNumber:
-          primaryMapping.phone_number,
+        );
 
-        wardId:
-          primaryMapping.ward_id,
 
-        createdAt:
-          primaryMapping.created_at,
+        return {
 
-        updatedAt:
-          primaryMapping.updated_at,
+          source:
+            "PRIMARY",
 
-      };
+          id:
+            mapping.id,
+
+          phoneNumber:
+            mapping.phone_number,
+
+          wardId:
+            mapping.ward_id,
+
+          createdAt:
+            mapping.created_at,
+
+          updatedAt:
+            mapping.updated_at,
+
+        };
+
+      }
 
     }
 
@@ -325,91 +255,154 @@ class AuthRepository {
     // BACKUP MAPPING
     // =================================================
 
-    const backupMapping =
-      await masterCitizenPrisma
-        .master_citizen_map_backup
-        .findFirst({
-
-          where: {
-
-            phone_number:
-              phoneNumber,
-
-          },
-
-          orderBy: {
-
-            id:
-              "desc",
-
-          },
-
-          select: {
-
-            id:
-              true,
-
-            phone_number:
-              true,
-
-            ward_id:
-              true,
-
-            created_at:
-              true,
-
-            updated_at:
-              true,
-
-          },
-
-        });
-
-
-    if (
-      backupMapping
+    for (
+      const formattedPhone
+      of formats
     ) {
 
-      console.log(
+      const mapping =
+        await masterCitizenPrisma
+          .master_citizen_map_backup
+          .findFirst({
 
-        `[Auth Repository] Backup phone mapping found: ${phoneNumber} → Ward Number ${backupMapping.ward_id}`
+            where: {
 
-      );
+              phone_number:
+                formattedPhone,
+
+            },
+
+            orderBy: {
+
+              id:
+                "desc",
+
+            },
+
+            select: {
+
+              id: true,
+
+              phone_number: true,
+
+              ward_id: true,
+
+              created_at: true,
+
+              updated_at: true,
+
+            },
+
+          });
 
 
-      return {
+      if (mapping) {
 
-        source:
-          "BACKUP",
+        console.log(
 
-        id:
-          backupMapping.id,
+          `[Auth Repository] Backup phone mapping found: ${phoneNumber} → Ward Number ${mapping.ward_id}`
 
-        phoneNumber:
-          backupMapping.phone_number,
+        );
 
-        wardId:
-          backupMapping.ward_id,
 
-        createdAt:
-          backupMapping.created_at,
+        return {
 
-        updatedAt:
-          backupMapping.updated_at,
+          source:
+            "BACKUP",
 
-      };
+          id:
+            mapping.id,
+
+          phoneNumber:
+            mapping.phone_number,
+
+          wardId:
+            mapping.ward_id,
+
+          createdAt:
+            mapping.created_at,
+
+          updatedAt:
+            mapping.updated_at,
+
+        };
+
+      }
 
     }
 
 
     console.log(
 
-      `[Auth Repository] No mapping found for ${phoneNumber}`
+      `[Auth Repository] No phone mapping found for ${phoneNumber}`
 
     );
 
 
     return null;
+
+  }
+
+
+  // ===================================================
+  // VALIDATE TABLE NAME
+  // ===================================================
+
+  validateTableName(
+    tableName
+  ) {
+
+    if (
+      !tableName ||
+      typeof tableName !== "string"
+    ) {
+
+      return null;
+
+    }
+
+
+    if (
+      !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(
+        tableName
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    return tableName;
+
+  }
+
+
+  // ===================================================
+  // NORMALIZE WARD NUMBER
+  // ===================================================
+
+  normalizeWardNumber(
+    wardNo
+  ) {
+
+    const number =
+      Number(
+        wardNo
+      );
+
+
+    if (
+      !Number.isInteger(number) ||
+      number <= 0
+    ) {
+
+      return null;
+
+    }
+
+
+    return number;
 
   }
 
@@ -439,44 +432,32 @@ class AuthRepository {
       );
 
 
-    // =================================================
-    // NORMALIZE PHONE
-    // =================================================
+    if (!tableName) {
 
-    const localPhone =
-      this.normalizePhone(
-        phoneNumber
+      console.error(
+
+        `[Auth Repository] Invalid ward table name: ${ward.wardTableName}`
+
       );
 
-
-    if (
-      !localPhone
-    ) {
 
       return null;
 
     }
 
 
-    const databasePhone =
-      `+91${localPhone}`;
+    const formats =
+      this.getPhoneFormats(
+        phoneNumber
+      );
 
 
-    // =================================================
-    // SEARCH PROFILE
-    // =================================================
-    //
-    // Ward table normally stores:
-    //
-    // 9901015589
-    //
-    // But we support:
-    //
-    // 9901015589
-    // +919901015589
-    // 919901015589
-    //
-    // =================================================
+    if (!formats.length) {
+
+      return null;
+
+    }
+
 
     const rows =
       await masterCitizenPrisma
@@ -484,7 +465,45 @@ class AuthRepository {
 
           `
 
-          SELECT *
+          SELECT
+
+            id,
+
+            "phoneNumber",
+
+            area,
+
+            "wasteGeneratorTypes",
+
+            "houseNumber",
+
+            "floorNumber",
+
+            "householdType",
+
+            "personName",
+
+            "contactNumber",
+
+            "numberOfPeople",
+
+            "buildingPhoto",
+
+            "createdAt",
+
+            "updatedAt",
+
+            "dryRFID",
+
+            "drySlno",
+
+            "wetRFID",
+
+            "wetSlno",
+
+            lat,
+
+            lng
 
           FROM "${tableName}"
 
@@ -492,43 +511,47 @@ class AuthRepository {
 
             "phoneNumber" = $1
 
-            OR "phoneNumber" = $2
+            OR
 
-            OR "phoneNumber" = $3
+            "phoneNumber" = $2
+
+            OR
+
+            "phoneNumber" = $3
 
           LIMIT 1
 
           `,
 
-          localPhone,
+          formats[0],
 
-          databasePhone,
+          formats[1],
 
-          `91${localPhone}`
+          formats[2]
 
         );
 
 
     if (
-      !rows ||
-      !rows.length
+      Array.isArray(rows) &&
+      rows.length > 0
     ) {
 
-      return null;
+      return rows[0];
 
     }
 
 
-    return rows[0];
+    return null;
 
   }
 
 
   // ===================================================
-  // GET COMPLETE WARD MAPPINGS
+  // GET COMPLETE WARD REGISTRY
   // ===================================================
   //
-  // COMPLETE MASTER CITIZEN HIERARCHY:
+  // Builds:
   //
   // City
   //   ↓
@@ -538,21 +561,9 @@ class AuthRepository {
   //   ↓
   // Ward
   //
-  // This follows the SAME hierarchy used by your
-  // master citizen synchronization.
-  //
   // ===================================================
 
   async getWardMappings() {
-
-    console.log(
-      "[Auth Repository] Loading master citizen ward hierarchy..."
-    );
-
-
-    // =================================================
-    // CITY
-    // =================================================
 
     const cities =
       await masterCitizenPrisma
@@ -561,14 +572,11 @@ class AuthRepository {
 
           select: {
 
-            city_id:
-              true,
+            city_id: true,
 
-            city_name:
-              true,
+            city_name: true,
 
-            city_table_name:
-              true,
+            city_table_name: true,
 
           },
 
@@ -586,23 +594,14 @@ class AuthRepository {
       [];
 
 
-    // =================================================
-    // CITY LOOP
-    // =================================================
-
     for (
-      const city of cities
+      const city
+      of cities
     ) {
 
       if (
         !city.city_table_name
       ) {
-
-        console.warn(
-
-          `[Auth Repository] City ${city.city_name} has no dynamic table`
-
-        );
 
         continue;
 
@@ -615,9 +614,12 @@ class AuthRepository {
         );
 
 
-      // =================================================
-      // ZONES
-      // =================================================
+      if (!cityTableName) {
+
+        continue;
+
+      }
+
 
       const zones =
         await masterCitizenPrisma
@@ -642,12 +644,9 @@ class AuthRepository {
           );
 
 
-      // =================================================
-      // ZONE LOOP
-      // =================================================
-
       for (
-        const zone of zones
+        const zone
+        of zones
       ) {
 
         if (
@@ -665,9 +664,12 @@ class AuthRepository {
           );
 
 
-        // =================================================
-        // DIVISIONS
-        // =================================================
+        if (!zoneTableName) {
+
+          continue;
+
+        }
+
 
         const divisions =
           await masterCitizenPrisma
@@ -692,12 +694,9 @@ class AuthRepository {
             );
 
 
-        // =================================================
-        // DIVISION LOOP
-        // =================================================
-
         for (
-          const division of divisions
+          const division
+          of divisions
         ) {
 
           if (
@@ -715,9 +714,12 @@ class AuthRepository {
             );
 
 
-          // =================================================
-          // WARDS
-          // =================================================
+          if (!divisionTableName) {
+
+            continue;
+
+          }
+
 
           const wards =
             await masterCitizenPrisma
@@ -744,12 +746,9 @@ class AuthRepository {
               );
 
 
-          // =================================================
-          // WARD LOOP
-          // =================================================
-
           for (
-            const ward of wards
+            const ward
+            of wards
           ) {
 
             if (
@@ -771,11 +770,18 @@ class AuthRepository {
               normalizedWardNo === null
             ) {
 
-              console.warn(
+              continue;
 
-                `[Auth Repository] Invalid ward number: ${ward.ward_no}`
+            }
 
+
+            const wardTableName =
+              this.validateTableName(
+                ward.ward_table_name
               );
+
+
+            if (!wardTableName) {
 
               continue;
 
@@ -784,20 +790,11 @@ class AuthRepository {
 
             wardMappings.push({
 
-              // -------------------------------------------
-              // CITY
-              // -------------------------------------------
-
               cityId:
                 city.city_id,
 
               cityName:
                 city.city_name,
-
-
-              // -------------------------------------------
-              // ZONE
-              // -------------------------------------------
 
               zoneId:
                 zone.zone_id,
@@ -805,50 +802,24 @@ class AuthRepository {
               zoneName:
                 zone.zone_name,
 
-
-              // -------------------------------------------
-              // DIVISION
-              // -------------------------------------------
-
               divisionId:
                 division.division_id,
 
               divisionName:
                 division.division_name,
 
-
-              // -------------------------------------------
-              // INTERNAL WARD DATABASE ID
-              // -------------------------------------------
-
+              // INTERNAL DATABASE ID
               wardId:
                 ward.ward_id,
 
-
-              // -------------------------------------------
               // ACTUAL MUNICIPAL WARD NUMBER
-              // -------------------------------------------
-
               wardNo:
                 normalizedWardNo,
-
-
-              // -------------------------------------------
-              // WARD NAME
-              // -------------------------------------------
 
               wardName:
                 ward.ward_name,
 
-
-              // -------------------------------------------
-              // CITIZEN TABLE
-              // -------------------------------------------
-
-              wardTableName:
-                this.validateTableName(
-                  ward.ward_table_name
-                ),
+              wardTableName,
 
             });
 
@@ -868,51 +839,87 @@ class AuthRepository {
     );
 
 
-    // =================================================
-    // DEBUG WARD 216
-    // =================================================
-
-    const ward216 =
-      wardMappings.find(
-
-        (ward) =>
-          Number(
-            ward.wardNo
-          ) === 216
-
-      );
-
-
-    if (
-      ward216
-    ) {
-
-      console.log(
-
-        "[Auth Repository] Ward 216 resolved:",
-
-        {
-
-          internalWardId:
-            ward216.wardId,
-
-          wardNo:
-            ward216.wardNo,
-
-          wardName:
-            ward216.wardName,
-
-          wardTableName:
-            ward216.wardTableName,
-
-        }
-
-      );
-
-    }
-
-
     return wardMappings;
+
+  }
+
+
+  // ===================================================
+  // BUILD CITIZEN RESULT
+  // ===================================================
+
+  buildCitizenResult(
+    profile,
+    mapping,
+    ward
+  ) {
+
+    const wardNo =
+      this.normalizeWardNumber(
+        ward.wardNo
+      );
+
+
+    return {
+
+      id:
+        profile.id,
+
+      personName:
+        profile.personName ||
+        profile.name ||
+        null,
+
+      phoneNumber:
+        profile.phoneNumber,
+
+      drySlno:
+        profile.drySlno,
+
+      wetSlno:
+        profile.wetSlno,
+
+      // ------------------------------------------------
+      // IMPORTANT:
+      //
+      // wardId in AUTH response is the actual ward number.
+      // ------------------------------------------------
+
+      wardId:
+        wardNo,
+
+      wardNo,
+
+      wardName:
+        ward.wardName,
+
+      wardTableName:
+        ward.wardTableName,
+
+      cityId:
+        ward.cityId,
+
+      cityName:
+        ward.cityName,
+
+      zoneId:
+        ward.zoneId,
+
+      zoneName:
+        ward.zoneName,
+
+      divisionId:
+        ward.divisionId,
+
+      divisionName:
+        ward.divisionName,
+
+      profile,
+
+      mappingSource:
+        mapping.source,
+
+    };
 
   }
 
@@ -921,19 +928,19 @@ class AuthRepository {
   // FIND CITIZEN BY PHONE
   // ===================================================
   //
-  // PRIMARY AUTH FLOW:
+  // FINAL FLOW:
   //
   // phone
   //   ↓
-  // master_citizen_map
+  // mapping
   //   ↓
-  // ward_id = ACTUAL WARD NUMBER
+  // mapping.ward_id
   //   ↓
-  // wardNo
+  // ward.wardNo
   //   ↓
-  // wardTableName
+  // ward table
   //   ↓
-  // citizen profile
+  // profile
   //
   // ===================================================
 
@@ -941,56 +948,24 @@ class AuthRepository {
     phoneNumber
   ) {
 
-    // =================================================
-    // NORMALIZE PHONE
-    // =================================================
-
-    const localPhone =
-      this.normalizePhone(
-        phoneNumber
-      );
-
-
-    if (
-      !localPhone
-    ) {
-
-      console.log(
-        "[Auth Repository] Invalid phone:",
-        phoneNumber
-      );
-
-      return null;
-
-    }
-
-
-    const databasePhone =
-      `+91${localPhone}`;
-
-
     console.log(
-      `[Auth Repository] Looking up phone: ${databasePhone}`
+
+      `[Auth Repository] Looking up phone: ${phoneNumber}`
+
     );
 
 
     // =================================================
-    // 1. PHONE → WARD NUMBER
+    // 1. PHONE → WARD MAPPING
     // =================================================
 
     const mapping =
       await this.findCitizenMappingByPhone(
-        databasePhone
+        phoneNumber
       );
 
 
-    if (
-      !mapping
-    ) {
-
-      console.log(
-        `[Auth Repository] No mapping found for ${databasePhone}`
-      );
+    if (!mapping) {
 
       return null;
 
@@ -998,57 +973,41 @@ class AuthRepository {
 
 
     // =================================================
-    // 2. WARD REGISTRY
+    // 2. LOAD WARD REGISTRY
     // =================================================
 
-    const wardMappings =
+    const wards =
       await this.getWardMappings();
 
 
     // =================================================
-    // 3. FIND BY ACTUAL WARD NUMBER
-    // =================================================
-    //
-    // CRITICAL:
-    //
-    // mapping.wardId = 216
-    //
-    // ward.wardNo = 216
-    //
-    // MATCH.
-    //
-    // We DO NOT compare:
-    //
-    // mapping.wardId
-    //
-    // with:
-    //
-    // ward.wardId
-    //
+    // 3. FIND WARD BY ACTUAL WARD NUMBER
     // =================================================
 
+    const wardNo =
+      Number(
+        mapping.wardId
+      );
+
+
     const mappedWard =
-      wardMappings.find(
+      wards.find(
 
         (ward) =>
 
           Number(
             ward.wardNo
           ) ===
-          Number(
-            mapping.wardId
-          )
+          wardNo
 
       );
 
 
-    if (
-      !mappedWard
-    ) {
+    if (!mappedWard) {
 
       console.error(
 
-        `[Auth Repository] Ward Number ${mapping.wardId} was not found in the master citizen hierarchy`
+        `[Auth Repository] Ward Number ${wardNo} does not exist in ward registry`
 
       );
 
@@ -1060,25 +1019,26 @@ class AuthRepository {
 
     console.log(
 
-      `[Auth Repository] Mapping resolved: ${databasePhone} → Ward ${mappedWard.wardNo} (${mappedWard.wardName}) → ${mappedWard.wardTableName}`
+      `[Auth Repository] Mapping resolved: ${phoneNumber} → Ward ${mappedWard.wardNo} (${mappedWard.wardName}) → ${mappedWard.wardTableName}`
 
     );
 
 
     // =================================================
-    // 4. SEARCH EXACT MAPPED WARD
+    // 4. SEARCH MAPPED WARD
     // =================================================
 
     const profile =
       await this.findProfileInWard(
+
         mappedWard,
-        localPhone
+
+        phoneNumber
+
       );
 
 
-    if (
-      profile
-    ) {
+    if (profile) {
 
       console.log(
 
@@ -1087,117 +1047,112 @@ class AuthRepository {
       );
 
 
-      return {
-
-        id:
-          profile.id,
-
-        personName:
-          profile.personName,
-
-        phoneNumber:
-          profile.phoneNumber,
-
-        wardId:
-          mappedWard.wardNo,
-
-        wardNo:
-          mappedWard.wardNo,
-
-        wardName:
-          mappedWard.wardName,
-
-        wardTableName:
-          mappedWard.wardTableName,
-
-        cityId:
-          mappedWard.cityId,
-
-        cityName:
-          mappedWard.cityName,
-
-        zoneId:
-          mappedWard.zoneId,
-
-        zoneName:
-          mappedWard.zoneName,
-
-        divisionId:
-          mappedWard.divisionId,
-
-        divisionName:
-          mappedWard.divisionName,
-
-        hierarchy: {
-
-          cityId:
-            mappedWard.cityId,
-
-          cityName:
-            mappedWard.cityName,
-
-          zoneId:
-            mappedWard.zoneId,
-
-          zoneName:
-            mappedWard.zoneName,
-
-          divisionId:
-            mappedWard.divisionId,
-
-          divisionName:
-            mappedWard.divisionName,
-
-          wardId:
-            mappedWard.wardNo,
-
-          wardNo:
-            mappedWard.wardNo,
-
-          wardName:
-            mappedWard.wardName,
-
-          wardTableName:
-            mappedWard.wardTableName,
-
-        },
+      return this.buildCitizenResult(
 
         profile,
 
-        mappingSource:
-          mapping.source,
+        mapping,
 
-      };
+        mappedWard
+
+      );
 
     }
 
 
     // =================================================
-    // 5. PROFILE NOT FOUND IN MAPPED WARD
+    // 5. FALLBACK SEARCH
+    // =================================================
+    //
+    // IMPORTANT:
+    //
+    // The mapping remains authoritative.
+    //
+    // Fallback only prevents a stale mapping from
+    // permanently blocking authentication.
+    //
+    // We DO NOT automatically rewrite the mapping.
+    //
     // =================================================
 
-    console.warn(
+    console.log(
 
-      `[Auth Repository] Mapping points to Ward ${mappedWard.wardNo}, but profile was not found in ${mappedWard.wardTableName}.`
+      `[Auth Repository] Mapping points to Ward ${wardNo}, but profile was not found in ${mappedWard.wardTableName}. Starting fallback search.`
 
     );
 
 
+    for (
+      const ward
+      of wards
+    ) {
+
+      if (
+        Number(
+          ward.wardNo
+        ) === wardNo
+      ) {
+
+        continue;
+
+      }
+
+
+      if (
+        !ward.wardTableName
+      ) {
+
+        continue;
+
+      }
+
+
+      const fallbackProfile =
+        await this.findProfileInWard(
+
+          ward,
+
+          phoneNumber
+
+        );
+
+
+      if (
+        fallbackProfile
+      ) {
+
+        console.log(
+
+          `[Auth Repository] Profile found in fallback Ward ${ward.wardNo}: ${ward.wardTableName}`
+
+        );
+
+
+        return this.buildCitizenResult(
+
+          fallbackProfile,
+
+          mapping,
+
+          ward
+
+        );
+
+      }
+
+    }
+
+
     // =================================================
-    // IMPORTANT
+    // 6. NOT FOUND
     // =================================================
-    //
-    // We DO NOT automatically search another ward.
-    //
-    // Your mapping is authoritative.
-    //
-    // If:
-    //
-    // +919901015589 → 216
-    //
-    // then we search Ward 216.
-    //
-    // =================================================
+
+    console.log(
+
+      `[Auth Repository] Profile not found in any registered ward for ${phoneNumber}`
+
+    );
+
 
     return null;
 
@@ -1205,9 +1160,5 @@ class AuthRepository {
 
 }
 
-
-// =====================================================
-// EXPORT
-// =====================================================
 
 export default new AuthRepository();

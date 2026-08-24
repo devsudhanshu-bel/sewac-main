@@ -6,10 +6,6 @@ import {
 } from "./auth.validation.js";
 
 
-// =====================================================
-// AUTH CONTROLLER
-// =====================================================
-
 class AuthController {
 
 
@@ -42,23 +38,27 @@ class AuthController {
         !validation.valid
       ) {
 
-        return res.status(400).json({
+        return res
+          .status(400)
+          .json({
 
-          success: false,
+            success: false,
 
-          message:
-            validation.message,
+            message:
+              validation.message,
 
-          data: null,
+          });
 
-        });
       }
 
 
       const response =
         await authService.login(
-          validation.phoneNumber,
+
+          phoneNumber,
+
           deviceId
+
         );
 
 
@@ -70,10 +70,14 @@ class AuthController {
           response
         );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       next(error);
+
     }
+
   }
 
 
@@ -103,10 +107,14 @@ class AuthController {
           response
         );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       next(error);
+
     }
+
   }
 
 
@@ -136,11 +144,16 @@ class AuthController {
           response
         );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       next(error);
+
     }
+
   }
+
 }
 
 
