@@ -21,9 +21,10 @@ const kn = {
   },
 
   language: {
-    english: "ಇಂಗ್ಲಿಷ್",
+    english: "English",
     kannada: "ಕನ್ನಡ",
-    hindi: "ಹಿಂದಿ",
+    hindi: "हिंदी",
+    Telugu: "తెలుగు",
   },
 
   header: {

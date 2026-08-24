@@ -22,8 +22,9 @@ const en = {
 
   language: {
     english: "English",
-    kannada: "Kannada",
-    hindi: "Hindi",
+    kannada: "ಕನ್ನಡ",
+    hindi: "हिंदी",
+    Telugu: "తెలుగు",
   },
 
   header: {

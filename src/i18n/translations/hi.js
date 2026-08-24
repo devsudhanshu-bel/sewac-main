@@ -21,9 +21,10 @@ const hi = {
   },
 
   language: {
-    english: "अंग्रेज़ी",
-    kannada: "कन्नड़",
+    english: "English",
+    kannada: "ಕನ್ನಡ",
     hindi: "हिंदी",
+    Telugu: "తెలుగు",
   },
 
   header: {
