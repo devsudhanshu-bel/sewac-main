@@ -389,11 +389,48 @@ export default function Header({
   const isDashboard = variant === "dashboard";
 
   /* =======================================================
-     USER
-  ======================================================= */
+   USER
+======================================================= */
 
   const getCurrentUser = () => {
     try {
+      // =====================================================
+      // AUTH HANDOFF FROM LOGIN FRONTEND
+      // =====================================================
+
+      const hash = window.location.hash;
+
+      if (hash.startsWith("#auth=")) {
+        const encodedAuth = hash.substring("#auth=".length);
+
+        const authData = JSON.parse(decodeURIComponent(encodedAuth));
+
+        if (authData?.token) {
+          sessionStorage.setItem("token", authData.token);
+        }
+
+        if (authData?.admin) {
+          sessionStorage.setItem("admin", JSON.stringify(authData.admin));
+        }
+
+        // Remove authentication data from the URL
+        // immediately after reading it.
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
+
+        return {
+          name: authData?.admin?.full_name || "Admin",
+          role: authData?.admin?.role || "ADMIN_LAYER_1",
+        };
+      }
+
+      // =====================================================
+      // EXISTING STORED ADMIN
+      // =====================================================
+
       const storedAdmin = sessionStorage.getItem("admin");
 
       if (storedAdmin) {
@@ -405,10 +442,13 @@ export default function Header({
         };
       }
     } catch (error) {
-      console.error("Failed to read stored admin:", error);
+      console.error("Failed to read authenticated user:", error);
     }
 
-    // Fallback to JWT if stored admin is unavailable
+    // =====================================================
+    // EXISTING JWT FALLBACK
+    // =====================================================
+
     return getUserFromToken();
   };
 

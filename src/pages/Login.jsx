@@ -206,6 +206,7 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
     const typingDuration =
       typingStart && typingEnd ? typingEnd - typingStart : 0;
 
@@ -225,6 +226,7 @@ const Login = () => {
     const errorRate = Number(
       ((backspaces / Math.max(password.length, 1)) * 100).toFixed(2),
     );
+
     loginMetrics.current = {
       typing_speed: typingSpeed,
       dwell_time: dwellTime,
@@ -274,6 +276,7 @@ const Login = () => {
       if (response.ok) {
         const tempToken = data.token;
         const tempAdmin = data.admin;
+
         // -------------------------------------------------
         // Worker Login
         // Workers bypass CMADS and directly access SEWAC
@@ -284,7 +287,12 @@ const Login = () => {
 
           sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-          window.location.href = "https://sewac-main-frontend.onrender.com/overview";
+          window.location.href = `https://sewac-main-frontend.onrender.com/overview#auth=${encodeURIComponent(
+            JSON.stringify({
+              token: tempToken,
+              admin: tempAdmin,
+            }),
+          )}`;
 
           return;
         }
@@ -410,6 +418,7 @@ const Login = () => {
 
           return;
         }
+
         if (risk.decision !== "ALLOW") {
           setError("Authentication Failed");
 
@@ -420,7 +429,12 @@ const Login = () => {
 
         sessionStorage.setItem("admin", JSON.stringify(tempAdmin));
 
-        navigate("/dashboard");
+        window.location.href = `https://sewac-main-frontend.onrender.com/dashboard#auth=${encodeURIComponent(
+          JSON.stringify({
+            token: tempToken,
+            admin: tempAdmin,
+          }),
+        )}`;
       } else {
         setError(data.message || "Invalid credentials");
       }
@@ -438,11 +452,13 @@ const Login = () => {
       {/* ========================================= */}
       {/* BACKGROUND */}
       {/* ========================================= */}
+
       <div className="absolute inset-0 bg-gradient-to-br from-[#4338ca] via-[#9333ea] to-[#ff2ea6]" />
 
       {/* ========================================= */}
       {/* GLOW EFFECTS */}
       {/* ========================================= */}
+
       <div
         ref={bgGlow1}
         className="absolute top-[-200px] left-[-150px] w-[500px] h-[500px] rounded-full bg-blue-400/20 blur-[120px]"
@@ -461,6 +477,7 @@ const Login = () => {
       {/* ========================================= */}
       {/* LOGIN CARD */}
       {/* ========================================= */}
+
       <form
         ref={cardRef}
         onSubmit={handleLogin}
@@ -469,6 +486,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* LOGO */}
         {/* ========================================= */}
+
         <div className="flex justify-center">
           <div
             ref={logoRef}
@@ -481,6 +499,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* TITLE */}
         {/* ========================================= */}
+
         <div className="text-center mt-7">
           <h1
             ref={titleRef}
@@ -506,11 +525,13 @@ const Login = () => {
         {/* ========================================= */}
         {/* ERROR */}
         {/* ========================================= */}
+
         {message && (
           <div className="mt-5 rounded-xl border border-green-300 bg-green-100 px-4 py-3 text-center text-green-700">
             {message}
           </div>
         )}
+
         {error && (
           <div className="mt-5 bg-red-500/20 border border-red-400/30 text-white text-sm rounded-xl px-4 py-3 text-center">
             {error}
@@ -520,8 +541,10 @@ const Login = () => {
         {/* ========================================= */}
         {/* FORM */}
         {/* ========================================= */}
+
         <div ref={formRef} className="mt-7 space-y-5">
           {/* EMAIL */}
+
           <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
             <User size={20} className="text-white/70" />
 
@@ -536,6 +559,7 @@ const Login = () => {
           </div>
 
           {/* PASSWORD */}
+
           <div className="h-[58px] bg-white/10 border border-white/15 rounded-[18px] flex items-center px-5 backdrop-blur-xl hover:bg-white/15 transition-all duration-300">
             <Lock size={20} className="text-white/70" />
 
@@ -569,6 +593,7 @@ const Login = () => {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
           <div className="flex justify-end mt-3">
             <button
               type="button"
@@ -580,6 +605,7 @@ const Login = () => {
           </div>
 
           {/* LOGIN BUTTON */}
+
           <button
             ref={buttonRef}
             type="submit"
@@ -603,6 +629,7 @@ const Login = () => {
         {/* ========================================= */}
         {/* FOOTER */}
         {/* ========================================= */}
+
         <div className="text-center mt-8">
           <p
             style={{
