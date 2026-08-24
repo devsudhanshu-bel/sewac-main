@@ -34,7 +34,7 @@ import SewacLogo from "../../assets/sewac_logo.svg";
    Kannada  -> ಕನ್ನಡ
    Hindi    -> हिंदी
    Telugu   -> తెలుగు
-   Tamil    -> தமிழ்
+   Malayalam -> മലയാളം
 
    These labels always remain in their own language,
    regardless of the currently selected application language.
@@ -58,8 +58,8 @@ const languages = [
     label: "తెలుగు",
   },
   {
-    code: "ta",
-    label: "தமிழ்",
+    code: "ma",
+    label: "മലയാളം",
   },
 ];
 
@@ -475,6 +475,13 @@ export default function Header({
   /* =======================================================
      LOCAL UI STATE
   ======================================================= */
+
+  /*
+   * IMPORTANT:
+   * DO NOT create selectedDate state here.
+   *
+   * The date belongs to the parent page.
+   */
 
   const [dayType, setDayType] =
     useState("wet");
@@ -896,7 +903,7 @@ export default function Header({
      KN -> ಕನ್ನಡ
      HI -> हिंदी
      TE -> తెలుగు
-     TA -> தமிழ்
+     MA -> മലയാളം
   ========================================================= */
 
   const currentLanguageCode =
@@ -908,8 +915,8 @@ export default function Header({
       ? "HI"
       : language === "te"
       ? "TE"
-      : language === "ta"
-      ? "TA"
+      : language === "ma"
+      ? "MA"
       : "EN";
 
   /* =========================================================

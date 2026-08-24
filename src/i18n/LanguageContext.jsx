@@ -11,6 +11,7 @@ import kn from "./translations/kn";
 import hi from "./translations/hi";
 import te from "./translations/te";
 import ta from "./translations/ta";
+import ma from "./translations/ma";
 
 /* =========================================================
    TRANSLATIONS
@@ -22,6 +23,7 @@ const translations = {
   hi,
   te,
   ta,
+  ma,
 };
 
 /* =========================================================
@@ -191,6 +193,10 @@ export const LanguageProvider = ({ children }) => {
         {
           code: "ta",
           name: "தமிழ்",
+        },
+        {
+          code: "ma",
+          name: "മലയാളം",
         },
       ],
     }),
