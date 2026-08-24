@@ -9,17 +9,40 @@ import React, {
 import en from "./translations/en";
 import kn from "./translations/kn";
 import hi from "./translations/hi";
+import te from "./translations/te";
+
+/* =========================================================
+   TRANSLATIONS
+   ========================================================= */
 
 const translations = {
   en,
   kn,
   hi,
+  te,
 };
+
+/* =========================================================
+   LANGUAGE CONTEXT
+   ========================================================= */
 
 const LanguageContext = createContext(null);
 
+/* =========================================================
+   DEFAULT LANGUAGE
+   ========================================================= */
+
 const DEFAULT_LANGUAGE = "en";
+
+/* =========================================================
+   LOCAL STORAGE KEY
+   ========================================================= */
+
 const STORAGE_KEY = "sewac-language";
+
+/* =========================================================
+   GET INITIAL LANGUAGE
+   ========================================================= */
 
 const getInitialLanguage = () => {
   try {
@@ -35,6 +58,10 @@ const getInitialLanguage = () => {
   return DEFAULT_LANGUAGE;
 };
 
+/* =========================================================
+   GET NESTED TRANSLATION VALUE
+   ========================================================= */
+
 const getNestedValue = (object, path) => {
   return path.split(".").reduce((current, key) => {
     if (current === undefined || current === null) {
@@ -45,10 +72,18 @@ const getNestedValue = (object, path) => {
   }, object);
 };
 
+/* =========================================================
+   LANGUAGE PROVIDER
+   ========================================================= */
+
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguageState] = useState(
     getInitialLanguage
   );
+
+  /* =======================================================
+     CHANGE LANGUAGE
+  ======================================================= */
 
   const setLanguage = (newLanguage) => {
     if (!translations[newLanguage]) {
@@ -74,6 +109,10 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
+  /* =======================================================
+     TRANSLATION FUNCTION
+  ======================================================= */
+
   const t = (key, fallback) => {
     const value = getNestedValue(
       translations[language],
@@ -84,6 +123,23 @@ export const LanguageProvider = ({ children }) => {
       return value;
     }
 
+    /*
+     * If the selected language does not contain
+     * the requested key, try English as a fallback.
+     *
+     * This prevents missing text when a translation
+     * has not yet been added to one language file.
+     */
+
+    const englishValue = getNestedValue(
+      translations.en,
+      key
+    );
+
+    if (englishValue !== undefined) {
+      return englishValue;
+    }
+
     if (fallback !== undefined) {
       return fallback;
     }
@@ -91,15 +147,26 @@ export const LanguageProvider = ({ children }) => {
     return key;
   };
 
+  /* =======================================================
+     UPDATE HTML LANGUAGE
+  ======================================================= */
+
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
 
+  /* =======================================================
+     CONTEXT VALUE
+  ======================================================= */
+
   const value = useMemo(
     () => ({
       language,
+
       setLanguage,
+
       t,
+
       translations: translations[language],
 
       availableLanguages: [
@@ -109,16 +176,24 @@ export const LanguageProvider = ({ children }) => {
         },
         {
           code: "kn",
-          name: "Kannada",
+          name: "ಕನ್ನಡ",
         },
         {
           code: "hi",
-          name: "Hindi",
+          name: "हिंदी",
+        },
+        {
+          code: "te",
+          name: "తెలుగు",
         },
       ],
     }),
     [language]
   );
+
+  /* =======================================================
+     PROVIDER
+  ======================================================= */
 
   return (
     <LanguageContext.Provider value={value}>
@@ -126,6 +201,10 @@ export const LanguageProvider = ({ children }) => {
     </LanguageContext.Provider>
   );
 };
+
+/* =========================================================
+   USE LANGUAGE HOOK
+   ========================================================= */
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
@@ -138,5 +217,9 @@ export const useLanguage = () => {
 
   return context;
 };
+
+/* =========================================================
+   DEFAULT EXPORT
+   ========================================================= */
 
 export default LanguageContext;
