@@ -11,37 +11,45 @@ class MapController {
     try {
       const { latitude, longitude } = req.query;
 
-      if (!latitude || !longitude) {
+      if (latitude === undefined || longitude === undefined) {
         return res.status(400).json({
           success: false,
-
           message: "Latitude and longitude are required.",
+          data: null,
+        });
+      }
 
+      const parsedLatitude = Number(latitude);
+
+      const parsedLongitude = Number(longitude);
+
+      if (
+        !Number.isFinite(parsedLatitude) ||
+        !Number.isFinite(parsedLongitude)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid latitude or longitude.",
           data: null,
         });
       }
 
       const truck = await mapService.findNearestTruck(
-        Number(latitude),
-
-        Number(longitude),
+        parsedLatitude,
+        parsedLongitude,
       );
 
       if (!truck) {
         return res.status(404).json({
           success: false,
-
           message: "No nearby truck found.",
-
           data: null,
         });
       }
 
       return res.status(200).json({
         success: true,
-
         message: "Nearest truck found successfully.",
-
         data: truck,
       });
     } catch (error) {
@@ -63,18 +71,14 @@ class MapController {
       if (!truck) {
         return res.status(404).json({
           success: false,
-
           message: "Vehicle not found.",
-
           data: null,
         });
       }
 
       return res.status(200).json({
         success: true,
-
         message: "Vehicle fetched successfully.",
-
         data: truck,
       });
     } catch (error) {
@@ -85,19 +89,17 @@ class MapController {
   /**
    * GET /api/route-map/live
    *
-   * Get latest live vehicle locations
-   * for the selected City → Zone → Division → Ward.
+   * Get live vehicle locations for the
+   * selected City → Zone → Division → Ward.
    */
   async getLiveVehicleLocations(req, res, next) {
     try {
       const { latitude, longitude, cityId, zoneId, divisionId, wardId } =
         req.query;
 
-      /*
-       * --------------------------------------------------
-       * REQUIRED PARAMETERS
-       * --------------------------------------------------
-       */
+      // --------------------------------------------------
+      // REQUIRED PARAMETERS
+      // --------------------------------------------------
 
       if (
         latitude === undefined ||
@@ -109,116 +111,92 @@ class MapController {
       ) {
         return res.status(400).json({
           success: false,
-
           message:
             "latitude, longitude, cityId, zoneId, divisionId and wardId are required.",
-
           data: null,
         });
       }
 
-      /*
-       * --------------------------------------------------
-       * COORDINATE VALIDATION
-       * --------------------------------------------------
-       */
+      // --------------------------------------------------
+      // COORDINATES
+      // --------------------------------------------------
 
-      const personLatitude = Number(latitude);
+      const parsedLatitude = Number(latitude);
 
-      const personLongitude = Number(longitude);
+      const parsedLongitude = Number(longitude);
 
       if (
-        !Number.isFinite(personLatitude) ||
-        !Number.isFinite(personLongitude) ||
-        personLatitude < -90 ||
-        personLatitude > 90 ||
-        personLongitude < -180 ||
-        personLongitude > 180
+        !Number.isFinite(parsedLatitude) ||
+        !Number.isFinite(parsedLongitude) ||
+        parsedLatitude < -90 ||
+        parsedLatitude > 90 ||
+        parsedLongitude < -180 ||
+        parsedLongitude > 180
       ) {
         return res.status(400).json({
           success: false,
-
           message: "Invalid latitude or longitude.",
-
           data: null,
         });
       }
 
-      /*
-       * --------------------------------------------------
-       * ID VALIDATION
-       * --------------------------------------------------
-       */
+      // --------------------------------------------------
+      // IDS
+      // --------------------------------------------------
 
-      const city = Number(cityId);
+      const parsedCityId = Number(cityId);
 
-      const zone = Number(zoneId);
+      const parsedZoneId = Number(zoneId);
 
-      const division = Number(divisionId);
+      const parsedDivisionId = Number(divisionId);
 
-      const ward = Number(wardId);
+      const parsedWardId = Number(wardId);
 
       if (
-        !Number.isInteger(city) ||
-        city <= 0 ||
-        !Number.isInteger(zone) ||
-        zone <= 0 ||
-        !Number.isInteger(division) ||
-        division <= 0 ||
-        !Number.isInteger(ward) ||
-        ward <= 0
+        !Number.isInteger(parsedCityId) ||
+        parsedCityId <= 0 ||
+        !Number.isInteger(parsedZoneId) ||
+        parsedZoneId <= 0 ||
+        !Number.isInteger(parsedDivisionId) ||
+        parsedDivisionId <= 0 ||
+        !Number.isInteger(parsedWardId) ||
+        parsedWardId <= 0
       ) {
         return res.status(400).json({
           success: false,
-
           message: "Invalid cityId, zoneId, divisionId or wardId.",
-
           data: null,
         });
       }
 
-      /*
-       * --------------------------------------------------
-       * SERVICE
-       * --------------------------------------------------
-       */
+      // --------------------------------------------------
+      // SERVICE
+      // --------------------------------------------------
 
       const result = await mapService.getLiveVehicleLocations({
-        latitude: personLatitude,
-
-        longitude: personLongitude,
-
-        cityId: city,
-
-        zoneId: zone,
-
-        divisionId: division,
-
-        wardId: ward,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        cityId: parsedCityId,
+        zoneId: parsedZoneId,
+        divisionId: parsedDivisionId,
+        wardId: parsedWardId,
       });
 
       return res.status(200).json({
         success: true,
-
-        message: result.vehicles.length
-          ? "Live vehicle locations fetched successfully."
-          : "No vehicles found for the selected ward.",
-
+        message:
+          result.vehicles.length > 0
+            ? "Live vehicle locations fetched successfully."
+            : "No vehicles found for the selected ward.",
         data: result,
       });
     } catch (error) {
       console.error("Live vehicle location error:", error);
 
-      const statusCode = error.statusCode || 500;
-
-      return res.status(statusCode).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
-
         message:
-          error.publicMessage ||
-          error.message ||
-          "Unable to fetch live vehicle locations.",
-
+          error.publicMessage || "Unable to fetch live vehicle locations.",
         data: null,
       });
     }

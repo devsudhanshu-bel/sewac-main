@@ -16,7 +16,6 @@ class MapService {
 
     if (!telemetry.length) {
       console.log("⚠️ No telemetry data found.");
-
       return;
     }
 
@@ -34,7 +33,6 @@ class MapService {
 
     for (const [vehicleId, records] of grouped.entries()) {
       const first = records[0];
-
       const latest = records[records.length - 1];
 
       const previous =
@@ -45,19 +43,16 @@ class MapService {
 
         initialPoint: {
           latitude: Number(first.latitude),
-
           longitude: Number(first.longitude),
         },
 
         previousPoint: {
           latitude: Number(previous.latitude),
-
           longitude: Number(previous.longitude),
         },
 
         currentPoint: {
           latitude: Number(latest.latitude),
-
           longitude: Number(latest.longitude),
         },
 
@@ -108,19 +103,16 @@ class MapService {
 
           initialPoint: {
             latitude,
-
             longitude,
           },
 
           previousPoint: {
             latitude,
-
             longitude,
           },
 
           currentPoint: {
             latitude,
-
             longitude,
           },
 
@@ -158,7 +150,6 @@ class MapService {
 
         currentPoint: {
           latitude,
-
           longitude,
         },
 
@@ -171,15 +162,11 @@ class MapService {
 
       await mapRedis.setTruck(updatedTruck);
 
-      await mapRedis.addTrail(
-        vehicleId,
-
-        {
-          latitude,
-          longitude,
-          timestamp: recordedAt,
-        },
-      );
+      await mapRedis.addTrail(vehicleId, {
+        latitude,
+        longitude,
+        timestamp: recordedAt,
+      });
 
       console.log(`📍 ${vehicleId} moved -> ${latitude}, ${longitude}`);
 
@@ -221,11 +208,7 @@ class MapService {
   // ==========================================================
 
   async findNearestTruck(latitude, longitude) {
-    const truck = await mapRedis.findNearestTruck(
-      latitude,
-
-      longitude,
-    );
+    const truck = await mapRedis.findNearestTruck(latitude, longitude);
 
     if (!truck) {
       return null;
@@ -233,11 +216,8 @@ class MapService {
 
     const distance = this.haversineDistance(
       latitude,
-
       longitude,
-
       truck.currentPoint.latitude,
-
       truck.currentPoint.longitude,
     );
 
@@ -249,20 +229,15 @@ class MapService {
   }
 
   // ==========================================================
-  // NEW LIVE VEHICLE LOCATION ENDPOINT
+  // NEW: LIVE VEHICLE LOCATIONS
   // ==========================================================
 
   async getLiveVehicleLocations({
     latitude,
-
     longitude,
-
     cityId,
-
     zoneId,
-
     divisionId,
-
     wardId,
   }) {
     // --------------------------------------------------------
@@ -271,11 +246,8 @@ class MapService {
 
     const hierarchy = await this.validateGeographicHierarchy(
       cityId,
-
       zoneId,
-
       divisionId,
-
       wardId,
     );
 
@@ -292,7 +264,7 @@ class MapService {
     }
 
     // --------------------------------------------------------
-    // 2. FIND VEHICLES BELONGING TO THE SELECTED WARD
+    // 2. GET VEHICLES FOR SELECTED WARD
     // --------------------------------------------------------
 
     const vehicles = await this.getVehiclesForWard(hierarchy);
@@ -300,16 +272,11 @@ class MapService {
     const liveVehicles = [];
 
     // --------------------------------------------------------
-    // 3. GET LATEST GPS FOR EACH VEHICLE
+    // 3. PROCESS EACH VEHICLE
     // --------------------------------------------------------
 
     for (const vehicle of vehicles) {
       try {
-        /*
-         * Existing vehicle_master architecture may expose
-         * the vehicle identifier using vehicle_id.
-         */
-
         const rawVehicleId =
           vehicle.vehicle_id ?? vehicle.vehicleId ?? vehicle.id;
 
@@ -319,10 +286,14 @@ class MapService {
 
         const vehicleId = String(rawVehicleId);
 
+        // ----------------------------------------------------
+        // LATEST GPS
+        // ----------------------------------------------------
+
         const latestTelemetry = await this.getLatestVehicleTelemetry(vehicleId);
 
         // ----------------------------------------------------
-        // NO TELEMETRY / NO VALID GPS
+        // NO TELEMETRY
         // ----------------------------------------------------
 
         if (!latestTelemetry) {
@@ -345,12 +316,16 @@ class MapService {
           continue;
         }
 
+        // ----------------------------------------------------
+        // GPS VALUES
+        // ----------------------------------------------------
+
         const vehicleLatitude = Number(latestTelemetry.latitude);
 
         const vehicleLongitude = Number(latestTelemetry.longitude);
 
         // ----------------------------------------------------
-        // VALIDATE GPS
+        // GPS VALIDATION
         // ----------------------------------------------------
 
         if (
@@ -381,7 +356,7 @@ class MapService {
         }
 
         // ----------------------------------------------------
-        // LAST TELEMETRY TIME
+        // TELEMETRY TIME
         // ----------------------------------------------------
 
         const telemetryTime = this.getTelemetryTime(latestTelemetry);
@@ -390,8 +365,6 @@ class MapService {
 
         // ----------------------------------------------------
         // ACTIVE / INACTIVE
-        //
-        // ACTIVE = telemetry within 30 minutes
         // ----------------------------------------------------
 
         const ageMilliseconds = Date.now() - lastUpdated.getTime();
@@ -407,11 +380,8 @@ class MapService {
 
         const distance = this.haversineDistance(
           latitude,
-
           longitude,
-
           vehicleLatitude,
-
           vehicleLongitude,
         );
 
@@ -431,14 +401,9 @@ class MapService {
           lastUpdated: lastUpdated.toISOString(),
         });
       } catch (error) {
-        /*
-         * One bad vehicle must never cause the
-         * complete live-map request to fail.
-         */
+        // One vehicle must not break the entire response.
 
-        console.error(`Unable to fetch live telemetry for vehicle:`, error);
-
-        continue;
+        console.error("Unable to fetch live telemetry:", error);
       }
     }
 
@@ -463,7 +428,7 @@ class MapService {
     });
 
     // --------------------------------------------------------
-    // 5. RETURN FLUTTER-FRIENDLY RESPONSE
+    // 5. RESPONSE
     // --------------------------------------------------------
 
     return {
@@ -491,15 +456,7 @@ class MapService {
   // VALIDATE CITY → ZONE → DIVISION → WARD
   // ==========================================================
 
-  async validateGeographicHierarchy(
-    cityId,
-
-    zoneId,
-
-    divisionId,
-
-    wardId,
-  ) {
+  async validateGeographicHierarchy(cityId, zoneId, divisionId, wardId) {
     // --------------------------------------------------------
     // CITY
     // --------------------------------------------------------
@@ -632,31 +589,29 @@ class MapService {
     const { city, zone, division, ward } = hierarchy;
 
     /*
-     * vehicle_master stores the existing
-     * geographic fields.
+     * Use the existing vehicle_master table.
      *
-     * We use the hierarchy names resolved from
-     * Master Citizen rather than hard-coding
-     * city/zone/division/ward values.
+     * Geographic values come from the existing
+     * Master Citizen hierarchy.
      */
 
     const rows = await sewacPrisma.$queryRaw(
       `
-          SELECT *
-          FROM "vehicle_master"
-          WHERE
-            LOWER(TRIM(city)) =
-              LOWER(TRIM(${city.city_name}))
-            AND
-            LOWER(TRIM(zone)) =
-              LOWER(TRIM(${zone.zone_name}))
-            AND
-            LOWER(TRIM(division)) =
-              LOWER(TRIM(${division.division_name}))
-            AND
-            LOWER(TRIM(ward)) =
-              LOWER(TRIM(${String(ward.ward_no)}))
-          `,
+        SELECT *
+        FROM "vehicle_master"
+        WHERE
+          LOWER(TRIM(city)) =
+            LOWER(TRIM(${city.city_name}))
+          AND
+          LOWER(TRIM(zone)) =
+            LOWER(TRIM(${zone.zone_name}))
+          AND
+          LOWER(TRIM(division)) =
+            LOWER(TRIM(${division.division_name}))
+          AND
+          LOWER(TRIM(ward)) =
+            LOWER(TRIM(${String(ward.ward_no)}))
+        `,
     );
 
     if (!Array.isArray(rows)) {
@@ -667,7 +622,7 @@ class MapService {
   }
 
   // ==========================================================
-  // GET LATEST TELEMETRY FOR VEHICLE
+  // GET LATEST VEHICLE TELEMETRY
   // ==========================================================
 
   async getLatestVehicleTelemetry(vehicleId) {
@@ -693,9 +648,9 @@ class MapService {
       return null;
     }
 
-    /*
-     * Find the vehicle-specific telemetry table.
-     */
+    // --------------------------------------------------------
+    // FIND VEHICLE TELEMETRY TABLE
+    // --------------------------------------------------------
 
     const tableRows = await telemetryDb.$queryRawUnsafe(
       `
@@ -725,9 +680,9 @@ class MapService {
       return null;
     }
 
-    /*
-     * Only retrieve the latest valid GPS point.
-     */
+    // --------------------------------------------------------
+    // LATEST VALID GPS
+    // --------------------------------------------------------
 
     const rows = await telemetryDb.$queryRawUnsafe(
       `
@@ -786,10 +741,8 @@ class MapService {
     }
 
     /*
-     * Dynamic table names are never accepted
-     * directly from the HTTP request.
-     *
-     * Only safe PostgreSQL identifiers are allowed.
+     * Only safe PostgreSQL identifiers
+     * are allowed for dynamic table names.
      */
 
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
@@ -800,7 +753,7 @@ class MapService {
   }
 
   // ==========================================================
-  // EXISTING HAVERSINE
+  // HAVERSINE DISTANCE
   // ==========================================================
 
   haversineDistance(lat1, lon1, lat2, lon2) {
@@ -816,13 +769,7 @@ class MapService {
       Math.sin(dLat / 2) ** 2 +
       Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
 
-    const c =
-      2 *
-      Math.atan2(
-        Math.sqrt(a),
-
-        Math.sqrt(1 - a),
-      );
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
   }
