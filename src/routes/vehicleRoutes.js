@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
+
 const checkPermission = require("../middlewares/checkPermission");
 
 const {
@@ -12,6 +13,7 @@ const {
   updateVehicle,
   deleteVehicle,
   getVehicleSummary,
+  getAverageWeightByZone,
 } = require("../controllers/vehicleController");
 
 /*
@@ -30,31 +32,70 @@ const {
 |--------------------------------------------------------------------------
 */
 
-router.get(
-  "/summary",
-  getVehicleSummary,
-);
+/*
+|--------------------------------------------------------------------------
+| VEHICLE SUMMARY
+|--------------------------------------------------------------------------
+*/
+
+router.get("/summary", getVehicleSummary);
+
+/*
+|--------------------------------------------------------------------------
+| AVERAGE WEIGHT BY ZONE
+|--------------------------------------------------------------------------
+|
+| GET
+|
+| /api/vehicles/average-weight-by-zone
+|
+| Example:
+|
+| /api/vehicles/average-weight-by-zone?date=2026-08-24
+|
+|--------------------------------------------------------------------------
+*/
+
+router.get("/average-weight-by-zone", getAverageWeightByZone);
+
+/*
+|--------------------------------------------------------------------------
+| ALL VEHICLES
+|--------------------------------------------------------------------------
+*/
 
 router.get("/", getAllVehicles);
 
-router.get(
-  "/:vehicleId",
-  getVehicleById,
-);
+/*
+|--------------------------------------------------------------------------
+| VEHICLE BY ID
+|--------------------------------------------------------------------------
+*/
 
-router.post(
-  "/",
-  createVehicle,
-);
+router.get("/:vehicleId", getVehicleById);
 
-router.put(
-  "/:vehicleId",
-  updateVehicle,
-);
+/*
+|--------------------------------------------------------------------------
+| CREATE
+|--------------------------------------------------------------------------
+*/
 
-router.delete(
-  "/:vehicleId",
-  deleteVehicle,
-);
+router.post("/", createVehicle);
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE
+|--------------------------------------------------------------------------
+*/
+
+router.put("/:vehicleId", updateVehicle);
+
+/*
+|--------------------------------------------------------------------------
+| DELETE
+|--------------------------------------------------------------------------
+*/
+
+router.delete("/:vehicleId", deleteVehicle);
 
 module.exports = router;

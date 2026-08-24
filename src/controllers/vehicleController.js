@@ -129,6 +129,30 @@ const getVehicleDirectory = async (req, res) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| AVERAGE WEIGHT BY ZONE
+|--------------------------------------------------------------------------
+*/
+
+const getAverageWeightByZone = async (req, res) => {
+  try {
+    const data = await vehicleService.getAverageWeightByZone(req.query.date);
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Average weight by zone error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllVehicles,
   getVehicleById,
@@ -136,5 +160,6 @@ module.exports = {
   updateVehicle,
   deleteVehicle,
   getVehicleSummary,
-  getVehicleDirectory
+  getVehicleDirectory,
+  getAverageWeightByZone,
 };
