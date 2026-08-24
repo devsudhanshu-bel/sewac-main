@@ -135,7 +135,7 @@ class AuthService {
 
     // =========================================
     // 9. FIRST TIME
-    // → START 30-MINUTE TIMER
+    // → START 30-SECOND TIMER
     // =========================================
 
     if (!enrollment) {
@@ -250,6 +250,18 @@ class AuthService {
           drySlno: citizen.drySlno,
 
           wetSlno: citizen.wetSlno,
+
+          // =========================================
+          // EXISTING CITIZEN GEOGRAPHIC HIERARCHY
+          // =========================================
+
+          cityId: citizen.cityId,
+
+          zoneId: citizen.zoneId,
+
+          divisionId: citizen.divisionId,
+
+          wardId: citizen.wardId,
         },
       },
     };
@@ -303,6 +315,18 @@ class AuthService {
           drySlno: citizen.drySlno,
 
           wetSlno: citizen.wetSlno,
+
+          // =========================================
+          // EXISTING CITIZEN GEOGRAPHIC HIERARCHY
+          // =========================================
+
+          cityId: citizen.cityId,
+
+          zoneId: citizen.zoneId,
+
+          divisionId: citizen.divisionId,
+
+          wardId: citizen.wardId,
         },
       },
     };
