@@ -13,42 +13,17 @@ const router =
   Router();
 
 
-// =====================================================
-// TODAY'S COLLECTION
-// =====================================================
-
 router.get(
-
   "/today",
-
   authMiddleware,
-
-  homeController
-    .getTodayCollection
-
+  homeController.getTodayCollection
 );
 
 
-// =====================================================
-// MONTHLY CALENDAR
-// =====================================================
-//
-// Example:
-//
-// GET
-// /api/citizen/home/calendar?year=2026&month=8
-//
-// =====================================================
-
 router.get(
-
   "/calendar",
-
   authMiddleware,
-
-  homeController
-    .getCalendar
-
+  homeController.getCalendar
 );
 
 

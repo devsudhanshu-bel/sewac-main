@@ -10,7 +10,6 @@ import {
 // HOME SERVICE
 // =====================================================
 
-
 class HomeService {
 
 
@@ -20,7 +19,7 @@ class HomeService {
 
   async getCalendar(
     citizenId,
-    wardNo,
+    phoneNumber,
     year,
     month
   ) {
@@ -35,9 +34,6 @@ class HomeService {
 
     month =
       Number(month);
-
-    wardNo =
-      Number(wardNo);
 
 
     if (
@@ -66,16 +62,42 @@ class HomeService {
     }
 
 
+    // =============================================
+    // RESOLVE CITIZEN WARD
+    // =============================================
+    //
+    // Citizen
+    //   ↓
+    // phone
+    //   ↓
+    // master_citizen_map
+    //   ↓
+    // ward_id
+    //
+    // =============================================
+
+    const wardNo =
+      await homeRepository
+        .getCitizenWard(
+          phoneNumber
+        );
+
+
     if (
       !Number.isInteger(wardNo) ||
       wardNo <= 0
     ) {
 
       throw new Error(
-        "Invalid ward number."
+        "Ward information not found for citizen."
       );
 
     }
+
+
+    console.log(
+      `[Home Service] Citizen ${citizenId} resolved to Ward ${wardNo}`
+    );
 
 
     // =============================================
@@ -341,6 +363,10 @@ class HomeService {
         "UPCOMING";
 
 
+      // =========================================
+      // PAST MONTH
+      // =========================================
+
       if (isPastMonth) {
 
 
@@ -353,6 +379,10 @@ class HomeService {
 
       }
 
+
+      // =========================================
+      // CURRENT MONTH
+      // =========================================
 
       else if (isCurrentMonth) {
 
@@ -487,6 +517,10 @@ class HomeService {
 
     // =============================================
     // RESPONSE OBJECT
+    // =============================================
+    //
+    // DO NOT CHANGE.
+    //
     // =============================================
 
     const response = {

@@ -1,27 +1,298 @@
+import {
+  PrismaClient as MasterCitizenPrismaClient
+} from "../../generated/master_citizen/client.js";
+
 import citizenHistoricalPrisma
   from "../../config/citizenHistoricalPrisma.js";
+
+
+// =====================================================
+// MASTER CITIZEN PRISMA
+// =====================================================
+//
+// master_citizen_map:
+//
+// id
+// phone_number
+// ward_id
+// created_at
+// updated_at
+//
+// IMPORTANT:
+// There is NO citizen_id column here.
+//
+// =====================================================
+
+const masterCitizenPrisma =
+  new MasterCitizenPrismaClient();
 
 
 // =====================================================
 // HOME REPOSITORY
 // =====================================================
 //
-// Citizen Home data source:
+// Data sources:
 //
-// citizen_historical_db
+// 1. MASTER CITIZEN DATABASE
 //
-// Monthly table format:
+//    master_citizen_map
 //
-// ward_<WARD_NO>_<MM><YYYY>
+//    phone_number → ward_id
 //
-// Example:
+// 2. CITIZEN HISTORICAL DATABASE
 //
-// ward_216_082026
+//    ward_<WARD_NO>_<MM><YYYY>
+//
+//    Example:
+//
+//    ward_216_082026
 //
 // =====================================================
 
-
 class HomeRepository {
+
+
+  // ===================================================
+  // NORMALIZE PHONE NUMBER
+  // ===================================================
+  //
+  // We deliberately support both:
+  //
+  // 9740839779
+  //
+  // +919740839779
+  //
+  // 919740839779
+  //
+  // This is important because Auth may receive/store
+  // the number in a different format from the master
+  // citizen mapping.
+  //
+  // ===================================================
+
+  normalizePhoneNumber(phoneNumber) {
+
+    if (
+      phoneNumber === null ||
+      phoneNumber === undefined
+    ) {
+      return null;
+    }
+
+
+    const digits =
+      String(phoneNumber)
+        .trim()
+        .replace(/\D/g, "");
+
+
+    if (!digits) {
+      return null;
+    }
+
+
+    // -----------------------------------------------
+    // Indian 10 digit number
+    // -----------------------------------------------
+
+    if (digits.length === 10) {
+
+      return {
+        local: digits,
+        withoutPlusCountryCode: `91${digits}`,
+        international: `+91${digits}`,
+      };
+
+    }
+
+
+    // -----------------------------------------------
+    // 91 + 10 digit number
+    // -----------------------------------------------
+
+    if (
+      digits.length === 12 &&
+      digits.startsWith("91")
+    ) {
+
+      const local =
+        digits.substring(2);
+
+      return {
+        local,
+        withoutPlusCountryCode: digits,
+        international: `+${digits}`,
+      };
+
+    }
+
+
+    // -----------------------------------------------
+    // Other formats
+    //
+    // Keep the raw digits as fallback.
+    // -----------------------------------------------
+
+    return {
+      local: digits,
+      withoutPlusCountryCode: digits,
+      international: `+${digits}`,
+    };
+
+  }
+
+
+  // ===================================================
+  // GET CITIZEN WARD
+  // ===================================================
+  //
+  // Flow:
+  //
+  // phone number
+  //      ↓
+  // normalize
+  //      ↓
+  // master_citizen_map
+  //      ↓
+  // ward_id
+  //
+  // ===================================================
+
+  async getCitizenWard(phoneNumber) {
+
+    if (!phoneNumber) {
+
+      throw new Error(
+        "Citizen phone information not found."
+      );
+
+    }
+
+
+    const normalized =
+      this.normalizePhoneNumber(
+        phoneNumber
+      );
+
+
+    if (!normalized) {
+
+      throw new Error(
+        "Citizen phone information not found."
+      );
+
+    }
+
+
+    console.log(
+      `[Home Repository] Looking up citizen ward for phone: ${phoneNumber}`
+    );
+
+    console.log(
+      `[Home Repository] Phone candidates: ${JSON.stringify(normalized)}`
+    );
+
+
+    // -----------------------------------------------
+    // MASTER CITIZEN LOOKUP
+    // -----------------------------------------------
+    //
+    // Supports:
+    //
+    // 9740839779
+    // 919740839779
+    // +919740839779
+    //
+    // -----------------------------------------------
+
+    const mapping =
+      await masterCitizenPrisma.master_citizen_map.findFirst({
+
+        where: {
+
+          OR: [
+
+            {
+              phone_number:
+                normalized.local
+            },
+
+            {
+              phone_number:
+                normalized.withoutPlusCountryCode
+            },
+
+            {
+              phone_number:
+                normalized.international
+            }
+
+          ]
+
+        },
+
+        select: {
+
+          id: true,
+
+          phone_number: true,
+
+          ward_id: true
+
+        }
+
+      });
+
+
+    // -----------------------------------------------
+    // MAPPING NOT FOUND
+    // -----------------------------------------------
+
+    if (!mapping) {
+
+      console.log(
+        `[Home Repository] No master citizen mapping found for phone candidates.`
+      );
+
+      throw new Error(
+        "Ward information not found for citizen."
+      );
+
+    }
+
+
+    // -----------------------------------------------
+    // RESOLVE WARD
+    // -----------------------------------------------
+
+    const wardNo =
+      Number(mapping.ward_id);
+
+
+    if (
+      !Number.isInteger(wardNo) ||
+      wardNo <= 0
+    ) {
+
+      console.log(
+        `[Home Repository] Invalid ward_id in master_citizen_map: ${mapping.ward_id}`
+      );
+
+      throw new Error(
+        "Ward information not found for citizen."
+      );
+
+    }
+
+
+    console.log(
+      `[Home Repository] Phone mapping found: ${mapping.phone_number} -> Ward Number ${wardNo}`
+    );
+
+
+    return wardNo;
+
+  }
 
 
   // ===================================================
@@ -110,9 +381,7 @@ class HomeRepository {
   // CHECK TABLE EXISTS
   // ===================================================
 
-  async tableExists(
-    tableName
-  ) {
+  async tableExists(tableName) {
 
     const result =
       await citizenHistoricalPrisma.$queryRaw`
@@ -143,26 +412,19 @@ class HomeRepository {
   // GET MONTHLY COLLECTIONS
   // ===================================================
   //
-  // IMPORTANT:
+  // Historical DB:
   //
-  // The old Home logic expects:
-  //
-  // remarks
+  // citizen_id
+  // waste_type
   // iot_timestamp
   //
+  // waste_type is normalized:
   //
-  // Historical DB stores the collection type as:
+  // DRY → D
+  // WET → W
   //
-  // waste_type
-  //
-  // Example:
-  //
-  // DRY
-  // WET
-  //
-  // Therefore we normalize it here.
-  //
-  // The service logic remains unchanged.
+  // The service continues using the old calculation
+  // logic.
   //
   // ===================================================
 
@@ -174,7 +436,6 @@ class HomeRepository {
     startDate,
     endDate
   ) {
-
 
     const tableName =
       this.getMonthlyTableName(
@@ -211,53 +472,76 @@ class HomeRepository {
 
 
     // -----------------------------------------------
-    // CITIZEN ID
+    // FETCH HISTORICAL COLLECTIONS
     // -----------------------------------------------
     //
-    // citizen_id exists in the historical table.
+    // IMPORTANT:
+    //
+    // citizen_id belongs to the historical DB.
+    //
+    // master_citizen_map is NEVER queried using
+    // citizen_id.
     //
     // -----------------------------------------------
-
 
     const rows =
-      await citizenHistoricalPrisma.$queryRawUnsafe(
+      await citizenHistoricalPrisma
+        .$queryRawUnsafe(
 
-        `
-        SELECT
-          CASE
-            WHEN UPPER(COALESCE(waste_type, '')) = 'DRY'
-              THEN 'D'
-            WHEN UPPER(COALESCE(waste_type, '')) = 'WET'
-              THEN 'W'
-            ELSE UPPER(waste_type)
-          END AS "remarks",
+          `
+          SELECT
 
-          iot_timestamp AS "iot_timestamp"
+            CASE
 
-        FROM "${tableName}"
+              WHEN UPPER(
+                COALESCE(waste_type, '')
+              ) = 'DRY'
 
-        WHERE citizen_id = $1
+                THEN 'D'
 
-          AND iot_timestamp >= $2
+              WHEN UPPER(
+                COALESCE(waste_type, '')
+              ) = 'WET'
 
-          AND iot_timestamp < $3
+                THEN 'W'
 
-        ORDER BY iot_timestamp ASC
-        `,
+              ELSE UPPER(
+                COALESCE(waste_type, '')
+              )
 
-        Number(citizenId),
+            END AS "remarks",
 
-        startDate,
+            iot_timestamp AS "iot_timestamp"
 
-        endDate
+          FROM "${tableName}"
 
-      );
+          WHERE citizen_id = $1
+
+            AND iot_timestamp >= $2
+
+            AND iot_timestamp < $3
+
+          ORDER BY iot_timestamp ASC
+
+          `,
+
+          Number(citizenId),
+
+          startDate,
+
+          endDate
+
+        );
+
+
+    console.log(
+      `[Home Repository] Historical collections found: ${rows.length}`
+    );
 
 
     return rows;
 
   }
-
 
 }
 
