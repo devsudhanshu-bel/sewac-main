@@ -164,15 +164,14 @@ function normalizeGpsPoint(point) {
     return null;
   }
 
-  const actualLongitude = Number(point.latitude);
+  const latitude = Number(point.latitude);
+  const longitude = Number(point.longitude);
 
-  const actualLatitude = Number(point.longitude);
-
-  if (!Number.isFinite(actualLatitude) || !Number.isFinite(actualLongitude)) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
   }
 
-  return [actualLatitude, actualLongitude];
+  return [latitude, longitude];
 }
 
 /* ============================================================
