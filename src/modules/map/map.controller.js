@@ -1,12 +1,10 @@
 import mapService from "./map.service.js";
 
 class MapController {
-  /**
-   * GET /map/nearest
-   *
-   * Find nearest garbage truck
-   * based on citizen location
-   */
+  // ==========================================================
+  // EXISTING: NEAREST TRUCK
+  // ==========================================================
+
   async getNearestTruck(req, res, next) {
     try {
       const { latitude, longitude } = req.query;
@@ -57,11 +55,10 @@ class MapController {
     }
   }
 
-  /**
-   * GET /map/truck/:vehicleId
-   *
-   * Get specific truck
-   */
+  // ==========================================================
+  // EXISTING: SPECIFIC TRUCK
+  // ==========================================================
+
   async getTruck(req, res, next) {
     try {
       const { vehicleId } = req.params;
@@ -86,20 +83,18 @@ class MapController {
     }
   }
 
-  /**
-   * GET /api/route-map/live
-   *
-   * Get live vehicle locations for the
-   * selected City → Zone → Division → Ward.
-   */
+  // ==========================================================
+  // NEW: LIVE VEHICLE LOCATIONS
+  // ==========================================================
+
   async getLiveVehicleLocations(req, res, next) {
     try {
       const { latitude, longitude, cityId, zoneId, divisionId, wardId } =
         req.query;
 
-      // --------------------------------------------------
+      // ------------------------------------------------------
       // REQUIRED PARAMETERS
-      // --------------------------------------------------
+      // ------------------------------------------------------
 
       if (
         latitude === undefined ||
@@ -117,9 +112,9 @@ class MapController {
         });
       }
 
-      // --------------------------------------------------
+      // ------------------------------------------------------
       // COORDINATES
-      // --------------------------------------------------
+      // ------------------------------------------------------
 
       const parsedLatitude = Number(latitude);
 
@@ -140,9 +135,9 @@ class MapController {
         });
       }
 
-      // --------------------------------------------------
+      // ------------------------------------------------------
       // IDS
-      // --------------------------------------------------
+      // ------------------------------------------------------
 
       const parsedCityId = Number(cityId);
 
@@ -169,34 +164,43 @@ class MapController {
         });
       }
 
-      // --------------------------------------------------
+      // ------------------------------------------------------
       // SERVICE
-      // --------------------------------------------------
+      // ------------------------------------------------------
 
       const result = await mapService.getLiveVehicleLocations({
         latitude: parsedLatitude,
+
         longitude: parsedLongitude,
+
         cityId: parsedCityId,
+
         zoneId: parsedZoneId,
+
         divisionId: parsedDivisionId,
+
         wardId: parsedWardId,
       });
 
       return res.status(200).json({
         success: true,
+
         message:
           result.vehicles.length > 0
             ? "Live vehicle locations fetched successfully."
             : "No vehicles found for the selected ward.",
+
         data: result,
       });
     } catch (error) {
-      console.error("Live vehicle location error:", error);
+      console.error("Live vehicle route error:", error);
 
       return res.status(error.statusCode || 500).json({
         success: false,
+
         message:
           error.publicMessage || "Unable to fetch live vehicle locations.",
+
         data: null,
       });
     }

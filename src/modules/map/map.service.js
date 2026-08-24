@@ -1,10 +1,8 @@
+import axios from "axios";
+
 import mapRepository from "./map.repository.js";
 import mapRedis from "./map.redis.js";
 import { emitTruckLocationUpdated } from "./map.socket.js";
-
-import telemetryDb from "../../config/telemetryDb.js";
-import masterCitizenPrisma from "../../config/masterCitizenPrisma.js";
-import sewacPrisma from "../../config/sewacPrisma.js";
 
 class MapService {
   // ==========================================================
@@ -16,13 +14,16 @@ class MapService {
 
     if (!telemetry.length) {
       console.log("⚠️ No telemetry data found.");
+
       return;
     }
 
     const grouped = new Map();
 
     for (const row of telemetry) {
-      if (!row.vehicle_id) continue;
+      if (!row.vehicle_id) {
+        continue;
+      }
 
       if (!grouped.has(row.vehicle_id)) {
         grouped.set(row.vehicle_id, []);
@@ -33,6 +34,7 @@ class MapService {
 
     for (const [vehicleId, records] of grouped.entries()) {
       const first = records[0];
+
       const latest = records[records.length - 1];
 
       const previous =
@@ -229,7 +231,10 @@ class MapService {
   }
 
   // ==========================================================
-  // NEW: LIVE VEHICLE LOCATIONS
+  // NEW LIVE VEHICLE LOCATIONS
+  //
+  // Citizen backend calls the existing Admin
+  // live vehicle endpoint.
   // ==========================================================
 
   async getLiveVehicleLocations({
@@ -240,516 +245,242 @@ class MapService {
     divisionId,
     wardId,
   }) {
-    // --------------------------------------------------------
-    // 1. VALIDATE CITY → ZONE → DIVISION → WARD
-    // --------------------------------------------------------
+    const adminBackendUrl = process.env.ADMIN_BACKEND_URL;
 
-    const hierarchy = await this.validateGeographicHierarchy(
-      cityId,
-      zoneId,
-      divisionId,
-      wardId,
-    );
+    if (!adminBackendUrl) {
+      const error = new Error("ADMIN_BACKEND_URL is not configured.");
 
-    if (!hierarchy) {
-      const error = new Error(
-        "Invalid city, zone, division or ward selection.",
-      );
+      error.statusCode = 500;
 
-      error.statusCode = 400;
-
-      error.publicMessage = "Invalid city, zone, division or ward selection.";
+      error.publicMessage = "Live vehicle tracking is not configured.";
 
       throw error;
     }
 
-    // --------------------------------------------------------
-    // 2. GET VEHICLES FOR SELECTED WARD
-    // --------------------------------------------------------
+    const cleanAdminUrl = adminBackendUrl.replace(/\/+$/, "");
 
-    const vehicles = await this.getVehiclesForWard(hierarchy);
+    const url = `${cleanAdminUrl}/api/route-map/live`;
 
-    const liveVehicles = [];
+    console.log("==================================");
 
-    // --------------------------------------------------------
-    // 3. PROCESS EACH VEHICLE
-    // --------------------------------------------------------
+    console.log("GET ADMIN LIVE VEHICLES");
 
-    for (const vehicle of vehicles) {
-      try {
-        const rawVehicleId =
-          vehicle.vehicle_id ?? vehicle.vehicleId ?? vehicle.id;
+    console.log("ADMIN URL:", url);
 
-        if (rawVehicleId === undefined || rawVehicleId === null) {
-          continue;
-        }
+    console.log("PARAMS:", {
+      latitude,
+      longitude,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
 
-        const vehicleId = String(rawVehicleId);
+    console.log("==================================");
 
-        // ----------------------------------------------------
-        // LATEST GPS
-        // ----------------------------------------------------
-
-        const latestTelemetry = await this.getLatestVehicleTelemetry(vehicleId);
-
-        // ----------------------------------------------------
-        // NO TELEMETRY
-        // ----------------------------------------------------
-
-        if (!latestTelemetry) {
-          liveVehicles.push({
-            vehicleId,
-
-            latitude: null,
-
-            longitude: null,
-
-            distance: null,
-
-            distanceUnit: "km",
-
-            status: "INACTIVE",
-
-            lastUpdated: null,
-          });
-
-          continue;
-        }
-
-        // ----------------------------------------------------
-        // GPS VALUES
-        // ----------------------------------------------------
-
-        const vehicleLatitude = Number(latestTelemetry.latitude);
-
-        const vehicleLongitude = Number(latestTelemetry.longitude);
-
-        // ----------------------------------------------------
-        // GPS VALIDATION
-        // ----------------------------------------------------
-
-        if (
-          !Number.isFinite(vehicleLatitude) ||
-          !Number.isFinite(vehicleLongitude) ||
-          vehicleLatitude < -90 ||
-          vehicleLatitude > 90 ||
-          vehicleLongitude < -180 ||
-          vehicleLongitude > 180
-        ) {
-          liveVehicles.push({
-            vehicleId,
-
-            latitude: null,
-
-            longitude: null,
-
-            distance: null,
-
-            distanceUnit: "km",
-
-            status: "INACTIVE",
-
-            lastUpdated: null,
-          });
-
-          continue;
-        }
-
-        // ----------------------------------------------------
-        // TELEMETRY TIME
-        // ----------------------------------------------------
-
-        const telemetryTime = this.getTelemetryTime(latestTelemetry);
-
-        const lastUpdated = new Date(telemetryTime);
-
-        // ----------------------------------------------------
-        // ACTIVE / INACTIVE
-        // ----------------------------------------------------
-
-        const ageMilliseconds = Date.now() - lastUpdated.getTime();
-
-        const status =
-          ageMilliseconds >= 0 && ageMilliseconds <= 30 * 60 * 1000
-            ? "ACTIVE"
-            : "INACTIVE";
-
-        // ----------------------------------------------------
-        // HAVERSINE DISTANCE
-        // ----------------------------------------------------
-
-        const distance = this.haversineDistance(
+    try {
+      const response = await axios.get(url, {
+        params: {
           latitude,
           longitude,
-          vehicleLatitude,
-          vehicleLongitude,
+          cityId,
+          zoneId,
+          divisionId,
+          wardId,
+        },
+
+        timeout: 15000,
+      });
+
+      const adminResponse = response.data;
+
+      console.log("ADMIN STATUS:", response.status);
+
+      if (!adminResponse || adminResponse.success !== true) {
+        const error = new Error(
+          adminResponse?.message || "Unable to fetch live vehicle locations.",
         );
 
-        liveVehicles.push({
-          vehicleId,
+        error.statusCode = response.status || 500;
 
-          latitude: vehicleLatitude,
+        error.publicMessage =
+          adminResponse?.message || "Unable to fetch live vehicle locations.";
 
-          longitude: vehicleLongitude,
+        throw error;
+      }
 
-          distance: Number(distance.toFixed(2)),
+      const adminData = adminResponse.data || {};
+
+      const adminVehicles = Array.isArray(adminData.vehicles)
+        ? adminData.vehicles
+        : [];
+
+      const vehicles = adminVehicles.map((vehicle) => {
+        const vehicleId = vehicle.vehicleId ?? vehicle.vehicle_id ?? vehicle.id;
+
+        const vehicleLatitude =
+          vehicle.latitude == null ? null : Number(vehicle.latitude);
+
+        const vehicleLongitude =
+          vehicle.longitude == null ? null : Number(vehicle.longitude);
+
+        let distance = vehicle.distanceKm ?? vehicle.distance ?? null;
+
+        if (distance !== null) {
+          distance = Number(Number(distance).toFixed(2));
+        }
+
+        return {
+          vehicleId: vehicleId == null ? "" : String(vehicleId),
+
+          latitude: Number.isFinite(vehicleLatitude) ? vehicleLatitude : null,
+
+          longitude: Number.isFinite(vehicleLongitude)
+            ? vehicleLongitude
+            : null,
+
+          distance,
 
           distanceUnit: "km",
 
-          status,
+          status: this.resolveVehicleStatus(vehicle),
 
-          lastUpdated: lastUpdated.toISOString(),
-        });
-      } catch (error) {
-        // One vehicle must not break the entire response.
+          lastUpdated:
+            vehicle.lastUpdated ??
+            vehicle.updatedAt ??
+            vehicle.timestamp ??
+            null,
+        };
+      });
 
-        console.error("Unable to fetch live telemetry:", error);
+      // ------------------------------------------------------
+      // NEAREST FIRST
+      // Vehicles without GPS/distance go last.
+      // ------------------------------------------------------
+
+      vehicles.sort((a, b) => {
+        if (a.distance === null && b.distance === null) {
+          return 0;
+        }
+
+        if (a.distance === null) {
+          return 1;
+        }
+
+        if (b.distance === null) {
+          return -1;
+        }
+
+        return a.distance - b.distance;
+      });
+
+      return {
+        personLocation: {
+          latitude: Number(latitude),
+
+          longitude: Number(longitude),
+        },
+
+        filters: {
+          cityId: Number(cityId),
+
+          zoneId: Number(zoneId),
+
+          divisionId: Number(divisionId),
+
+          wardId: Number(wardId),
+        },
+
+        vehicles,
+      };
+    } catch (error) {
+      console.error("==================================");
+
+      console.error("ADMIN LIVE VEHICLE ERROR:", error.message);
+
+      if (error.response) {
+        console.error("ADMIN STATUS:", error.response.status);
+
+        console.error("ADMIN BODY:", error.response.data);
       }
+
+      console.error("==================================");
+
+      const serviceError = new Error("Unable to fetch live vehicle locations.");
+
+      /*
+       * Preserve meaningful 4xx errors from
+       * the Admin backend.
+       */
+
+      if (
+        error.response &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        serviceError.statusCode = error.response.status;
+
+        serviceError.publicMessage =
+          error.response.data?.message ||
+          "Unable to fetch live vehicle locations.";
+      } else {
+        serviceError.statusCode = 500;
+
+        serviceError.publicMessage = "Unable to fetch live vehicle locations.";
+      }
+
+      throw serviceError;
     }
-
-    // --------------------------------------------------------
-    // 4. SORT NEAREST → FARTHEST
-    // --------------------------------------------------------
-
-    liveVehicles.sort((a, b) => {
-      if (a.distance === null && b.distance === null) {
-        return 0;
-      }
-
-      if (a.distance === null) {
-        return 1;
-      }
-
-      if (b.distance === null) {
-        return -1;
-      }
-
-      return a.distance - b.distance;
-    });
-
-    // --------------------------------------------------------
-    // 5. RESPONSE
-    // --------------------------------------------------------
-
-    return {
-      personLocation: {
-        latitude,
-
-        longitude,
-      },
-
-      filters: {
-        cityId,
-
-        zoneId,
-
-        divisionId,
-
-        wardId,
-      },
-
-      vehicles: liveVehicles,
-    };
   }
 
   // ==========================================================
-  // VALIDATE CITY → ZONE → DIVISION → WARD
+  // RESOLVE VEHICLE STATUS
   // ==========================================================
 
-  async validateGeographicHierarchy(cityId, zoneId, divisionId, wardId) {
-    // --------------------------------------------------------
-    // CITY
-    // --------------------------------------------------------
-
-    const cities = await masterCitizenPrisma.city_table.findMany({
-      where: {
-        city_id: Number(cityId),
-      },
-
-      select: {
-        city_id: true,
-
-        city_name: true,
-
-        city_table_name: true,
-      },
-    });
-
-    if (!cities.length || !cities[0].city_table_name) {
-      return null;
-    }
-
-    const city = cities[0];
-
-    const cityTable = this.validateIdentifier(city.city_table_name);
-
-    if (!cityTable) {
-      return null;
-    }
-
-    // --------------------------------------------------------
-    // ZONE
-    // --------------------------------------------------------
-
-    const zones = await masterCitizenPrisma.$queryRawUnsafe(
-      `
-          SELECT
-            zone_id,
-            zone_name,
-            zone_table_name
-          FROM "${cityTable}"
-          WHERE zone_id = $1
-          LIMIT 1
-          `,
-
-      Number(zoneId),
-    );
-
-    if (!zones.length || !zones[0].zone_table_name) {
-      return null;
-    }
-
-    const zone = zones[0];
-
-    const zoneTable = this.validateIdentifier(zone.zone_table_name);
-
-    if (!zoneTable) {
-      return null;
-    }
-
-    // --------------------------------------------------------
-    // DIVISION
-    // --------------------------------------------------------
-
-    const divisions = await masterCitizenPrisma.$queryRawUnsafe(
-      `
-          SELECT
-            division_id,
-            division_name,
-            division_table_name
-          FROM "${zoneTable}"
-          WHERE division_id = $1
-          LIMIT 1
-          `,
-
-      Number(divisionId),
-    );
-
-    if (!divisions.length || !divisions[0].division_table_name) {
-      return null;
-    }
-
-    const division = divisions[0];
-
-    const divisionTable = this.validateIdentifier(division.division_table_name);
-
-    if (!divisionTable) {
-      return null;
-    }
-
-    // --------------------------------------------------------
-    // WARD
-    // --------------------------------------------------------
-
-    const wards = await masterCitizenPrisma.$queryRawUnsafe(
-      `
-          SELECT
-            ward_id,
-            ward_no,
-            ward_name,
-            ward_table_name
-          FROM "${divisionTable}"
-          WHERE ward_id = $1
-          LIMIT 1
-          `,
-
-      Number(wardId),
-    );
-
-    if (!wards.length || !wards[0].ward_table_name) {
-      return null;
-    }
-
-    return {
-      city,
-
-      zone,
-
-      division,
-
-      ward: wards[0],
-    };
-  }
-
-  // ==========================================================
-  // GET VEHICLES FOR SELECTED WARD
-  // ==========================================================
-
-  async getVehiclesForWard(hierarchy) {
-    const { city, zone, division, ward } = hierarchy;
-
+  resolveVehicleStatus(vehicle) {
     /*
-     * Use the existing vehicle_master table.
-     *
-     * Geographic values come from the existing
-     * Master Citizen hierarchy.
+     * If Admin already sends ACTIVE/INACTIVE,
+     * use that value.
      */
 
-    const rows = await sewacPrisma.$queryRaw(
-      `
-        SELECT *
-        FROM "vehicle_master"
-        WHERE
-          LOWER(TRIM(city)) =
-            LOWER(TRIM(${city.city_name}))
-          AND
-          LOWER(TRIM(zone)) =
-            LOWER(TRIM(${zone.zone_name}))
-          AND
-          LOWER(TRIM(division)) =
-            LOWER(TRIM(${division.division_name}))
-          AND
-          LOWER(TRIM(ward)) =
-            LOWER(TRIM(${String(ward.ward_no)}))
-        `,
-    );
-
-    if (!Array.isArray(rows)) {
-      return [];
-    }
-
-    return rows;
-  }
-
-  // ==========================================================
-  // GET LATEST VEHICLE TELEMETRY
-  // ==========================================================
-
-  async getLatestVehicleTelemetry(vehicleId) {
-    /*
-     * Existing dynamic telemetry architecture:
-     *
-     * day_DDMMYYYY
-     */
-
-    const now = new Date();
-
-    const day = String(now.getDate()).padStart(2, "0");
-
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-
-    const year = now.getFullYear();
-
-    const dayTable = `day_${day}${month}${year}`;
-
-    const safeDayTable = this.validateIdentifier(dayTable);
-
-    if (!safeDayTable) {
-      return null;
-    }
-
-    // --------------------------------------------------------
-    // FIND VEHICLE TELEMETRY TABLE
-    // --------------------------------------------------------
-
-    const tableRows = await telemetryDb.$queryRawUnsafe(
-      `
-          SELECT
-            vehicle_table_name
-          FROM "${safeDayTable}"
-          WHERE vehicle_id = $1
-          LIMIT 1
-          `,
-
-      vehicleId,
-    );
-
-    if (
-      !Array.isArray(tableRows) ||
-      !tableRows.length ||
-      !tableRows[0].vehicle_table_name
-    ) {
-      return null;
-    }
-
-    const vehicleTable = this.validateIdentifier(
-      tableRows[0].vehicle_table_name,
-    );
-
-    if (!vehicleTable) {
-      return null;
-    }
-
-    // --------------------------------------------------------
-    // LATEST VALID GPS
-    // --------------------------------------------------------
-
-    const rows = await telemetryDb.$queryRawUnsafe(
-      `
-          SELECT *
-          FROM "${vehicleTable}"
-          WHERE
-            latitude IS NOT NULL
-            AND longitude IS NOT NULL
-          ORDER BY
-            COALESCE(
-              received_at,
-              recorded_at,
-              iot_timestamp
-            ) DESC
-          LIMIT 1
-          `,
-    );
-
-    if (!Array.isArray(rows) || !rows.length) {
-      return null;
-    }
-
-    const latest = rows[0];
-
-    const lat = Number(latest.latitude);
-
-    const lng = Number(latest.longitude);
-
-    if (
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lng) ||
-      lat < -90 ||
-      lat > 90 ||
-      lng < -180 ||
-      lng > 180
-    ) {
-      return null;
-    }
-
-    return latest;
-  }
-
-  // ==========================================================
-  // SAFE DYNAMIC SQL IDENTIFIER
-  // ==========================================================
-
-  validateIdentifier(identifier) {
-    if (typeof identifier !== "string") {
-      return null;
-    }
-
-    const value = identifier.trim();
-
-    if (!value) {
-      return null;
+    if (vehicle.status === "ACTIVE" || vehicle.status === "INACTIVE") {
+      return vehicle.status;
     }
 
     /*
-     * Only safe PostgreSQL identifiers
-     * are allowed for dynamic table names.
+     * Some existing implementations may use
+     * ONLINE/OFFLINE.
      */
 
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
-      return null;
+    if (vehicle.status === "ONLINE") {
+      return "ACTIVE";
     }
 
-    return value;
+    if (vehicle.status === "OFFLINE") {
+      return "INACTIVE";
+    }
+
+    /*
+     * If a timestamp exists, apply the
+     * 30-minute inactivity rule.
+     */
+
+    const timestamp =
+      vehicle.lastUpdated ?? vehicle.updatedAt ?? vehicle.timestamp ?? null;
+
+    if (!timestamp) {
+      return "INACTIVE";
+    }
+
+    const updatedAt = new Date(timestamp);
+
+    if (Number.isNaN(updatedAt.getTime())) {
+      return "INACTIVE";
+    }
+
+    const age = Date.now() - updatedAt.getTime();
+
+    return age >= 0 && age <= 30 * 60 * 1000 ? "ACTIVE" : "INACTIVE";
   }
 
   // ==========================================================
