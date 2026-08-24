@@ -21,8 +21,108 @@ model city_table {
   created_at      DateTime? @default(now()) @db.Timestamp(6)
 
   // Name of the dynamically-created city table.
-  // Example: bangalore_city
+  // Example:
+  //
+  // bangalore_city
+  //
   city_table_name String?   @db.VarChar(150)
 
   @@map("city")
+}
+
+
+// =====================================================
+// MASTER CITIZEN → WARD MAPPING
+// =====================================================
+//
+// Purpose:
+//
+// This table provides a FAST direct lookup:
+//
+//     phone number
+//          ↓
+//       ward_id
+//
+// It is intentionally isolated from the existing
+// dynamic Ward citizen tables.
+//
+// The existing Master Citizen → Ward synchronization
+// remains the source of this mapping.
+//
+// Example:
+//
+// +919876543210 → 174
+//
+// The Citizen App can therefore resolve the citizen's
+// Ward without searching through every Ward table.
+//
+// IMPORTANT:
+//
+// phone_number is UNIQUE because one phone number
+// should resolve to one current Ward mapping.
+//
+// PostgreSQL automatically creates a unique index for
+// the @unique constraint.
+//
+// =====================================================
+
+model master_citizen_map {
+  id           Int      @id @default(autoincrement())
+
+  phone_number String   @unique @db.VarChar(20)
+
+  ward_id      Int
+
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+
+  updated_at   DateTime @updatedAt @db.Timestamp(6)
+
+  // Fast lookup for all citizens belonging to a Ward.
+  @@index([ward_id])
+
+  @@map("master_citizen_map")
+}
+
+
+// =====================================================
+// MASTER CITIZEN → WARD MAPPING BACKUP
+// =====================================================
+//
+// Backup copy of the mapping table.
+//
+// This table is intentionally independent from the
+// primary master_citizen_map table.
+//
+// It can be used for:
+//
+// - Backup
+// - Recovery
+// - Mapping history
+// - Safe migration
+// - Emergency restoration
+//
+// Unlike the primary mapping table, phone_number is
+// NOT marked as @unique here so that historical/snapshot
+// records can be retained if required.
+//
+// =====================================================
+
+model master_citizen_map_backup {
+  id           Int      @id @default(autoincrement())
+
+  phone_number String   @db.VarChar(20)
+
+  ward_id      Int
+
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+
+  updated_at   DateTime @updatedAt @db.Timestamp(6)
+
+  // Fast lookup by phone number.
+  @@index([phone_number])
+
+  // Fast lookup by Ward.
+  @@index([ward_id])
+
+  @@map("master_citizen_map_backup")
 }

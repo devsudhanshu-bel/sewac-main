@@ -8,6 +8,7 @@ const compression =
   require("compression");
 
 
+
 // =====================================================
 // EXISTING ROUTES
 // =====================================================
@@ -55,6 +56,43 @@ const complaintRoutes =
   require("./routes/complaintRoutes");
 
 
+
+// =====================================================
+// AVERAGE WEIGHT GRAPH
+// =====================================================
+//
+// Actual location:
+//
+// src/averageGragh/
+//
+// Files:
+//
+// averageWeightController.js
+// averageWeightRoutes.js
+// averageWeightService.js
+//
+// Endpoint:
+//
+// GET /api/average-weight
+//
+// Example:
+//
+// /api/average-weight
+//   ?date=2026-08-23
+//   &cityId=1
+//   &zoneId=4
+//   &divisionId=2
+//   &wardId=10
+//
+// =====================================================
+
+const averageWeightRoutes =
+  require(
+    "./averageGragh/averageWeightRoutes"
+  );
+
+
+
 // =====================================================
 // COMPLAINT GRIEVANCE MAP
 // =====================================================
@@ -81,6 +119,7 @@ const complaintsGrevRoutes =
   );
 
 
+
 // =====================================================
 // ROUTE MAP
 // =====================================================
@@ -89,6 +128,7 @@ const routeMapRoutes =
   require(
     "./routes/routeMap.routes"
   );
+
 
 
 // =====================================================
@@ -101,6 +141,7 @@ const historicalDatabaseRoutes =
   );
 
 
+
 // =====================================================
 // MASTER CITIZEN ROUTES
 // =====================================================
@@ -111,10 +152,12 @@ const masterCitizenCityRoutes =
   );
 
 
+
 const masterCitizenZoneRoutes =
   require(
     "./routes/masterCitizenZone.routes"
   );
+
 
 
 const masterCitizenDivisionRoutes =
@@ -123,16 +166,19 @@ const masterCitizenDivisionRoutes =
   );
 
 
+
 const masterCitizenWardRoutes =
   require(
     "./routes/masterCitizenWard.routes"
   );
 
 
+
 const masterCitizenSyncRoutes =
   require(
     "./routes/masterCitizenSync.routes"
   );
+
 
 
 // =====================================================
@@ -151,6 +197,7 @@ const masterCitizenMapRoutes =
   require(
     "./master_citizen/masterCitizenMap.routes"
   );
+
 
 
 // =====================================================
@@ -175,6 +222,7 @@ const collectionPointMonitoringRoutes =
   );
 
 
+
 // =====================================================
 // MASTER CITIZEN BACKGROUND JOB
 // =====================================================
@@ -187,6 +235,7 @@ const {
   );
 
 
+
 // =====================================================
 // APP
 // =====================================================
@@ -195,73 +244,18 @@ const app =
   express();
 
 
+
 // =====================================================
 // RESPONSE COMPRESSION
-// =====================================================
-//
-// IMPORTANT FOR CITY MAP
-//
-// The City Map endpoint can return several MB of JSON
-// because it contains:
-//
-// City boundary
-//      ↓
-// Zone boundaries
-//      ↓
-// Division boundaries
-//      ↓
-// Ward boundaries
-//
-// Compression allows Express to send the response using:
-//
-// Brotli
-// or
-// GZIP
-//
-// WITHOUT changing the JSON structure.
-//
-// The browser automatically decompresses it.
-//
 // =====================================================
 
 app.use(
   compression({
-
-    /**
-     * Compression level.
-     *
-     * 6 gives a good balance between:
-     *
-     * CPU usage
-     * +
-     * compression ratio
-     *
-     */
-
-    level:
-      6,
-
-
-    /**
-     * Only compress responses larger than 1 KB.
-     *
-     * Small API responses do not need compression.
-     */
-
-    threshold:
-      1024,
-
-
-    /**
-     * Let the compression middleware choose
-     * Brotli/GZIP depending on what the client supports.
-     *
-     * This is especially useful for the map endpoint.
-     *
-     */
-
+    level: 6,
+    threshold: 1024,
   })
 );
+
 
 
 // =====================================================
@@ -283,6 +277,7 @@ const allowedOrigins = [
   "http://localhost:5174",
 
 ];
+
 
 
 app.use(
@@ -314,6 +309,7 @@ app.use(
         }
 
 
+
         // -------------------------------------------------
         // Allow known frontend origins
         // -------------------------------------------------
@@ -332,6 +328,7 @@ app.use(
         }
 
 
+
         // -------------------------------------------------
         // Reject unknown origins
         // -------------------------------------------------
@@ -340,6 +337,7 @@ app.use(
           "❌ CORS rejected:",
           origin
         );
+
 
 
         return callback(
@@ -357,6 +355,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // BODY PARSER
 // =====================================================
@@ -364,6 +363,7 @@ app.use(
 app.use(
   express.json()
 );
+
 
 
 // =====================================================
@@ -375,6 +375,7 @@ app.use(
     extended: true,
   })
 );
+
 
 
 // =====================================================
@@ -404,6 +405,7 @@ app.get(
 );
 
 
+
 // =====================================================
 // EXISTING API ROUTES
 // =====================================================
@@ -414,10 +416,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/admin/overview",
   overviewRoutes
 );
+
 
 
 app.use(
@@ -426,10 +430,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/admin/citizens",
   citizenRoutes
 );
+
 
 
 app.use(
@@ -438,10 +444,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/waste-generators",
   wasteGeneratorRoutes
 );
+
 
 
 app.use(
@@ -450,10 +458,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/logs",
   logsRoutes
 );
+
 
 
 app.use(
@@ -462,10 +472,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/vehicles",
   vehicleRoutes
 );
+
 
 
 app.use(
@@ -474,10 +486,12 @@ app.use(
 );
 
 
+
 app.use(
   "/api/permissions",
   permissionRoutes
 );
+
 
 
 app.use(
@@ -486,10 +500,43 @@ app.use(
 );
 
 
+
 app.use(
   "/api/complaints",
   complaintRoutes
 );
+
+
+
+// =====================================================
+// AVERAGE WEIGHT GRAPH API
+// =====================================================
+//
+// GET:
+//
+// /api/average-weight
+//
+// Example:
+//
+// /api/average-weight
+//   ?date=2026-08-23
+//
+// With Header filters:
+//
+// /api/average-weight
+//   ?date=2026-08-23
+//   &cityId=1
+//   &zoneId=4
+//   &divisionId=2
+//   &wardId=10
+//
+// =====================================================
+
+app.use(
+  "/api/average-weight",
+  averageWeightRoutes
+);
+
 
 
 // =====================================================
@@ -500,38 +547,13 @@ app.use(
 //
 // /api/complaints-grev/locations
 //
-//
-//
-// RESPONSE:
-//
-// {
-//   success: true,
-//   count: 3,
-//   data: [
-//     {
-//       lat: 12.9716,
-//       long: 77.5946,
-//       data: {
-//         id: 1,
-//         ticket_number: "...",
-//         phone_number: "...",
-//         title: "...",
-//         description: "...",
-//         category: "...",
-//         image_url: "...",
-//         address: "...",
-//         status: "..."
-//       }
-//     }
-//   ]
-// }
-//
 // =====================================================
 
 app.use(
   "/api/complaints-grev",
   complaintsGrevRoutes
 );
+
 
 
 // =====================================================
@@ -554,6 +576,7 @@ app.use(
   "/api/route-map",
   routeMapRoutes
 );
+
 
 
 // =====================================================
@@ -592,6 +615,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // HISTORICAL DATABASE API
 // =====================================================
@@ -615,9 +639,11 @@ app.use(
 );
 
 
+
 // =====================================================
 // MASTER CITIZEN
 // =====================================================
+
 
 
 // =====================================================
@@ -641,6 +667,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // ZONE
 // =====================================================
@@ -662,6 +689,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // DIVISION
 // =====================================================
@@ -678,6 +706,7 @@ app.use(
   "/api/master-citizen",
   masterCitizenDivisionRoutes
 );
+
 
 
 // =====================================================
@@ -698,6 +727,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // CITY OVERVIEW MAP
 // =====================================================
@@ -712,40 +742,13 @@ app.use(
 //
 // /api/master-citizen/map/city/1
 //
-//
-//
-// DATA HIERARCHY:
-//
-// City
-//   ↓
-// City Boundary
-//   ↓
-// Zones
-//   ↓
-// Zone Boundaries
-//   ↓
-// Divisions
-//   ↓
-// Division Boundaries
-//   ↓
-// Wards
-//   ↓
-// Ward Boundaries
-//
-//
-//
-// IMPORTANT:
-//
-// No citizen records.
-// No citizen counts.
-// No citizen joins.
-//
 // =====================================================
 
 app.use(
   "/api/master-citizen",
   masterCitizenMapRoutes
 );
+
 
 
 // =====================================================
@@ -764,6 +767,7 @@ app.use(
   "/api/master-citizen",
   masterCitizenSyncRoutes
 );
+
 
 
 // =====================================================
@@ -786,6 +790,7 @@ try {
   );
 
 }
+
 
 
 // =====================================================
@@ -817,6 +822,7 @@ app.use(
 );
 
 
+
 // =====================================================
 // GLOBAL ERROR HANDLER
 // =====================================================
@@ -846,6 +852,7 @@ app.use(
     );
 
 
+
     // -------------------------------------------------
     // CORS ERROR
     // -------------------------------------------------
@@ -870,6 +877,7 @@ app.use(
     }
 
 
+
     // -------------------------------------------------
     // DEFAULT ERROR
     // -------------------------------------------------
@@ -891,6 +899,7 @@ app.use(
 
   }
 );
+
 
 
 // =====================================================
