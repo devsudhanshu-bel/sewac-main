@@ -221,6 +221,24 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
 
   /*
    * WARD
+   *
+   * IMPORTANT:
+   *
+   * The citizen application sends wardId = 216.
+   *
+   * In the Master Citizen hierarchy, the same
+   * ward can have:
+   *
+   *   ward_id = 3
+   *   ward_no = 216
+   *
+   * vehicle_master uses ward_no / ward = 216.
+   *
+   * Therefore we accept either the internal ward_id
+   * OR the ward_no.
+   *
+   * Priority is given to ward_id if both happen
+   * to match.
    */
 
   const wards = await masterCitizenPrisma.$queryRawUnsafe(
@@ -232,6 +250,12 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
           ward_table_name
         FROM ${divisionTable}
         WHERE ward_id = $1
+           OR ward_no = $1
+        ORDER BY
+          CASE
+            WHEN ward_id = $1 THEN 0
+            ELSE 1
+          END
         LIMIT 1
       `,
     selectedWardId,
@@ -259,18 +283,42 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
 
   return {
     cityId: selectedCityId,
+
     cityName: city.city_name,
 
     zoneId: selectedZoneId,
+
     zoneName: zone.zone_name,
 
     divisionId: selectedDivisionId,
+
     divisionName: division.division_name,
 
+    /*
+     * Keep the ID supplied by the caller.
+     *
+     * If caller sent 216, response contains 216.
+     */
+
     wardId: selectedWardId,
+
+    /*
+     * This is the actual ward number used
+     * for vehicle_master matching.
+     */
+
     wardNo,
+
     wardName: ward.ward_name,
+
     wardTableName: ward.ward_table_name,
+
+    /*
+     * Keep the internal hierarchy ID available
+     * internally without changing the API contract.
+     */
+
+    masterWardId: Number(ward.ward_id),
   };
 };
 
@@ -632,6 +680,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
         if (!latest || receivedTimestamp > latest.receivedTimestamp) {
           latest = {
             latitude,
+
             longitude,
 
             receivedTimestamp,
@@ -810,7 +859,6 @@ const getLiveRouteMap = async ({
     const distance = calculateDistanceKm(
       personLatitude,
       personLongitude,
-
       vehicle.latitude,
       vehicle.longitude,
     );
