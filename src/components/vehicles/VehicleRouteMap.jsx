@@ -1161,6 +1161,7 @@ export default function VehicleRouteMap({ selectedDate }) {
           >
             <LiveMap
               mapData={liveMapData}
+              plants={validPlants}
               selectedDate={selectedDate}
               selectedCity={selectedCity}
               selectedZone={selectedZone}

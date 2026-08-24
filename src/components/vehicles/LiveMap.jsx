@@ -18,7 +18,6 @@ import {
 } from "react-leaflet";
 
 import L from "leaflet";
-
 import { io } from "socket.io-client";
 
 import "leaflet/dist/leaflet.css";
@@ -37,20 +36,20 @@ const SOCKET_URL =
 ============================================================ */
 
 const VEHICLE_TRAIL_COLORS = [
-  "#10B981", // Green
-  "#2563EB", // Blue
-  "#F59E0B", // Amber
-  "#DC2626", // Red
-  "#7C3AED", // Violet
-  "#DB2777", // Pink
-  "#0891B2", // Cyan
-  "#EA580C", // Orange
-  "#4F46E5", // Indigo
-  "#65A30D", // Lime
+  "#10B981",
+  "#2563EB",
+  "#F59E0B",
+  "#DC2626",
+  "#7C3AED",
+  "#DB2777",
+  "#0891B2",
+  "#EA580C",
+  "#4F46E5",
+  "#65A30D",
 ];
 
 /* ============================================================
-   GET DETERMINISTIC VEHICLE COLOR
+   VEHICLE COLOR
 ============================================================ */
 
 function getVehicleTrailColor(vehicleId) {
@@ -60,13 +59,10 @@ function getVehicleTrailColor(vehicleId) {
 
   for (let i = 0; i < id.length; i += 1) {
     hash = (hash << 5) - hash + id.charCodeAt(i);
-
     hash |= 0;
   }
 
-  const index = Math.abs(hash) % VEHICLE_TRAIL_COLORS.length;
-
-  return VEHICLE_TRAIL_COLORS[index];
+  return VEHICLE_TRAIL_COLORS[Math.abs(hash) % VEHICLE_TRAIL_COLORS.length];
 }
 
 /* ============================================================
@@ -86,9 +82,7 @@ const createVehicleIcon = (online = true) =>
           border-radius:50%;
           background:${online ? "#16A34A" : "#94A3B8"};
           border:4px solid #FFFFFF;
-          box-shadow:
-            0 4px 14px
-            rgba(0,0,0,0.25);
+          box-shadow:0 4px 14px rgba(0,0,0,0.25);
           display:flex;
           align-items:center;
           justify-content:center;
@@ -119,11 +113,40 @@ const createVehicleIcon = (online = true) =>
     `,
 
     iconSize: [46, 46],
-
     iconAnchor: [23, 23],
-
     popupAnchor: [0, -23],
   });
+
+/* ============================================================
+   PLANT ICON
+============================================================ */
+
+const plantIcon = new L.DivIcon({
+  className: "sewac-live-plant-marker",
+
+  html: `
+    <div
+      style="
+        width:42px;
+        height:42px;
+        border-radius:12px;
+        background:#111827;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border:3px solid #FFFFFF;
+        box-shadow:0 6px 18px rgba(0,0,0,.25);
+        font-size:19px;
+      "
+    >
+      🏭
+    </div>
+  `,
+
+  iconSize: [42, 42],
+  iconAnchor: [21, 21],
+  popupAnchor: [0, -21],
+});
 
 /* ============================================================
    GEOJSON PARSER
@@ -168,16 +191,13 @@ function normalizeCoordinatePair(pair) {
   }
 
   const first = Number(pair[0]);
-
   const second = Number(pair[1]);
 
   /*
-   * Boundary data can arrive as:
-   *
+   * Boundary data may arrive as:
    * [latitude, longitude]
    *
    * GeoJSON requires:
-   *
    * [longitude, latitude]
    */
 
@@ -228,7 +248,6 @@ function normalizeGeoJSON(value) {
 
     return {
       ...parsed,
-
       geometry: normalizeGeoJSON(parsed.geometry),
     };
   }
@@ -246,7 +265,6 @@ function normalizeGeoJSON(value) {
   if (parsed.type && parsed.coordinates) {
     return {
       ...parsed,
-
       coordinates: normalizeCoordinates(parsed.coordinates),
     };
   }
@@ -259,7 +277,6 @@ function normalizeGeoJSON(value) {
 
       geometry: {
         type: "Polygon",
-
         coordinates: normalizeCoordinates(parsed),
       },
     };
@@ -268,9 +285,7 @@ function normalizeGeoJSON(value) {
   if (parsed.geometry && typeof parsed.geometry === "object") {
     return normalizeGeoJSON({
       type: "Feature",
-
       properties: parsed.properties || {},
-
       geometry: parsed.geometry,
     });
   }
@@ -283,7 +298,6 @@ function normalizeGeoJSON(value) {
 
       geometry: {
         type: parsed.type || "Polygon",
-
         coordinates: normalizeCoordinates(parsed.coordinates),
       },
     };
@@ -333,22 +347,8 @@ function getBoundary(
    GPS POSITION
 ============================================================ */
 
-/*
- * Backend sends:
- *
- * latitude
- * longitude
- *
- * Leaflet expects:
- *
- * [latitude, longitude]
- *
- * DO NOT SWAP THESE.
- */
-
 function gpsPosition(latitude, longitude) {
   const lat = Number(latitude);
-
   const lng = Number(longitude);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -367,6 +367,32 @@ function gpsPosition(latitude, longitude) {
 }
 
 /* ============================================================
+   PLANT POSITION
+============================================================ */
+
+function getPlantPosition(plant) {
+  if (!plant) {
+    return null;
+  }
+
+  const latitude = Number(plant.latitude ?? plant.lat ?? plant.latitute);
+
+  const longitude = Number(
+    plant.longitude ?? plant.lng ?? plant.lon ?? plant.long,
+  );
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return [latitude, longitude];
+}
+
+/* ============================================================
    MAP SIZE CONTROLLER
 ============================================================ */
 
@@ -376,9 +402,7 @@ function MapSizeController() {
   useEffect(() => {
     const timers = [
       setTimeout(() => map.invalidateSize(), 100),
-
       setTimeout(() => map.invalidateSize(), 400),
-
       setTimeout(() => map.invalidateSize(), 800),
     ];
 
@@ -404,15 +428,12 @@ function BoundaryController({ boundary }) {
 
     try {
       const layer = L.geoJSON(boundary);
-
       const bounds = layer.getBounds();
 
       if (bounds.isValid()) {
         map.fitBounds(bounds, {
           padding: [60, 60],
-
           maxZoom: 14,
-
           animate: true,
         });
       }
@@ -431,6 +452,8 @@ function BoundaryController({ boundary }) {
 export default function LiveMap({
   mapData,
 
+  plants,
+
   selectedDate,
 
   selectedCity,
@@ -448,6 +471,18 @@ export default function LiveMap({
   const initialRoutes = useMemo(
     () => (Array.isArray(mapData?.routes) ? mapData.routes : []),
     [mapData],
+  );
+
+  /* ==========================================================
+     VALID PLANTS
+  ========================================================== */
+
+  const validPlants = useMemo(
+    () =>
+      Array.isArray(plants)
+        ? plants.filter((plant) => Boolean(getPlantPosition(plant)))
+        : [],
+    [plants],
   );
 
   /* ==========================================================
@@ -533,7 +568,7 @@ export default function LiveMap({
   const offlineTimerRef = useRef(null);
 
   /* ==========================================================
-     UPDATE VEHICLE REF
+     VEHICLE REF
   ========================================================== */
 
   useEffect(() => {
@@ -547,11 +582,8 @@ export default function LiveMap({
   const showToast = useCallback((title, message, type = "success") => {
     setToast({
       id: Date.now(),
-
       title,
-
       message,
-
       type,
     });
 
@@ -643,9 +675,7 @@ export default function LiveMap({
 
         next[vehicleId] = {
           ...vehicle,
-
           latitude,
-
           longitude,
         };
 
@@ -678,12 +708,12 @@ export default function LiveMap({
 
   useEffect(() => {
     if (!SOCKET_URL) {
-      console.error("❌ Socket URL is not configured.");
+      console.error("Socket URL is not configured.");
 
       return undefined;
     }
 
-    console.log("🔌 Connecting Live Maps Socket:", SOCKET_URL);
+    console.log("Connecting Live Maps Socket:", SOCKET_URL);
 
     const socket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
@@ -699,12 +729,10 @@ export default function LiveMap({
 
     socketRef.current = socket;
 
-    /* --------------------------------------------------------
-       CONNECT
-    -------------------------------------------------------- */
+    /* CONNECT */
 
     socket.on("connect", () => {
-      console.log("🔌 Live Maps Socket connected:", socket.id);
+      console.log("Live Maps Socket connected:", socket.id);
 
       socket.emit("live:subscribe", {
         cityId: selectedCity?.cityId ?? selectedCity?.id ?? null,
@@ -718,12 +746,10 @@ export default function LiveMap({
       });
     });
 
-    /* --------------------------------------------------------
-       LIVE HEARTBEAT
-    -------------------------------------------------------- */
+    /* LIVE HEARTBEAT */
 
     socket.on("vehicle:heartbeat", (heartbeat) => {
-      console.log("📡 LIVE VEHICLE UPDATE:", heartbeat);
+      console.log("LIVE VEHICLE UPDATE:", heartbeat);
 
       if (!matchesFilters(heartbeat)) {
         return;
@@ -740,7 +766,7 @@ export default function LiveMap({
       const position = gpsPosition(heartbeat.latitude, heartbeat.longitude);
 
       if (!position) {
-        console.warn("⚠️ Invalid live GPS:", heartbeat);
+        console.warn("Invalid live GPS:", heartbeat);
 
         return;
       }
@@ -804,33 +830,24 @@ export default function LiveMap({
       });
     });
 
-    /* --------------------------------------------------------
-       SOCKET ERROR
-    -------------------------------------------------------- */
+    /* SOCKET ERROR */
 
     socket.on("connect_error", (error) => {
-      console.error("❌ Live Maps Socket connection error:", error);
+      console.error("Live Maps Socket connection error:", error);
     });
 
-    /* --------------------------------------------------------
-       DISCONNECT
-    -------------------------------------------------------- */
+    /* DISCONNECT */
 
     socket.on("disconnect", (reason) => {
-      console.warn("🔌 Live Maps Socket disconnected:", reason);
+      console.warn("Live Maps Socket disconnected:", reason);
     });
 
-    /* --------------------------------------------------------
-       CLEANUP
-    -------------------------------------------------------- */
+    /* CLEANUP */
 
     return () => {
       socket.off("connect");
-
       socket.off("vehicle:heartbeat");
-
       socket.off("connect_error");
-
       socket.off("disconnect");
 
       socket.disconnect();
@@ -955,7 +972,6 @@ export default function LiveMap({
 
             next[vehicleId] = {
               ...vehicle,
-
               online,
             };
           }
@@ -1021,8 +1037,18 @@ export default function LiveMap({
       return [firstVehicle.latitude, firstVehicle.longitude];
     }
 
+    const firstPlant = validPlants[0];
+
+    if (firstPlant) {
+      const position = getPlantPosition(firstPlant);
+
+      if (position) {
+        return position;
+      }
+    }
+
     return [12.9716, 77.5946];
-  }, [selectedBoundary, vehicles]);
+  }, [selectedBoundary, vehicles, validPlants]);
 
   /* ==========================================================
      VISIBLE VEHICLES
@@ -1088,10 +1114,6 @@ export default function LiveMap({
         bg-[#EEF1F3]
       "
     >
-      {/* ====================================================
-          MAP
-      ==================================================== */}
-
       <MapContainer
         center={center}
         zoom={14}
@@ -1103,10 +1125,6 @@ export default function LiveMap({
           !w-full
         "
       >
-        {/* ==================================================
-            TILES
-        ================================================== */}
-
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
@@ -1145,6 +1163,157 @@ export default function LiveMap({
         )}
 
         {/* ==================================================
+            PLANT LOCATIONS
+        ================================================== */}
+
+        {validPlants.map((plant, index) => {
+          const position = getPlantPosition(plant);
+
+          if (!position) {
+            return null;
+          }
+
+          const plantId = plant.id ?? plant.plant_id ?? plant.plantId ?? index;
+
+          const plantName =
+            plant.plant_name ?? plant.plantName ?? plant.name ?? "Plant";
+
+          const plantStatus = plant.status ?? plant.plant_status;
+
+          const plantZone = plant.zone ?? plant.zone_name ?? plant.zoneName;
+
+          const plantManager =
+            plant.plant_manager ?? plant.plantManager ?? plant.manager_name;
+
+          const capacity =
+            plant.capacity_ton_per_day ??
+            plant.capacityTonPerDay ??
+            plant.capacity;
+
+          const enrolledVehicles =
+            plant.vehicles_enrolled ?? plant.vehiclesEnrolled;
+
+          return (
+            <Marker
+              key={`live-plant-${plantId}`}
+              position={position}
+              icon={plantIcon}
+            >
+              <Popup maxWidth={300} minWidth={240}>
+                <div className="p-1 sm:p-2">
+                  {/* HEADER */}
+
+                  <div className="mb-4 flex items-center gap-3">
+                    <div
+                      className="
+                          flex
+                          h-11
+                          w-11
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-xl
+                          bg-violet-100
+                        "
+                    >
+                      🏭
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3
+                        className="
+                            text-[15px]
+                            font-bold
+                            text-gray-900
+                          "
+                      >
+                        {plantName}
+                      </h3>
+
+                      {plantStatus && (
+                        <span
+                          className={`
+                              text-xs
+                              font-semibold
+                              ${
+                                String(plantStatus).toUpperCase() === "ACTIVE"
+                                  ? "text-green-600"
+                                  : "text-red-500"
+                              }
+                            `}
+                        >
+                          ● {plantStatus}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* DETAILS */}
+
+                  <div className="space-y-3 text-[13px]">
+                    {plantZone && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-violet-600">📍</span>
+
+                        <span>{plantZone}</span>
+                      </div>
+                    )}
+
+                    {plantManager && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-violet-600">👤</span>
+
+                        <span>{plantManager}</span>
+                      </div>
+                    )}
+
+                    {capacity !== undefined && capacity !== null && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-violet-600">🏭</span>
+
+                        <span>{capacity} Ton/Day</span>
+                      </div>
+                    )}
+
+                    {enrolledVehicles !== undefined &&
+                      enrolledVehicles !== null && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-violet-600">🚛</span>
+
+                          <span>{enrolledVehicles} Vehicles</span>
+                        </div>
+                      )}
+
+                    {/* COORDINATES */}
+
+                    <div className="flex items-start gap-2">
+                      <span className="text-violet-600">📍</span>
+
+                      <span>
+                        {position[0].toFixed(6)}, {position[1].toFixed(6)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    className="
+                        mt-4
+                        border-t
+                        border-gray-200
+                        pt-3
+                        text-xs
+                        text-gray-400
+                      "
+                  >
+                    Plant location
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* ==================================================
             LIVE VEHICLES
         ================================================== */}
 
@@ -1161,18 +1330,11 @@ export default function LiveMap({
                 .filter(Boolean)
             : [];
 
-          /*
-           * Every vehicle gets
-           * a deterministic color.
-           */
-
           const trailColor = getVehicleTrailColor(vehicle.vehicleId);
 
           return (
             <React.Fragment key={vehicle.vehicleId}>
-              {/* ==========================================
-                    VEHICLE TRAIL
-                ========================================== */}
+              {/* VEHICLE TRAIL */}
 
               {routePositions.length > 1 && (
                 <Polyline
@@ -1191,9 +1353,7 @@ export default function LiveMap({
                 />
               )}
 
-              {/* ==========================================
-                    VEHICLE MARKER
-                ========================================== */}
+              {/* VEHICLE MARKER */}
 
               <Marker
                 position={position}
@@ -1201,13 +1361,9 @@ export default function LiveMap({
               >
                 <Popup>
                   <div className="min-w-[230px]">
-                    {/* VEHICLE NAME */}
-
                     <div className="mb-2 text-base font-bold text-[#34475B]">
                       Live Vehicle Tracking
                     </div>
-
-                    {/* VEHICLE */}
 
                     <div className="text-sm text-[#60758B]">
                       Vehicle:{" "}
@@ -1215,8 +1371,6 @@ export default function LiveMap({
                         {vehicle.vehicleNumber}
                       </strong>
                     </div>
-
-                    {/* TRAIL COLOR */}
 
                     <div className="mt-2 flex items-center gap-2 text-sm text-[#60758B]">
                       <span
@@ -1236,16 +1390,12 @@ export default function LiveMap({
                       <span>Vehicle trail</span>
                     </div>
 
-                    {/* WARD */}
-
                     <div className="mt-1 text-sm text-[#60758B]">
                       Ward:{" "}
                       <strong className="text-[#34475B]">
                         {vehicle.wardNo ?? "N/A"}
                       </strong>
                     </div>
-
-                    {/* STATUS */}
 
                     <div className="mt-1 text-sm text-[#60758B]">
                       Status:{" "}
@@ -1258,19 +1408,13 @@ export default function LiveMap({
                       </strong>
                     </div>
 
-                    {/* LATITUDE */}
-
                     <div className="mt-2 border-t border-[#E5EAF0] pt-2 text-xs text-[#8AA1BB]">
                       Latitude: {Number(vehicle.latitude).toFixed(6)}
                     </div>
 
-                    {/* LONGITUDE */}
-
                     <div className="text-xs text-[#8AA1BB]">
                       Longitude: {Number(vehicle.longitude).toFixed(6)}
                     </div>
-
-                    {/* LAST UPDATE */}
 
                     <div className="mt-1 text-xs text-[#8AA1BB]">
                       Last update:{" "}
@@ -1282,9 +1426,7 @@ export default function LiveMap({
                 </Popup>
               </Marker>
 
-              {/* ==========================================
-                    LIVE LOCATION DOT
-                ========================================== */}
+              {/* LIVE LOCATION DOT */}
 
               <CircleMarker
                 center={position}
@@ -1458,7 +1600,7 @@ export default function LiveMap({
       )}
 
       {/* ======================================================
-          EMPTY STATE
+          EMPTY VEHICLE STATE
       ====================================================== */}
 
       {visibleVehicles.length === 0 && (
