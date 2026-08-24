@@ -7,75 +7,141 @@ import morgan from "morgan";
 import routes from "./routes/routes.js";
 import internalRoutes from "./routes/internal.routes.js";
 
-const app = express();
 
-/**
- * =====================================================
- * Middlewares
- * =====================================================
- */
+const app =
+  express();
 
-app.use(cors());
 
-app.use(helmet());
+// =====================================================
+// MIDDLEWARES
+// =====================================================
 
-app.use(compression());
+app.use(
+  cors()
+);
 
-app.use(morgan("dev"));
+app.use(
+  helmet()
+);
 
-app.use(express.json());
+app.use(
+  compression()
+);
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  morgan("dev")
+);
 
-/**
- * =====================================================
- * Health Check
- * =====================================================
- */
+app.use(
+  express.json()
+);
 
-app.get("/health", (req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "Citizen Backend Running 🚀",
-  });
-});
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
 
-/**
- * =====================================================
- * API Routes
- * =====================================================
- */
 
-app.use("/api/citizen", routes);
-app.use("/api/internal", internalRoutes);
-/**
- * =====================================================
- * 404 Handler
- * =====================================================
- */
+// =====================================================
+// HEALTH
+// =====================================================
 
-app.use((req, res) => {
-  return res.status(404).json({
-    success: false,
-    message: "Route not found.",
-    data: null,
-  });
-});
+app.get(
+  "/health",
+  (req, res) => {
 
-/**
- * =====================================================
- * Global Error Handler
- * =====================================================
- */
+    return res
+      .status(200)
+      .json({
 
-app.use((err, req, res, next) => {
-  console.error(err);
+        success: true,
 
-  return res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-    data: null,
-  });
-});
+        message:
+          "Citizen Backend Running 🚀",
+
+      });
+
+  }
+);
+
+
+// =====================================================
+// CITIZEN API
+// =====================================================
+
+app.use(
+  "/api/citizen",
+  routes
+);
+
+
+// =====================================================
+// INTERNAL API
+// =====================================================
+
+app.use(
+  "/api/internal",
+  internalRoutes
+);
+
+
+// =====================================================
+// 404
+// =====================================================
+
+app.use(
+  (req, res) => {
+
+    return res
+      .status(404)
+      .json({
+
+        success: false,
+
+        message:
+          "Route not found.",
+
+        data: null,
+
+      });
+
+  }
+);
+
+
+// =====================================================
+// GLOBAL ERROR HANDLER
+// =====================================================
+
+app.use(
+  (
+    err,
+    req,
+    res,
+    next
+  ) => {
+
+    console.error(err);
+
+    return res
+      .status(
+        err.status || 500
+      )
+      .json({
+
+        success: false,
+
+        message:
+          err.message ||
+          "Internal Server Error",
+
+        data: null,
+
+      });
+
+  }
+);
+
 
 export default app;
