@@ -770,16 +770,10 @@ const getVehicleSummary = async () => {
 
 const getAverageWeightByZone = async (date) => {
   /*
-   * =========================================================
-   * 1. VALIDATE DATE
-   * =========================================================
-   */
-
-  /*
-|--------------------------------------------------------------------------
-| VALIDATE DATE
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | DATE
+  |--------------------------------------------------------------------------
+  */
 
   let selectedDate;
 
@@ -801,33 +795,64 @@ const getAverageWeightByZone = async (date) => {
     const now = new Date();
 
     const yyyy = now.getFullYear();
-
     const mm = String(now.getMonth() + 1).padStart(2, "0");
-
     const dd = String(now.getDate()).padStart(2, "0");
 
     selectedDate = `${yyyy}-${mm}-${dd}`;
   }
-
-  /*
-|--------------------------------------------------------------------------
-| DATE OBJECT FOR DYNAMIC TABLE
-|--------------------------------------------------------------------------
-*/
 
   const [year, month, day] = selectedDate.split("-").map(Number);
 
   const dateObject = new Date(year, month - 1, day);
 
   /*
-   * =========================================================
-   * 2. GET ALL REGISTERED VEHICLES
-   * =========================================================
-   *
-   * We use vehicle_master because the graph is zone-wise.
-   *
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 1. GET ALL ZONES
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  | Do NOT derive zones from vehicle_master.
+  |
+  | zone_table is the master list.
+  |
+  */
+
+  const zoneResult = await mainDb.query(`
+      SELECT
+        id,
+        zone_name
+      FROM zone_table
+      ORDER BY id ASC
+    `);
+
+  /*
+  |--------------------------------------------------------------------------
+  | 2. INITIALISE EVERY ZONE
+  |--------------------------------------------------------------------------
+  */
+
+  const zoneMap = new Map();
+
+  for (const zone of zoneResult.rows) {
+    const zoneName = String(zone.zone_name || "").trim();
+
+    if (!zoneName) {
+      continue;
+    }
+
+    zoneMap.set(zoneName, {
+      zone: zoneName,
+      waste: 0,
+      vehicles: 0,
+      vehiclesWithTelemetry: 0,
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 3. GET REGISTERED VEHICLES
+  |--------------------------------------------------------------------------
+  */
 
   const registeredResult = await mainDb.query(`
       SELECT
@@ -841,8 +866,7 @@ const getAverageWeightByZone = async (date) => {
       WHERE
         vehicle_id IS NOT NULL
         AND TRIM(vehicle_id) <> ''
-      ORDER BY
-        id ASC
+      ORDER BY id ASC
     `);
 
   const registeredVehicles = registeredResult.rows
@@ -862,34 +886,40 @@ const getAverageWeightByZone = async (date) => {
     .filter((vehicle) => vehicle.vehicleId);
 
   /*
-   * =========================================================
-   * 3. GET TODAY'S VEHICLE TABLE MAPPING
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 4. COUNT VEHICLES PER ZONE
+  |--------------------------------------------------------------------------
+  */
+
+  for (const vehicle of registeredVehicles) {
+    const zoneName = vehicle.zone;
+
+    if (!zoneMap.has(zoneName)) {
+      continue;
+    }
+
+    zoneMap.get(zoneName).vehicles += 1;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 5. GET DYNAMIC TELEMETRY TABLES
+  |--------------------------------------------------------------------------
+  */
 
   let vehicleTables = [];
 
   try {
     vehicleTables = await getVehicleTablesForDate(dateObject);
   } catch (error) {
-    console.error("Average weight: unable to load day table:", error);
-
-    return {
-      date: selectedDate,
-
-      zones: [],
-
-      totalWasteGenerated: 0,
-
-      averageWasteGenerated: 0,
-    };
+    console.error("Average weight: unable to load day tables:", error);
   }
 
   /*
-   * =========================================================
-   * 4. MAP VEHICLE ID → DYNAMIC TELEMETRY TABLE
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 6. VEHICLE → TELEMETRY TABLE
+  |--------------------------------------------------------------------------
+  */
 
   const telemetryTableByVehicle = new Map();
 
@@ -898,60 +928,33 @@ const getAverageWeightByZone = async (date) => {
       continue;
     }
 
-    const vehicleNumber = String(vehicle.vehicleNumber).trim();
+    telemetryTableByVehicle.set(
+      String(vehicle.vehicleNumber).trim(),
 
-    telemetryTableByVehicle.set(vehicleNumber, vehicle.vehicleTableName);
+      vehicle.vehicleTableName,
+    );
   }
 
   /*
-   * =========================================================
-   * 5. CREATE ZONE GROUPS
-   * =========================================================
-   */
-
-  const zoneMap = new Map();
-
-  for (const vehicle of registeredVehicles) {
-    const zoneName = vehicle.zone || "Unknown Zone";
-
-    if (!zoneMap.has(zoneName)) {
-      zoneMap.set(zoneName, {
-        zone: zoneName,
-
-        city: vehicle.city,
-
-        vehicles: 0,
-
-        vehiclesWithTelemetry: 0,
-
-        waste: 0,
-      });
-    }
-
-    const zone = zoneMap.get(zoneName);
-
-    zone.vehicles += 1;
-  }
-
-  /*
-   * =========================================================
-   * 6. READ TELEMETRY VEHICLE BY VEHICLE
-   * =========================================================
-   *
-   * We intentionally use the existing dynamic vehicle tables.
-   *
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 7. READ TELEMETRY
+  |--------------------------------------------------------------------------
+  */
 
   for (const vehicle of registeredVehicles) {
     const telemetryTable = telemetryTableByVehicle.get(vehicle.vehicleId);
 
-    /*
-     * Vehicle is registered but has no
-     * dynamic telemetry table for the day.
-     */
-
     if (!telemetryTable) {
+      continue;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | VEHICLE HAS TO BELONG TO A KNOWN ZONE
+    |--------------------------------------------------------------------------
+    */
+
+    if (!zoneMap.has(vehicle.zone)) {
       continue;
     }
 
@@ -961,6 +964,7 @@ const getAverageWeightByZone = async (date) => {
       const result = await telemetryDb.$queryRawUnsafe(
         `
             SELECT
+
               COALESCE(
                 SUM(
                   COALESCE(
@@ -994,8 +998,7 @@ const getAverageWeightByZone = async (date) => {
             FROM ${table}
 
             WHERE
-              iottimestamp >=
-                $1::date
+              iottimestamp >= $1::date
 
               AND iottimestamp <
                 (
@@ -1018,11 +1021,15 @@ const getAverageWeightByZone = async (date) => {
 
       const otherWeight = Number(row.otherWeight) || 0;
 
+      /*
+      |--------------------------------------------------------------------------
+      | TOTAL KG
+      |--------------------------------------------------------------------------
+      */
+
       const totalWeight = wetWeight + dryWeight + otherWeight;
 
-      const zoneName = vehicle.zone || "Unknown Zone";
-
-      const zone = zoneMap.get(zoneName);
+      const zone = zoneMap.get(vehicle.zone);
 
       if (!zone) {
         continue;
@@ -1033,14 +1040,13 @@ const getAverageWeightByZone = async (date) => {
       zone.vehiclesWithTelemetry += 1;
     } catch (error) {
       /*
-       * Missing dynamic table should
-       * not break the complete graph.
-       */
+      |--------------------------------------------------------------------------
+      | MISSING TELEMETRY TABLE
+      |--------------------------------------------------------------------------
+      */
 
       if (error?.code === "42P01") {
-        console.warn(
-          `Average weight: telemetry table ${telemetryTable} does not exist.`,
-        );
+        console.warn(`Average weight: table ${telemetryTable} does not exist.`);
 
         continue;
       }
@@ -1050,30 +1056,30 @@ const getAverageWeightByZone = async (date) => {
   }
 
   /*
-   * =========================================================
-   * 7. FORMAT ZONE RESULTS
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 8. FORMAT ALL ZONES
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  | Zones with no telemetry remain in the response.
+  |
+  */
 
-  const zones = Array.from(zoneMap.values())
-    .map((zone) => ({
-      zone: zone.zone,
+  const zones = Array.from(zoneMap.values()).map((zone) => ({
+    zone: zone.zone,
 
-      city: zone.city,
+    waste: Number(zone.waste.toFixed(2)),
 
-      waste: Number(zone.waste.toFixed(2)),
+    vehicles: zone.vehicles,
 
-      vehicles: zone.vehicles,
-
-      vehiclesWithTelemetry: zone.vehiclesWithTelemetry,
-    }))
-    .sort((a, b) => a.zone.localeCompare(b.zone));
+    vehiclesWithTelemetry: zone.vehiclesWithTelemetry,
+  }));
 
   /*
-   * =========================================================
-   * 8. TOTAL WASTE
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 9. TOTAL WASTE
+  |--------------------------------------------------------------------------
+  */
 
   const totalWasteGenerated = zones.reduce(
     (total, zone) => total + Number(zone.waste || 0),
@@ -1081,19 +1087,19 @@ const getAverageWeightByZone = async (date) => {
   );
 
   /*
-   * =========================================================
-   * 9. AVERAGE ACROSS ZONES
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 10. AVERAGE
+  |--------------------------------------------------------------------------
+  */
 
   const averageWasteGenerated =
     zones.length > 0 ? totalWasteGenerated / zones.length : 0;
 
   /*
-   * =========================================================
-   * 10. RESPONSE
-   * =========================================================
-   */
+  |--------------------------------------------------------------------------
+  | 11. RESPONSE
+  |--------------------------------------------------------------------------
+  */
 
   return {
     date: selectedDate,
