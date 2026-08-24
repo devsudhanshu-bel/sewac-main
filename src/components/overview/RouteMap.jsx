@@ -216,9 +216,8 @@ function RouteBounds({ routes, boundary }) {
       }
 
       route.points.forEach((point) => {
-        const latitude = Number(point.latitude);
-
         const longitude = Number(point.longitude);
+        const latitude = Number(point.latitude);
 
         if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
           bounds.extend([latitude, longitude]);
@@ -347,9 +346,8 @@ const RouteMap = ({
       }
 
       for (const point of route.points) {
-        const lat = Number(point.latitude);
-
         const lng = Number(point.longitude);
+        const lat = Number(point.latitude);
 
         if (Number.isFinite(lat) && Number.isFinite(lng)) {
           return [lat, lng];
@@ -473,7 +471,7 @@ const RouteMap = ({
           const points = Array.isArray(route.points) ? route.points : [];
 
           const positions = points
-            .map((point) => [Number(point.latitude), Number(point.longitude)])
+            .map((point) => [Number(point.longitude), Number(point.latitude)])
             .filter(
               (position) =>
                 Number.isFinite(position[0]) && Number.isFinite(position[1]),
