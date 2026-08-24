@@ -33,7 +33,7 @@ const getTodayLocalDate = () => {
 
 const Vehicles = () => {
   /* =========================================================
-     GLOBAL HEADER FILTERS
+     HEADER FILTER CONTEXT
   ========================================================= */
 
   const { selectedCity, selectedZone, selectedDivision, selectedWard } =
@@ -41,8 +41,8 @@ const Vehicles = () => {
 
   /* =========================================================
      SELECTED DATE
-     Header owns the visual control, but the page owns
-     the actual date state.
+     
+     Header calendar is controlled by this page.
   ========================================================= */
 
   const [selectedDate, setSelectedDate] = useState(getTodayLocalDate());
@@ -59,47 +59,28 @@ const Vehicles = () => {
   });
 
   /* =========================================================
-     ROUTE MAP DATA
-  ========================================================= */
-
-  const [routeMapData, setRouteMapData] = useState(null);
-
-  const [routeMapLoading, setRouteMapLoading] = useState(false);
-
-  const [routeMapError, setRouteMapError] = useState("");
-
-  /* =========================================================
-     PLANT LOCATIONS
-  ========================================================= */
-
-  const [plants, setPlants] = useState([]);
-
-  const [plantsLoading, setPlantsLoading] = useState(false);
-
-  /* =========================================================
      FETCH VEHICLE SUMMARY
+     
+     KEEPING EXISTING VEHICLE KPI API UNCHANGED.
   ========================================================= */
 
   const fetchSummary = async () => {
     try {
-      const response = await api.get("/api/vehicles/summary");
-
-      const data = response?.data?.data;
+      const res = await api.get("/api/vehicles/summary");
 
       setSummary(
-        data || {
+        res?.data?.data || {
           totalVehicles: 0,
           activeVehicles: 0,
           inactiveVehicles: 0,
           averageWeightPerVehicle: 0,
         },
       );
-    } catch (error) {
-      console.error("Vehicle Summary Error:", error);
+    } catch (err) {
+      console.error("Vehicle Summary Error:", err);
 
       /*
-       * Keep the page alive even if
-       * summary request fails.
+       * Keep existing zero-data behavior.
        */
 
       setSummary({
@@ -112,161 +93,6 @@ const Vehicles = () => {
   };
 
   /* =========================================================
-     FETCH VEHICLE ROUTES
-  ========================================================= */
-
-  const fetchRouteMap = async () => {
-    /*
-     * -------------------------------------------------------
-     * HEADER FILTER VALUES
-     * -------------------------------------------------------
-     */
-
-    const cityId = selectedCity?.city_id ?? selectedCity?.id ?? null;
-
-    const zoneId = selectedZone?.zone_id ?? selectedZone?.id ?? null;
-
-    const divisionId =
-      selectedDivision?.division_id ?? selectedDivision?.id ?? null;
-
-    const wardId = selectedWard?.ward_id ?? selectedWard?.id ?? null;
-
-    const wardNo = selectedWard?.ward_no ?? selectedWard?.wardNo ?? null;
-
-    /*
-     * -------------------------------------------------------
-     * ROUTE REQUEST
-     *
-     * The existing backend route-map API is driven by:
-     *
-     * date
-     * wardNo
-     *
-     * We also pass the complete header filter context.
-     * The existing route-map backend can continue using
-     * wardNo while the other values remain available for
-     * future scope expansion.
-     * -------------------------------------------------------
-     */
-
-    const params = {
-      date: selectedDate,
-    };
-
-    if (cityId !== null && cityId !== undefined && cityId !== "") {
-      params.cityId = cityId;
-    }
-
-    if (zoneId !== null && zoneId !== undefined && zoneId !== "") {
-      params.zoneId = zoneId;
-    }
-
-    if (divisionId !== null && divisionId !== undefined && divisionId !== "") {
-      params.divisionId = divisionId;
-    }
-
-    if (wardId !== null && wardId !== undefined && wardId !== "") {
-      params.wardId = wardId;
-    }
-
-    if (wardNo !== null && wardNo !== undefined && wardNo !== "") {
-      params.wardNo = wardNo;
-    }
-
-    setRouteMapLoading(true);
-
-    setRouteMapError("");
-
-    try {
-      const response = await api.get("/api/route-map", {
-        params,
-      });
-
-      if (response?.data?.success === false) {
-        throw new Error(
-          response?.data?.message || "Unable to load vehicle routes.",
-        );
-      }
-
-      /*
-       * Existing route-map components use:
-       *
-       * response.data.data.routes
-       *
-       * Keep the complete response object
-       * so VehicleRouteMap can consume it.
-       */
-
-      const data = response?.data?.data ?? response?.data ?? null;
-
-      setRouteMapData(data);
-
-      console.log("🚛 VEHICLE ROUTE MAP DATA:", data);
-    } catch (error) {
-      console.error("Vehicle Route Map Error:", error);
-
-      setRouteMapData(null);
-
-      setRouteMapError(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load vehicle route data.",
-      );
-    } finally {
-      setRouteMapLoading(false);
-    }
-  };
-
-  /* =========================================================
-     FETCH PLANT LOCATIONS
-  ========================================================= */
-
-  const fetchPlants = async () => {
-    setPlantsLoading(true);
-
-    try {
-      const response = await api.get("/api/plants/locations");
-
-      if (response?.data?.success === false) {
-        throw new Error(
-          response?.data?.message || "Unable to load plant locations.",
-        );
-      }
-
-      const locationData = response?.data?.data;
-
-      /*
-       * Existing Plants page uses:
-       *
-       * /api/plants/locations
-       *
-       * and receives an array.
-       */
-
-      const loadedPlants = Array.isArray(locationData)
-        ? locationData
-        : Array.isArray(locationData?.plants)
-          ? locationData.plants
-          : [];
-
-      setPlants(loadedPlants);
-
-      console.log("🏭 PLANT LOCATIONS:", loadedPlants);
-    } catch (error) {
-      console.error("Plant Locations Error:", error);
-
-      /*
-       * Do not break Vehicles page
-       * if plants fail.
-       */
-
-      setPlants([]);
-    } finally {
-      setPlantsLoading(false);
-    }
-  };
-
-  /* =========================================================
      INITIAL SUMMARY
   ========================================================= */
 
@@ -275,52 +101,36 @@ const Vehicles = () => {
   }, []);
 
   /* =========================================================
-     LOAD PLANTS
+     CURRENT FILTER DEBUG
+     
+     This does NOT change any logic.
+     It only helps verify that Vehicles page receives the
+     same cascading filter state as Overview.
   ========================================================= */
 
   useEffect(() => {
-    fetchPlants();
-  }, []);
+    console.log("=================================================");
 
-  /* =========================================================
-     RELOAD ROUTES WHEN HEADER CONTEXT CHANGES
-  ========================================================= */
+    console.log("VEHICLES PAGE FILTER STATE");
 
-  useEffect(() => {
-    fetchRouteMap();
+    console.log("City:", selectedCity);
+
+    console.log("Zone:", selectedZone);
+
+    console.log("Division:", selectedDivision);
+
+    console.log("Ward:", selectedWard);
+
+    console.log("Date:", selectedDate);
+
+    console.log("=================================================");
   }, [
+    selectedCity,
+    selectedZone,
+    selectedDivision,
+    selectedWard,
     selectedDate,
-
-    selectedCity?.city_id,
-
-    selectedZone?.zone_id,
-
-    selectedDivision?.division_id,
-
-    selectedWard?.ward_id,
-
-    selectedWard?.ward_no,
   ]);
-
-  /* =========================================================
-     ROUTE ARRAY
-  ========================================================= */
-
-  const routes = Array.isArray(routeMapData?.routes) ? routeMapData.routes : [];
-
-  /* =========================================================
-     DISPLAY PLANTS
-  ========================================================= */
-
-  const validPlants = Array.isArray(plants)
-    ? plants.filter((plant) => {
-        const latitude = Number(plant?.latitude);
-
-        const longitude = Number(plant?.longitude);
-
-        return Number.isFinite(latitude) && Number.isFinite(longitude);
-      })
-    : [];
 
   /* =========================================================
      RENDER
@@ -379,6 +189,11 @@ const Vehicles = () => {
 
         {/* ===================================================
             VEHICLE ROUTE MAP
+           
+            IMPORTANT:
+            VehicleRouteMap now reads the same Header
+            filters and selected date and fetches the
+            existing route-map API itself.
         =================================================== */}
 
         <section
@@ -387,50 +202,7 @@ const Vehicles = () => {
             min-w-0
           "
         >
-          {routeMapError && (
-            <div
-              className="
-                mb-3
-                rounded-xl
-                border
-                border-red-200
-                bg-red-50
-                px-4
-                py-3
-                text-sm
-                text-red-600
-              "
-            >
-              {routeMapError}
-            </div>
-          )}
-
-          <VehicleRouteMap
-            routes={routes}
-            plants={validPlants}
-            mapData={routeMapData}
-            selectedDate={selectedDate}
-          />
-
-          {/* =================================================
-              LOADING OVERLAY
-          ================================================= */}
-
-          {(routeMapLoading || plantsLoading) && (
-            <div
-              className="
-                mt-2
-                text-[11px]
-                text-slate-400
-              "
-            >
-              {routeMapLoading && plantsLoading
-                ? "Loading vehicle routes and plant locations..."
-                : routeMapLoading
-                  ? "Loading vehicle routes..."
-                  : "Loading plant locations..."}
-            </div>
-          )}
+          <VehicleRouteMap selectedDate={selectedDate} />
         </section>
 
         {/* ===================================================

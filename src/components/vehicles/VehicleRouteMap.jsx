@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import api from "../../api/axios";
 
 import {
   MapContainer,
@@ -13,9 +15,11 @@ import {
 
 import L from "leaflet";
 
-import "leaflet/dist/leaflet.css";
-
 import { Route, Loader2, Factory, MapPinned, User, Truck } from "lucide-react";
+
+import { useFilters } from "../../contexts/FilterContext";
+
+import "leaflet/dist/leaflet.css";
 
 /* ============================================================
    VEHICLE ROUTE COLORS
@@ -35,7 +39,7 @@ const VEHICLE_ROUTE_COLORS = [
 ];
 
 /* ============================================================
-   DETERMINISTIC VEHICLE COLOR
+   VEHICLE COLOR
 ============================================================ */
 
 function getVehicleRouteColor(vehicleId) {
@@ -56,59 +60,23 @@ function getVehicleRouteColor(vehicleId) {
    VEHICLE ICON
 ============================================================ */
 
-const createTruckIcon = (color) =>
-  new L.DivIcon({
+function createTruckIcon(color) {
+  return new L.DivIcon({
     className: "sewac-route-vehicle-marker",
 
-    iconSize: [40, 40],
+    iconSize: [42, 42],
 
-    iconAnchor: [20, 20],
+    iconAnchor: [21, 21],
 
-    popupAnchor: [0, -20],
+    popupAnchor: [0, -21],
 
     html: `
       <div
         style="
-          width:40px;
-          height:40px;
+          width:42px;
+          height:42px;
           border-radius:50%;
           background:${color};
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          border:3px solid white;
-          box-shadow:
-            0 6px 18px
-            rgba(0,0,0,.22);
-          color:white;
-          font-size:17px;
-        "
-      >
-        🚛
-      </div>
-    `,
-  });
-
-/* ============================================================
-   PLANT ICON
-============================================================ */
-
-const plantIcon = new L.DivIcon({
-  className: "sewac-plant-marker",
-
-  iconSize: [38, 38],
-
-  iconAnchor: [19, 19],
-
-  popupAnchor: [0, -19],
-
-  html: `
-      <div
-        style="
-          width:38px;
-          height:38px;
-          border-radius:11px;
-          background:#111827;
           display:flex;
           align-items:center;
           justify-content:center;
@@ -119,19 +87,66 @@ const plantIcon = new L.DivIcon({
           font-size:18px;
         "
       >
+        🚛
+      </div>
+    `,
+  });
+}
+
+/* ============================================================
+   PLANT ICON
+============================================================ */
+
+const plantIcon = new L.DivIcon({
+  className: "sewac-plant-marker",
+
+  iconSize: [40, 40],
+
+  iconAnchor: [20, 20],
+
+  popupAnchor: [0, -20],
+
+  html: `
+      <div
+        style="
+          width:40px;
+          height:40px;
+          border-radius:12px;
+          background:#111827;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border:3px solid white;
+          box-shadow:
+            0 6px 18px
+            rgba(0,0,0,.25);
+          font-size:19px;
+        "
+      >
         🏭
       </div>
     `,
 });
 
 /* ============================================================
-   GPS NORMALIZER
+   GPS POINT NORMALIZER
 ============================================================ */
 
 function normalizeGpsPoint(point) {
   if (!point) {
     return null;
   }
+
+  /*
+   * IMPORTANT:
+   *
+   * Backend:
+   * latitude
+   * longitude
+   *
+   * Leaflet:
+   * [latitude, longitude]
+   */
 
   const latitude = Number(point.latitude ?? point.lat);
 
@@ -144,14 +159,6 @@ function normalizeGpsPoint(point) {
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     return null;
   }
-
-  /*
-   * IMPORTANT:
-   *
-   * Leaflet expects:
-   *
-   * [latitude, longitude]
-   */
 
   return [latitude, longitude];
 }
@@ -229,7 +236,7 @@ function FitVehicleAndPlantBounds({ routes, plants }) {
     });
 
     /* ========================================================
-       ALL PLANTS
+       PLANTS
     ======================================================== */
 
     plants.forEach((plant) => {
@@ -245,7 +252,7 @@ function FitVehicleAndPlantBounds({ routes, plants }) {
     });
 
     /* ========================================================
-       FIT EVERYTHING
+       FIT
     ======================================================== */
 
     if (hasCoordinates && bounds.isValid()) {
@@ -295,19 +302,19 @@ function MapSizeController() {
 }
 
 /* ============================================================
-   FORMAT DISTANCE
+   DISTANCE
 ============================================================ */
 
 function formatDistance(meters) {
   if (!Number.isFinite(Number(meters))) {
-    return "N/A";
+    return "0.0 km";
   }
 
   return `${(Number(meters) / 1000).toFixed(1)} km`;
 }
 
 /* ============================================================
-   FORMAT DURATION
+   DURATION
 ============================================================ */
 
 function formatDuration(seconds) {
@@ -330,46 +337,273 @@ function formatDuration(seconds) {
    VEHICLE ROUTE MAP
 ============================================================ */
 
-export default function VehicleRouteMap({
-  routes: routesProp = [],
-  plants = [],
-  mapData,
-  selectedDate,
-}) {
-  const [routes, setRoutes] = useState(
-    Array.isArray(routesProp)
-      ? routesProp
-      : Array.isArray(mapData?.routes)
-        ? mapData.routes
-        : [],
-  );
+export default function VehicleRouteMap({ selectedDate }) {
+  /* ==========================================================
+     HEADER FILTER CONTEXT
+  ========================================================== */
 
-  const [loading, setLoading] = useState(false);
-
-  const [error, setError] = useState(null);
+  const { selectedCity, selectedZone, selectedDivision, selectedWard } =
+    useFilters();
 
   /* ==========================================================
-     UPDATE ROUTES
+     ROUTES
+  ========================================================== */
+
+  const [routes, setRoutes] = useState([]);
+
+  /* ==========================================================
+     PLANTS
+  ========================================================== */
+
+  const [plants, setPlants] = useState([]);
+
+  /* ==========================================================
+     LOADING
+  ========================================================== */
+
+  const [loading, setLoading] = useState(true);
+
+  /* ==========================================================
+     ERROR
+  ========================================================== */
+
+  const [error, setError] = useState("");
+
+  /* ==========================================================
+     FETCH ROUTES + PLANTS
   ========================================================== */
 
   useEffect(() => {
-    const incomingRoutes = Array.isArray(routesProp)
-      ? routesProp
-      : Array.isArray(mapData?.routes)
-        ? mapData.routes
-        : [];
+    let mounted = true;
 
-    setRoutes(incomingRoutes);
-  }, [routesProp, mapData]);
+    const fetchMapData = async () => {
+      /*
+       * ------------------------------------------------------
+       * WAIT FOR FILTER CASCADE
+       * ------------------------------------------------------
+       */
+
+      if (
+        !selectedCity ||
+        !selectedZone ||
+        !selectedDivision ||
+        !selectedWard
+      ) {
+        if (mounted) {
+          setRoutes([]);
+          setPlants([]);
+          setLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        setError("");
+
+        /* ==================================================
+             FILTER IDS
+          ================================================== */
+
+        const cityId =
+          selectedCity.city_id ?? selectedCity.cityId ?? selectedCity.id;
+
+        const zoneId =
+          selectedZone.zone_id ?? selectedZone.zoneId ?? selectedZone.id;
+
+        const divisionId =
+          selectedDivision.division_id ??
+          selectedDivision.divisionId ??
+          selectedDivision.id;
+
+        const wardId =
+          selectedWard.ward_id ?? selectedWard.wardId ?? selectedWard.id;
+
+        /* ==================================================
+             QUERY
+          ================================================== */
+
+        const params = new URLSearchParams();
+
+        params.set("date", selectedDate);
+
+        params.set("cityId", String(cityId));
+
+        params.set("zoneId", String(zoneId));
+
+        params.set("divisionId", String(divisionId));
+
+        params.set("wardId", String(wardId));
+
+        const queryString = params.toString();
+
+        console.log("=================================================");
+
+        console.log("VEHICLE ROUTE MAP REQUEST");
+
+        console.log("Date:", selectedDate);
+
+        console.log("City:", cityId);
+
+        console.log("Zone:", zoneId);
+
+        console.log("Division:", divisionId);
+
+        console.log("Ward:", wardId);
+
+        console.log("Query:", queryString);
+
+        console.log("=================================================");
+
+        /* ==================================================
+             EXISTING ROUTE MAP API
+             
+             NO BACKEND CHANGE.
+          ================================================== */
+
+        const routeRequest = api.get(`/api/admin/overview/map?${queryString}`);
+
+        /* ==================================================
+             EXISTING PLANT LOCATION API
+             
+             NO BACKEND CHANGE.
+          ================================================== */
+
+        const plantRequest = api.get("/api/plants/locations");
+
+        const [routeResponse, plantResponse] = await Promise.all([
+          routeRequest,
+          plantRequest,
+        ]);
+
+        if (!mounted) {
+          return;
+        }
+
+        /* ==================================================
+             ROUTE RESPONSE
+          ================================================== */
+
+        const routeData = routeResponse?.data?.data || {};
+
+        const returnedRoutes = Array.isArray(routeData.routes)
+          ? routeData.routes
+          : [];
+
+        /* ==================================================
+             PLANT RESPONSE
+          ================================================== */
+
+        const plantData = plantResponse?.data?.data;
+
+        const returnedPlants = Array.isArray(plantData)
+          ? plantData
+          : Array.isArray(plantData?.plants)
+            ? plantData.plants
+            : [];
+
+        /* ==================================================
+             STORE
+          ================================================== */
+
+        setRoutes(returnedRoutes);
+
+        setPlants(returnedPlants);
+
+        /* ==================================================
+             DEBUG
+          ================================================== */
+
+        console.log("VEHICLE ROUTE MAP RESPONSE:", routeData);
+
+        console.log("ROUTES FOUND:", returnedRoutes.length);
+
+        console.log("PLANTS FOUND:", returnedPlants.length);
+      } catch (err) {
+        if (!mounted) {
+          return;
+        }
+
+        console.error("Vehicle Route Map Error:", err);
+
+        setRoutes([]);
+
+        /*
+         * Keep plant rendering independent.
+         *
+         * If route API fails but plant API succeeded,
+         * the plant request is handled by Promise.all,
+         * so the error state is shown rather than breaking
+         * the application.
+         */
+
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Unable to load vehicle route data.",
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMapData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    selectedDate,
+
+    selectedCity?.city_id,
+
+    selectedCity?.cityId,
+
+    selectedCity?.id,
+
+    selectedZone?.zone_id,
+
+    selectedZone?.zoneId,
+
+    selectedZone?.id,
+
+    selectedDivision?.division_id,
+
+    selectedDivision?.divisionId,
+
+    selectedDivision?.id,
+
+    selectedWard?.ward_id,
+
+    selectedWard?.wardId,
+
+    selectedWard?.id,
+  ]);
 
   /* ==========================================================
-     PREPARE VEHICLES
+     PREPARE ROUTES
   ========================================================== */
 
   const preparedRoutes = useMemo(() => {
     return routes
       .map((vehicle, index) => {
         const vehicleId = getVehicleId(vehicle);
+
+        /*
+         * Existing backend route contract:
+         *
+         * points: [
+         *   {
+         *     latitude,
+         *     longitude,
+         *     timestamp
+         *   }
+         * ]
+         */
 
         const points = Array.isArray(vehicle.points)
           ? vehicle.points.map(normalizeGpsPoint).filter(Boolean)
@@ -416,19 +650,25 @@ export default function VehicleRouteMap({
   );
 
   /* ==========================================================
+     VALID PLANTS
+  ========================================================== */
+
+  const validPlants = useMemo(
+    () =>
+      Array.isArray(plants)
+        ? plants.filter((plant) => Boolean(getPlantPosition(plant)))
+        : [],
+    [plants],
+  );
+
+  /* ==========================================================
      DEFAULT CENTER
   ========================================================== */
 
   const defaultCenter = useMemo(() => {
-    if (Array.isArray(plants) && plants.length > 0) {
-      for (const plant of plants) {
-        const position = getPlantPosition(plant);
-
-        if (position) {
-          return position;
-        }
-      }
-    }
+    /*
+     * Prefer vehicle route location when available.
+     */
 
     for (const vehicle of preparedRoutes) {
       if (vehicle._points.length > 0) {
@@ -436,17 +676,24 @@ export default function VehicleRouteMap({
       }
     }
 
+    /*
+     * Otherwise use plant location.
+     */
+
+    for (const plant of validPlants) {
+      const position = getPlantPosition(plant);
+
+      if (position) {
+        return position;
+      }
+    }
+
+    /*
+     * Bengaluru fallback.
+     */
+
     return [12.9716, 77.5946];
-  }, [plants, preparedRoutes]);
-
-  /* ==========================================================
-     PLANT COUNT
-  ========================================================== */
-
-  const validPlantCount = useMemo(
-    () => plants.filter((plant) => Boolean(getPlantPosition(plant))).length,
-    [plants],
-  );
+  }, [preparedRoutes, validPlants]);
 
   /* ==========================================================
      RENDER
@@ -486,6 +733,8 @@ export default function VehicleRouteMap({
           bg-white
         "
       >
+        {/* LEFT */}
+
         <div
           className="
             flex
@@ -511,7 +760,11 @@ export default function VehicleRouteMap({
             <Route size={20} strokeWidth={2.2} className="text-[#6C2BFF]" />
           </div>
 
-          <div className="min-w-0">
+          <div
+            className="
+              min-w-0
+            "
+          >
             <h2
               className="
                 text-[17px]
@@ -537,6 +790,8 @@ export default function VehicleRouteMap({
             </p>
           </div>
         </div>
+
+        {/* RIGHT STATS */}
 
         <div
           className="
@@ -615,7 +870,7 @@ export default function VehicleRouteMap({
                 whitespace-nowrap
               "
             >
-              {validPlantCount} Plants
+              {validPlants.length} Plants
             </span>
           </div>
 
@@ -679,13 +934,21 @@ export default function VehicleRouteMap({
 
           <MapSizeController />
 
-          <FitVehicleAndPlantBounds routes={preparedRoutes} plants={plants} />
+          <FitVehicleAndPlantBounds
+            routes={preparedRoutes}
+            plants={validPlants}
+          />
 
           {/* ==================================================
-              ALL PLANT LOCATIONS
+              PLANT LOCATIONS
+              
+              IMPORTANT:
+              Plants are independent.
+              NO vehicle relationship.
+              NO dashed line.
           ================================================== */}
 
-          {plants.map((plant, index) => {
+          {validPlants.map((plant, index) => {
             const position = getPlantPosition(plant);
 
             if (!position) {
@@ -700,7 +963,7 @@ export default function VehicleRouteMap({
                 position={position}
                 icon={plantIcon}
               >
-                <Popup maxWidth={300} minWidth={250}>
+                <Popup maxWidth={300} minWidth={240}>
                   <div className="p-1 sm:p-2">
                     {/* PLANT HEADER */}
 
@@ -727,7 +990,11 @@ export default function VehicleRouteMap({
                         <Factory size={23} className="text-violet-600" />
                       </div>
 
-                      <div className="min-w-0">
+                      <div
+                        className="
+                            min-w-0
+                          "
+                      >
                         <h3
                           className="
                               font-bold
@@ -757,11 +1024,22 @@ export default function VehicleRouteMap({
                       </div>
                     </div>
 
-                    {/* PLANT DETAILS */}
+                    {/* DETAILS */}
 
-                    <div className="space-y-3 text-[13px]">
+                    <div
+                      className="
+                          space-y-3
+                          text-[13px]
+                        "
+                    >
                       {plant.zone && (
-                        <div className="flex items-start gap-2">
+                        <div
+                          className="
+                              flex
+                              items-start
+                              gap-2
+                            "
+                        >
                           <MapPinned
                             size={15}
                             className="
@@ -776,7 +1054,13 @@ export default function VehicleRouteMap({
                       )}
 
                       {plant.plant_manager && (
-                        <div className="flex items-start gap-2">
+                        <div
+                          className="
+                              flex
+                              items-start
+                              gap-2
+                            "
+                        >
                           <User
                             size={15}
                             className="
@@ -791,7 +1075,13 @@ export default function VehicleRouteMap({
                       )}
 
                       {plant.capacity_ton_per_day !== undefined && (
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="
+                              flex
+                              items-center
+                              gap-2
+                            "
+                        >
                           <Factory
                             size={15}
                             className="
@@ -805,7 +1095,13 @@ export default function VehicleRouteMap({
                       )}
 
                       {plant.vehicles_enrolled !== undefined && (
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="
+                              flex
+                              items-center
+                              gap-2
+                            "
+                        >
                           <Truck
                             size={15}
                             className="
@@ -818,7 +1114,13 @@ export default function VehicleRouteMap({
                         </div>
                       )}
 
-                      <div className="flex items-start gap-2">
+                      <div
+                        className="
+                            flex
+                            items-start
+                            gap-2
+                          "
+                      >
                         <MapPinned
                           size={15}
                           className="
@@ -872,9 +1174,9 @@ export default function VehicleRouteMap({
             const lastPosition = positions[positions.length - 1];
 
             return (
-              <React.Fragment key={`vehicle-${vehicleId}`}>
+              <div key={`vehicle-group-${vehicleId}`}>
                 {/* ==========================================
-                      ROUTE LINE
+                      ROUTE POLYLINE
                   ========================================== */}
 
                 {positions.length > 1 && (
@@ -895,7 +1197,7 @@ export default function VehicleRouteMap({
                 )}
 
                 {/* ==========================================
-                      START POINT
+                      ROUTE START
                   ========================================== */}
 
                 <CircleMarker
@@ -912,16 +1214,37 @@ export default function VehicleRouteMap({
                   }}
                 >
                   <Popup>
-                    <div className="min-w-[200px]">
-                      <div className="font-semibold text-sm mb-2">
+                    <div
+                      className="
+                          min-w-[200px]
+                        "
+                    >
+                      <div
+                        className="
+                            font-semibold
+                            text-sm
+                            mb-2
+                          "
+                      >
                         Route Start
                       </div>
 
-                      <div className="text-sm">
+                      <div
+                        className="
+                            text-sm
+                          "
+                      >
                         Vehicle: <strong>{vehicleId}</strong>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-2">
+                      <div
+                        className="
+                            mt-2
+                            flex
+                            items-center
+                            gap-2
+                          "
+                      >
                         <span
                           style={{
                             display: "inline-block",
@@ -936,7 +1259,12 @@ export default function VehicleRouteMap({
                           }}
                         />
 
-                        <span className="text-xs text-gray-500">
+                        <span
+                          className="
+                              text-xs
+                              text-gray-500
+                            "
+                        >
                           Vehicle route
                         </span>
                       </div>
@@ -945,20 +1273,36 @@ export default function VehicleRouteMap({
                 </CircleMarker>
 
                 {/* ==========================================
-                      CURRENT / LAST VEHICLE POSITION
+                      CURRENT / LAST POSITION
                   ========================================== */}
 
                 <Marker
                   position={lastPosition}
                   icon={createTruckIcon(routeColor)}
                 >
-                  <Popup>
-                    <div className="min-w-[230px] text-sm">
-                      <div className="text-base font-semibold text-[#16295A] mb-3">
+                  <Popup maxWidth={280}>
+                    <div
+                      className="
+                          min-w-[220px]
+                          text-sm
+                        "
+                    >
+                      <div
+                        className="
+                            text-base
+                            font-semibold
+                            text-[#16295A]
+                            mb-3
+                          "
+                      >
                         Vehicle Details
                       </div>
 
-                      <div className="space-y-2">
+                      <div
+                        className="
+                            space-y-2
+                          "
+                      >
                         <div>
                           Vehicle: <strong>{vehicleId}</strong>
                         </div>
@@ -977,19 +1321,33 @@ export default function VehicleRouteMap({
                           </strong>
                         </div>
 
-                        <div>GPS Points: {positions.length}</div>
+                        <div>
+                          Ward: <strong>{vehicle.wardNo ?? "N/A"}</strong>
+                        </div>
 
-                        <div>Distance: {formatDistance(vehicle.distance)}</div>
+                        <div>
+                          GPS Points: <strong>{positions.length}</strong>
+                        </div>
 
-                        <div>Duration: {formatDuration(vehicle.duration)}</div>
+                        <div>
+                          Distance:{" "}
+                          <strong>{formatDistance(vehicle.distance)}</strong>
+                        </div>
+
+                        <div>
+                          Duration:{" "}
+                          <strong>{formatDuration(vehicle.duration)}</strong>
+                        </div>
 
                         <div>
                           Last Update:{" "}
-                          {vehicle.endPoint?.timestamp
-                            ? new Date(
-                                vehicle.endPoint.timestamp,
-                              ).toLocaleString()
-                            : "N/A"}
+                          <strong>
+                            {vehicle.endPoint?.timestamp
+                              ? new Date(
+                                  vehicle.endPoint.timestamp,
+                                ).toLocaleString()
+                              : "N/A"}
+                          </strong>
                         </div>
                       </div>
 
@@ -1018,14 +1376,19 @@ export default function VehicleRouteMap({
                           }}
                         />
 
-                        <span className="text-xs text-gray-500">
+                        <span
+                          className="
+                              text-xs
+                              text-gray-500
+                            "
+                        >
                           Vehicle route
                         </span>
                       </div>
                     </div>
                   </Popup>
                 </Marker>
-              </React.Fragment>
+              </div>
             );
           })}
         </MapContainer>
@@ -1039,7 +1402,7 @@ export default function VehicleRouteMap({
             className="
               absolute
               inset-0
-              bg-white/75
+              bg-white/70
               backdrop-blur-sm
               flex
               flex-col
@@ -1056,9 +1419,26 @@ export default function VehicleRouteMap({
               "
             />
 
-            <h3 className="mt-4 text-base font-semibold text-[#111827]">
+            <h3
+              className="
+                mt-4
+                text-base
+                font-semibold
+                text-[#111827]
+              "
+            >
               Loading Vehicle Routes
             </h3>
+
+            <p
+              className="
+                mt-1
+                text-xs
+                text-gray-500
+              "
+            >
+              Loading routes and plant locations...
+            </p>
           </div>
         )}
 
@@ -1066,31 +1446,50 @@ export default function VehicleRouteMap({
             ERROR
         =================================================== */}
 
-        {error && (
+        {!loading && error && (
           <div
             className="
-              absolute
-              inset-0
-              bg-white
-              flex
-              items-center
-              justify-center
-              z-[1000]
-              px-5
-            "
+                absolute
+                inset-0
+                bg-white/90
+                flex
+                items-center
+                justify-center
+                z-[1000]
+                px-5
+              "
           >
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-red-600">
-                Failed to Load Routes
+            <div
+              className="
+                  text-center
+                  max-w-md
+                "
+            >
+              <h3
+                className="
+                    text-lg
+                    font-semibold
+                    text-red-600
+                  "
+              >
+                Failed to Load Vehicle Routes
               </h3>
 
-              <p className="text-sm text-gray-500 mt-2">{error}</p>
+              <p
+                className="
+                    text-sm
+                    text-gray-500
+                    mt-2
+                  "
+              >
+                {error}
+              </p>
             </div>
           </div>
         )}
 
         {/* ===================================================
-            LEGEND
+            MAP LEGEND
         =================================================== */}
 
         <div
@@ -1121,10 +1520,20 @@ export default function VehicleRouteMap({
             Map Legend
           </h3>
 
-          <div className="space-y-3">
+          <div
+            className="
+              space-y-3
+            "
+          >
             {/* PLANT */}
 
-            <div className="flex items-center gap-2.5">
+            <div
+              className="
+                flex
+                items-center
+                gap-2.5
+              "
+            >
               <div
                 className="
                   w-5
@@ -1140,12 +1549,25 @@ export default function VehicleRouteMap({
                 🏭
               </div>
 
-              <span className="text-xs text-[#111827]">Plant Location</span>
+              <span
+                className="
+                  text-xs
+                  text-[#111827]
+                "
+              >
+                Plant Location
+              </span>
             </div>
 
             {/* VEHICLE */}
 
-            <div className="flex items-center gap-2.5">
+            <div
+              className="
+                flex
+                items-center
+                gap-2.5
+              "
+            >
               <div
                 className="
                   w-5
@@ -1164,12 +1586,25 @@ export default function VehicleRouteMap({
                 🚛
               </div>
 
-              <span className="text-xs text-[#111827]">Vehicle</span>
+              <span
+                className="
+                  text-xs
+                  text-[#111827]
+                "
+              >
+                Vehicle
+              </span>
             </div>
 
             {/* ROUTE */}
 
-            <div className="flex items-center gap-2.5">
+            <div
+              className="
+                flex
+                items-center
+                gap-2.5
+              "
+            >
               <div
                 className="
                   w-8
@@ -1179,13 +1614,29 @@ export default function VehicleRouteMap({
                 "
               />
 
-              <span className="text-xs text-[#111827]">Vehicle Route</span>
+              <span
+                className="
+                  text-xs
+                  text-[#111827]
+                "
+              >
+                Vehicle Route
+              </span>
             </div>
 
-            {/* DIFFERENT COLORS */}
+            {/* INFO */}
 
-            <div className="pt-1">
-              <span className="text-[10px] text-gray-400">
+            <div
+              className="
+                pt-1
+              "
+            >
+              <span
+                className="
+                  text-[10px]
+                  text-gray-400
+                "
+              >
                 Each vehicle has a unique route color.
               </span>
             </div>
@@ -1212,25 +1663,57 @@ export default function VehicleRouteMap({
               py-2
             "
           >
-            <span className="text-xs font-semibold text-[#60758B]">
-              Date: <span className="text-[#34475B]">{selectedDate}</span>
+            <span
+              className="
+                text-xs
+                font-semibold
+                text-[#60758B]
+              "
+            >
+              Date:{" "}
+              <span
+                className="
+                  text-[#34475B]
+                "
+              >
+                {selectedDate}
+              </span>
             </span>
           </div>
         )}
       </div>
 
       {/* =====================================================
-          NO ROUTE DATA
+          NO ROUTES
       ===================================================== */}
 
-      {!loading && preparedRoutes.length === 0 && (
-        <div className="px-6 py-10 text-center">
-          <div className="text-base font-semibold text-[#34475B]">
+      {!loading && !error && preparedRoutes.length === 0 && (
+        <div
+          className="
+              px-6
+              py-10
+              text-center
+            "
+        >
+          <div
+            className="
+                text-base
+                font-semibold
+                text-[#34475B]
+              "
+          >
             No vehicle route data available
           </div>
 
-          <div className="mt-1 text-sm text-[#8AA1BB]">
-            No vehicle GPS route data was found.
+          <div
+            className="
+                mt-1
+                text-sm
+                text-[#8AA1BB]
+              "
+          >
+            No vehicle GPS route data was found for the selected date and
+            filters.
           </div>
         </div>
       )}
