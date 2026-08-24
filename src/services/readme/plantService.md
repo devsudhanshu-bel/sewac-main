@@ -2,17 +2,19 @@
 
 ## 1. File Overview
 
-### File Name
-`plantService.js`
+**File:** `plantService.js`  
+**Location:** `src/services/plantService.js`
 
-### File Location
-`src/services/plantService.js`
+`plantService.js` contains the business/data-access logic for the Plants module.
 
-### Purpose
+It uses both:
 
-`plantService.js` contains the business and database logic for the Plants module.
+```text
+mainDb
+Prisma
+```
 
-It is called by `plantController.js` and communicates with the SEWAC database.
+depending on the operation.
 
 ---
 
@@ -25,57 +27,29 @@ const mainDb = require("../config/mainDb");
 const { PrismaClient } = require("../generated/sewac");
 ```
 
-It creates a Prisma client:
+A Prisma client is created for the `sewac` database.
 
-```js
-const prisma = new PrismaClient();
-```
+---
 
-Two database access approaches are used:
+# 3. getAllPlants()
 
-```text
-mainDb
-   ↓
-Raw SQL queries
+## Purpose
 
-Prisma
-   ↓
-plant_master model operations
+Returns a paginated list of active plants.
+
+The query starts with:
+
+```sql
+WHERE status = 'ACTIVE'
 ```
 
 ---
 
-## 3. getAllPlants(query)
-
-Retrieves active plants with pagination and filters.
-
-### Pagination
-
-The service reads:
+## Supported Query Parameters
 
 ```text
 page
 limit
-```
-
-Defaults:
-
-```text
-page = 1
-limit = 10
-```
-
-Offset is calculated as:
-
-```text
-(page - 1) × limit
-```
-
-### Filters
-
-The service supports:
-
-```text
 search
 city
 zone
@@ -83,7 +57,25 @@ division
 ward
 ```
 
-The `search` filter checks:
+### page
+
+Defaults to:
+
+```text
+1
+```
+
+### limit
+
+Defaults to:
+
+```text
+10
+```
+
+### search
+
+Searches both:
 
 ```text
 plant_name
@@ -92,59 +84,98 @@ plant_manager
 
 using PostgreSQL `ILIKE`.
 
-### Status
+### city
 
-Only active plants are returned:
+Filters by exact city.
 
-```sql
-status = 'ACTIVE'
-```
+### zone
 
-### Response
+Filters by exact zone.
 
-The service returns:
+### division
+
+Filters by exact division.
+
+### ward
+
+Filters by exact ward.
+
+---
+
+## Pagination
+
+The service calculates:
 
 ```js
+offset = (page - 1) * limit
+```
+
+The database query uses:
+
+```sql
+LIMIT
+OFFSET
+```
+
+The response is:
+
+```json
 {
-  plants: plants.rows,
-  pagination: {
-    page,
-    limit,
-    total,
-    totalPages,
-  },
+  "plants": [],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "totalPages": 0
+  }
 }
 ```
 
 ---
 
-## 4. getPlantById(id)
+## Database
 
-Retrieves one plant using Prisma:
+`getAllPlants()` uses:
+
+```js
+mainDb.query(...)
+```
+
+against:
+
+```text
+plant_master
+```
+
+---
+
+# 4. getPlantById()
+
+Uses Prisma:
 
 ```js
 prisma.plant_master.findUnique({
   where: {
-    id: Number(id),
-  },
-});
+    id: Number(id)
+  }
+})
 ```
 
-If no plant is found:
+If the plant does not exist:
 
 ```text
 Plant not found
 ```
 
-is thrown as an error.
+is thrown.
 
 ---
 
-## 5. createPlant(body)
+# 5. createPlant()
 
-Creates a new plant using Prisma.
+Creates a new `plant_master` record.
 
-The service extracts:
+The service reads:
 
 ```text
 plant_name
@@ -162,25 +193,33 @@ longitude
 status
 ```
 
-These values are passed to:
+and passes these values to:
 
 ```js
 prisma.plant_master.create()
 ```
 
-The created plant is returned.
-
 ---
 
-## 6. updatePlant(id, body)
+# 6. updatePlant()
 
 First checks whether the plant exists.
 
+Then performs:
+
 ```js
-prisma.plant_master.findUnique()
+prisma.plant_master.update()
 ```
 
-If it does not exist:
+using:
+
+```text
+id
+```
+
+and the supplied request body.
+
+If the plant does not exist:
 
 ```text
 Plant not found
@@ -188,39 +227,33 @@ Plant not found
 
 is thrown.
 
-If it exists, the service updates the record using:
+The current implementation passes the body directly as Prisma update data.
+
+---
+
+# 7. deletePlant()
+
+The Plants module uses a **soft delete**.
+
+The service first verifies that the plant exists.
+
+It does not physically remove the row.
+
+Instead:
 
 ```js
-prisma.plant_master.update()
+status: "INACTIVE"
 ```
 
-The complete request body is passed as update data.
+is written to the existing record.
+
+This allows the plant record to remain in the database while excluding it from the active plant directory.
 
 ---
 
-## 7. deletePlant(id)
+# 8. getPlantDashboard()
 
-The Plant module uses a soft-delete approach.
-
-The service first checks whether the plant exists.
-
-It then updates:
-
-```text
-status = "INACTIVE"
-```
-
-instead of physically deleting the database row.
-
-This preserves the plant record while removing it from active Plant Directory results.
-
----
-
-## 8. getPlantDashboard()
-
-Retrieves Plant dashboard statistics using `mainDb`.
-
-The SQL query calculates:
+Uses `mainDb.query()` to calculate:
 
 ```text
 total_plants
@@ -228,23 +261,27 @@ total_vehicles
 total_waste
 ```
 
-Only active plants are included.
+only from:
 
-The returned structure is:
+```sql
+WHERE status='ACTIVE'
+```
 
-```js
+The service converts the database values to numbers and returns:
+
+```json
 {
-  totalPlants: Number(...),
-  totalVehiclesEnrolled: Number(...),
-  totalWasteCollected: Number(...),
+  "totalPlants": 0,
+  "totalVehiclesEnrolled": 0,
+  "totalWasteCollected": 0
 }
 ```
 
 ---
 
-## 9. getPlantLocations()
+# 9. getPlantLocations()
 
-Retrieves active plant location information.
+Returns active plants that have valid stored coordinates.
 
 The query selects:
 
@@ -257,17 +294,15 @@ longitude
 status
 ```
 
-Only records satisfying:
+and requires:
 
 ```text
-status = 'ACTIVE'
+status = ACTIVE
 latitude IS NOT NULL
 longitude IS NOT NULL
 ```
 
-are returned.
-
-The results are ordered by:
+Results are ordered by:
 
 ```text
 plant_name
@@ -275,286 +310,36 @@ plant_name
 
 ---
 
-## 10. Database Operations Summary
-
-| Function | Database Method |
-|---|---|
-| `getAllPlants` | `mainDb.query()` |
-| `getPlantById` | Prisma `findUnique()` |
-| `createPlant` | Prisma `create()` |
-| `updatePlant` | Prisma `findUnique()` + `update()` |
-| `deletePlant` | Prisma `findUnique()` + `update()` |
-| `getPlantDashboard` | `mainDb.query()` |
-| `getPlantLocations` | `mainDb.query()` |
-
----
-
-## 11. Plant Directory Data Flow
+# 10. Data Access Pattern
 
 ```text
-Plant Directory
+Plant Controller
       ↓
-GET /
-      ↓
-plantController.getAllPlants()
-      ↓
-plantService.getAllPlants()
-      ↓
-mainDb.query()
-      ↓
-plant_master
-      ↓
-Plants + Pagination
+Plant Service
+      ├── mainDb.query()
+      │
+      └── Prisma
+             ↓
+       plant_master
 ```
 
 ---
 
-## 12. Create Flow
+# 11. Important Implementation Notes
 
-```text
-Create Plant Modal
-      ↓
-POST /
-      ↓
-createPlant()
-      ↓
-plantService.createPlant()
-      ↓
-Prisma create()
-      ↓
-plant_master
-      ↓
-Created Plant
-```
-
----
-
-## 13. Update Flow
-
-```text
-Edit Plant
-      ↓
-PUT /:id
-      ↓
-updatePlant()
-      ↓
-plantService.updatePlant()
-      ↓
-Check Existing Plant
-      ↓
-Prisma update()
-      ↓
-Updated Plant
-```
-
----
-
-## 14. Delete Flow
-
-```text
-Delete Plant
-      ↓
-DELETE /:id
-      ↓
-deletePlant()
-      ↓
-Check Existing Plant
-      ↓
-status = INACTIVE
-      ↓
-Plant remains in database
-      ↓
-No longer appears as active
-```
-
----
-
-## 15. Dashboard Flow
-
-```text
-Plant Dashboard
-      ↓
-GET /dashboard
-      ↓
-getPlantDashboard()
-      ↓
-mainDb.query()
-      ↓
-Aggregate Active Plant Statistics
-      ↓
-Dashboard Response
-```
-
----
-
-## 16. Location Flow
-
-```text
-Plant Locations
-      ↓
-GET /locations
-      ↓
-getPlantLocations()
-      ↓
-mainDb.query()
-      ↓
-Active Plants With Coordinates
-      ↓
-Location Data
-```
-
----
-
-## 17. Active Plant Filtering
-
-The Plant Directory and dashboard operations use active plants.
-
-The active status is:
-
-```text
-ACTIVE
-```
-
-Soft-deleted plants are changed to:
-
-```text
-INACTIVE
-```
-
-and therefore are excluded from active Plant Directory queries.
-
----
-
-## 18. Pagination
-
-Pagination is calculated using:
-
-```text
-offset = (page - 1) × limit
-```
-
-The service returns:
-
-```js
-pagination: {
-  page,
-  limit,
-  total,
-  totalPages,
-}
-```
-
-This allows the frontend to display the correct page and total number of records.
-
----
-
-## 19. Search
-
-The `search` query checks both:
-
-```text
-plant_name
-plant_manager
-```
-
-The SQL condition uses:
-
-```sql
-ILIKE
-```
-
-with wildcard values:
-
-```text
-%search%
-```
-
-This provides case-insensitive partial matching.
-
----
-
-## 20. Geographic Filtering
-
-The Plant Directory can filter records by:
-
-```text
-city
-zone
-division
-ward
-```
-
-These filters are added to the SQL `WHERE` clause when supplied.
-
----
-
-## 21. Error Handling
-
-The service throws errors when required operations cannot be completed.
-
-For example:
-
-```text
-Plant not found
-```
-
-The controller catches these errors and converts them into HTTP responses.
-
----
-
-## 22. Important Implementation Notes
-
-- `plantService.js` is the main business/data layer for Plants.
-- It uses both raw SQL and Prisma.
-- Active plants use status `ACTIVE`.
+- `getAllPlants()` uses raw SQL through `mainDb`.
+- `getPlantDashboard()` uses raw SQL through `mainDb`.
+- `getPlantLocations()` uses raw SQL through `mainDb`.
+- `getPlantById()` uses Prisma.
+- `createPlant()` uses Prisma.
+- `updatePlant()` uses Prisma.
+- `deletePlant()` uses Prisma.
+- Active directory queries exclude `INACTIVE` plants.
 - Delete is implemented as a soft delete.
-- Plant Directory results are paginated.
-- Plant Directory results support search.
-- Plant Directory results support city, zone, division, and ward filters.
-- Dashboard statistics include active plants only.
-- Location results require valid latitude and longitude values.
+- Pagination is calculated in the service layer.
 
 ---
 
-## 23. Exported Functions
+# 12. Summary
 
-The service exports:
-
-```js
-module.exports = {
-  getAllPlants,
-  getPlantById,
-  createPlant,
-  updatePlant,
-  deletePlant,
-  getPlantDashboard,
-  getPlantLocations,
-  updatePlant,
-  deletePlant,
-};
-```
-
-The source currently contains duplicate `updatePlant` and `deletePlant` entries in the export object. JavaScript resolves duplicate object keys to the later occurrence.
-
----
-
-## 24. Summary
-
-`plantService.js` contains the database and business logic supporting the Plants module.
-
-It handles:
-
-```text
-Plant Listing
-Plant Search
-Plant Filtering
-Pagination
-Plant Details
-Plant Creation
-Plant Updates
-Soft Deletion
-Plant Dashboard Statistics
-Plant Locations
-```
-
-The service sits between the Plant controller and the database layer.
+`plantService.js` is the central service layer for plant data operations. It provides directory filtering and pagination, individual plant retrieval, creation, update, soft deletion, dashboard statistics, and map-location data.

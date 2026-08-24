@@ -2,188 +2,187 @@
 
 ## 1. File Overview
 
-### File Name
-`plantRoutes.js`
+**File:** `plantRoutes.js`  
+**Location:** `src/routes/plantRoutes.js`
 
-### File Location
-`src/routes/plantRoutes.js`
+The Plants router defines the HTTP endpoints for the Plants module.
 
-### Purpose
-
-`plantRoutes.js` defines the REST API endpoints for the Plants module.
-
-It connects HTTP requests to functions in `plantController.js`.
-
----
-
-## 2. Dependencies
-
-The route imports Express:
-
-```js
-const express = require("express");
-```
-
-It imports the Plant controller functions:
-
-```js
-const {
-  getAllPlants,
-  getPlantById,
-  createPlant,
-  updatePlant,
-  deletePlant,
-  getPlantDashboard,
-  getPlantLocations
-} = require("../controllers/plantController");
-```
-
----
-
-## 3. Endpoints
-
-| Method | Route | Controller |
-|---|---|---|
-| GET | `/` | `getAllPlants` |
-| GET | `/dashboard` | `getPlantDashboard` |
-| GET | `/locations` | `getPlantLocations` |
-| GET | `/:id` | `getPlantById` |
-| POST | `/` | `createPlant` |
-| PUT | `/:id` | `updatePlant` |
-| DELETE | `/:id` | `deletePlant` |
-
-The final URL depends on the prefix used when this router is mounted.
-
----
-
-## 4. GET /
-
-```js
-router.get("/", getAllPlants);
-```
-
-Retrieves the plant directory.
-
-Query parameters are forwarded through `req.query`.
-
-The service supports pagination and filtering.
-
----
-
-## 5. GET /dashboard
-
-```js
-router.get("/dashboard", getPlantDashboard);
-```
-
-Retrieves Plant dashboard statistics.
-
----
-
-## 6. GET /locations
-
-```js
-router.get("/locations", getPlantLocations);
-```
-
-Retrieves active plant locations.
-
-Only plants with non-null latitude and longitude values are returned by the service.
-
----
-
-## 7. GET /:id
-
-```js
-router.get("/:id", getPlantById);
-```
-
-Retrieves one plant using its route ID.
-
-Example structure:
+In `app.js`, it is mounted at:
 
 ```text
-GET /plants/10
+/api/plants
 ```
 
-The `10` value is available to the controller as:
-
-```js
-req.params.id
-```
-
----
-
-## 8. POST /
-
-```js
-router.post("/", createPlant);
-```
-
-Creates a new plant.
-
-Plant information is provided in:
-
-```js
-req.body
-```
-
----
-
-## 9. PUT /:id
-
-```js
-router.put("/:id", updatePlant);
-```
-
-Updates an existing plant.
-
-The request contains:
+Therefore the effective endpoints are:
 
 ```text
-Plant ID → req.params.id
-Updated Data → req.body
+GET    /api/plants
+GET    /api/plants/:id
+POST   /api/plants
+PUT    /api/plants/:id
+DELETE /api/plants/:id
+GET    /api/plants/dashboard
+GET    /api/plants/locations
 ```
 
 ---
 
-## 10. DELETE /:id
+## 2. Imported Dependencies
 
-```js
-router.delete("/:id", deletePlant);
-```
-
-Requests deletion of a plant.
-
-The Plant service implements this as a soft delete by changing the status to `INACTIVE`.
-
----
-
-## 11. Route Ordering
-
-The specific routes:
+The router imports:
 
 ```text
-/dashboard
-/locations
+express
+authMiddleware
+checkPermission
+plantController
 ```
 
-are declared before:
+The controller functions used are:
+
+```text
+getAllPlants
+getPlantById
+createPlant
+updatePlant
+deletePlant
+getPlantDashboard
+getPlantLocations
+```
+
+### Important
+
+The current route definitions do not attach `authMiddleware` or `checkPermission` to the listed routes, even though those modules are imported in the file.
+
+---
+
+# 3. GET /api/plants/dashboard
+
+Calls:
+
+```text
+getPlantDashboard
+```
+
+Returns aggregate plant statistics.
+
+This route is declared before:
 
 ```text
 /:id
 ```
 
-This ensures requests to `/dashboard` and `/locations` are handled by their dedicated routes rather than being interpreted as plant IDs.
+so `dashboard` is treated as a static route.
 
 ---
 
-## 12. Complete Route Flow
+# 4. GET /api/plants/locations
+
+Calls:
+
+```text
+getPlantLocations
+```
+
+Returns active plant records containing map coordinates.
+
+---
+
+# 5. GET /api/plants
+
+Calls:
+
+```text
+getAllPlants
+```
+
+Supports query parameters processed by the service:
+
+```text
+page
+limit
+search
+city
+zone
+division
+ward
+```
+
+---
+
+# 6. GET /api/plants/:id
+
+Calls:
+
+```text
+getPlantById
+```
+
+The ID is obtained from:
+
+```text
+req.params.id
+```
+
+---
+
+# 7. POST /api/plants
+
+Calls:
+
+```text
+createPlant
+```
+
+The plant information is received through:
+
+```text
+req.body
+```
+
+The controller returns HTTP `201` after successful creation.
+
+---
+
+# 8. PUT /api/plants/:id
+
+Calls:
+
+```text
+updatePlant
+```
+
+Inputs:
+
+```text
+req.params.id
+req.body
+```
+
+---
+
+# 9. DELETE /api/plants/:id
+
+Calls:
+
+```text
+deletePlant
+```
+
+The underlying service performs a soft delete by setting:
+
+```text
+status = INACTIVE
+```
+
+---
+
+# 10. Route Flow
 
 ```text
 Frontend
    ↓
-HTTP Request
+/api/plants/*
    ↓
 plantRoutes.js
    ↓
@@ -192,26 +191,29 @@ plantController.js
 plantService.js
    ↓
 Database
-   ↓
-JSON Response
-   ↓
-Frontend
 ```
 
 ---
 
-## 13. Export
+# 11. Static Route Ordering
 
-The router is exported using:
+The router intentionally places:
 
-```js
-module.exports = router;
+```text
+/dashboard
+/locations
 ```
+
+before:
+
+```text
+/:id
+```
+
+This prevents the static route names from being interpreted as plant IDs.
 
 ---
 
-## 14. Summary
+# 12. Summary
 
-`plantRoutes.js` provides the REST endpoints required by the Plants frontend.
-
-It separates URL definitions from controller logic and service/database operations.
+`plantRoutes.js` defines the REST interface for the Plants module and connects each HTTP operation to its corresponding controller.

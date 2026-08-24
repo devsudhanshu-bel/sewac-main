@@ -1,355 +1,185 @@
 # plantController.js Documentation
 
-## File Name
+## 1. File Overview
 
-`plantController.js`
+**File:** `plantController.js`  
+**Location:** `src/controllers/plantController.js`
 
-## File Location
+`plantController.js` is the HTTP controller layer for the Plants module.
 
-`src/controllers/plantController.js`
+It receives requests from `plantRoutes.js`, calls the corresponding functions in `plantService.js`, and returns JSON responses.
 
----
-
-## 1. Overview
-
-`plantController.js` is the controller-layer file for the Plants module of the SEWAC Admin Backend.
-
-The controller is responsible for receiving HTTP requests from the Plant routes, extracting the required request data, calling the corresponding functions from `plantService.js`, and returning structured JSON responses to the frontend.
-
-The controller does not directly perform database operations. Database and business logic are delegated to `plantService.js`.
-
-The overall architecture is:
-
-```text
-Frontend
-   ↓
-plantRoutes.js
-   ↓
-plantController.js
-   ↓
-plantService.js
-   ↓
-Database
-```
+The controller does not contain the main plant business/data logic.
 
 ---
 
-## 2. Controller Responsibilities
-
-The main responsibilities of `plantController.js` are:
-
-- Receive HTTP requests.
-- Read query parameters.
-- Read route parameters.
-- Read request body data.
-- Call the appropriate Plant service function.
-- Return successful responses.
-- Handle service errors.
-- Return appropriate HTTP status codes.
-- Maintain a consistent API response structure.
-
-The controller acts as the connection between the Plant API routes and the Plant service layer.
-
----
-
-## 3. Dependency
-
-The controller imports the Plant service:
+## 2. Service Dependency
 
 ```js
 const plantService = require("../services/plantService");
 ```
 
-This establishes the relationship:
+The relationship is:
 
 ```text
+HTTP Request
+     ↓
+plantRoutes.js
+     ↓
 plantController.js
-        ↓
+     ↓
 plantService.js
+     ↓
+Database
 ```
-
-The controller does not directly perform database queries.
 
 ---
 
-## 4. Controller-Service Separation
+## 3. Exported Functions
 
-The controller follows a clear separation of responsibilities.
-
-The controller:
+The controller exports:
 
 ```text
-Receive Request
-      ↓
-Extract Request Data
-      ↓
-Call Service
-      ↓
-Receive Service Result
-      ↓
-Return HTTP Response
+getAllPlants
+getPlantById
+createPlant
+updatePlant
+deletePlant
+getPlantDashboard
+getPlantLocations
 ```
-
-The service handles the actual business logic and database operations.
 
 ---
 
-## 5. getAllPlants()
+## 4. getAllPlants()
 
 ### Purpose
 
-`getAllPlants()` retrieves the list of plants.
+Retrieves the plant directory.
 
-It is used when the frontend needs to display plant records, such as in the Plant Directory.
-
-### Request Data
-
-The function passes query parameters to the service:
+### Service Call
 
 ```js
-const data = await plantService.getAllPlants(req.query);
+plantService.getAllPlants(req.query)
 ```
 
-The query parameters are obtained from:
+The complete query object is passed to the service.
+
+This allows the service to process:
 
 ```text
-req.query
+page
+limit
+search
+city
+zone
+division
+ward
 ```
 
-### Success Response
+### Success
 
-A successful request returns:
+Returns:
 
-```text
+```http
 200 OK
 ```
 
 with:
 
-```js
+```json
 {
-  success: true,
-  data,
+  "success": true,
+  "data": {}
 }
 ```
 
-### Error Response
+### Error
 
-If the service throws an error:
+Returns:
 
-```text
+```http
 500 Internal Server Error
 ```
 
 with:
 
-```js
+```json
 {
-  success: false,
-  message: error.message,
+  "success": false,
+  "message": "..."
 }
-```
-
-### Flow
-
-```text
-Frontend
-   ↓
-GET Plant Request
-   ↓
-req.query
-   ↓
-getAllPlants()
-   ↓
-plantService.getAllPlants()
-   ↓
-Plant Records
-   ↓
-JSON Response
 ```
 
 ---
 
-## 6. getPlantById()
+## 5. getPlantById()
 
-### Purpose
+### Endpoint Layer
 
-`getPlantById()` retrieves a specific plant using its ID.
-
-### Request Parameter
-
-The plant ID is obtained from:
+Receives:
 
 ```text
 req.params.id
 ```
 
-The controller passes it to:
+and calls:
 
 ```js
 plantService.getPlantById(req.params.id)
 ```
 
-### Success Response
+### Success
 
-A successful request returns:
+Returns HTTP `200`.
 
-```text
-200 OK
-```
+### Error
 
-with:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-### Error Response
-
-If the service operation fails:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Frontend
-   ↓
-Plant ID
-   ↓
-req.params.id
-   ↓
-getPlantById()
-   ↓
-plantService.getPlantById()
-   ↓
-Selected Plant
-   ↓
-JSON Response
-```
+Returns HTTP `500`.
 
 ---
 
-## 7. createPlant()
+## 6. createPlant()
 
-### Purpose
+Receives the request body:
 
-`createPlant()` handles requests for creating a new plant.
-
-It is used by the frontend Create Plant functionality.
-
-### Request Body
-
-The new plant information is obtained from:
-
-```text
+```js
 req.body
 ```
 
-The controller passes the complete request body to the service:
+and calls:
 
 ```js
-const data = await plantService.createPlant(req.body);
+plantService.createPlant(req.body)
 ```
 
-### Success Response
+On success it returns:
 
-A successful plant creation returns:
-
-```text
+```http
 201 Created
 ```
 
 with:
 
-```js
+```json
 {
-  success: true,
-  data,
+  "success": true,
+  "data": {}
 }
-```
-
-### Error Response
-
-If creation fails:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Create Plant Form
-       ↓
-POST Request
-       ↓
-req.body
-       ↓
-createPlant()
-       ↓
-plantService.createPlant()
-       ↓
-Database
-       ↓
-Created Plant
-       ↓
-JSON Response
 ```
 
 ---
 
-## 8. updatePlant()
+## 7. updatePlant()
 
-### Purpose
-
-`updatePlant()` handles requests for updating an existing plant.
-
-It receives:
-
-- The plant ID.
-- The updated plant data.
-
-### Plant ID
-
-The plant ID is obtained from:
+Receives:
 
 ```text
 req.params.id
-```
-
-### Updated Data
-
-The updated information is obtained from:
-
-```text
 req.body
 ```
 
-The service is called using both values:
+and calls:
 
 ```js
 plantService.updatePlant(
@@ -358,834 +188,112 @@ plantService.updatePlant(
 )
 ```
 
-### Success Response
-
-A successful update returns:
-
-```text
-200 OK
-```
-
-with:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-### Error Response
-
-If the update fails:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Edit Plant Form
-       ↓
-Plant ID + Updated Data
-       ↓
-updatePlant()
-       ↓
-plantService.updatePlant()
-       ↓
-Database Update
-       ↓
-Updated Plant
-       ↓
-JSON Response
-```
+A successful update returns HTTP `200`.
 
 ---
 
-## 9. deletePlant()
+## 8. deletePlant()
 
-### Purpose
-
-`deletePlant()` handles deletion of a plant.
-
-### Plant ID
-
-The plant ID is obtained from:
+Receives the plant ID from:
 
 ```text
 req.params.id
 ```
 
-The controller passes it to:
+and calls:
 
 ```js
 plantService.deletePlant(req.params.id)
 ```
 
-### Success Response
+The service performs a soft delete by changing the plant status to `INACTIVE`.
 
-A successful deletion returns:
-
-```text
-200 OK
-```
-
-with:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-### Error Response
-
-If deletion fails:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Delete Plant
-      ↓
-Plant ID
-      ↓
-req.params.id
-      ↓
-deletePlant()
-      ↓
-plantService.deletePlant()
-      ↓
-Database Delete
-      ↓
-JSON Response
-```
+The controller returns HTTP `200` on success.
 
 ---
 
-## 10. getPlantDashboard()
+## 9. getPlantDashboard()
 
-### Purpose
-
-`getPlantDashboard()` retrieves dashboard-related Plant information.
-
-No plant ID is required.
-
-The controller calls:
+Calls:
 
 ```js
-const data = await plantService.getPlantDashboard();
-```
-
-### Success Response
-
-A successful request returns:
-
-```text
-200 OK
-```
-
-with:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-### Error Response
-
-If an error occurs:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Frontend
-   ↓
-Plant Dashboard Request
-   ↓
-getPlantDashboard()
-   ↓
-plantService.getPlantDashboard()
-   ↓
-Dashboard Data
-   ↓
-JSON Response
-```
-
----
-
-## 11. getPlantLocations()
-
-### Purpose
-
-`getPlantLocations()` retrieves Plant location information.
-
-This functionality supports the frontend Plant Locations feature.
-
-The controller calls:
-
-```js
-const data = await plantService.getPlantLocations();
-```
-
-### Success Response
-
-A successful request returns:
-
-```text
-200 OK
-```
-
-with:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-### Error Response
-
-If an error occurs:
-
-```text
-500 Internal Server Error
-```
-
-with:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-### Flow
-
-```text
-Frontend
-   ↓
-Plant Locations Request
-   ↓
-getPlantLocations()
-   ↓
-plantService.getPlantLocations()
-   ↓
-Plant Location Data
-   ↓
-JSON Response
-```
-
----
-
-## 12. HTTP Status Codes
-
-| Status Code | Usage |
-|---|---|
-| `200` | Successful retrieval, update, or deletion |
-| `201` | Successful plant creation |
-| `500` | Server, service, or database error |
-
----
-
-## 13. Success Response Structure
-
-The Plant controller uses a consistent success response:
-
-```js
-{
-  success: true,
-  data,
-}
-```
-
-The `data` property contains the result returned by the Plant service.
-
----
-
-## 14. Error Response Structure
-
-Controller errors use:
-
-```js
-{
-  success: false,
-  message: error.message,
-}
-```
-
-This gives the frontend a consistent way to identify failed requests and read the error message.
-
----
-
-## 15. Error Handling Pattern
-
-Plant controller functions use asynchronous `try/catch` handling.
-
-The general pattern is:
-
-```js
-try {
-  const data = await plantService.someFunction();
-
-  res.status(200).json({
-    success: true,
-    data,
-  });
-} catch (error) {
-  res.status(500).json({
-    success: false,
-    message: error.message,
-  });
-}
-```
-
-This prevents service exceptions from becoming unhandled request failures.
-
----
-
-## 16. Asynchronous Processing
-
-Plant controller functions are asynchronous.
-
-They use:
-
-```js
-async
-```
-
-and:
-
-```js
-await
-```
-
-when calling service functions.
-
-For example:
-
-```js
-const data = await plantService.getPlantById(req.params.id);
-```
-
-This allows the controller to wait for the service operation before returning the HTTP response.
-
----
-
-## 17. Request Data Sources
-
-The Plant controller uses three request data sources.
-
-### Query Parameters
-
-Used by:
-
-```text
-getAllPlants()
-```
-
-through:
-
-```js
-req.query
-```
-
-### Route Parameters
-
-Used by:
-
-```text
-getPlantById()
-updatePlant()
-deletePlant()
-```
-
-through:
-
-```js
-req.params.id
-```
-
-### Request Body
-
-Used by:
-
-```text
-createPlant()
-updatePlant()
-```
-
-through:
-
-```js
-req.body
-```
-
----
-
-## 18. Request Parameter Summary
-
-| Controller Function | Query | Route Parameter | Body |
-|---|---|---|---|
-| `getAllPlants` | `req.query` | No | No |
-| `getPlantById` | No | `req.params.id` | No |
-| `createPlant` | No | No | `req.body` |
-| `updatePlant` | No | `req.params.id` | `req.body` |
-| `deletePlant` | No | `req.params.id` | No |
-| `getPlantDashboard` | No | No | No |
-| `getPlantLocations` | No | No | No |
-
----
-
-## 19. Service Function Mapping
-
-| Controller Function | Service Function |
-|---|---|
-| `getAllPlants()` | `plantService.getAllPlants()` |
-| `getPlantById()` | `plantService.getPlantById()` |
-| `createPlant()` | `plantService.createPlant()` |
-| `updatePlant()` | `plantService.updatePlant()` |
-| `deletePlant()` | `plantService.deletePlant()` |
-| `getPlantDashboard()` | `plantService.getPlantDashboard()` |
-| `getPlantLocations()` | `plantService.getPlantLocations()` |
-
----
-
-## 20. Plant CRUD Operations
-
-The controller supports standard CRUD operations.
-
-### Create
-
-```text
-createPlant()
-    ↓
-plantService.createPlant()
-```
-
-### Read
-
-```text
-getAllPlants()
-getPlantById()
-    ↓
-plantService.getAllPlants()
-plantService.getPlantById()
-```
-
-### Update
-
-```text
-updatePlant()
-    ↓
-plantService.updatePlant()
-```
-
-### Delete
-
-```text
-deletePlant()
-    ↓
-plantService.deletePlant()
-```
-
----
-
-## 21. Plant Dashboard Operation
-
-The controller provides:
-
-```text
-getPlantDashboard()
-```
-
-This allows the frontend to retrieve Plant dashboard information.
-
-The actual processing is delegated to:
-
-```text
 plantService.getPlantDashboard()
 ```
 
----
+No request body or route parameter is required.
 
-## 22. Plant Location Operation
+The returned dashboard statistics are wrapped inside:
 
-The controller provides:
-
-```text
-getPlantLocations()
+```json
+{
+  "success": true,
+  "data": {}
+}
 ```
 
-This allows the frontend to retrieve Plant location information.
+---
 
-The actual processing is delegated to:
+## 10. getPlantLocations()
 
-```text
+Calls:
+
+```js
 plantService.getPlantLocations()
 ```
 
----
-
-## 23. Relationship With Plant Directory
-
-The Plant Directory primarily depends on:
-
-```text
-getAllPlants()
-```
-
-The flow is:
-
-```text
-Plant Directory
-      ↓
-Plant API
-      ↓
-getAllPlants()
-      ↓
-plantService.getAllPlants()
-      ↓
-Plant Records
-      ↓
-JSON Response
-      ↓
-Plant Directory
-```
+The function returns the active plant locations used by map-related frontend functionality.
 
 ---
 
-## 24. Relationship With Create Plant Modal
+## 11. Error Handling
 
-The Create Plant interface uses:
+All controller methods follow:
 
 ```text
-createPlant()
+try
+  ↓
+service call
+  ↓
+success response
 ```
 
-The flow is:
+or:
 
 ```text
-Create Plant Modal
-      ↓
-req.body
-      ↓
-createPlant()
-      ↓
-plantService.createPlant()
-      ↓
-Database
-      ↓
-Created Plant
-      ↓
-Response
+catch
+  ↓
+HTTP 500
+  ↓
+success: false
+message: error.message
 ```
 
 ---
 
-## 25. Relationship With Edit Plant Modal
-
-The Edit Plant interface uses:
-
-```text
-updatePlant()
-```
-
-The controller receives:
-
-```text
-req.params.id
-+
-req.body
-```
-
-and passes both values to:
-
-```text
-plantService.updatePlant()
-```
-
-The flow is:
-
-```text
-Edit Plant Modal
-      ↓
-Plant ID + Updated Data
-      ↓
-updatePlant()
-      ↓
-plantService.updatePlant()
-      ↓
-Database
-      ↓
-Updated Plant
-```
-
----
-
-## 26. Relationship With Delete Plant Modal
-
-The Delete Plant interface uses:
-
-```text
-deletePlant()
-```
-
-The controller receives:
-
-```text
-req.params.id
-```
-
-and passes it to:
-
-```text
-plantService.deletePlant()
-```
-
-The flow is:
-
-```text
-Delete Plant Modal
-      ↓
-Plant ID
-      ↓
-deletePlant()
-      ↓
-plantService.deletePlant()
-      ↓
-Database
-      ↓
-Delete Result
-```
-
----
-
-## 27. Relationship With Plant Dashboard
-
-The Plant Dashboard uses:
-
-```text
-getPlantDashboard()
-```
-
-The controller does not require any request parameters.
-
-The service is responsible for obtaining the dashboard data.
-
----
-
-## 28. Relationship With Plant Locations
-
-The Plant Locations frontend feature uses:
-
-```text
-getPlantLocations()
-```
-
-The controller calls the corresponding service method and returns the location data.
-
----
-
-## 29. Complete Plants Controller Flow
-
-```text
-                         Frontend
-                            │
-                            ↓
-                     Plant Routes
-                            │
-                            ↓
-                  plantController.js
-                            │
-          ┌─────────────────┼──────────────────┐
-          │        │        │        │         │
-          ↓        ↓        ↓        ↓         ↓
-       Get All   Get By   Create   Update    Delete
-       Plants      ID      Plant    Plant     Plant
-          │        │        │        │         │
-          └────────┴────────┴────────┴─────────┘
-                            │
-                            ↓
-                    plantService.js
-                            │
-                            ↓
-                        Database
-                            │
-                            ↓
-                    Service Result
-                            │
-                            ↓
-                  plantController.js
-                            │
-                            ↓
-                      JSON Response
-                            │
-                            ↓
-                        Frontend
-```
-
----
-
-## 30. Exported Controller Functions
-
-The controller exports its functions so that they can be used by the Plant routes.
-
-The exported functions are:
-
-```js
-module.exports = {
-  getAllPlants,
-  getPlantById,
-  createPlant,
-  updatePlant,
-  deletePlant,
-  getPlantDashboard,
-  getPlantLocations
-};
-```
-
-These functions are then mapped to API routes.
-
----
-
-## 31. Complete Function List
-
-| Function | Purpose |
-|---|---|
-| `getAllPlants()` | Retrieve all plant records |
-| `getPlantById()` | Retrieve one plant by ID |
-| `createPlant()` | Create a new plant |
-| `updatePlant()` | Update an existing plant |
-| `deletePlant()` | Delete a plant |
-| `getPlantDashboard()` | Retrieve plant dashboard data |
-| `getPlantLocations()` | Retrieve plant location data |
-
----
-
-## 32. Overall Module Architecture
-
-```text
-                         Plants Frontend
-                                │
-             ┌──────────────────┼──────────────────┐
-             │                  │                  │
-             ↓                  ↓                  ↓
-      Plant Directory      Plant Forms       Plant Dashboard
-             │                  │                  │
-             │          ┌───────┴───────┐          │
-             │          │               │          │
-             │       Create/Edit      Delete       │
-             │          │               │          │
-             └──────────┴───────────────┴──────────┘
-                                │
-                                ↓
-                        plantRoutes.js
-                                │
-                                ↓
-                     plantController.js
-                                │
-                                ↓
-                       plantService.js
-                                │
-                                ↓
-                            Database
-                                │
-                                ↓
-                         JSON Response
-                                │
-                                ↓
-                           Frontend
-```
-
----
-
-## 33. Summary
-
-`plantController.js` is the HTTP controller for the SEWAC Plants module.
-
-It provides seven main controller operations:
-
-```text
-getAllPlants()
-getPlantById()
-createPlant()
-updatePlant()
-deletePlant()
-getPlantDashboard()
-getPlantLocations()
-```
-
-The controller:
-
-- Receives requests from Plant routes.
-- Extracts query parameters, route parameters, and request bodies.
-- Calls the corresponding service functions.
-- Returns successful service results using `success: true`.
-- Returns service errors using `success: false`.
-- Uses HTTP `200` for successful retrieval, update, and deletion.
-- Uses HTTP `201` for successful plant creation.
-- Uses HTTP `500` when an exception occurs.
-- Keeps database and business logic inside `plantService.js`.
-
-The complete backend flow is:
+## 12. Data Flow
 
 ```text
 Frontend
    ↓
-plantRoutes.js
+/api/plants
    ↓
-plantController.js
+plantRoutes
    ↓
-plantService.js
+plantController
    ↓
-Database
+plantService
    ↓
-plantService.js
+PostgreSQL / Prisma
    ↓
-plantController.js
+plantService
+   ↓
+plantController
    ↓
 JSON Response
-   ↓
-Frontend
 ```
+
+---
+
+## 13. Summary
+
+`plantController.js` keeps HTTP request handling separate from plant business/data operations. It exposes the complete Plants API controller interface for listing, viewing, creating, updating, soft deleting, dashboard statistics, and map locations.
