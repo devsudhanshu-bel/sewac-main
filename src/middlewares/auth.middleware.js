@@ -1,130 +1,152 @@
-import { verifyToken } from "../utils/jwt.js";
+import jwt
+  from "jsonwebtoken";
 
-import { AUTH_MESSAGES } from "../modules/auth/auth.constants.js";
+import {
+  AUTH_MESSAGES,
+} from "../modules/auth/auth.constants.js";
 
-import redisService from "../modules/redis/redis.service.js";
 
-import redisKeys from "../modules/redis/redis.keys.js";
+// =====================================================
+// AUTH MIDDLEWARE
+// =====================================================
+//
+// Expected:
+//
+// Authorization: Bearer <JWT>
+//
+// =====================================================
 
-const authenticateCitizen = async (req, res, next) => {
+const authMiddleware = (
+  req,
+  res,
+  next
+) => {
+
   try {
-    // =====================================
-    // READ AUTHORIZATION HEADER
-    // =====================================
 
-    const authHeader = req.headers.authorization;
+    // =================================================
+    // AUTHORIZATION HEADER
+    // =================================================
 
-    if (!authHeader) {
+    const authorization =
+      req.headers.authorization;
+
+
+    if (
+      !authorization
+    ) {
+
       return res.status(401).json({
+
         success: false,
 
-        message: AUTH_MESSAGES.UNAUTHORIZED,
+        message:
+          AUTH_MESSAGES.UNAUTHORIZED,
 
         data: null,
+
       });
     }
 
-    // =====================================
-    // CHECK BEARER FORMAT
-    // =====================================
 
-    if (!authHeader.startsWith("Bearer ")) {
+    // =================================================
+    // BEARER
+    // =================================================
+
+    const parts =
+      authorization.split(" ");
+
+
+    if (
+      parts.length !== 2 ||
+      parts[0] !== "Bearer" ||
+      !parts[1]
+    ) {
+
       return res.status(401).json({
+
         success: false,
 
-        message: AUTH_MESSAGES.INVALID_TOKEN,
+        message:
+          AUTH_MESSAGES.INVALID_TOKEN,
 
         data: null,
+
       });
     }
 
-    const token = authHeader.substring(7);
 
-    if (!token) {
-      return res.status(401).json({
+    const token =
+      parts[1];
+
+
+    // =================================================
+    // JWT SECRET
+    // =================================================
+
+    const secret =
+      process.env.JWT_SECRET;
+
+
+    if (!secret) {
+
+      console.error(
+        "[Auth Middleware] JWT_SECRET is missing"
+      );
+
+      return res.status(500).json({
+
         success: false,
 
-        message: AUTH_MESSAGES.INVALID_TOKEN,
+        message:
+          AUTH_MESSAGES.INTERNAL_SERVER_ERROR,
 
         data: null,
+
       });
     }
 
-    // =====================================
-    // VERIFY JWT TOKEN
-    // =====================================
 
-    const decoded = verifyToken(token);
+    // =================================================
+    // VERIFY
+    // =================================================
 
-    const userId = decoded.id;
-    const deviceId = decoded.deviceId;
+    const decoded =
+      jwt.verify(
+        token,
+        secret
+      );
 
-    if (!userId || !deviceId) {
-      return res.status(401).json({
-        success: false,
-        message: AUTH_MESSAGES.INVALID_TOKEN,
-        data: null,
-      });
-    }
 
-    // =====================================
-    // CHECK REDIS SESSION
-    // =====================================
+    // =================================================
+    // ATTACH USER
+    // =================================================
 
-    const key = redisKeys.authToken(userId, deviceId);
+    req.user = decoded;
 
-    const redisToken = await redisService.get(key);
-
-    if (!redisToken) {
-      return res.status(401).json({
-        success: false,
-
-        message: "Session expired. Please login again.",
-
-        data: null,
-      });
-    }
-
-    // =====================================
-    // VERIFY TOKEN MATCH
-    // =====================================
-
-    if (redisToken !== token) {
-      return res.status(401).json({
-        success: false,
-
-        message: "Invalid session.",
-
-        data: null,
-      });
-    }
-
-    // =====================================
-    // ATTACH USER DATA
-    // =====================================
-
-    req.user = {
-      id: decoded.id,
-
-      phoneNumber: decoded.phoneNumber,
-
-      deviceId: decoded.deviceId,
-
-      token,
-    };
 
     next();
+
   } catch (error) {
-    console.error("❌ Authentication Error:", error.message);
+
+    console.error(
+      "[Auth Middleware] Token verification failed:",
+      error.message
+    );
+
 
     return res.status(401).json({
+
       success: false,
 
-      message: AUTH_MESSAGES.INVALID_TOKEN,
+      message:
+        AUTH_MESSAGES.INVALID_TOKEN,
 
       data: null,
+
     });
   }
 };
 
-export default authenticateCitizen;
+
+export default authMiddleware;

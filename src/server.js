@@ -8,8 +8,6 @@ import app from "./app.js";
 
 import helperPrisma from "./config/helperPrisma.js";
 
-import { connectRedis } from "./modules/redis/redis.client.js";
-
 import { initializeMapSocket } from "./modules/map/map.socket.js";
 
 import mapService from "./modules/map/map.service.js";
@@ -17,19 +15,14 @@ import mapService from "./modules/map/map.service.js";
 import mapWorker from "./modules/map/map.worker.js";
 
 
-
 const PORT = process.env.PORT || 5002;
 
-
 const server = http.createServer(app);
-
-
 
 
 async function startServer() {
 
   try {
-
 
     // =================================
     // DATABASE CONNECTION
@@ -42,21 +35,13 @@ async function startServer() {
     );
 
 
-
-
-
     // =================================
-    // REDIS CONNECTION
+    // REDIS DISABLED FOR NOW
     // =================================
-
-    await connectRedis();
 
     console.log(
-      "🔴 Redis Connected Successfully"
+      "⚠️ Redis Disabled - Running without Redis"
     );
-
-
-
 
 
     // =================================
@@ -70,21 +55,26 @@ async function startServer() {
     );
 
 
-
-
-
     // =================================
     // MAP CACHE INITIALIZATION
     // =================================
 
-    await mapService.initializeCache();
+    try {
 
-    console.log(
-      "✅ Map Cache Initialized"
-    );
+      await mapService.initializeCache();
 
+      console.log(
+        "✅ Map Cache Initialized"
+      );
 
+    } catch (error) {
 
+      console.warn(
+        "⚠️ Map Cache Initialization Skipped:",
+        error.message
+      );
+
+    }
 
 
     // =================================
@@ -96,7 +86,6 @@ async function startServer() {
       "0.0.0.0",
       () => {
 
-
         console.log(`
 
 ==========================================
@@ -104,9 +93,9 @@ async function startServer() {
 
 🌐 Server      : http://localhost:${PORT}
 🔌 Socket.IO   : Enabled
-🔴 Redis       : Connected
-🗺️ Map Cache   : Ready
-📡 Worker      : Running
+🔴 Redis       : Disabled
+🗺️ Map Cache   : Initialized
+📡 Worker      : Starting
 
 📦 Environment : ${process.env.NODE_ENV || "development"}
 ==========================================
@@ -114,35 +103,44 @@ async function startServer() {
         `);
 
 
+        // =================================
+        // START TELEMETRY WORKER
+        // =================================
 
-        // Start telemetry sync worker
-        mapWorker.start();
+        try {
 
+          mapWorker.start();
+
+          console.log(
+            "✅ Telemetry Worker Started"
+          );
+
+        } catch (error) {
+
+          console.warn(
+            "⚠️ Telemetry Worker Failed:",
+            error.message
+          );
+
+        }
 
       }
     );
 
 
-
-  } catch(error) {
-
+  } catch (error) {
 
     console.error(
       "❌ Failed to start server"
     );
 
-
     console.error(error);
 
-
     process.exit(1);
-
 
   }
 
 }
-
-
 
 
 startServer();

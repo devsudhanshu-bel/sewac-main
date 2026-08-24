@@ -1,312 +1,441 @@
-import authRepository from "./auth.repository.js";
+import jwt
+  from "jsonwebtoken";
 
-import { AUTH_MESSAGES } from "./auth.constants.js";
+import authRepository
+  from "./auth.repository.js";
 
-import { maskName } from "../../utils/string.utils.js";
+import {
+  AUTH_MESSAGES,
+} from "./auth.constants.js";
 
-import { generateToken } from "../../utils/jwt.js";
 
-import redisService from "../redis/redis.service.js";
-
-import redisKeys from "../redis/redis.keys.js";
+// =====================================================
+// AUTH SERVICE
+// =====================================================
 
 class AuthService {
-  /**
-   * Login using phone number + device ID
-   */
-  async login(phoneNumber, deviceId) {
-    // =========================================
-    // 1. CHECK TEMPORARY DEVICE LOCK
-    // =========================================
 
-    const lockKey = redisKeys.deviceLock(deviceId);
+  // ===================================================
+  // JWT SECRET
+  // ===================================================
 
-    const isLocked = await redisService.exists(lockKey);
+  getJwtSecret() {
 
-    if (isLocked) {
-      return {
-        success: false,
-        statusCode: 429,
-        message: "This device is temporarily locked. Please try again later.",
-        data: null,
-      };
-    }
+    const secret =
+      process.env.JWT_SECRET;
 
-    // =========================================
-    // 2. FIND CITIZEN
-    // =========================================
-
-    const citizen = await authRepository.findCitizenByPhone(phoneNumber);
-
-    if (!citizen) {
-      return {
-        success: false,
-        statusCode: 404,
-        message: AUTH_MESSAGES.CITIZEN_NOT_FOUND,
-        data: null,
-      };
-    }
-
-    // =========================================
-    // 3. CHECK TRUSTED DEVICE
-    // =========================================
-
-    const trustedKey = redisKeys.deviceTrusted(deviceId, phoneNumber);
-
-    const isTrusted = await redisService.exists(trustedKey);
-
-    // =========================================
-    // 4. TRUSTED DEVICE → NORMAL LOGIN
-    // =========================================
-
-    if (isTrusted) {
-      return this.createCitizenSession(citizen, deviceId);
-    }
-
-    // =========================================
-    // 5. CHECK SUSPICIOUS DEVICE
-    // =========================================
-
-    const suspiciousKey = redisKeys.deviceSuspicious(deviceId);
-
-    const isSuspicious = await redisService.exists(suspiciousKey);
-
-    if (isSuspicious) {
-      return {
-        success: false,
-        statusCode: 403,
-        message:
-          "This device is temporarily restricted from registering another citizen.",
-        data: null,
-      };
-    }
-
-    // =========================================
-    // 6. TRACK DISTINCT PHONE NUMBERS
-    // =========================================
-
-    const devicePhonesKey = redisKeys.devicePhones(deviceId);
-
-    const wasAlreadyTracked = await redisService.addToSet(
-      devicePhonesKey,
-      phoneNumber,
-    );
-
-    // =========================================
-    // START 5-DAY ABUSE WINDOW
-    // =========================================
-
-    if (wasAlreadyTracked === 1) {
-      await redisService.setExpiry(devicePhonesKey, 5 * 24 * 60 * 60);
-    }
-
-    const distinctPhoneCount = await redisService.setSize(devicePhonesKey);
-
-    // =========================================
-    // 7. MORE THAN 3 CITIZENS
-    // → SUSPICIOUS + 2-HOUR LOCK
-    // =========================================
-
-    if (distinctPhoneCount > 3) {
-      // Device remains suspicious
-      // for 5 days.
-      await redisService.set(suspiciousKey, true, 5 * 24 * 60 * 60);
-
-      // Immediate temporary lock
-      // for 2 hours.
-      await redisService.set(lockKey, true, 2 * 60 * 60);
-
-      return {
-        success: false,
-        statusCode: 429,
-        message:
-          "Too many citizen accounts were attempted from this device. Device locked for 2 hours.",
-        data: null,
-      };
-    }
-
-    // =========================================
-    // 8. CHECK PENDING ENROLLMENT
-    // =========================================
-
-    const enrollmentKey = redisKeys.deviceEnrollment(deviceId, phoneNumber);
-
-    const enrollment = await redisService.get(enrollmentKey);
-
-    // =========================================
-    // 9. FIRST TIME
-    // → START 30-MINUTE TIMER
-    // =========================================
-
-    if (!enrollment) {
-      const expiresAt = Date.now() + 30 * 1000;
-
-      // Keep Redis record for 31 minutes.
-      // This gives us a 1-minute buffer
-      // after the 30-minute timer completes.
-      await redisService.set(
-        enrollmentKey,
-        {
-          status: "PENDING",
-          expiresAt,
-        },
-        60,
+    if (!secret) {
+      throw new Error(
+        "JWT_SECRET is not configured"
       );
-
-      return {
-        success: true,
-        statusCode: 202,
-        message:
-          "New device detected. Please wait 30 seconds before logging in.",
-        data: {
-          status: "DEVICE_ENROLLMENT_PENDING",
-
-          expiresAt,
-
-          remainingSeconds: 30,
-        },
-      };
     }
 
-    // =========================================
-    // 10. CALCULATE REMAINING TIME
-    // =========================================
-
-    const remainingSeconds = Math.max(
-      0,
-      Math.ceil((enrollment.expiresAt - Date.now()) / 1000),
-    );
-
-    // =========================================
-    // 11. TIMER STILL RUNNING
-    // =========================================
-
-    if (remainingSeconds > 0) {
-      return {
-        success: true,
-        statusCode: 202,
-        message: "Device enrollment is still in progress.",
-        data: {
-          status: "DEVICE_ENROLLMENT_PENDING",
-
-          expiresAt: enrollment.expiresAt,
-
-          remainingSeconds,
-        },
-      };
-    }
-
-    // =========================================
-    // 12. TIMER FINISHED
-    // → TRUST DEVICE FOR 30 DAYS
-    // =========================================
-
-    await redisService.set(trustedKey, true, 30 * 24 * 60 * 60);
-
-    // Remove completed enrollment
-    await redisService.delete(enrollmentKey);
-
-    // =========================================
-    // 13. CREATE SESSION
-    // =========================================
-
-    return this.createCitizenSession(citizen, deviceId);
+    return secret;
   }
 
-  /**
-   * Create JWT session for citizen + device
-   */
-  async createCitizenSession(citizen, deviceId) {
-    const token = generateToken({
-      id: citizen.id,
 
-      phoneNumber: citizen.phoneNumber,
+  // ===================================================
+  // CREATE TOKEN
+  // ===================================================
 
-      deviceId,
-    });
+  createToken(
+    citizen,
+    deviceId
+  ) {
 
-    // Device-specific session
-    await redisService.set(
-      redisKeys.authToken(citizen.id, deviceId),
-      token,
-      86400,
+    const payload = {
+
+      sub:
+        String(
+          citizen.id
+        ),
+
+      phoneNumber:
+        citizen.phoneNumber,
+
+      wardId:
+        citizen.wardId,
+
+      wardNo:
+        citizen.wardNo,
+
+      wardName:
+        citizen.wardName,
+
+      deviceId:
+        deviceId,
+
+      role:
+        "CITIZEN",
+    };
+
+
+    return jwt.sign(
+      payload,
+      this.getJwtSecret(),
+      {
+        expiresIn:
+          process.env.JWT_EXPIRES_IN ||
+          "7d",
+      }
     );
+  }
+
+
+  // ===================================================
+  // LOGIN
+  // ===================================================
+
+  async login(
+    phoneNumber,
+    deviceId
+  ) {
+
+    // =================================================
+    // FIND CITIZEN
+    // =================================================
+
+    const citizen =
+      await authRepository
+        .findCitizenByPhone(
+          phoneNumber
+        );
+
+
+    // =================================================
+    // PHONE NOT FOUND
+    // =================================================
+
+    if (!citizen) {
+
+      return {
+
+        statusCode: 404,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.CITIZEN_NOT_FOUND,
+
+        data: {
+
+          phoneNumber,
+
+        },
+      };
+    }
+
+
+    // =================================================
+    // WARD NOT FOUND
+    // =================================================
+
+    if (
+      !citizen.wardNo ||
+      !citizen.wardTableName
+    ) {
+
+      return {
+
+        statusCode: 404,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.WARD_NOT_FOUND,
+
+        data: {
+
+          phoneNumber,
+
+          wardId:
+            citizen.wardId,
+
+          wardNo:
+            citizen.wardNo,
+
+          wardName:
+            citizen.wardName,
+
+          wardTableName:
+            citizen.wardTableName,
+        },
+      };
+    }
+
+
+    // =================================================
+    // PROFILE NOT FOUND
+    // =================================================
+
+    if (
+      !citizen.profile
+    ) {
+
+      return {
+
+        statusCode: 404,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.CITIZEN_PROFILE_NOT_FOUND,
+
+        data: {
+
+          phoneNumber,
+
+          wardId:
+            citizen.wardId,
+
+          wardNo:
+            citizen.wardNo,
+
+          wardName:
+            citizen.wardName,
+
+          wardTableName:
+            citizen.wardTableName,
+        },
+      };
+    }
+
+
+    // =================================================
+    // CREATE JWT
+    // =================================================
+
+    const token =
+      this.createToken(
+        citizen,
+        deviceId
+      );
+
+
+    // =================================================
+    // SUCCESS
+    // =================================================
 
     return {
-      success: true,
+
       statusCode: 200,
-      message: AUTH_MESSAGES.LOGIN_SUCCESS,
+
+      success: true,
+
+      message:
+        AUTH_MESSAGES.LOGIN_SUCCESS,
 
       data: {
+
         token,
 
-        citizen: {
-          id: citizen.id,
+        tokenType:
+          "Bearer",
 
-          personName: maskName(citizen.personName),
+        expiresIn:
+          process.env.JWT_EXPIRES_IN ||
+          "7d",
 
-          phoneNumber: citizen.phoneNumber,
+        user: {
 
-          drySlno: citizen.drySlno,
+          id:
+            citizen.id,
 
-          wetSlno: citizen.wetSlno,
+          personName:
+            citizen.personName,
+
+          phoneNumber:
+            citizen.phoneNumber,
+
+          role:
+            "CITIZEN",
+
+          ward: {
+
+            wardId:
+              citizen.wardId,
+
+            wardNo:
+              citizen.wardNo,
+
+            wardName:
+              citizen.wardName,
+
+            wardTableName:
+              citizen.wardTableName,
+          },
+
+          hierarchy:
+            citizen.hierarchy,
+
+          profile:
+            citizen.profile,
+        },
+
+      },
+    };
+  }
+
+
+  // ===================================================
+  // CURRENT USER
+  // ===================================================
+
+  async me(
+    user
+  ) {
+
+    if (!user) {
+
+      return {
+
+        statusCode: 401,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.UNAUTHORIZED,
+
+        data: null,
+      };
+    }
+
+
+    // =================================================
+    // Re-read profile from DB.
+    //
+    // This means /me always gets the latest profile.
+    // =================================================
+
+    const citizen =
+      await authRepository
+        .findCitizenByPhone(
+          user.phoneNumber
+        );
+
+
+    if (!citizen) {
+
+      return {
+
+        statusCode: 404,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.CITIZEN_NOT_FOUND,
+
+        data: null,
+      };
+    }
+
+
+    if (
+      !citizen.profile
+    ) {
+
+      return {
+
+        statusCode: 404,
+
+        success: false,
+
+        message:
+          AUTH_MESSAGES.CITIZEN_PROFILE_NOT_FOUND,
+
+        data: {
+
+          phoneNumber:
+            citizen.phoneNumber,
+
+          wardId:
+            citizen.wardId,
+
+          wardNo:
+            citizen.wardNo,
+
+          wardName:
+            citizen.wardName,
+
+          wardTableName:
+            citizen.wardTableName,
+        },
+      };
+    }
+
+
+    return {
+
+      statusCode: 200,
+
+      success: true,
+
+      message:
+        AUTH_MESSAGES.LOGIN_SUCCESS,
+
+      data: {
+
+        user: {
+
+          id:
+            citizen.id,
+
+          personName:
+            citizen.personName,
+
+          phoneNumber:
+            citizen.phoneNumber,
+
+          role:
+            "CITIZEN",
+
+          ward: {
+
+            wardId:
+              citizen.wardId,
+
+            wardNo:
+              citizen.wardNo,
+
+            wardName:
+              citizen.wardName,
+
+            wardTableName:
+              citizen.wardTableName,
+          },
+
+          hierarchy:
+            citizen.hierarchy,
+
+          profile:
+            citizen.profile,
         },
       },
     };
   }
 
-  /**
-   * Logout
-   * Removes JWT session from Redis
-   */
-  async logout(user) {
-    if (user?.id && user?.deviceId) {
-      await redisService.delete(redisKeys.authToken(user.id, user.deviceId));
-    }
+
+  // ===================================================
+  // LOGOUT
+  // ===================================================
+
+  async logout(
+    user
+  ) {
 
     return {
-      success: true,
+
       statusCode: 200,
-      message: AUTH_MESSAGES.LOGOUT_SUCCESS,
+
+      success: true,
+
+      message:
+        AUTH_MESSAGES.LOGOUT_SUCCESS,
+
       data: null,
     };
   }
-
-  /**
-   * Get logged-in citizen
-   */
-  async me(user) {
-    const citizen = await authRepository.findCitizenByPhone(user.phoneNumber);
-
-    if (!citizen) {
-      return {
-        success: false,
-        statusCode: 404,
-        message: AUTH_MESSAGES.CITIZEN_NOT_FOUND,
-        data: null,
-      };
-    }
-
-    return {
-      success: true,
-      statusCode: 200,
-      message: AUTH_MESSAGES.LOGIN_SUCCESS,
-
-      data: {
-        citizen: {
-          id: citizen.id,
-
-          personName: maskName(citizen.personName),
-
-          phoneNumber: citizen.phoneNumber,
-
-          drySlno: citizen.drySlno,
-
-          wetSlno: citizen.wetSlno,
-        },
-      },
-    };
-  }
 }
+
 
 export default new AuthService();

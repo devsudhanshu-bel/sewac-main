@@ -284,7 +284,8 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null
+    "rootEnvPath": null,
+    "schemaEnvPath": "../../.env"
   },
   "relativePath": "../../prisma/sewac",
   "clientVersion": "6.19.3",
@@ -312,8 +313,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "../../generated/sewac",
-    "../generated/sewac",
+    "generated/sewac",
+    "sewac",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -343,11 +344,11 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "query_engine-windows.dll.node");
-path.join(process.cwd(), "../../generated/sewac/query_engine-windows.dll.node")
+path.join(process.cwd(), "generated/sewac/query_engine-windows.dll.node")
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
-path.join(process.cwd(), "../../generated/sewac/libquery_engine-debian-openssl-3.0.x.so.node")
+path.join(process.cwd(), "generated/sewac/libquery_engine-debian-openssl-3.0.x.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "../../generated/sewac/schema.prisma")
+path.join(process.cwd(), "generated/sewac/schema.prisma")

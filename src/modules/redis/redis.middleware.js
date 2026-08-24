@@ -1,73 +1,82 @@
 import jwt from "jsonwebtoken";
 
-import redisService from "./redis.service.js";
+import redisService
+  from "../modules/redis/redis.service.js";
 
-import redisKeys from "./redis.keys.js";
-
-
-
-class RedisAuthMiddleware {
+import redisKeys
+  from "../modules/redis/redis.keys.js";
 
 
-  async verifyToken(req, res, next) {
+// =====================================================
+// AUTH MIDDLEWARE
+// =====================================================
 
+class AuthMiddleware {
+
+  async verifyToken(
+    req,
+    res,
+    next
+  ) {
 
     try {
 
-
-      // ===============================
-      // GET TOKEN
-      // ===============================
+      // ===============================================
+      // AUTHORIZATION HEADER
+      // ===============================================
 
       const authHeader =
         req.headers.authorization;
 
-
-
-      if(!authHeader) {
-
+      if (!authHeader) {
 
         return res.status(401).json({
 
-          success:false,
+          success: false,
 
-          message:"Authorization token missing"
+          message:
+            "Authorization token missing",
+
+          data: null,
 
         });
-
 
       }
 
 
+      // ===============================================
+      // BEARER TOKEN
+      // ===============================================
+
+      const parts =
+        authHeader.split(" ");
+
+      if (
+        parts.length !== 2 ||
+        parts[0] !== "Bearer"
+      ) {
+
+        return res.status(401).json({
+
+          success: false,
+
+          message:
+            "Invalid authorization format",
+
+          data: null,
+
+        });
+
+      }
 
 
       const token =
-        authHeader.split(" ")[1];
+        parts[1];
 
 
-
-      if(!token){
-
-
-        return res.status(401).json({
-
-          success:false,
-
-          message:"Invalid token format"
-
-        });
-
-
-      }
-
-
-
-
-
-      // ===============================
+      // ===============================================
       // VERIFY JWT
-      // ===============================
-
+      // ===============================================
 
       const decoded =
         jwt.verify(
@@ -76,46 +85,67 @@ class RedisAuthMiddleware {
         );
 
 
-
-
+      // ===============================================
+      // REQUIRED PAYLOAD
+      // ===============================================
 
       const userId =
         decoded.id ||
         decoded.userId;
 
+      const deviceId =
+        decoded.deviceId;
+
+      const phoneNumber =
+        decoded.phoneNumber;
 
 
-
-
-      if(!userId){
-
+      if (!userId) {
 
         return res.status(401).json({
 
-          success:false,
+          success: false,
 
-          message:"Invalid token payload"
+          message:
+            "Invalid token payload",
+
+          data: null,
 
         });
-
 
       }
 
 
+      if (!deviceId) {
+
+        return res.status(401).json({
+
+          success: false,
+
+          message:
+            "Invalid token: device ID missing",
+
+          data: null,
+
+        });
+
+      }
 
 
-
-      // ===============================
-      // CHECK REDIS
-      // ===============================
-
+      // ===============================================
+      // REDIS SESSION KEY
+      // ===============================================
 
       const redisKey =
         redisKeys.authToken(
-          userId
+          userId,
+          deviceId
         );
 
 
+      // ===============================================
+      // GET STORED TOKEN
+      // ===============================================
 
       const storedToken =
         await redisService.get(
@@ -123,87 +153,100 @@ class RedisAuthMiddleware {
         );
 
 
-
-
-
-      if(!storedToken){
-
+      if (!storedToken) {
 
         return res.status(401).json({
 
-          success:false,
+          success: false,
 
-          message:"Session expired. Please login again."
+          message:
+            "Session expired. Please login again.",
+
+          data: null,
 
         });
-
 
       }
 
 
+      // ===============================================
+      // TOKEN MATCH
+      // ===============================================
 
-
-
-      // ===============================
-      // TOKEN MATCH CHECK
-      // ===============================
-
-
-      if(storedToken !== token){
-
+      if (
+        storedToken !== token
+      ) {
 
         return res.status(401).json({
 
-          success:false,
+          success: false,
 
-          message:"Invalid session"
+          message:
+            "Invalid session",
+
+          data: null,
 
         });
-
 
       }
 
 
-
-
-
-      // ===============================
+      // ===============================================
       // ATTACH USER
-      // ===============================
+      // ===============================================
+
+      req.user = {
+
+        id: userId,
+
+        deviceId,
+
+        phoneNumber,
+
+        ...decoded,
+
+      };
 
 
-      req.user =
-        decoded;
-
-
+      // ===============================================
+      // CONTINUE
+      // ===============================================
 
       next();
 
+    } catch (error) {
 
-
-    }
-
-    catch(error){
-
+      console.error(
+        "Auth Middleware Error:",
+        error.message
+      );
 
       return res.status(401).json({
 
-        success:false,
+        success: false,
 
-        message:"Unauthorized",
-        
-        error:error.message
+        message:
+          "Unauthorized",
+
+        data: null,
 
       });
 
-
     }
 
-
   }
-
 
 }
 
 
-export default new RedisAuthMiddleware();
+// =====================================================
+// EXPORT
+// =====================================================
+
+const authMiddleware =
+  new AuthMiddleware();
+
+export default
+  authMiddleware.verifyToken.bind(
+    authMiddleware
+  );
