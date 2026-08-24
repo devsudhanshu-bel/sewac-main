@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "recharts";
 
-import { BarChart3, ChevronDown } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -356,38 +356,6 @@ export default function AverageWeightChart() {
               {overallAverage.toFixed(2)} {t("units.ton", "Ton")}
             </span>
           </p>
-        </div>
-
-        {/* ================= VIEW BY ================= */}
-
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[13px] font-semibold text-[#233876]">
-            {t("vehicles.averageWeightChart.viewBy", "View By:")}
-          </span>
-
-          <button
-            type="button"
-            className="
-              h-[42px]
-              w-[150px]
-              rounded-xl
-              border
-              border-[#E6E8F0]
-              bg-white
-              flex
-              items-center
-              justify-between
-              px-4
-              hover:border-[#6C2BFF]
-              transition
-            "
-          >
-            <span className="text-[13px] font-medium text-[#111827]">
-              {t("vehicles.averageWeightChart.city", "City")}
-            </span>
-
-            <ChevronDown size={16} className="text-[#6B7280]" />
-          </button>
         </div>
       </div>
 
