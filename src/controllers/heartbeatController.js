@@ -47,7 +47,6 @@ const recordHeartbeat = async (req, res) => {
     if (!vehicleId) {
       return res.status(400).json({
         success: false,
-
         message: "Vehicle ID is required.",
       });
     }
@@ -59,7 +58,6 @@ const recordHeartbeat = async (req, res) => {
     if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
       return res.status(400).json({
         success: false,
-
         message: "Valid latitude is required.",
       });
     }
@@ -71,18 +69,12 @@ const recordHeartbeat = async (req, res) => {
     if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
       return res.status(400).json({
         success: false,
-
         message: "Valid longitude is required.",
       });
     }
 
     // =================================================
     // VEHICLE MASTER VALIDATION
-    // =================================================
-    //
-    // This prevents an unregistered vehicle from
-    // creating a heartbeat table.
-    //
     // =================================================
 
     const wardNo = await metadataManager.getVehicleWard(vehicleId);
@@ -118,13 +110,53 @@ const recordHeartbeat = async (req, res) => {
 
     const result = await telemetryDb.$queryRawUnsafe(
       queries.insertHeartbeat(heartbeatTable),
-
       latitude,
-
       longitude,
     );
 
     const heartbeat = result[0];
+
+    // =================================================
+    // SOCKET.IO LIVE UPDATE
+    // =================================================
+    //
+    // IMPORTANT:
+    //
+    // The socket event is emitted ONLY after the
+    // heartbeat has successfully been inserted.
+    //
+    // =================================================
+
+    const io = req.app.get("io");
+
+    if (io) {
+      const liveHeartbeat = {
+        vehicleId,
+
+        vehicleNumber: vehicleId,
+
+        wardNo: wardNo === null || wardNo === undefined ? null : Number(wardNo),
+
+        latitude,
+
+        longitude,
+
+        timestamp: heartbeat.created_at
+          ? new Date(heartbeat.created_at).toISOString()
+          : new Date().toISOString(),
+
+        heartbeatTable,
+      };
+
+      io.emit("vehicle:heartbeat", liveHeartbeat);
+
+      console.log("📡 LIVE HEARTBEAT EMITTED:", {
+        vehicleId,
+        wardNo,
+        latitude,
+        longitude,
+      });
+    }
 
     // =================================================
     // SUCCESS RESPONSE
@@ -145,8 +177,11 @@ const recordHeartbeat = async (req, res) => {
 
       data: {
         id: heartbeat.id.toString(),
+
         latitude: heartbeat.latitude,
+
         longitude: heartbeat.longitude,
+
         created_at: heartbeat.created_at,
       },
     });
