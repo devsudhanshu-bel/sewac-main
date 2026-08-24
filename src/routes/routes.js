@@ -47,7 +47,7 @@ router.use(
 // =====================================================
 
 router.use(
-  "/citizen/home",
+  "/home",
   homeRoutes
 );
 
