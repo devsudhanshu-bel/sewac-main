@@ -1061,6 +1061,18 @@ const getMapData = async (date, cityId, zoneId, divisionId, wardId) => {
           `,
       );
     } catch (error) {
+      console.error("❌ ROUTE MAP HEARTBEAT QUERY FAILED", {
+        vehicleNumber: vehicle.vehicleNumber,
+
+        heartbeatTable,
+
+        errorCode: error?.code,
+
+        errorMessage: error?.message,
+
+        errorMeta: error?.meta,
+      });
+
       if (error?.code === "42P01") {
         console.warn(
           `Route map: heartbeat table ${heartbeatTable} does not exist.`,
