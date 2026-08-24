@@ -70,17 +70,21 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * SUMMARY / VEHICLE QUERY
+         * MAIN QUERY
          * =====================================================
          *
-         * These endpoints use the complete selected scope:
+         * Used by:
          *
+         * Summary
+         * Vehicle Summary
+         * Route Map
+         *
+         * Complete Header scope:
+         *
+         * Date
          * City
-         *   ↓
          * Zone
-         *   ↓
          * Division
-         *   ↓
          * Ward
          */
 
@@ -103,13 +107,9 @@ export default function Overview() {
          * GENERATION TREND QUERY
          * =====================================================
          *
-         * Generation Trend is division-wise.
+         * Generation Trend remains division-wise.
          *
-         * Therefore the selected ward is intentionally
-         * NOT sent here.
-         *
-         * Backend itself resolves all wards belonging
-         * to the selected division.
+         * Therefore wardId is intentionally NOT included.
          */
 
         const trendParams = new URLSearchParams();
@@ -154,7 +154,7 @@ export default function Overview() {
 
         console.log("Date:", selectedDate);
 
-        console.log("Summary Query:", queryString);
+        console.log("Summary / Vehicle / Map Query:", queryString);
 
         console.log("Trend Query:", trendQueryString);
 
@@ -170,16 +170,44 @@ export default function Overview() {
           summaryResponse,
           vehicleSummaryResponse,
           generationTrendResponse,
+          mapResponse,
         ] = await Promise.all([
+          /*
+           * SUMMARY
+           */
+
           api.get(`/api/admin/overview/summary?${queryString}`),
+
+          /*
+           * VEHICLE SUMMARY
+           */
 
           api.get(`/api/admin/overview/vehicle-summary?${queryString}`),
 
+          /*
+           * GENERATION TREND
+           *
+           * Division-wise.
+           */
+
           api.get(`/api/admin/overview/generation-trend?${trendQueryString}`),
+
+          /*
+           * ROUTE MAP DATA
+           *
+           * Complete Header scope.
+           *
+           * The CityOverviewMap dropdown will use
+           * this data when Route Maps is selected.
+           */
+
+          api.get(`/api/admin/overview/map?${queryString}`),
         ]);
 
         /*
-         * Component was unmounted while requests were running.
+         * =====================================================
+         * COMPONENT UNMOUNTED
+         * =====================================================
          */
 
         if (!mounted) {
@@ -204,22 +232,24 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * NORMALIZED DEFAULTS
+         * ROUTE MAP RESPONSE
          * =====================================================
-         *
-         * IMPORTANT:
-         *
-         * No telemetry is NOT an application error.
-         *
-         * If the selected date has no telemetry:
-         *
-         * waste             → 0
-         * collection points → 0
-         * citizens           → backend value
-         * vehicles           → 0 / available registered count
-         * generation trend   → []
-         *
-         * The dashboard must still render.
+         */
+
+        const mapData = mapResponse?.data?.data || {
+          defaultView: "route-map",
+
+          routes: [],
+
+          totalVehicles: 0,
+
+          totalRoutePoints: 0,
+        };
+
+        /*
+         * =====================================================
+         * NORMALIZED SUMMARY
+         * =====================================================
          */
 
         const normalizedSummary = {
@@ -233,6 +263,12 @@ export default function Overview() {
 
           notGiven: Number(summaryData.notGiven) || 0,
         };
+
+        /*
+         * =====================================================
+         * NORMALIZED VEHICLE SUMMARY
+         * =====================================================
+         */
 
         const normalizedVehicleSummary = {
           totalVehicles: Number(vehicleSummaryData.totalVehicles) || 0,
@@ -251,18 +287,15 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * STORE DATA
+         * STORE EVERYTHING
          * =====================================================
          *
          * IMPORTANT:
          *
-         * There is intentionally NO:
+         * map is restored here.
          *
-         * hasNoData
-         *
-         * flag.
-         *
-         * Zero telemetry is valid dashboard state.
+         * CityOverviewMap receives this data and keeps
+         * responsibility for the dropdown and map switching.
          */
 
         setOverviewData({
@@ -271,6 +304,8 @@ export default function Overview() {
           vehicleSummary: normalizedVehicleSummary,
 
           generationTrend: generationTrendData,
+
+          map: mapData,
         });
 
         setError("");
@@ -283,7 +318,7 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * BACKEND ERROR MESSAGE
+         * BACKEND ERROR
          * =====================================================
          */
 
@@ -292,16 +327,11 @@ export default function Overview() {
 
         /*
          * =====================================================
-         * MISSING DAY TABLE
+         * MISSING DYNAMIC TABLE
          * =====================================================
          *
-         * Normally the backend already handles PostgreSQL
-         * 42P01 by returning empty data.
-         *
-         * This frontend fallback exists only as a safety net.
-         *
-         * A missing telemetry day is NOT treated as a
-         * dashboard error.
+         * Missing telemetry for a selected date is a
+         * valid zero-data state.
          */
 
         const isMissingDayTable =
@@ -336,6 +366,21 @@ export default function Overview() {
             },
 
             generationTrend: [],
+
+            /*
+             * Keep map available even when the selected
+             * date has no route data.
+             */
+
+            map: {
+              defaultView: "route-map",
+
+              routes: [],
+
+              totalVehicles: 0,
+
+              totalRoutePoints: 0,
+            },
           });
 
           setError("");
@@ -380,10 +425,6 @@ export default function Overview() {
    * =========================================================
    * RENDER
    * =========================================================
-   *
-   * Header ALWAYS remains visible.
-   *
-   * Dashboard renders even when telemetry is zero.
    */
 
   return (
@@ -425,14 +466,14 @@ export default function Overview() {
       {!loading && !error && overviewData && (
         <main className="space-y-2 px-8 py-6">
           {/* =================================================
-              KPI CARDS
-          ================================================= */}
+                KPI CARDS
+            ================================================= */}
 
           <OverviewKPIs data={overviewData.summary} />
 
           {/* =================================================
-              VEHICLES + GENERATION TREND
-          ================================================= */}
+                VEHICLES + GENERATION TREND
+            ================================================= */}
 
           <VehicleStats
             vehicleData={overviewData.vehicleSummary}
@@ -440,8 +481,22 @@ export default function Overview() {
           />
 
           {/* =================================================
-              CITY / WARD MAP
-          ================================================= */}
+                ALL MAP TYPES
+            =================================================
+            
+            IMPORTANT:
+            
+            CityOverviewMap owns the dropdown:
+            
+            City Overview Map
+            Route Maps
+            GVP Points
+            Plants
+            Customer Grievances
+            
+            We pass mapData so Route Maps can consume
+            the newly fetched heartbeat route data.
+            ================================================= */}
 
           <CityOverviewMap
             mapData={overviewData.map}

@@ -1,139 +1,111 @@
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
+  Cell,
 } from "recharts";
 
-import {
-  BarChart3,
-  ChevronDown,
-} from "lucide-react";
+import { BarChart3 } from "lucide-react";
+
+import { useEffect, useMemo, useState } from "react";
+
+import api from "../../api/axios";
 
 import { useLanguage } from "../../i18n";
 
 /* ===========================================================
-   DATA
+   EMPTY DATA
 =========================================================== */
 
-const chartData = [
-  {
-    zone: "City Corporation\n(West)",
-    waste: 28,
-    vehicles: 82,
-  },
-  {
-    zone: "West\nCorporation",
-    waste: 56,
-    vehicles: 104,
-  },
-  {
-    zone: "North\nCorporation",
-    waste: 78.4,
-    vehicles: 156,
-  },
-  {
-    zone: "Central/City\nCorporation",
-    waste: 32,
-    vehicles: 95,
-  },
-  {
-    zone: "East\nCorporation",
-    waste: 56,
-    vehicles: 118,
-  },
-  {
-    zone: "South\nCorporation",
-    waste: 48,
-    vehicles: 102,
-  },
-];
-
-const THRESHOLD = 70;
+const EMPTY_DATA = [];
 
 /* ===========================================================
-   CUSTOM X-AXIS TICK
-   Prevents zone labels from overlapping
+   ZONE BAR COLORS
 =========================================================== */
 
-function CustomXAxisTick({
-  x,
-  y,
-  payload,
-}) {
+const BAR_COLORS = [
+  "#6C2BFF",
+  "#8B5CF6",
+  "#A855F7",
+  "#7C3AED",
+  "#9333EA",
+  "#5B21B6",
+  "#4F46E5",
+  "#6366F1",
+];
+
+/* ===========================================================
+   FORMAT WASTE
+=========================================================== */
+
+/*
+|--------------------------------------------------------------------------
+| IMPORTANT
+|--------------------------------------------------------------------------
+|
+| Backend waste value is treated as KG.
+|
+| < 1000 KG
+|       ↓
+| 850.25 kg
+|
+| >= 1000 KG
+|       ↓
+| 3.24 Ton
+|
+|--------------------------------------------------------------------------
+*/
+
+function formatWaste(value) {
+  const kg = Number(value) || 0;
+
+  if (kg >= 1000) {
+    return {
+      value: Number((kg / 1000).toFixed(2)),
+
+      unit: "Ton",
+    };
+  }
+
+  return {
+    value: Number(kg.toFixed(2)),
+
+    unit: "kg",
+  };
+}
+
+/* ===========================================================
+   FORMAT WASTE TEXT
+=========================================================== */
+
+function formatWasteText(value) {
+  const formatted = formatWaste(value);
+
+  return `${formatted.value.toFixed(2)} ${formatted.unit}`;
+}
+
+/* ===========================================================
+   CUSTOM X AXIS
+=========================================================== */
+
+function CustomXAxisTick({ x, y, payload }) {
   const value = payload?.value || "";
 
   if (!value) {
     return null;
   }
 
-  /*
-    Convert the existing zone names into controlled
-    line breaks so every label fits neatly below
-    its corresponding point.
-  */
-
-  const labelMap = {
-    "City Corporation\n(West)": [
-      "City",
-      "Corporation",
-      "(West)",
-    ],
-
-    "West\nCorporation": [
-      "West",
-      "Corporation",
-    ],
-
-    "North\nCorporation": [
-      "North",
-      "Corporation",
-    ],
-
-    "Central/City\nCorporation": [
-      "Central/City",
-      "Corporation",
-    ],
-
-    "East\nCorporation": [
-      "East",
-      "Corporation",
-    ],
-
-    "South\nCorporation": [
-      "South",
-      "Corporation",
-    ],
-  };
-
-  const lines =
-    labelMap[value] ||
-    String(value).split("\n");
+  const lines = String(value).split("\n");
 
   return (
-    <g
-      transform={`translate(${x},${y})`}
-    >
-      <text
-        textAnchor="middle"
-        fill="#233876"
-        fontSize={10}
-        fontWeight={500}
-      >
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fill="#233876" fontSize={10} fontWeight={500}>
         {lines.map((line, index) => (
-          <tspan
-            key={`${line}-${index}`}
-            x="0"
-            dy={
-              index === 0
-                ? 0
-                : 13
-            }
-          >
+          <tspan key={`${line}-${index}`} x="0" dy={index === 0 ? 0 : 13}>
             {line}
           </tspan>
         ))}
@@ -146,164 +118,68 @@ function CustomXAxisTick({
    CUSTOM TOOLTIP
 =========================================================== */
 
-function CustomTooltip({
-  active,
-  payload,
-  t,
-}) {
-  if (
-    !active ||
-    !payload ||
-    !payload.length
-  ) {
+function CustomTooltip({ active, payload, t }) {
+  if (!active || !payload || !payload.length) {
     return null;
   }
 
-  const data =
-    payload[0].payload;
+  const data = payload[0]?.payload;
 
-  const difference = (
-    data.waste - THRESHOLD
-  ).toFixed(2);
+  if (!data) {
+    return null;
+  }
 
-  const isOver =
-    data.waste >= THRESHOLD;
+  const zoneName = String(data.zone || "Unknown Zone").replace("\n", " ");
+
+  const waste = Number(data.waste) || 0;
+
+  const vehicles = Number(data.vehicles) || 0;
 
   return (
     <div className="bg-white rounded-xl border border-[#ECECF3] shadow-xl px-4 py-3 min-w-[240px]">
-      <div className="space-y-2 text-[12px]">
-
-        {/* =====================================================
+      <div className="space-y-3 text-[12px]">
+        {/* =================================================
             ZONE NAME
-        ===================================================== */}
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
-            {t(
-              "vehicles.averageWeightChart.zoneName",
-              "Zone Name"
-            )}
+            {t("vehicles.averageWeightChart.zoneName", "Zone Name")}
           </span>
 
-          <span className="font-semibold text-right">
-            {data.zone.replace(
-              "\n",
-              " "
-            )}
+          <span className="font-semibold text-right text-[#111827]">
+            {zoneName}
           </span>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             WASTE GENERATED
-        ===================================================== */}
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
-            {t(
-              "vehicles.averageWeightChart.wasteGenerated",
-              "Waste Generated"
-            )}
+            {t("vehicles.averageWeightChart.wasteGenerated", "Waste Generated")}
           </span>
 
-          <span className="font-semibold">
-            {data.waste.toFixed(2)}{" "}
-            {t(
-              "units.ton",
-              "Ton"
-            )}
+          <span className="font-semibold text-[#111827]">
+            {formatWasteText(waste)}
           </span>
         </div>
 
-        {/* =====================================================
-            VEHICLES RUNNING
-        ===================================================== */}
+        {/* =================================================
+            VEHICLES
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
             {t(
               "vehicles.averageWeightChart.vehiclesRunning",
-              "Vehicles Running"
+              "Vehicles Running",
             )}
           </span>
 
-          <span className="font-semibold">
-            {data.vehicles}
-          </span>
+          <span className="font-semibold text-[#111827]">{vehicles}</span>
         </div>
-
-        {/* =====================================================
-            DIFFERENCE
-        ===================================================== */}
-
-        <div className="flex justify-between gap-5">
-          <span className="font-semibold text-[#374151]">
-            {t(
-              "vehicles.averageWeightChart.difference",
-              "Difference"
-            )}
-          </span>
-
-          <span
-            className={`font-semibold ${
-              isOver
-                ? "text-green-600"
-                : "text-red-500"
-            }`}
-          >
-            {isOver ? "+" : ""}
-            {difference}{" "}
-            {t(
-              "units.ton",
-              "Ton"
-            )}
-          </span>
-        </div>
-
-        {/* =====================================================
-            THRESHOLD STATUS
-        ===================================================== */}
-
-        <div className="text-center pt-0.5">
-          <span
-            className={`font-semibold ${
-              isOver
-                ? "text-red-500"
-                : "text-green-600"
-            }`}
-          >
-            {isOver
-              ? `(${t(
-                  "vehicles.averageWeightChart.overThreshold",
-                  "Over Threshold"
-                )})`
-              : `(${t(
-                  "vehicles.averageWeightChart.belowThreshold",
-                  "Below Threshold"
-                )})`}
-          </span>
-        </div>
-
-        {/* =====================================================
-            AVERAGE WASTE
-        ===================================================== */}
-
-        <div className="border-t border-[#EEF0F4] pt-2 flex justify-between gap-5">
-          <span className="font-semibold text-[#374151]">
-            {t(
-              "vehicles.averageWeightChart.averageWaste",
-              "Average Waste"
-            )}
-          </span>
-
-          <span className="font-semibold">
-            {THRESHOLD.toFixed(2)}{" "}
-            {t(
-              "units.ton",
-              "Ton"
-            )}
-          </span>
-        </div>
-
       </div>
     </div>
   );
@@ -316,23 +192,197 @@ function CustomTooltip({
 export default function AverageWeightChart() {
   const { t } = useLanguage();
 
+  /* =========================================================
+     STATE
+  ========================================================= */
+
+  const [chartData, setChartData] = useState(EMPTY_DATA);
+
+  const [overallAverage, setOverallAverage] = useState(0);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  /* =========================================================
+     FETCH REAL ZONE DATA
+  ========================================================= */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAverageWeight = async () => {
+      try {
+        setLoading(true);
+
+        setError("");
+
+        /*
+         * Current date
+         */
+
+        const today = new Date().toISOString().split("T")[0];
+
+        /*
+         * Existing backend endpoint
+         */
+
+        const response = await api.get("/api/vehicles/average-weight-by-zone", {
+          params: {
+            date: today,
+          },
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        const data = response?.data?.data;
+
+        const zones = Array.isArray(data?.zones) ? data.zones : [];
+
+        /*
+         * =================================================
+         * FORMAT EVERY ZONE
+         * =================================================
+         */
+
+        const formattedZones = zones.map((zone) => {
+          const zoneName = String(
+            zone?.zone || zone?.zoneName || "Unknown Zone",
+          );
+
+          return {
+            zone: zoneName.replace(" City Corporation", "\nCity Corporation"),
+
+            /*
+             * KEEP RAW KG VALUE
+             */
+
+            waste: Number(zone?.waste) || 0,
+
+            vehicles: Number(zone?.vehicles) || 0,
+
+            vehiclesWithTelemetry: Number(zone?.vehiclesWithTelemetry) || 0,
+          };
+        });
+
+        setChartData(formattedZones);
+
+        /*
+         * Backend average is also
+         * treated as KG.
+         */
+
+        setOverallAverage(Number(data?.averageWasteGenerated) || 0);
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("Average Weight Chart Error:", err);
+
+        setChartData(EMPTY_DATA);
+
+        setOverallAverage(0);
+
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Unable to load waste generation data.",
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadAverageWeight();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* =========================================================
+     DYNAMIC Y AXIS
+  ========================================================= */
+
+  const yAxisConfig = useMemo(() => {
+    const values = chartData.map((item) => Number(item.waste) || 0);
+
+    const maximum = Math.max(...values, 0);
+
+    /*
+     * Empty / zero case
+     */
+
+    if (maximum <= 0) {
+      return {
+        domain: [0, 1000],
+
+        ticks: [0, 200, 400, 600, 800, 1000],
+      };
+    }
+
+    /*
+     * Keep approximately
+     * five intervals.
+     */
+
+    const rawStep = maximum / 5;
+
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+
+    const normalized = rawStep / magnitude;
+
+    let step;
+
+    if (normalized <= 1) {
+      step = 1 * magnitude;
+    } else if (normalized <= 2) {
+      step = 2 * magnitude;
+    } else if (normalized <= 5) {
+      step = 5 * magnitude;
+    } else {
+      step = 10 * magnitude;
+    }
+
+    const upper = Math.ceil(maximum / step) * step;
+
+    const ticks = [];
+
+    for (let value = 0; value <= upper; value += step) {
+      ticks.push(Number(value.toFixed(6)));
+    }
+
+    return {
+      domain: [0, upper],
+
+      ticks,
+    };
+  }, [chartData]);
+
+  /* =========================================================
+     HEADER AVERAGE DISPLAY
+  ========================================================= */
+
+  const formattedAverage = formatWaste(overallAverage);
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <section className="bg-white rounded-[24px] border border-[#ECECF3] shadow-sm overflow-hidden">
-
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="flex items-center justify-between px-7 py-5 border-b border-[#F5F6FA]">
-
-        {/* ================= LEFT ================= */}
-
+      <div className="px-7 py-5 border-b border-[#F5F6FA]">
         <div className="min-w-0">
-
-          {/* TITLE */}
-
           <div className="flex items-start gap-2.5">
-
             <BarChart3
               size={17}
               strokeWidth={2}
@@ -342,76 +392,26 @@ export default function AverageWeightChart() {
             <h2 className="text-[16px] font-semibold text-[#111827] uppercase tracking-[-0.01em] leading-6">
               {t(
                 "vehicles.averageWeightChart.title",
-                "Average Weight Generated (Line Graph)"
+                "Average Weight Generated (Bar Graph)",
               )}
             </h2>
-
           </div>
 
-          {/* AVERAGE */}
+          {/* =================================================
+              AVERAGE
+          ================================================= */}
 
           <p className="mt-2.5 text-[14px] font-semibold text-[#1E3A8A]">
-
             {t(
               "vehicles.averageWeightChart.averageWasteGenerated",
-              "Average waste generated:"
+              "Average waste generated:",
             )}
 
             <span className="ml-1.5 text-[#233876]">
-              {THRESHOLD.toFixed(2)}{" "}
-              {t(
-                "units.ton",
-                "Ton"
-              )}
+              {formattedAverage.value.toFixed(2)} {formattedAverage.unit}
             </span>
-
           </p>
-
         </div>
-
-        {/* ================= VIEW BY ================= */}
-
-        <div className="flex items-center gap-3 shrink-0">
-
-          <span className="text-[13px] font-semibold text-[#233876]">
-            {t(
-              "vehicles.averageWeightChart.viewBy",
-              "View By:"
-            )}
-          </span>
-
-          <button
-            type="button"
-            className="
-              h-[42px]
-              w-[150px]
-              rounded-xl
-              border
-              border-[#E6E8F0]
-              bg-white
-              flex
-              items-center
-              justify-between
-              px-4
-              hover:border-[#6C2BFF]
-              transition
-            "
-          >
-            <span className="text-[13px] font-medium text-[#111827]">
-              {t(
-                "vehicles.averageWeightChart.city",
-                "City"
-              )}
-            </span>
-
-            <ChevronDown
-              size={16}
-              className="text-[#6B7280]"
-            />
-          </button>
-
-        </div>
-
       </div>
 
       {/* =====================================================
@@ -419,192 +419,157 @@ export default function AverageWeightChart() {
       ===================================================== */}
 
       <div className="px-7 py-6">
-
-        {/* Y AXIS LABEL */}
-
         <p className="text-[13px] font-semibold text-[#233876] mb-5">
           {t(
             "vehicles.averageWeightChart.weightOfWaste",
-            "Weight of Waste (Ton)"
+            "Weight of Waste (kg)",
           )}
         </p>
 
         {/* =================================================
-            CHART
+            LOADING
         ================================================= */}
 
-        <div className="h-[325px]">
+        {loading && (
+          <div className="h-[325px] flex items-center justify-center">
+            <span className="text-[13px] font-medium text-slate-400">
+              Loading waste generation data...
+            </span>
+          </div>
+        )}
 
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
+        {/* =================================================
+            ERROR
+        ================================================= */}
 
-            <LineChart
-              data={chartData}
-              margin={{
-                top: 12,
-                right: 15,
-                left: -8,
-                bottom: 10,
-              }}
-            >
+        {!loading && error && (
+          <div className="h-[325px] flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-[13px] font-semibold text-red-500">
+                Unable to load waste generation data
+              </p>
 
-              {/* =================================================
-                  GRID
-              ================================================= */}
+              <p className="mt-1 text-[11px] text-slate-400">{error}</p>
+            </div>
+          </div>
+        )}
 
-              <CartesianGrid
-                stroke="#F2F4F7"
-                vertical={false}
-              />
+        {/* =================================================
+            EMPTY
+        ================================================= */}
 
-              {/* =================================================
-                  X AXIS
-              ================================================= */}
+        {!loading && !error && chartData.length === 0 && (
+          <div className="h-[325px] flex items-center justify-center">
+            <span className="text-[13px] font-medium text-slate-400">
+              No waste generation data available.
+            </span>
+          </div>
+        )}
 
-              <XAxis
-                dataKey="zone"
-                interval={0}
-                tickLine={false}
-                axisLine={false}
-                height={78}
-                tickMargin={8}
-                tick={
-                  <CustomXAxisTick />
-                }
-              />
+        {/* =================================================
+            BAR GRAPH
+        ================================================= */}
 
-              {/* =================================================
-                  Y AXIS
-              ================================================= */}
-
-              <YAxis
-                domain={[
-                  0,
-                  100,
-                ]}
-                ticks={[
-                  0,
-                  20,
-                  40,
-                  60,
-                  80,
-                  100,
-                ]}
-                tick={{
-                  fontSize: 11,
-                  fill: "#233876",
-                  fontWeight: 500,
+        {!loading && !error && chartData.length > 0 && (
+          <div className="h-[325px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 12,
+                  right: 15,
+                  left: -8,
+                  bottom: 10,
                 }}
-                tickLine={false}
-                axisLine={false}
-              />
+                barCategoryGap="25%"
+              >
+                {/* =======================================
+                      GRID
+                  ======================================= */}
 
-              {/* =================================================
-                  TOOLTIP
-              ================================================= */}
+                <CartesianGrid stroke="#F2F4F7" vertical={false} />
 
-              <Tooltip
-                cursor={{
-                  stroke: "#6C2BFF",
-                  strokeWidth: 1.5,
-                  strokeDasharray:
-                    "4 4",
-                }}
-                content={
-                  <CustomTooltip
-                    t={t}
-                  />
-                }
-              />
+                {/* =======================================
+                      X AXIS
+                  ======================================= */}
 
-              {/* =================================================
-                  THRESHOLD
-              ================================================= */}
+                <XAxis
+                  dataKey="zone"
+                  interval={0}
+                  tickLine={false}
+                  axisLine={false}
+                  height={78}
+                  tickMargin={8}
+                  tick={<CustomXAxisTick />}
+                />
 
-              <ReferenceLine
-                y={THRESHOLD}
-                stroke="#FF5A5F"
-                strokeWidth={1.8}
-                strokeDasharray="6 6"
-                label=""
-              />
+                {/* =======================================
+                      Y AXIS
+                  ======================================= */}
 
-              {/* =================================================
-                  WASTE LINE
-              ================================================= */}
+                <YAxis
+                  domain={yAxisConfig.domain}
+                  ticks={yAxisConfig.ticks}
+                  tick={{
+                    fontSize: 11,
+                    fill: "#233876",
+                    fontWeight: 500,
+                  }}
+                  tickLine={false}
+                  axisLine={false}
+                />
 
-              <Line
-                type="monotone"
-                dataKey="waste"
-                stroke="#6C2BFF"
-                strokeWidth={2.8}
-                dot={{
-                  r: 5,
-                  strokeWidth: 3,
-                  fill: "#FFFFFF",
-                  stroke:
-                    "#6C2BFF",
-                }}
-                activeDot={{
-                  r: 7,
-                  fill: "#6C2BFF",
-                  stroke:
-                    "#FFFFFF",
-                  strokeWidth: 3,
-                }}
-                animationDuration={
-                  1200
-                }
-              />
+                {/* =======================================
+                      TOOLTIP
+                  ======================================= */}
 
-            </LineChart>
+                <Tooltip
+                  cursor={{
+                    fill: "rgba(108,43,255,0.05)",
+                  }}
+                  content={<CustomTooltip t={t} />}
+                />
 
-          </ResponsiveContainer>
+                {/* =======================================
+                      BARS
+                  ======================================= */}
 
-        </div>
+                <Bar
+                  dataKey="waste"
+                  name="Waste Generated"
+                  radius={[7, 7, 0, 0]}
+                  maxBarSize={65}
+                  animationDuration={900}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`zone-bar-${index}`}
+                      fill={BAR_COLORS[index % BAR_COLORS.length]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* =====================================================
             LEGEND
         ===================================================== */}
 
         <div className="flex justify-center items-center gap-10 mt-2">
-
-          {/* ================= WASTE ================= */}
-
           <div className="flex items-center gap-2.5">
-
-            <div className="w-5 h-[3px] bg-[#6C2BFF] rounded-full shrink-0" />
+            <div className="w-5 h-3 bg-[#6C2BFF] rounded-[3px] shrink-0" />
 
             <span className="text-[12px] font-medium text-[#233876]">
               {t(
                 "vehicles.averageWeightChart.wasteGeneratedLegend",
-                "Waste Generated (Ton)"
+                "Waste Generated",
               )}
             </span>
-
           </div>
-
-          {/* ================= THRESHOLD ================= */}
-
-          <div className="flex items-center gap-2.5">
-
-            <div className="w-5 border-t-2 border-dashed border-[#FF5A5F] shrink-0" />
-
-            <span className="text-[12px] font-medium text-[#233876]">
-              {t(
-                "vehicles.averageWeightChart.thresholdLegend",
-                "Average Waste Generated (Threshold)"
-              )}
-            </span>
-
-          </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }

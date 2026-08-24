@@ -401,10 +401,109 @@ export default function Header({
   const isDashboard = variant === "dashboard";
 
   /* =======================================================
-     USER
-  ======================================================= */
+   USER
+======================================================= */
 
-  const user = getUserFromToken();
+  /* =======================================================
+   USER
+======================================================= */
+
+  const getCurrentUser = () => {
+    try {
+      // =====================================================
+      // 1. READ AUTH HANDOFF FROM LOGIN FRONTEND
+      // =====================================================
+
+      const hash = window.location.hash;
+
+      if (hash.startsWith("#auth=")) {
+        const encodedAuth = hash.substring("#auth=".length);
+
+        const authData = JSON.parse(decodeURIComponent(encodedAuth));
+
+        // Store token in SEWAC Main session
+        if (authData?.token) {
+          sessionStorage.setItem("token", authData.token);
+        }
+
+        // Store admin information in SEWAC Main session
+        if (authData?.admin) {
+          sessionStorage.setItem("admin", JSON.stringify(authData.admin));
+        }
+
+        // Remove authentication data from URL
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
+      }
+
+      // =====================================================
+      // 2. READ STORED ADMIN
+      // =====================================================
+
+      const storedAdmin = sessionStorage.getItem("admin");
+
+      let admin = null;
+
+      if (storedAdmin) {
+        try {
+          admin = JSON.parse(storedAdmin);
+        } catch (error) {
+          console.error("Failed to parse stored admin:", error);
+        }
+      }
+
+      // =====================================================
+      // 3. READ JWT
+      // =====================================================
+
+      const token = sessionStorage.getItem("token");
+
+      let decoded = null;
+
+      if (token) {
+        try {
+          const payload = token.split(".")[1];
+
+          if (payload) {
+            decoded = JSON.parse(
+              atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+            );
+          }
+        } catch (error) {
+          console.error("Failed to decode authentication token:", error);
+        }
+      }
+
+      // =====================================================
+      // 4. RESOLVE ACTUAL USER
+      // =====================================================
+
+      if (admin || decoded) {
+        return {
+          // Actual admin/worker name
+          // First try stored admin, then JWT
+          name: admin?.full_name || decoded?.full_name || "Admin",
+
+          // Actual role
+          // First try stored admin, then JWT
+          role: admin?.role || decoded?.role || "ADMIN_LAYER_1",
+        };
+      }
+    } catch (error) {
+      console.error("Failed to read authenticated user:", error);
+    }
+
+    // =====================================================
+    // 5. EXISTING JWT FALLBACK
+    // =====================================================
+
+    return getUserFromToken();
+  };
+
+  const user = getCurrentUser();
 
   const roleLabel = getRoleLabel(user.role);
 

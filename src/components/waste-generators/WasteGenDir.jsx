@@ -1,7 +1,6 @@
 import {
   Search,
   RefreshCw,
-  Pencil,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -320,16 +319,6 @@ export default function WasteGeneratorDirectory({
     averageWaste: t(
       "wasteGenerators.directory.averageWaste",
       "Average Waste",
-    ),
-
-    action: t(
-      "wasteGenerators.directory.action",
-      "Action",
-    ),
-
-    update: t(
-      "wasteGenerators.directory.update",
-      "Update Waste Generator",
     ),
 
     active: t(
@@ -684,10 +673,6 @@ export default function WasteGeneratorDirectory({
               <th className="px-4 sm:px-5 py-3 sm:py-4 text-left text-[11px] sm:text-[12px] lg:text-[13px] font-semibold text-[#263A63] whitespace-nowrap">
                 {text.averageWaste}
               </th>
-
-              <th className="px-4 sm:px-5 py-3 sm:py-4 text-center text-[11px] sm:text-[12px] lg:text-[13px] font-semibold text-[#263A63] whitespace-nowrap">
-                {text.action}
-              </th>
             </tr>
           </thead>
 
@@ -697,7 +682,7 @@ export default function WasteGeneratorDirectory({
             {loading ? (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={10}
                   className="
                     px-6
                     py-12
@@ -714,7 +699,7 @@ export default function WasteGeneratorDirectory({
             ) : citizens.length === 0 ? (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={10}
                   className="
                     px-6
                     py-12
@@ -1091,48 +1076,6 @@ export default function WasteGeneratorDirectory({
                             {text.kg}
                           </span>
                         )}
-                      </td>
-
-                      {/* ACTION */}
-
-                      <td
-                        className="
-                          px-4
-                          sm:px-5
-                          py-4
-                          sm:py-5
-                          text-center
-                        "
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onUpdate?.(
-                              citizen,
-                            )
-                          }
-                          className="
-                            w-8
-                            h-8
-                            sm:w-9
-                            sm:h-9
-                            rounded-lg
-                            flex
-                            items-center
-                            justify-center
-                            mx-auto
-                            text-violet-600
-                            hover:bg-violet-50
-                            transition
-                          "
-                          title={
-                            text.update
-                          }
-                        >
-                          <Pencil
-                            size={16}
-                          />
-                        </button>
                       </td>
                     </tr>
                   );
