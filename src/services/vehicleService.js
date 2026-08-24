@@ -118,62 +118,182 @@ const getVehicleTablesForDate = async (date) => {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| ALL VEHICLES / TELEMETRY DIRECTORY
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Vehicle status is NOT taken from vehicle_master.status.
+|
+| LIVE STATUS:
+|
+| ACTIVE
+|   Latest telemetry packet received within 30 minutes.
+|
+| INACTIVE
+|   Latest telemetry packet older than 30 minutes.
+|
+| ALSO INACTIVE
+|   Vehicle has never sent telemetry.
+|
+| Everything else in the directory remains unchanged.
+|
+|--------------------------------------------------------------------------
+*/
+
 const getAllVehicles = async (query) => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const search = query.search || "";
-  const status = query.status || "";
-  const offset = (page - 1) * limit;
+  const requestedStatus = query.status || "ALL";
 
-  let whereClause = `
-    (
-      vehicle_id ILIKE $1
-      OR vehicle_type ILIKE $1
-      OR city ILIKE $1
-      OR zone ILIKE $1
-      OR division ILIKE $1
-      OR ward ILIKE $1
-    )
-  `;
+  /*
+   * =========================================================
+   * 1. GET VEHICLES
+   * =========================================================
+   *
+   * DO NOT filter using vehicle_master.status.
+   *
+   * Status will be calculated from telemetry below.
+   *
+   * =========================================================
+   */
 
-  const params = [`%${search}%`];
-
-  if (status && status !== "ALL") {
-    whereClause += ` AND status = $2`;
-    params.push(status);
-  }
+  const searchPattern = `%${search}%`;
 
   const vehiclesQuery = `
     SELECT *
     FROM vehicle_master
-    WHERE ${whereClause}
+    WHERE
+      (
+        vehicle_id ILIKE $1
+        OR vehicle_type ILIKE $1
+        OR city ILIKE $1
+        OR zone ILIKE $1
+        OR division ILIKE $1
+        OR ward ILIKE $1
+      )
     ORDER BY created_at DESC
-    LIMIT $${params.length + 1}
-    OFFSET $${params.length + 2}
   `;
 
-  const vehicles = await mainDb.query(vehiclesQuery, [
-    ...params,
-    limit,
-    offset,
-  ]);
+  const vehiclesResult = await mainDb.query(vehiclesQuery, [searchPattern]);
 
-  const totalQuery = `
-    SELECT COUNT(*) AS total
-    FROM vehicle_master
-    WHERE ${whereClause}
-  `;
+  let vehicles = vehiclesResult.rows;
 
-  const total = await mainDb.query(totalQuery, params);
+  /*
+   * =========================================================
+   * 2. GET LIVE TELEMETRY STATUS
+   * =========================================================
+   *
+   * Reuse the same logic already used by the
+   * Vehicle KPI summary.
+   *
+   * =========================================================
+   */
+
+  const summary = await getVehicleSummary();
+
+  /*
+   * =========================================================
+   * 3. CREATE STATUS LOOKUP
+   * =========================================================
+   */
+
+  const statusMap = new Map();
+
+  if (Array.isArray(summary.vehicleStatus)) {
+    summary.vehicleStatus.forEach((vehicle) => {
+      statusMap.set(String(vehicle.vehicleId).trim(), vehicle);
+    });
+  }
+
+  /*
+   * =========================================================
+   * 4. REPLACE STATIC STATUS
+   * =========================================================
+   *
+   * IMPORTANT:
+   *
+   * We only replace `status`.
+   *
+   * Vehicle ID,
+   * zone,
+   * city,
+   * division,
+   * ward,
+   * created_at,
+   * etc.
+   *
+   * remain exactly as they were.
+   *
+   * =========================================================
+   */
+
+  vehicles = vehicles.map((vehicle) => {
+    const vehicleId = String(vehicle.vehicle_id || "").trim();
+
+    const liveStatus = statusMap.get(vehicleId);
+
+    return {
+      ...vehicle,
+
+      status: liveStatus?.status || "INACTIVE",
+    };
+  });
+
+  /*
+   * =========================================================
+   * 5. APPLY DYNAMIC STATUS FILTER
+   * =========================================================
+   *
+   * This is important.
+   *
+   * The dropdown:
+   *
+   * ALL
+   * ACTIVE
+   * INACTIVE
+   *
+   * must now filter using LIVE TELEMETRY STATUS.
+   *
+   * =========================================================
+   */
+
+  if (requestedStatus && requestedStatus !== "ALL") {
+    vehicles = vehicles.filter((vehicle) => vehicle.status === requestedStatus);
+  }
+
+  /*
+   * =========================================================
+   * 6. PAGINATION AFTER STATUS FILTER
+   * =========================================================
+   */
+
+  const total = vehicles.length;
+
+  const offset = (page - 1) * limit;
+
+  const paginatedVehicles = vehicles.slice(offset, offset + limit);
+
+  /*
+   * =========================================================
+   * 7. RESPONSE
+   * =========================================================
+   */
 
   return {
-    vehicles: vehicles.rows,
+    vehicles: paginatedVehicles,
 
     pagination: {
       page,
+
       limit,
-      total: Number(total.rows[0].total),
-      totalPages: Math.ceil(Number(total.rows[0].total) / limit),
+
+      total,
+
+      totalPages: Math.ceil(total / limit),
     },
   };
 };
