@@ -302,7 +302,7 @@ export default function TelemetryDirectory() {
           >
             {t(
               "vehicles.telemetryDirectory.title",
-              "Telemetry Directory"
+              "Vehicle Directory"
             )}
           </h2>
         </div>
