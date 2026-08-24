@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import {
   MapContainer,
@@ -6,6 +6,7 @@ import {
   Marker,
   Popup,
   Polyline,
+  CircleMarker,
   ZoomControl,
   useMap,
 } from "react-leaflet";
@@ -14,33 +15,73 @@ import L from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 
-import { Route, Loader2 } from "lucide-react";
+import { Route, Loader2, Factory, MapPinned, User, Truck } from "lucide-react";
 
-/* ===========================================================
-   CUSTOM TRUCK ICON
-=========================================================== */
+/* ============================================================
+   VEHICLE ROUTE COLORS
+============================================================ */
+
+const VEHICLE_ROUTE_COLORS = [
+  "#6C2BFF",
+  "#2563EB",
+  "#16C47F",
+  "#EF4444",
+  "#F59E0B",
+  "#DB2777",
+  "#0891B2",
+  "#7C3AED",
+  "#EA580C",
+  "#65A30D",
+];
+
+/* ============================================================
+   DETERMINISTIC VEHICLE COLOR
+============================================================ */
+
+function getVehicleRouteColor(vehicleId) {
+  const value = String(vehicleId || "");
+
+  let hash = 0;
+
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+
+    hash |= 0;
+  }
+
+  return VEHICLE_ROUTE_COLORS[Math.abs(hash) % VEHICLE_ROUTE_COLORS.length];
+}
+
+/* ============================================================
+   VEHICLE ICON
+============================================================ */
 
 const createTruckIcon = (color) =>
   new L.DivIcon({
-    className: "",
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -17],
+    className: "sewac-route-vehicle-marker",
+
+    iconSize: [40, 40],
+
+    iconAnchor: [20, 20],
+
+    popupAnchor: [0, -20],
 
     html: `
       <div
         style="
-          width:38px;
-          height:38px;
+          width:40px;
+          height:40px;
           border-radius:50%;
           background:${color};
           display:flex;
           align-items:center;
           justify-content:center;
           border:3px solid white;
-          box-shadow:0 6px 16px rgba(0,0,0,.18);
+          box-shadow:
+            0 6px 18px
+            rgba(0,0,0,.22);
           color:white;
-          font-size:16px;
+          font-size:17px;
         "
       >
         🚛
@@ -48,299 +89,368 @@ const createTruckIcon = (color) =>
     `,
   });
 
-const activeTruckIcon = createTruckIcon("#16C47F");
-const inactiveTruckIcon = createTruckIcon("#9CA3AF");
+/* ============================================================
+   PLANT ICON
+============================================================ */
 
-/* ===========================================================
-   DEPOT ICON
-=========================================================== */
+const plantIcon = new L.DivIcon({
+  className: "sewac-plant-marker",
 
-const depotIcon = new L.DivIcon({
-  className: "",
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [38, 38],
 
-  html: `
-    <div
-      style="
-        width:32px;
-        height:32px;
-        border-radius:9px;
-        background:#111827;
-        color:white;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        border:2px solid white;
-        box-shadow:0 6px 16px rgba(0,0,0,.18);
-        font-size:15px;
-      "
-    >
-      🏭
-    </div>
-  `,
-});
+  iconAnchor: [19, 19],
 
-/* ===========================================================
-   COLLECTION POINT ICON
-=========================================================== */
-
-const collectionIcon = new L.DivIcon({
-  className: "",
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
+  popupAnchor: [0, -19],
 
   html: `
-    <div
-      style="
-        width:16px;
-        height:16px;
-        border-radius:50%;
-        background:#16C47F;
-        border:3px solid white;
-        box-shadow:0 4px 9px rgba(0,0,0,.18);
-      "
-    ></div>
-  `,
+      <div
+        style="
+          width:38px;
+          height:38px;
+          border-radius:11px;
+          background:#111827;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border:3px solid white;
+          box-shadow:
+            0 6px 18px
+            rgba(0,0,0,.25);
+          font-size:18px;
+        "
+      >
+        🏭
+      </div>
+    `,
 });
 
-/* ===========================================================
-   DUMMY VEHICLES
-=========================================================== */
+/* ============================================================
+   GPS NORMALIZER
+============================================================ */
 
-const vehicles = [
-  {
-    id: "KA-01-AB-1024",
-    driver: "Ramesh",
-    status: "active",
-    color: "#6C2BFF",
-    start: [12.9716, 77.5946],
-    end: [12.9442, 77.6208],
-  },
+function normalizeGpsPoint(point) {
+  if (!point) {
+    return null;
+  }
 
-  {
-    id: "KA-01-CD-7812",
-    driver: "Suresh",
-    status: "active",
-    color: "#2563EB",
-    start: [12.9586, 77.6061],
-    end: [12.9791, 77.6513],
-  },
+  const latitude = Number(point.latitude ?? point.lat);
 
-  {
-    id: "KA-01-EF-6328",
-    driver: "Arun",
-    status: "active",
-    color: "#16C47F",
-    start: [12.9514, 77.5654],
-    end: [12.9311, 77.6032],
-  },
+  const longitude = Number(point.longitude ?? point.lng ?? point.lon);
 
-  {
-    id: "KA-01-GH-2245",
-    driver: "Mahesh",
-    status: "inactive",
-    color: "#EF4444",
-    start: [12.9643, 77.6335],
-    end: [12.9212, 77.6735],
-  },
-];
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
 
-/* ===========================================================
-   DEPOT
-=========================================================== */
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
 
-const depot = [12.9568, 77.5961];
+  /*
+   * IMPORTANT:
+   *
+   * Leaflet expects:
+   *
+   * [latitude, longitude]
+   */
 
-/* ===========================================================
-   COLLECTION POINTS
-=========================================================== */
+  return [latitude, longitude];
+}
 
-const collectionPoints = [
-  [12.9654, 77.6035],
-  [12.9512, 77.6154],
-  [12.9432, 77.5904],
-  [12.9723, 77.6284],
-  [12.9844, 77.6471],
-];
+/* ============================================================
+   PLANT POSITION
+============================================================ */
 
-/* ===========================================================
-   FIT BOUNDS
-=========================================================== */
+function getPlantPosition(plant) {
+  if (!plant) {
+    return null;
+  }
 
-function FitBounds({ routes }) {
+  const latitude = Number(plant.latitude ?? plant.lat);
+
+  const longitude = Number(plant.longitude ?? plant.lng ?? plant.lon);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return [latitude, longitude];
+}
+
+/* ============================================================
+   VEHICLE ID
+============================================================ */
+
+function getVehicleId(vehicle) {
+  return (
+    vehicle?.vehicleNumber ||
+    vehicle?.vehicle_number ||
+    vehicle?.vehicleId ||
+    vehicle?.vehicle_id ||
+    vehicle?.id ||
+    vehicle?.heartbeatTableName ||
+    "UNKNOWN"
+  );
+}
+
+/* ============================================================
+   MAP BOUNDS
+============================================================ */
+
+function FitVehicleAndPlantBounds({ routes, plants }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!routes.length) return;
+    const bounds = L.latLngBounds([]);
 
-    const bounds = [];
+    let hasCoordinates = false;
 
-    routes.forEach((route) => {
-      route.geometry.forEach(([lng, lat]) => {
-        bounds.push([lat, lng]);
+    /* ========================================================
+       VEHICLE ROUTES
+    ======================================================== */
+
+    routes.forEach((vehicle) => {
+      if (!Array.isArray(vehicle._points)) {
+        return;
+      }
+
+      vehicle._points.forEach((point) => {
+        if (!point) {
+          return;
+        }
+
+        bounds.extend(point);
+
+        hasCoordinates = true;
       });
     });
 
-    if (bounds.length) {
+    /* ========================================================
+       ALL PLANTS
+    ======================================================== */
+
+    plants.forEach((plant) => {
+      const position = getPlantPosition(plant);
+
+      if (!position) {
+        return;
+      }
+
+      bounds.extend(position);
+
+      hasCoordinates = true;
+    });
+
+    /* ========================================================
+       FIT EVERYTHING
+    ======================================================== */
+
+    if (hasCoordinates && bounds.isValid()) {
       map.fitBounds(bounds, {
-        padding: [40, 40],
+        padding: [60, 60],
+
+        maxZoom: 15,
+
+        animate: false,
       });
     }
-  }, [map, routes]);
+  }, [map, routes, plants]);
 
   return null;
 }
 
-/* ===========================================================
-   COMPONENT
-=========================================================== */
+/* ============================================================
+   MAP SIZE CONTROLLER
+============================================================ */
 
-export default function VehicleRouteMap() {
-  const [routes, setRoutes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const isMounted = useRef(true);
-
-  /* ===========================================================
-     MOUNT / UNMOUNT
-  =========================================================== */
+function MapSizeController() {
+  const map = useMap();
 
   useEffect(() => {
-    isMounted.current = true;
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 100),
+
+      setTimeout(() => map.invalidateSize(), 400),
+
+      setTimeout(() => map.invalidateSize(), 800),
+    ];
+
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      isMounted.current = false;
-    };
-  }, []);
+      timers.forEach(clearTimeout);
 
-  /* ===========================================================
-     FETCH OSRM ROUTES
-  =========================================================== */
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
+/* ============================================================
+   FORMAT DISTANCE
+============================================================ */
+
+function formatDistance(meters) {
+  if (!Number.isFinite(Number(meters))) {
+    return "N/A";
+  }
+
+  return `${(Number(meters) / 1000).toFixed(1)} km`;
+}
+
+/* ============================================================
+   FORMAT DURATION
+============================================================ */
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(Number(seconds))) {
+    return "N/A";
+  }
+
+  const hrs = Math.floor(Number(seconds) / 3600);
+
+  const mins = Math.floor((Number(seconds) % 3600) / 60);
+
+  if (hrs > 0) {
+    return `${hrs}h ${mins}m`;
+  }
+
+  return `${mins} min`;
+}
+
+/* ============================================================
+   VEHICLE ROUTE MAP
+============================================================ */
+
+export default function VehicleRouteMap({
+  routes: routesProp = [],
+  plants = [],
+  mapData,
+  selectedDate,
+}) {
+  const [routes, setRoutes] = useState(
+    Array.isArray(routesProp)
+      ? routesProp
+      : Array.isArray(mapData?.routes)
+        ? mapData.routes
+        : [],
+  );
+
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState(null);
+
+  /* ==========================================================
+     UPDATE ROUTES
+  ========================================================== */
 
   useEffect(() => {
-    async function fetchRoutes() {
-      try {
-        setLoading(true);
+    const incomingRoutes = Array.isArray(routesProp)
+      ? routesProp
+      : Array.isArray(mapData?.routes)
+        ? mapData.routes
+        : [];
 
-        const result = await Promise.all(
-          vehicles.map(async (vehicle) => {
-            const response = await fetch(
-              `https://router.project-osrm.org/route/v1/driving/${vehicle.start[1]},${vehicle.start[0]};${vehicle.end[1]},${vehicle.end[0]}?overview=full&geometries=geojson`,
-            );
+    setRoutes(incomingRoutes);
+  }, [routesProp, mapData]);
 
-            if (!response.ok) {
-              throw new Error(
-                `OSRM request failed: ${response.status}`,
-              );
-            }
+  /* ==========================================================
+     PREPARE VEHICLES
+  ========================================================== */
 
-            const data = await response.json();
+  const preparedRoutes = useMemo(() => {
+    return routes
+      .map((vehicle, index) => {
+        const vehicleId = getVehicleId(vehicle);
 
-            return {
-              ...vehicle,
-              geometry:
-                data.routes?.[0]?.geometry?.coordinates ?? [],
-              distance:
-                data.routes?.[0]?.distance ?? 0,
-              duration:
-                data.routes?.[0]?.duration ?? 0,
-            };
-          }),
-        );
+        const points = Array.isArray(vehicle.points)
+          ? vehicle.points.map(normalizeGpsPoint).filter(Boolean)
+          : [];
 
-        if (isMounted.current) {
-          setRoutes(result);
-          setError(null);
-        }
-      } catch (err) {
-        console.error(err);
+        return {
+          ...vehicle,
 
-        if (isMounted.current) {
-          setError("Failed to fetch OSRM routes.");
-        }
-      } finally {
-        if (isMounted.current) {
-          setLoading(false);
+          _vehicleId: vehicleId,
+
+          _routeColor: getVehicleRouteColor(vehicleId),
+
+          _points: points,
+
+          _index: index,
+        };
+      })
+      .filter((vehicle) => vehicle._points.length > 0);
+  }, [routes]);
+
+  /* ==========================================================
+     ACTIVE VEHICLES
+  ========================================================== */
+
+  const activeVehicles = useMemo(
+    () =>
+      preparedRoutes.filter(
+        (vehicle) => String(vehicle.status ?? "").toLowerCase() === "active",
+      ),
+    [preparedRoutes],
+  );
+
+  /* ==========================================================
+     TOTAL DISTANCE
+  ========================================================== */
+
+  const totalDistance = useMemo(
+    () =>
+      preparedRoutes.reduce(
+        (sum, vehicle) => sum + Number(vehicle.distance || 0),
+        0,
+      ),
+    [preparedRoutes],
+  );
+
+  /* ==========================================================
+     DEFAULT CENTER
+  ========================================================== */
+
+  const defaultCenter = useMemo(() => {
+    if (Array.isArray(plants) && plants.length > 0) {
+      for (const plant of plants) {
+        const position = getPlantPosition(plant);
+
+        if (position) {
+          return position;
         }
       }
     }
 
-    fetchRoutes();
-  }, []);
-
-  /* ===========================================================
-     ACTIVE VEHICLES
-  =========================================================== */
-
-  const activeVehicles = useMemo(
-    () =>
-      routes.filter(
-        (vehicle) => vehicle.status === "active",
-      ),
-    [routes],
-  );
-
-  /* ===========================================================
-     INACTIVE VEHICLES
-  =========================================================== */
-
-  const inactiveVehicles = useMemo(
-    () =>
-      routes.filter(
-        (vehicle) => vehicle.status === "inactive",
-      ),
-    [routes],
-  );
-
-  /* ===========================================================
-     TOTAL DISTANCE
-  =========================================================== */
-
-  const totalDistance = useMemo(() => {
-    return routes.reduce(
-      (sum, vehicle) => sum + vehicle.distance,
-      0,
-    );
-  }, [routes]);
-
-  /* ===========================================================
-     TOTAL DURATION
-  =========================================================== */
-
-  const totalDuration = useMemo(() => {
-    return routes.reduce(
-      (sum, vehicle) => sum + vehicle.duration,
-      0,
-    );
-  }, [routes]);
-
-  /* ===========================================================
-     FORMAT DISTANCE
-  =========================================================== */
-
-  const formatDistance = (meters) =>
-    `${(meters / 1000).toFixed(1)} km`;
-
-  /* ===========================================================
-     FORMAT DURATION
-  =========================================================== */
-
-  const formatDuration = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-
-    if (hrs > 0) {
-      return `${hrs}h ${mins}m`;
+    for (const vehicle of preparedRoutes) {
+      if (vehicle._points.length > 0) {
+        return vehicle._points[0];
+      }
     }
 
-    return `${mins} min`;
-  };
+    return [12.9716, 77.5946];
+  }, [plants, preparedRoutes]);
 
-  /* ===========================================================
+  /* ==========================================================
+     PLANT COUNT
+  ========================================================== */
+
+  const validPlantCount = useMemo(
+    () => plants.filter((plant) => Boolean(getPlantPosition(plant))).length,
+    [plants],
+  );
+
+  /* ==========================================================
      RENDER
-  =========================================================== */
+  ========================================================== */
 
   return (
     <section
@@ -376,9 +486,14 @@ export default function VehicleRouteMap() {
           bg-white
         "
       >
-        {/* ================= LEFT ================= */}
-
-        <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+            min-w-0
+          "
+        >
           <div
             className="
               w-10
@@ -393,11 +508,7 @@ export default function VehicleRouteMap() {
               justify-center
             "
           >
-            <Route
-              size={20}
-              strokeWidth={2.2}
-              className="text-[#6C2BFF]"
-            />
+            <Route size={20} strokeWidth={2.2} className="text-[#6C2BFF]" />
           </div>
 
           <div className="min-w-0">
@@ -422,12 +533,10 @@ export default function VehicleRouteMap() {
                 truncate
               "
             >
-              Real-time Fleet Tracking using OpenStreetMap & OSRM
+              Vehicle routes and plant locations
             </p>
           </div>
         </div>
-
-        {/* ================= RIGHT ================= */}
 
         <div
           className="
@@ -458,7 +567,7 @@ export default function VehicleRouteMap() {
                 whitespace-nowrap
               "
             >
-              {routes.length} Vehicles
+              {preparedRoutes.length} Vehicles
             </span>
           </div>
 
@@ -483,6 +592,30 @@ export default function VehicleRouteMap() {
               "
             >
               {activeVehicles.length} Active
+            </span>
+          </div>
+
+          {/* PLANTS */}
+
+          <div
+            className="
+              px-3
+              sm:px-4
+              py-1.5
+              rounded-full
+              bg-[#F3F4F6]
+            "
+          >
+            <span
+              className="
+                text-[11px]
+                sm:text-xs
+                font-semibold
+                text-[#374151]
+                whitespace-nowrap
+              "
+            >
+              {validPlantCount} Plants
             </span>
           </div>
 
@@ -527,145 +660,191 @@ export default function VehicleRouteMap() {
         "
       >
         <MapContainer
-          center={[12.9716, 77.5946]}
+          center={defaultCenter}
           zoom={12}
           zoomControl={false}
-          className="w-full h-full"
+          scrollWheelZoom
+          className="
+            w-full
+            h-full
+          "
         >
           <ZoomControl position="topleft" />
 
           <TileLayer
-            attribution="© OpenStreetMap"
+            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            maxZoom={20}
           />
 
-          <FitBounds routes={routes} />
+          <MapSizeController />
 
-          {/* =================================================
-              DEPOT
-          ================================================= */}
+          <FitVehicleAndPlantBounds routes={preparedRoutes} plants={plants} />
 
-          <Marker
-            position={depot}
-            icon={depotIcon}
-          >
-            <Popup>
-              <div className="space-y-2 min-w-[190px]">
-                <h3 className="font-semibold text-sm">
-                  BBMP Depot
-                </h3>
+          {/* ==================================================
+              ALL PLANT LOCATIONS
+          ================================================== */}
 
-                <div className="flex justify-between text-sm">
-                  <span>Status</span>
+          {plants.map((plant, index) => {
+            const position = getPlantPosition(plant);
 
-                  <span className="font-semibold text-green-600">
-                    Operational
-                  </span>
-                </div>
+            if (!position) {
+              return null;
+            }
 
-                <div className="flex justify-between text-sm">
-                  <span>Total Vehicles</span>
-
-                  <span className="font-semibold">
-                    {routes.length}
-                  </span>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-
-          {/* =================================================
-              COLLECTION POINTS
-          ================================================= */}
-
-          {collectionPoints.map((point, index) => (
-            <Marker
-              key={index}
-              position={point}
-              icon={collectionIcon}
-            >
-              <Popup>
-                <div className="min-w-[160px]">
-                  <h3 className="font-semibold text-sm">
-                    Collection Point {index + 1}
-                  </h3>
-
-                  <p className="text-xs text-gray-500 mt-1">
-                    Waste Collection Zone
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* =================================================
-              VEHICLE MARKERS
-          ================================================= */}
-
-          {routes.map((vehicle) => {
-            if (!vehicle.geometry.length) return null;
-
-            const current = vehicle.geometry[0];
+            const plantId = plant.id ?? plant.plant_id ?? index;
 
             return (
               <Marker
-                key={vehicle.id}
-                position={[
-                  current[1],
-                  current[0],
-                ]}
-                icon={
-                  vehicle.status === "active"
-                    ? activeTruckIcon
-                    : inactiveTruckIcon
-                }
+                key={`plant-${plantId}`}
+                position={position}
+                icon={plantIcon}
               >
-                <Popup>
-                  <div className="space-y-2 min-w-[210px]">
-                    <h3 className="text-sm font-semibold">
-                      {vehicle.id}
-                    </h3>
+                <Popup maxWidth={300} minWidth={250}>
+                  <div className="p-1 sm:p-2">
+                    {/* PLANT HEADER */}
 
-                    <div className="flex justify-between text-sm">
-                      <span>Driver</span>
-
-                      <span className="font-medium">
-                        {vehicle.driver}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span>Status</span>
-
-                      <span
-                        className={`font-semibold ${
-                          vehicle.status === "active"
-                            ? "text-green-600"
-                            : "text-red-500"
-                        }`}
+                    <div
+                      className="
+                          flex
+                          items-center
+                          gap-3
+                          mb-4
+                        "
+                    >
+                      <div
+                        className="
+                            w-11
+                            h-11
+                            rounded-xl
+                            bg-violet-100
+                            flex
+                            items-center
+                            justify-center
+                            shrink-0
+                          "
                       >
-                        {vehicle.status}
-                      </span>
+                        <Factory size={23} className="text-violet-600" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3
+                          className="
+                              font-bold
+                              text-[15px]
+                              text-gray-900
+                            "
+                        >
+                          {plant.plant_name ?? plant.name ?? "Plant"}
+                        </h3>
+
+                        {plant.status && (
+                          <span
+                            className={`
+                                text-xs
+                                font-semibold
+                                ${
+                                  String(plant.status).toUpperCase() ===
+                                  "ACTIVE"
+                                    ? "text-green-600"
+                                    : "text-red-500"
+                                }
+                              `}
+                          >
+                            ● {plant.status}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex justify-between text-sm">
-                      <span>Distance</span>
+                    {/* PLANT DETAILS */}
 
-                      <span className="font-medium">
-                        {formatDistance(
-                          vehicle.distance,
-                        )}
-                      </span>
+                    <div className="space-y-3 text-[13px]">
+                      {plant.zone && (
+                        <div className="flex items-start gap-2">
+                          <MapPinned
+                            size={15}
+                            className="
+                                text-violet-600
+                                mt-0.5
+                                shrink-0
+                              "
+                          />
+
+                          <span>{plant.zone}</span>
+                        </div>
+                      )}
+
+                      {plant.plant_manager && (
+                        <div className="flex items-start gap-2">
+                          <User
+                            size={15}
+                            className="
+                                text-violet-600
+                                mt-0.5
+                                shrink-0
+                              "
+                          />
+
+                          <span>{plant.plant_manager}</span>
+                        </div>
+                      )}
+
+                      {plant.capacity_ton_per_day !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <Factory
+                            size={15}
+                            className="
+                                text-violet-600
+                                shrink-0
+                              "
+                          />
+
+                          <span>{plant.capacity_ton_per_day} Ton/Day</span>
+                        </div>
+                      )}
+
+                      {plant.vehicles_enrolled !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <Truck
+                            size={15}
+                            className="
+                                text-violet-600
+                                shrink-0
+                              "
+                          />
+
+                          <span>{plant.vehicles_enrolled} Vehicles</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-2">
+                        <MapPinned
+                          size={15}
+                          className="
+                              text-violet-600
+                              mt-0.5
+                              shrink-0
+                            "
+                        />
+
+                        <span>
+                          {position[0]}, {position[1]}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex justify-between text-sm">
-                      <span>ETA</span>
-
-                      <span className="font-medium">
-                        {formatDuration(
-                          vehicle.duration,
-                        )}
-                      </span>
+                    <div
+                      className="
+                          mt-4
+                          pt-3
+                          border-t
+                          border-gray-200
+                          text-xs
+                          text-gray-400
+                        "
+                    >
+                      Plant location
                     </div>
                   </div>
                 </Popup>
@@ -673,87 +852,180 @@ export default function VehicleRouteMap() {
             );
           })}
 
-          {/* =================================================
-              ROUTE POLYLINES
-          ================================================= */}
+          {/* ==================================================
+              VEHICLE ROUTES
+          ================================================== */}
 
-          {routes.map((vehicle) => {
-            if (!vehicle.geometry.length) return null;
+          {preparedRoutes.map((vehicle) => {
+            const vehicleId = vehicle._vehicleId;
+
+            const routeColor = vehicle._routeColor;
+
+            const positions = vehicle._points;
+
+            if (positions.length === 0) {
+              return null;
+            }
+
+            const firstPosition = positions[0];
+
+            const lastPosition = positions[positions.length - 1];
 
             return (
-              <Polyline
-                key={vehicle.id}
-                positions={vehicle.geometry.map(
-                  ([lng, lat]) => [lat, lng],
+              <React.Fragment key={`vehicle-${vehicleId}`}>
+                {/* ==========================================
+                      ROUTE LINE
+                  ========================================== */}
+
+                {positions.length > 1 && (
+                  <Polyline
+                    positions={positions}
+                    pathOptions={{
+                      color: routeColor,
+
+                      weight: 5,
+
+                      opacity: 0.92,
+
+                      lineCap: "round",
+
+                      lineJoin: "round",
+                    }}
+                  />
                 )}
-                pathOptions={{
-                  color: vehicle.color,
-                  weight: 5,
-                  opacity: 0.95,
-                  lineCap: "round",
-                  lineJoin: "round",
-                }}
-              >
-                <Popup>
-                  <div className="min-w-[210px]">
-                    <h3 className="font-semibold text-sm mb-3">
-                      {vehicle.id} Route
-                    </h3>
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">
-                          Driver
-                        </span>
+                {/* ==========================================
+                      START POINT
+                  ========================================== */}
 
-                        <span className="font-medium">
-                          {vehicle.driver}
-                        </span>
+                <CircleMarker
+                  center={firstPosition}
+                  radius={6}
+                  pathOptions={{
+                    color: "#FFFFFF",
+
+                    weight: 3,
+
+                    fillColor: routeColor,
+
+                    fillOpacity: 1,
+                  }}
+                >
+                  <Popup>
+                    <div className="min-w-[200px]">
+                      <div className="font-semibold text-sm mb-2">
+                        Route Start
                       </div>
 
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">
-                          Route Distance
-                        </span>
-
-                        <span className="font-semibold">
-                          {formatDistance(
-                            vehicle.distance,
-                          )}
-                        </span>
+                      <div className="text-sm">
+                        Vehicle: <strong>{vehicleId}</strong>
                       </div>
 
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">
-                          Estimated Time
-                        </span>
-
-                        <span className="font-semibold">
-                          {formatDuration(
-                            vehicle.duration,
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">
-                          Vehicle Status
-                        </span>
-
+                      <div className="mt-2 flex items-center gap-2">
                         <span
-                          className={`font-semibold ${
-                            vehicle.status === "active"
-                              ? "text-green-600"
-                              : "text-red-500"
-                          }`}
-                        >
-                          {vehicle.status}
+                          style={{
+                            display: "inline-block",
+
+                            width: "30px",
+
+                            height: "5px",
+
+                            borderRadius: "999px",
+
+                            backgroundColor: routeColor,
+                          }}
+                        />
+
+                        <span className="text-xs text-gray-500">
+                          Vehicle route
                         </span>
                       </div>
                     </div>
-                  </div>
-                </Popup>
-              </Polyline>
+                  </Popup>
+                </CircleMarker>
+
+                {/* ==========================================
+                      CURRENT / LAST VEHICLE POSITION
+                  ========================================== */}
+
+                <Marker
+                  position={lastPosition}
+                  icon={createTruckIcon(routeColor)}
+                >
+                  <Popup>
+                    <div className="min-w-[230px] text-sm">
+                      <div className="text-base font-semibold text-[#16295A] mb-3">
+                        Vehicle Details
+                      </div>
+
+                      <div className="space-y-2">
+                        <div>
+                          Vehicle: <strong>{vehicleId}</strong>
+                        </div>
+
+                        <div>
+                          Status:{" "}
+                          <strong
+                            className={
+                              String(vehicle.status ?? "").toLowerCase() ===
+                              "active"
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }
+                          >
+                            {vehicle.status ?? "N/A"}
+                          </strong>
+                        </div>
+
+                        <div>GPS Points: {positions.length}</div>
+
+                        <div>Distance: {formatDistance(vehicle.distance)}</div>
+
+                        <div>Duration: {formatDuration(vehicle.duration)}</div>
+
+                        <div>
+                          Last Update:{" "}
+                          {vehicle.endPoint?.timestamp
+                            ? new Date(
+                                vehicle.endPoint.timestamp,
+                              ).toLocaleString()
+                            : "N/A"}
+                        </div>
+                      </div>
+
+                      <div
+                        className="
+                            mt-3
+                            pt-2
+                            border-t
+                            border-gray-200
+                            flex
+                            items-center
+                            gap-2
+                          "
+                      >
+                        <span
+                          style={{
+                            display: "inline-block",
+
+                            width: "32px",
+
+                            height: "5px",
+
+                            borderRadius: "999px",
+
+                            backgroundColor: routeColor,
+                          }}
+                        />
+
+                        <span className="text-xs text-gray-500">
+                          Vehicle route
+                        </span>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              </React.Fragment>
             );
           })}
         </MapContainer>
@@ -767,7 +1039,7 @@ export default function VehicleRouteMap() {
             className="
               absolute
               inset-0
-              bg-white/80
+              bg-white/75
               backdrop-blur-sm
               flex
               flex-col
@@ -778,16 +1050,15 @@ export default function VehicleRouteMap() {
           >
             <Loader2
               size={34}
-              className="animate-spin text-[#6C2BFF]"
+              className="
+                animate-spin
+                text-[#6C2BFF]
+              "
             />
 
             <h3 className="mt-4 text-base font-semibold text-[#111827]">
-              Loading Routes
+              Loading Vehicle Routes
             </h3>
-
-            <p className="text-xs text-gray-500 mt-1">
-              Fetching routes from OSRM...
-            </p>
           </div>
         )}
 
@@ -813,15 +1084,13 @@ export default function VehicleRouteMap() {
                 Failed to Load Routes
               </h3>
 
-              <p className="text-sm text-gray-500 mt-2">
-                {error}
-              </p>
+              <p className="text-sm text-gray-500 mt-2">{error}</p>
             </div>
           </div>
         )}
 
         {/* ===================================================
-            MAP LEGEND
+            LEGEND
         =================================================== */}
 
         <div
@@ -832,85 +1101,139 @@ export default function VehicleRouteMap() {
             sm:top-5
             sm:right-5
             z-[999]
-            w-[190px]
-            sm:w-[210px]
+            w-[205px]
             rounded-2xl
             bg-white
             border
             border-[#ECECF3]
             shadow-lg
             p-4
-            sm:p-5
           "
         >
-          <h3 className="text-sm font-semibold text-[#111827] mb-4">
+          <h3
+            className="
+              text-sm
+              font-semibold
+              text-[#111827]
+              mb-4
+            "
+          >
             Map Legend
           </h3>
 
           <div className="space-y-3">
-            {/* ACTIVE */}
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#16C47F] shrink-0" />
-
-              <span className="text-xs text-[#111827]">
-                Active Vehicle
-              </span>
-            </div>
-
-            {/* INACTIVE */}
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#9CA3AF] shrink-0" />
-
-              <span className="text-xs text-[#111827]">
-                Inactive Vehicle
-              </span>
-            </div>
-
-            {/* ROUTE */}
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-1 rounded-full bg-[#6C2BFF] shrink-0" />
-
-              <span className="text-xs text-[#111827]">
-                Route
-              </span>
-            </div>
-
-            {/* COLLECTION POINT */}
+            {/* PLANT */}
 
             <div className="flex items-center gap-2.5">
               <div
                 className="
-                  w-3.5
-                  h-3.5
+                  w-5
+                  h-5
+                  rounded-md
+                  bg-[#111827]
+                  flex
+                  items-center
+                  justify-center
+                  text-[10px]
+                "
+              >
+                🏭
+              </div>
+
+              <span className="text-xs text-[#111827]">Plant Location</span>
+            </div>
+
+            {/* VEHICLE */}
+
+            <div className="flex items-center gap-2.5">
+              <div
+                className="
+                  w-5
+                  h-5
                   rounded-full
                   bg-[#16C47F]
                   border-2
                   border-white
                   shadow
-                  shrink-0
+                  flex
+                  items-center
+                  justify-center
+                  text-[9px]
+                "
+              >
+                🚛
+              </div>
+
+              <span className="text-xs text-[#111827]">Vehicle</span>
+            </div>
+
+            {/* ROUTE */}
+
+            <div className="flex items-center gap-2.5">
+              <div
+                className="
+                  w-8
+                  h-1
+                  rounded-full
+                  bg-[#6C2BFF]
                 "
               />
 
-              <span className="text-xs text-[#111827]">
-                Collection Point
-              </span>
+              <span className="text-xs text-[#111827]">Vehicle Route</span>
             </div>
 
-            {/* DEPOT */}
+            {/* DIFFERENT COLORS */}
 
-            <div className="flex items-center gap-2.5">
-              <div className="w-4 h-4 rounded-md bg-[#111827] shrink-0" />
-
-              <span className="text-xs text-[#111827]">
-                Depot
+            <div className="pt-1">
+              <span className="text-[10px] text-gray-400">
+                Each vehicle has a unique route color.
               </span>
             </div>
           </div>
         </div>
+
+        {/* ===================================================
+            DATE
+        =================================================== */}
+
+        {selectedDate && (
+          <div
+            className="
+              absolute
+              bottom-4
+              right-4
+              z-[999]
+              rounded-xl
+              bg-white/95
+              border
+              border-[#ECECF3]
+              shadow-md
+              px-4
+              py-2
+            "
+          >
+            <span className="text-xs font-semibold text-[#60758B]">
+              Date: <span className="text-[#34475B]">{selectedDate}</span>
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* =====================================================
+          NO ROUTE DATA
+      ===================================================== */}
+
+      {!loading && preparedRoutes.length === 0 && (
+        <div className="px-6 py-10 text-center">
+          <div className="text-base font-semibold text-[#34475B]">
+            No vehicle route data available
+          </div>
+
+          <div className="mt-1 text-sm text-[#8AA1BB]">
+            No vehicle GPS route data was found.
+          </div>
+        </div>
+      )}
     </section>
   );
 }
