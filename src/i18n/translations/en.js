@@ -316,6 +316,73 @@ wasteGenerators: {
       coordinates: "Coordinates",
     },
   },
+
+  directory: {
+  title: "Waste Generators Directory",
+
+  description:
+    "View and manage waste generators based on registered citizen information.",
+
+  searchPlaceholder:
+    "Search by name, phone number, Wet RFID",
+
+  sync: "Sync",
+
+  syncing: "Syncing...",
+
+  number: "#",
+
+  name: "Name",
+
+  phone: "Phone Number",
+
+  wetRFID: "Wet RFID",
+
+  dryRFID: "Dry RFID",
+
+  wardArea: "Ward / Area",
+
+  ward: "Ward",
+
+  zone: "Zone",
+
+  status: "Status",
+
+  totalWaste: "Total Waste",
+
+  averageWaste: "Average Waste",
+
+  active: "Active",
+
+  inactive: "Inactive",
+
+  loading:
+    "Loading waste generators...",
+
+  emptySearch:
+    "No waste generators found for this search.",
+
+  empty:
+    "No waste generators found.",
+
+  notAvailable: "N/A",
+
+  notAssigned: "Not Assigned",
+
+  kg: "kg",
+
+  showing: "Showing",
+
+  of: "of",
+
+  wasteGenerators: "waste generators",
+
+  rows: "Rows:",
+
+  previous: "Previous page",
+
+  next: "Next page",
+},
 },
 
 vehicles: {

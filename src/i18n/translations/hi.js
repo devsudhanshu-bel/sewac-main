@@ -290,6 +290,73 @@ wasteGenerators: {
       coordinates: "निर्देशांक",
     },
   },
+
+  directory: {
+  title: "अपशिष्ट उत्पादक निर्देशिका",
+
+  description:
+    "पंजीकृत नागरिकों की जानकारी के आधार पर अपशिष्ट उत्पादकों को देखें और प्रबंधित करें।",
+
+  searchPlaceholder:
+    "नाम, फोन नंबर, Wet RFID से खोजें",
+
+  sync: "सिंक",
+
+  syncing: "सिंक हो रहा है...",
+
+  number: "#",
+
+  name: "नाम",
+
+  phone: "फोन नंबर",
+
+  wetRFID: "Wet RFID",
+
+  dryRFID: "Dry RFID",
+
+  wardArea: "वार्ड / क्षेत्र",
+
+  ward: "वार्ड",
+
+  zone: "जोन",
+
+  status: "स्थिति",
+
+  totalWaste: "कुल अपशिष्ट",
+
+  averageWaste: "औसत अपशिष्ट",
+
+  active: "सक्रिय",
+
+  inactive: "निष्क्रिय",
+
+  loading:
+    "अपशिष्ट उत्पादकों को लोड किया जा रहा है...",
+
+  emptySearch:
+    "इस खोज के लिए कोई अपशिष्ट उत्पादक नहीं मिला।",
+
+  empty:
+    "कोई अपशिष्ट उत्पादक नहीं मिला।",
+
+  notAvailable: "उपलब्ध नहीं",
+
+  notAssigned: "असाइन नहीं किया गया",
+
+  kg: "किग्रा",
+
+  showing: "दिखाया जा रहा है",
+
+  of: "में से",
+
+  wasteGenerators: "अपशिष्ट उत्पादक",
+
+  rows: "पंक्तियाँ:",
+
+  previous: "पिछला पृष्ठ",
+
+  next: "अगला पृष्ठ",
+},
 },
 
 vehicles: {

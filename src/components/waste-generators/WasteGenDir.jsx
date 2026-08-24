@@ -1016,7 +1016,7 @@ export default function WasteGeneratorDirectory({
                               ).toFixed(
                                 2,
                               )
-                            : "N/A"}
+                            : notAvailable}
                         </span>
 
                         {totalWaste !==
@@ -1060,7 +1060,7 @@ export default function WasteGeneratorDirectory({
                               ).toFixed(
                                 2,
                               )
-                            : "N/A"}
+                            : notAvailable}
                         </span>
 
                         {averageWaste !==
@@ -1261,6 +1261,7 @@ export default function WasteGeneratorDirectory({
               shrink-0
             "
             title={text.previous}
+            aria-label={text.previous}
           >
             <ChevronLeft
               size={16}
@@ -1370,6 +1371,7 @@ export default function WasteGeneratorDirectory({
               shrink-0
             "
             title={text.next}
+            aria-label={text.next}
           >
             <ChevronRight
               size={16}
