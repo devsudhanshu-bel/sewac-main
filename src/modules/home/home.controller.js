@@ -1,15 +1,33 @@
-import homeService from "./home.service.js";
-import ApiResponse from "../../utils/apiResponse.js";
+import homeService
+  from "./home.service.js";
+
+import ApiResponse
+  from "../../utils/apiResponse.js";
+
+
+// =====================================================
+// HOME CONTROLLER
+// =====================================================
 
 
 class HomeController {
 
 
-  /**
-   * Monthly Calendar
-   * GET /api/citizen/home/calendar?year=2026&month=7
-   */
-  async getCalendar(req, res, next) {
+  // ===================================================
+  // MONTHLY CALENDAR
+  // ===================================================
+  //
+  // GET
+  //
+  // /api/citizen/home/calendar?year=2026&month=8
+  //
+  // ===================================================
+
+  async getCalendar(
+    req,
+    res,
+    next
+  ) {
 
     try {
 
@@ -20,37 +38,80 @@ class HomeController {
       } = req.query;
 
 
+      // -----------------------------------------------
+      // GET WARD FROM AUTH USER
+      // -----------------------------------------------
 
-      const result =
-        await homeService.getCalendar(
+      const wardNo =
+        Number(
 
-          req.user.id,
+          req.user?.wardNo
 
-          year,
+          ??
+          req.user?.wardId
 
-          month
+          ??
+          req.user?.ward?.wardNo
+
+          ??
+          req.user?.ward?.wardId
 
         );
 
 
+      if (
+        !Number.isInteger(wardNo) ||
+        wardNo <= 0
+      ) {
+
+        throw new Error(
+          "Ward information not found for citizen."
+        );
+
+      }
 
 
-      return res.status(200).json(
+      // -----------------------------------------------
+      // SERVICE
+      // -----------------------------------------------
 
-        new ApiResponse(
+      const result =
+        await homeService
+          .getCalendar(
 
-          200,
+            req.user.id,
 
-          result.message,
+            wardNo,
 
-          result.data
+            year,
 
-        )
+            month
 
-      );
+          );
 
 
-    } catch(error) {
+      // -----------------------------------------------
+      // RESPONSE
+      // -----------------------------------------------
+
+      return res
+        .status(200)
+        .json(
+
+          new ApiResponse(
+
+            200,
+
+            result.message,
+
+            result.data
+
+          )
+
+        );
+
+
+    } catch (error) {
 
       next(error);
 
@@ -59,58 +120,50 @@ class HomeController {
   }
 
 
+  // ===================================================
+  // TODAY'S COLLECTION
+  // ===================================================
 
-
-
-
-
-  /**
-   * Today's Collection
-   * GET /api/citizen/home/today
-   */
-  async getTodayCollection(req, res, next) {
-
+  async getTodayCollection(
+    req,
+    res,
+    next
+  ) {
 
     try {
 
 
       const result =
-        await homeService.getTodayCollection(
+        await homeService
+          .getTodayCollection();
 
-          req.user.id
+
+      return res
+        .status(200)
+        .json(
+
+          new ApiResponse(
+
+            200,
+
+            result.message,
+
+            result.data
+
+          )
 
         );
 
 
-
-
-      return res.status(200).json(
-
-        new ApiResponse(
-
-          200,
-
-          result.message,
-
-          result.data
-
-        )
-
-      );
-
-
-    } catch(error) {
+    } catch (error) {
 
       next(error);
 
     }
 
-
   }
 
-
 }
-
 
 
 export default new HomeController();

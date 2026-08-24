@@ -1,32 +1,50 @@
-import homeRepository from "./home.repository.js";
-import { HOME_MESSAGES } from "./home.constants.js";
-import homeCache from "./home.cache.js";
+import homeRepository
+  from "./home.repository.js";
+
+import {
+  HOME_MESSAGES
+} from "./home.constants.js";
+
+
+// =====================================================
+// HOME SERVICE
+// =====================================================
 
 
 class HomeService {
 
 
-  /**
-   * Monthly Calendar
-   * Supports Previous, Current and Future Months
-   */
+  // ===================================================
+  // MONTHLY CALENDAR
+  // ===================================================
+
   async getCalendar(
     citizenId,
+    wardNo,
     year,
     month
   ) {
 
 
-    // =============================
-    // Validate Inputs
-    // =============================
+    // =============================================
+    // VALIDATE INPUT
+    // =============================================
 
-    year = Number(year);
-    month = Number(month);
+    year =
+      Number(year);
+
+    month =
+      Number(month);
+
+    wardNo =
+      Number(wardNo);
 
 
-
-    if (!year || year < 2000 || year > 2100) {
+    if (
+      !year ||
+      year < 2000 ||
+      year > 2100
+    ) {
 
       throw new Error(
         HOME_MESSAGES.INVALID_YEAR
@@ -35,8 +53,11 @@ class HomeService {
     }
 
 
-
-    if (!month || month < 1 || month > 12) {
+    if (
+      !month ||
+      month < 1 ||
+      month > 12
+    ) {
 
       throw new Error(
         HOME_MESSAGES.INVALID_MONTH
@@ -45,53 +66,21 @@ class HomeService {
     }
 
 
+    if (
+      !Number.isInteger(wardNo) ||
+      wardNo <= 0
+    ) {
 
-
-
-    // =============================
-    // REDIS CHECK
-    // =============================
-
-    const cachedCalendar =
-      await homeCache.getCalendar(
-
-        citizenId,
-
-        year,
-
-        month
-
+      throw new Error(
+        "Invalid ward number."
       );
-
-
-
-    if(cachedCalendar){
-
-      console.log(
-        "⚡ Calendar Redis HIT"
-      );
-
-
-      return cachedCalendar;
 
     }
 
 
-
-    console.log(
-      "🐢 Calendar Redis MISS"
-    );
-
-
-
-
-
-
-
-    // =============================
-    // Selected Month
-    // =============================
-
+    // =============================================
+    // SELECTED MONTH
+    // =============================================
 
     const selectedYear =
       year;
@@ -101,124 +90,94 @@ class HomeService {
       month - 1;
 
 
-
-
     const startDate =
       new Date(
-
         selectedYear,
-
         selectedMonth,
-
         1
-
       );
-
 
 
     const endDate =
       new Date(
-
         selectedYear,
-
         selectedMonth + 1,
-
         1
-
       );
 
 
-
-
-
-
-    // =============================
-    // Today
-    // =============================
-
+    // =============================================
+    // TODAY
+    // =============================================
 
     const today =
       new Date();
 
 
-
     const todayOnly =
       new Date(
-
         today.getFullYear(),
-
         today.getMonth(),
-
         today.getDate()
-
       );
 
 
-
-
-
-
-
-    // =============================
-    // Database Fetch
-    // =============================
-
+    // =============================================
+    // DATABASE FETCH
+    // =============================================
 
     const collections =
-      await homeRepository.getMonthlyCollections(
+      await homeRepository
+        .getMonthlyCollections(
 
-        citizenId,
+          citizenId,
 
-        startDate,
+          wardNo,
 
-        endDate
+          selectedYear,
 
-      );
+          month,
+
+          startDate,
+
+          endDate
+
+        );
 
 
-
-
-
-
-
-
-    // =============================
-    // Statistics
-    // =============================
-
+    // =============================================
+    // STATISTICS
+    // =============================================
 
     let dryCompleted = 0;
 
     let wetCompleted = 0;
 
 
-
     const attendedDays =
       new Set();
-
-
-
 
 
     collections.forEach(
       collection => {
 
 
-        if(collection.remarks === "D"){
+        if (
+          collection.remarks === "D"
+        ) {
 
           dryCompleted++;
 
         }
 
 
-        else if(collection.remarks === "W"){
+        else if (
+          collection.remarks === "W"
+        ) {
 
           wetCompleted++;
 
         }
-
-
-
 
 
         const collectionDate =
@@ -227,25 +186,17 @@ class HomeService {
           );
 
 
-
         attendedDays.add(
           collectionDate.getDate()
         );
-
 
       }
     );
 
 
-
-
-
-
-
-    // =============================
-    // Month Calculation
-    // =============================
-
+    // =============================================
+    // MONTH CALCULATION
+    // =============================================
 
     const daysInMonth =
       new Date(
@@ -259,19 +210,14 @@ class HomeService {
       ).getDate();
 
 
-
-
-
     let dryTotal = 0;
 
 
-
-
-    for(
+    for (
       let day = 1;
       day <= daysInMonth;
       day++
-    ){
+    ) {
 
 
       const currentDate =
@@ -286,47 +232,33 @@ class HomeService {
         );
 
 
-
       const weekday =
         currentDate.getDay();
 
 
-
-
-      if(
+      if (
         weekday === 3 ||
         weekday === 6
-      ){
+      ) {
 
         dryTotal++;
 
       }
 
-
     }
-
-
 
 
     const wetTotal =
       daysInMonth - dryTotal;
 
 
-
-
-
-
-    // =============================
-    // Calendar Generate
-    // =============================
-
+    // =============================================
+    // CALENDAR GENERATE
+    // =============================================
 
     const calendar = [];
 
     let streak = 0;
-
-
-
 
 
     const selectedMonthDate =
@@ -341,7 +273,6 @@ class HomeService {
       );
 
 
-
     const currentMonthDate =
       new Date(
 
@@ -354,14 +285,13 @@ class HomeService {
       );
 
 
-
-
     const isPastMonth =
-      selectedMonthDate < currentMonthDate;
-
+      selectedMonthDate <
+      currentMonthDate;
 
 
     const isCurrentMonth =
+
       selectedMonthDate.getFullYear()
       ===
       currentMonthDate.getFullYear()
@@ -373,21 +303,16 @@ class HomeService {
       currentMonthDate.getMonth();
 
 
-
-
     const isFutureMonth =
-      selectedMonthDate > currentMonthDate;
+      selectedMonthDate >
+      currentMonthDate;
 
 
-
-
-
-
-    for(
+    for (
       let day = 1;
       day <= daysInMonth;
       day++
-    ){
+    ) {
 
 
       const currentDate =
@@ -402,40 +327,34 @@ class HomeService {
         );
 
 
-
       const weekday =
         currentDate.getDay();
 
 
-
       const isDryDay =
+
         weekday === 3 ||
         weekday === 6;
-
 
 
       let status =
         "UPCOMING";
 
 
-
-
-      if(isPastMonth){
+      if (isPastMonth) {
 
 
         status =
           attendedDays.has(day)
 
-          ? "ATTENDED"
+            ? "ATTENDED"
 
-          : "MISSED";
-
+            : "MISSED";
 
       }
 
 
-
-      else if(isCurrentMonth){
+      else if (isCurrentMonth) {
 
 
         const currentOnly =
@@ -450,42 +369,38 @@ class HomeService {
           );
 
 
-
-        if(currentOnly < todayOnly){
+        if (
+          currentOnly < todayOnly
+        ) {
 
 
           status =
             attendedDays.has(day)
 
-            ? "ATTENDED"
+              ? "ATTENDED"
 
-            : "MISSED";
-
+              : "MISSED";
 
         }
 
 
-        else if(
+        else if (
           currentOnly.getTime()
           ===
           todayOnly.getTime()
-        ){
+        ) {
 
 
           status =
             attendedDays.has(day)
 
-            ? "ATTENDED"
+              ? "ATTENDED"
 
-            : "TODAY";
-
+              : "TODAY";
 
         }
 
-
       }
-
-
 
 
       calendar.push({
@@ -494,32 +409,28 @@ class HomeService {
 
         date:
           currentDate
-          .toISOString()
-          .split("T")[0],
-
+            .toISOString()
+            .split("T")[0],
 
         weekday,
 
-
         collectionType:
           isDryDay
-          ? "DRY"
-          : "WET",
-
+            ? "DRY"
+            : "WET",
 
         status,
 
-
       });
 
-
     }
-        // =============================
-    // Calculate Streak
-    // =============================
 
 
-    if(!isFutureMonth){
+    // =============================================
+    // CALCULATE STREAK
+    // =============================================
+
+    if (!isFutureMonth) {
 
 
       const completedDays =
@@ -527,32 +438,35 @@ class HomeService {
           ...attendedDays
         ]
         .sort(
-          (a,b)=>a-b
+          (a, b) => a - b
         );
 
 
-
-      if(completedDays.length > 0){
+      if (
+        completedDays.length > 0
+      ) {
 
 
         streak = 1;
 
 
+        for (
+          let i =
+            completedDays.length - 1;
 
-        for(
-          let i = completedDays.length - 1;
           i > 0;
+
           i--
-        ){
+        ) {
 
 
-          if(
+          if (
             completedDays[i]
             -
-            completedDays[i-1]
+            completedDays[i - 1]
             ===
             1
-          ){
+          ) {
 
             streak++;
 
@@ -564,175 +478,79 @@ class HomeService {
 
           }
 
-
         }
 
-
       }
-
 
     }
 
 
-
-
-
-
-
-    // =============================
-    // Response Object
-    // =============================
-
+    // =============================================
+    // RESPONSE OBJECT
+    // =============================================
 
     const response = {
 
-
-      success:true,
-
+      success: true,
 
       message:
-        HOME_MESSAGES.CALENDAR_FETCHED,
+        HOME_MESSAGES
+          .CALENDAR_FETCHED,
 
+      data: {
 
-      data:{
-
-
-        year:selectedYear,
-
+        year:
+          selectedYear,
 
         month,
 
+        dry: {
 
+          completed:
+            dryCompleted,
 
-        dry:{
-
-
-          completed:dryCompleted,
-
-
-          total:dryTotal,
-
+          total:
+            dryTotal,
 
         },
 
+        wet: {
 
+          completed:
+            wetCompleted,
 
-        wet:{
-
-
-          completed:wetCompleted,
-
-
-          total:wetTotal,
-
+          total:
+            wetTotal,
 
         },
-
-
 
         streak,
 
-
-
         calendar,
 
-
       }
-
 
     };
 
 
-
-
-
-
-
-    // =============================
-    // SAVE REDIS CACHE
-    // =============================
-
-
-    await homeCache.setCalendar(
-
-      citizenId,
-
-      year,
-
-      month,
-
-      response
-
-    );
-
-
-
-    console.log(
-      "💾 Calendar stored in Redis"
-    );
-
-
-
     return response;
-
-
 
   }
 
 
+  // ===================================================
+  // TODAY'S COLLECTION
+  // ===================================================
 
-
-
-
-
-
-
-
-
-
-  /**
-   * Today's Collection
-   * GET /today
-   */
-  async getTodayCollection(){
-
+  async getTodayCollection() {
 
 
     const today =
       new Date();
 
 
-
-    const cacheKey =
-      "todayCollection";
-
-
-
-
-    const cached =
-      await homeCache.getToday();
-
-
-
-    if(cached){
-
-
-      console.log(
-        "⚡ Today Redis HIT"
-      );
-
-
-      return cached;
-
-
-    }
-
-
-
-
     const weekday =
       today.getDay();
-
 
 
     const collectionType =
@@ -740,81 +558,48 @@ class HomeService {
       weekday === 3 ||
       weekday === 6
 
-      ? "DRY"
+        ? "DRY"
 
-      : "WET";
-
-
-
-
+        : "WET";
 
 
     const response = {
 
-
-      success:true,
-
+      success: true,
 
       message:
         HOME_MESSAGES
-        .TODAY_COLLECTION_FETCHED,
+          .TODAY_COLLECTION_FETCHED,
 
-
-      data:{
-
+      data: {
 
         collectionType,
 
-
-        city:"Bengaluru",
-
+        city: "Bengaluru",
 
         date:
           today
-          .toISOString()
-          .split("T")[0],
-
-
+            .toISOString()
+            .split("T")[0],
 
         day:
           today.toLocaleDateString(
             "en-US",
             {
-              weekday:"long"
+              weekday: "long"
             }
           ),
 
-
       }
-
 
     };
 
 
-
-
-
-    await homeCache.setToday(
-      response
-    );
-
-
-
-    console.log(
-      "💾 Today collection cached"
-    );
-
-
-
     return response;
-
 
   }
 
-
-
 }
-
 
 
 export default new HomeService();

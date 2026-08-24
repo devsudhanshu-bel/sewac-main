@@ -1,34 +1,55 @@
-import { Router } from "express";
-import homeController from "./home.controller.js";
-import authMiddleware from "../../middlewares/auth.middleware.js";
+import {
+  Router
+} from "express";
 
-const router = Router();
+import homeController
+  from "./home.controller.js";
 
-/**
- * Today's Collection
- * GET /api/citizen/home/today
- */
+import authMiddleware
+  from "../../middlewares/auth.middleware.js";
+
+
+const router =
+  Router();
+
+
+// =====================================================
+// TODAY'S COLLECTION
+// =====================================================
+
 router.get(
+
   "/today",
+
   authMiddleware,
-  homeController.getTodayCollection
+
+  homeController
+    .getTodayCollection
+
 );
 
-/**
- * Monthly Calendar
- * Query Params:
- * ?year=2026&month=7
- *
- * Response:
- * - Dry Collection Stats
- * - Wet Collection Stats
- * - Monthly Calendar
- * - Streak
- */
+
+// =====================================================
+// MONTHLY CALENDAR
+// =====================================================
+//
+// Example:
+//
+// GET
+// /api/citizen/home/calendar?year=2026&month=8
+//
+// =====================================================
+
 router.get(
+
   "/calendar",
+
   authMiddleware,
-  homeController.getCalendar
+
+  homeController
+    .getCalendar
+
 );
+
 
 export default router;

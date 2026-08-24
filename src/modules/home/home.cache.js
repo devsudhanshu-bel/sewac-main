@@ -1,181 +1,55 @@
-import redisService from "../redis/redis.service.js";
-import redisKeys from "../redis/redis.keys.js";
+// =====================================================
+// HOME CACHE
+// =====================================================
+//
+// Redis is intentionally disabled for the Citizen Home
+// module for now.
+//
+// The Home module directly reads from the
+// Citizen Historical Database.
+//
+// This file is kept so the module structure remains
+// compatible and Redis can be restored later without
+// changing the controller/service architecture.
+//
+// =====================================================
 
 
 class HomeCache {
 
+  async getCalendar() {
 
-  // =====================================
-  // MONTHLY CALENDAR CACHE
-  // =====================================
-
-
-  async getCalendar(
-    citizenId,
-    year,
-    month
-  ) {
-
-
-    const key =
-      redisKeys.citizenHomeCalendar(
-        citizenId,
-        year,
-        month
-      );
-
-
-    return await redisService.get(
-      key
-    );
-
+    return null;
 
   }
 
 
+  async setCalendar() {
 
-
-
-
-
-  async setCalendar(
-    citizenId,
-    year,
-    month,
-    data
-  ) {
-
-
-    const key =
-      redisKeys.citizenHomeCalendar(
-        citizenId,
-        year,
-        month
-      );
-
-
-
-    await redisService.set(
-
-      key,
-
-      data,
-
-      300
-
-    );
-
+    return null;
 
   }
 
 
+  async getToday() {
 
-
-
-
-
-
-
-  // =====================================
-  // TODAY COLLECTION CACHE
-  // =====================================
-
-
-  async getToday(
-    citizenId
-  ) {
-
-
-    const key =
-      redisKeys.citizenToday(
-        citizenId
-      );
-
-
-
-    return await redisService.get(
-      key
-    );
-
+    return null;
 
   }
 
 
+  async setToday() {
 
-
-
-
-
-
-  async setToday(
-    citizenId,
-    data
-  ) {
-
-
-    const key =
-      redisKeys.citizenToday(
-        citizenId
-      );
-
-
-
-    await redisService.set(
-
-      key,
-
-      data,
-
-      300
-
-    );
-
+    return null;
 
   }
 
 
+  async clearCitizenHome() {
 
-
-
-
-
-
-
-
-  // =====================================
-  // CLEAR CITIZEN HOME CACHE
-  // =====================================
-
-
-  async clearCitizenHome(
-    citizenId
-  ) {
-
-
-
-    await redisService.delete(
-
-      redisKeys.citizenHome(
-        citizenId
-      )
-
-    );
-
-
-
-    await redisService.delete(
-
-      redisKeys.citizenToday(
-        citizenId
-      )
-
-    );
-
+    return null;
 
   }
-
-
-
 
 }
 
