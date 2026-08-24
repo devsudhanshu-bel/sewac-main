@@ -9,7 +9,7 @@ exports.verifyCMADS = async (payload) => {
 
     // Find user first
     const user = await prisma.admins.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (!user) {
@@ -20,18 +20,14 @@ exports.verifyCMADS = async (payload) => {
     // WORKER LOGIN (Simple JWT)
     // ===============================
     if (user.role === "WORKER") {
-
-      const match = await bcrypt.compare(
-        password,
-        user.password_hash
-      );
+      const match = await bcrypt.compare(password, user.password_hash);
 
       if (!match) {
         throw new Error("Invalid email or password");
       }
 
       return {
-        admin: user
+        admin: user,
       };
     }
 
@@ -41,14 +37,11 @@ exports.verifyCMADS = async (payload) => {
 
     const response = await axios.post(
       "https://app-authentication-w65h.onrender.com/api/auth/login",
-      payload
+      payload,
     );
 
     return response.data;
-
   } catch (error) {
-
     throw error.response?.data || error;
-
   }
 };
