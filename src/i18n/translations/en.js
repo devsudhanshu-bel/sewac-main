@@ -333,7 +333,7 @@ vehicles: {
   },
 
   averageWeightChart: {
-    title: "Average Weight Generated (Line Graph)",
+    title: "Average Weight Generated (Bar Graph)",
 
     averageWasteGenerated:
       "Average waste generated:",
@@ -373,7 +373,7 @@ vehicles: {
   },
 
   telemetryDirectory: {
-    title: "Telemetry Directory",
+    title: "Vehicle Directory",
 
     searchPlaceholder:
       "Search by Vehicle ID",
