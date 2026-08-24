@@ -58,6 +58,10 @@ const languages = [
     label: "తెలుగు",
   },
   {
+    code: "ta",
+    label: "தமிழ்",
+  },
+  {
     code: "ma",
     label: "മലയാളം",
   },
@@ -906,18 +910,20 @@ export default function Header({
      MA -> മലയാളം
   ========================================================= */
 
-  const currentLanguageCode =
-    language === "en"
-      ? "EN"
-      : language === "kn"
-      ? "KN"
-      : language === "hi"
-      ? "HI"
-      : language === "te"
-      ? "TE"
-      : language === "ma"
-      ? "MA"
-      : "EN";
+const currentLanguageCode =
+  language === "en"
+    ? "EN"
+    : language === "kn"
+    ? "KN"
+    : language === "hi"
+    ? "HI"
+    : language === "te"
+    ? "TE"
+    : language === "ta"
+    ? "TA"
+    : language === "ma"
+    ? "MA"
+    : "EN";
 
   /* =========================================================
      DYNAMIC LOCATION FILTERS
