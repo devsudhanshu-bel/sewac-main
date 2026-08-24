@@ -33,6 +33,43 @@ const SOCKET_URL =
   window.location.origin;
 
 /* ============================================================
+   VEHICLE TRAIL COLORS
+============================================================ */
+
+const VEHICLE_TRAIL_COLORS = [
+  "#10B981", // Green
+  "#2563EB", // Blue
+  "#F59E0B", // Amber
+  "#DC2626", // Red
+  "#7C3AED", // Violet
+  "#DB2777", // Pink
+  "#0891B2", // Cyan
+  "#EA580C", // Orange
+  "#4F46E5", // Indigo
+  "#65A30D", // Lime
+];
+
+/* ============================================================
+   GET DETERMINISTIC VEHICLE COLOR
+============================================================ */
+
+function getVehicleTrailColor(vehicleId) {
+  const id = String(vehicleId || "");
+
+  let hash = 0;
+
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+
+    hash |= 0;
+  }
+
+  const index = Math.abs(hash) % VEHICLE_TRAIL_COLORS.length;
+
+  return VEHICLE_TRAIL_COLORS[index];
+}
+
+/* ============================================================
    VEHICLE ICON
 ============================================================ */
 
@@ -49,7 +86,9 @@ const createVehicleIcon = (online = true) =>
           border-radius:50%;
           background:${online ? "#16A34A" : "#94A3B8"};
           border:4px solid #FFFFFF;
-          box-shadow:0 4px 14px rgba(0,0,0,0.25);
+          box-shadow:
+            0 4px 14px
+            rgba(0,0,0,0.25);
           display:flex;
           align-items:center;
           justify-content:center;
@@ -111,7 +150,7 @@ function parseGeoJSON(value) {
 }
 
 /* ============================================================
-   GEOJSON COORDINATES
+   GEOJSON COORDINATE HELPERS
 ============================================================ */
 
 function isCoordinatePair(value) {
@@ -129,6 +168,7 @@ function normalizeCoordinatePair(pair) {
   }
 
   const first = Number(pair[0]);
+
   const second = Number(pair[1]);
 
   /*
@@ -160,6 +200,10 @@ function normalizeCoordinates(value) {
   return value;
 }
 
+/* ============================================================
+   NORMALIZE GEOJSON
+============================================================ */
+
 function normalizeGeoJSON(value) {
   const parsed = parseGeoJSON(value);
 
@@ -184,6 +228,7 @@ function normalizeGeoJSON(value) {
 
     return {
       ...parsed,
+
       geometry: normalizeGeoJSON(parsed.geometry),
     };
   }
@@ -201,6 +246,7 @@ function normalizeGeoJSON(value) {
   if (parsed.type && parsed.coordinates) {
     return {
       ...parsed,
+
       coordinates: normalizeCoordinates(parsed.coordinates),
     };
   }
@@ -213,6 +259,7 @@ function normalizeGeoJSON(value) {
 
       geometry: {
         type: "Polygon",
+
         coordinates: normalizeCoordinates(parsed),
       },
     };
@@ -287,7 +334,7 @@ function getBoundary(
 ============================================================ */
 
 /*
- * HB sends:
+ * Backend sends:
  *
  * latitude
  * longitude
@@ -301,6 +348,7 @@ function getBoundary(
 
 function gpsPosition(latitude, longitude) {
   const lat = Number(latitude);
+
   const lng = Number(longitude);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -319,7 +367,7 @@ function gpsPosition(latitude, longitude) {
 }
 
 /* ============================================================
-   MAP SIZE
+   MAP SIZE CONTROLLER
 ============================================================ */
 
 function MapSizeController() {
@@ -328,7 +376,9 @@ function MapSizeController() {
   useEffect(() => {
     const timers = [
       setTimeout(() => map.invalidateSize(), 100),
+
       setTimeout(() => map.invalidateSize(), 400),
+
       setTimeout(() => map.invalidateSize(), 800),
     ];
 
@@ -360,7 +410,9 @@ function BoundaryController({ boundary }) {
       if (bounds.isValid()) {
         map.fitBounds(bounds, {
           padding: [60, 60],
+
           maxZoom: 14,
+
           animate: true,
         });
       }
@@ -378,14 +430,19 @@ function BoundaryController({ boundary }) {
 
 export default function LiveMap({
   mapData,
+
   selectedDate,
+
   selectedCity,
+
   selectedZone,
+
   selectedDivision,
+
   selectedWard,
 }) {
   /* ==========================================================
-     INITIAL ROUTE DATA
+     INITIAL ROUTES
   ========================================================== */
 
   const initialRoutes = useMemo(
@@ -394,7 +451,7 @@ export default function LiveMap({
   );
 
   /* ==========================================================
-     VEHICLE STATE
+     VEHICLES
   ========================================================== */
 
   const [vehicles, setVehicles] = useState(() => {
@@ -455,7 +512,15 @@ export default function LiveMap({
     return initial;
   });
 
+  /* ==========================================================
+     TOAST
+  ========================================================== */
+
   const [toast, setToast] = useState(null);
+
+  /* ==========================================================
+     REFS
+  ========================================================== */
 
   const vehiclesRef = useRef(vehicles);
 
@@ -468,7 +533,7 @@ export default function LiveMap({
   const offlineTimerRef = useRef(null);
 
   /* ==========================================================
-     VEHICLE REF
+     UPDATE VEHICLE REF
   ========================================================== */
 
   useEffect(() => {
@@ -482,8 +547,11 @@ export default function LiveMap({
   const showToast = useCallback((title, message, type = "success") => {
     setToast({
       id: Date.now(),
+
       title,
+
       message,
+
       type,
     });
 
@@ -497,7 +565,7 @@ export default function LiveMap({
   }, []);
 
   /* ==========================================================
-     FILTER MATCHING
+     FILTER MATCH
   ========================================================== */
 
   const matchesFilters = useCallback(
@@ -505,13 +573,6 @@ export default function LiveMap({
       if (!heartbeat) {
         return false;
       }
-
-      /*
-       * Ward filtering.
-       *
-       * Backend heartbeat currently
-       * provides wardNo.
-       */
 
       if (selectedWard) {
         const selectedWardId =
@@ -542,7 +603,9 @@ export default function LiveMap({
     setVehicles((current) => {
       let changed = false;
 
-      const next = { ...current };
+      const next = {
+        ...current,
+      };
 
       Object.keys(next).forEach((vehicleId) => {
         const vehicle = next[vehicleId];
@@ -567,12 +630,6 @@ export default function LiveMap({
         const elapsed = now - startTime;
 
         const progress = Math.min(Math.max(elapsed / duration, 0), 1);
-
-        /*
-         * Smoothstep:
-         *
-         * 3t² - 2t³
-         */
 
         const eased = progress * progress * (3 - 2 * progress);
 
@@ -602,7 +659,7 @@ export default function LiveMap({
   }, []);
 
   /* ==========================================================
-     START INTERPOLATION
+     START ANIMATION
   ========================================================== */
 
   useEffect(() => {
@@ -642,9 +699,9 @@ export default function LiveMap({
 
     socketRef.current = socket;
 
-    /* ========================================================
+    /* --------------------------------------------------------
        CONNECT
-    ======================================================== */
+    -------------------------------------------------------- */
 
     socket.on("connect", () => {
       console.log("🔌 Live Maps Socket connected:", socket.id);
@@ -661,9 +718,9 @@ export default function LiveMap({
       });
     });
 
-    /* ========================================================
-       LIVE VEHICLE HEARTBEAT
-    ======================================================== */
+    /* --------------------------------------------------------
+       LIVE HEARTBEAT
+    -------------------------------------------------------- */
 
     socket.on("vehicle:heartbeat", (heartbeat) => {
       console.log("📡 LIVE VEHICLE UPDATE:", heartbeat);
@@ -747,25 +804,25 @@ export default function LiveMap({
       });
     });
 
-    /* ========================================================
-       CONNECT ERROR
-    ======================================================== */
+    /* --------------------------------------------------------
+       SOCKET ERROR
+    -------------------------------------------------------- */
 
     socket.on("connect_error", (error) => {
       console.error("❌ Live Maps Socket connection error:", error);
     });
 
-    /* ========================================================
+    /* --------------------------------------------------------
        DISCONNECT
-    ======================================================== */
+    -------------------------------------------------------- */
 
     socket.on("disconnect", (reason) => {
       console.warn("🔌 Live Maps Socket disconnected:", reason);
     });
 
-    /* ========================================================
+    /* --------------------------------------------------------
        CLEANUP
-    ======================================================== */
+    -------------------------------------------------------- */
 
     return () => {
       socket.off("connect");
@@ -790,12 +847,14 @@ export default function LiveMap({
   ]);
 
   /* ==========================================================
-     INITIAL DATA
+     INITIAL ROUTE DATA UPDATE
   ========================================================== */
 
   useEffect(() => {
     setVehicles((current) => {
-      const next = { ...current };
+      const next = {
+        ...current,
+      };
 
       initialRoutes.forEach((route) => {
         if (!route?.vehicleNumber) {
@@ -866,7 +925,9 @@ export default function LiveMap({
       setVehicles((current) => {
         let changed = false;
 
-        const next = { ...current };
+        const next = {
+          ...current,
+        };
 
         Object.keys(next).forEach((vehicleId) => {
           const vehicle = next[vehicleId];
@@ -1042,6 +1103,10 @@ export default function LiveMap({
           !w-full
         "
       >
+        {/* ==================================================
+            TILES
+        ================================================== */}
+
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
@@ -1096,21 +1161,28 @@ export default function LiveMap({
                 .filter(Boolean)
             : [];
 
+          /*
+           * Every vehicle gets
+           * a deterministic color.
+           */
+
+          const trailColor = getVehicleTrailColor(vehicle.vehicleId);
+
           return (
             <React.Fragment key={vehicle.vehicleId}>
-              {/* ========================================
-                    ROUTE TRAIL
-                ======================================== */}
+              {/* ==========================================
+                    VEHICLE TRAIL
+                ========================================== */}
 
               {routePositions.length > 1 && (
                 <Polyline
                   positions={routePositions}
                   pathOptions={{
-                    color: "#10B981",
+                    color: trailColor,
 
                     weight: 4,
 
-                    opacity: 0.45,
+                    opacity: 0.7,
 
                     lineCap: "round",
 
@@ -1119,19 +1191,23 @@ export default function LiveMap({
                 />
               )}
 
-              {/* ========================================
-                    VEHICLE
-                ======================================== */}
+              {/* ==========================================
+                    VEHICLE MARKER
+                ========================================== */}
 
               <Marker
                 position={position}
                 icon={createVehicleIcon(vehicle.online)}
               >
                 <Popup>
-                  <div className="min-w-[220px]">
+                  <div className="min-w-[230px]">
+                    {/* VEHICLE NAME */}
+
                     <div className="mb-2 text-base font-bold text-[#34475B]">
                       Live Vehicle Tracking
                     </div>
+
+                    {/* VEHICLE */}
 
                     <div className="text-sm text-[#60758B]">
                       Vehicle:{" "}
@@ -1140,12 +1216,36 @@ export default function LiveMap({
                       </strong>
                     </div>
 
+                    {/* TRAIL COLOR */}
+
+                    <div className="mt-2 flex items-center gap-2 text-sm text-[#60758B]">
+                      <span
+                        style={{
+                          display: "inline-block",
+
+                          width: "28px",
+
+                          height: "4px",
+
+                          borderRadius: "999px",
+
+                          backgroundColor: trailColor,
+                        }}
+                      />
+
+                      <span>Vehicle trail</span>
+                    </div>
+
+                    {/* WARD */}
+
                     <div className="mt-1 text-sm text-[#60758B]">
                       Ward:{" "}
                       <strong className="text-[#34475B]">
                         {vehicle.wardNo ?? "N/A"}
                       </strong>
                     </div>
+
+                    {/* STATUS */}
 
                     <div className="mt-1 text-sm text-[#60758B]">
                       Status:{" "}
@@ -1158,13 +1258,19 @@ export default function LiveMap({
                       </strong>
                     </div>
 
+                    {/* LATITUDE */}
+
                     <div className="mt-2 border-t border-[#E5EAF0] pt-2 text-xs text-[#8AA1BB]">
                       Latitude: {Number(vehicle.latitude).toFixed(6)}
                     </div>
 
+                    {/* LONGITUDE */}
+
                     <div className="text-xs text-[#8AA1BB]">
                       Longitude: {Number(vehicle.longitude).toFixed(6)}
                     </div>
+
+                    {/* LAST UPDATE */}
 
                     <div className="mt-1 text-xs text-[#8AA1BB]">
                       Last update:{" "}
@@ -1175,6 +1281,10 @@ export default function LiveMap({
                   </div>
                 </Popup>
               </Marker>
+
+              {/* ==========================================
+                    LIVE LOCATION DOT
+                ========================================== */}
 
               <CircleMarker
                 center={position}
@@ -1251,7 +1361,7 @@ export default function LiveMap({
       </div>
 
       {/* ======================================================
-          SUMMARY
+          LIVE SUMMARY
       ====================================================== */}
 
       <div
@@ -1290,7 +1400,7 @@ export default function LiveMap({
       </div>
 
       {/* ======================================================
-          TOAST
+          LIVE TOAST
       ====================================================== */}
 
       {toast && (
