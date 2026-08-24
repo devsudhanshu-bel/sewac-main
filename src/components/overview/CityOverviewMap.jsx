@@ -1040,17 +1040,6 @@ export default function CityMapOverview({
     selectedWard: headerSelectedWard,
   } = useFilters();
 
-  /*
-   * Keep component connected to
-   * FilterContext without maintaining
-   * another global filter system.
-   */
-
-  void headerSelectedCity;
-  void headerSelectedZone;
-  void headerSelectedDivision;
-  void headerSelectedWard;
-
   /* ==========================================================
      STATE
   ========================================================== */
@@ -2065,6 +2054,10 @@ export default function CityMapOverview({
             <RouteMap
               mapData={mapData}
               selectedDate={selectedDate}
+              selectedCity={headerSelectedCity}
+              selectedZone={headerSelectedZone}
+              selectedDivision={headerSelectedDivision}
+              selectedWard={headerSelectedWard}
             />
           </div>
         )}
