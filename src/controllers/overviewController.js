@@ -1,5 +1,9 @@
 const overviewService = require("../services/overviewService");
 
+// ============================================================
+// SUMMARY
+// ============================================================
+
 const getSummary = async (req, res) => {
   try {
     const data = await overviewService.getSummary(
@@ -24,9 +28,14 @@ const getSummary = async (req, res) => {
   }
 };
 
+// ============================================================
+// VEHICLE SUMMARY
+// ============================================================
+
 const getVehicleSummary = async (req, res) => {
   try {
     const data = await overviewService.getVehicleSummary(
+      req.query.date,
       req.query.cityId,
       req.query.zoneId,
       req.query.divisionId,
@@ -46,6 +55,10 @@ const getVehicleSummary = async (req, res) => {
     });
   }
 };
+
+// ============================================================
+// GENERATION TREND
+// ============================================================
 
 const getGenerationTrend = async (req, res) => {
   try {
@@ -71,11 +84,18 @@ const getGenerationTrend = async (req, res) => {
   }
 };
 
+// ============================================================
+// ROUTE MAP
+// ============================================================
+
 const getMapData = async (req, res) => {
   try {
     const data = await overviewService.getMapData(
+      req.query.date,
       req.query.cityId,
       req.query.zoneId,
+      req.query.divisionId,
+      req.query.wardId,
     );
 
     return res.status(200).json({
@@ -83,7 +103,7 @@ const getMapData = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.error("Overview map error:", error);
+    console.error("Overview route map error:", error);
 
     return res.status(500).json({
       success: false,
@@ -91,6 +111,10 @@ const getMapData = async (req, res) => {
     });
   }
 };
+
+// ============================================================
+// LEGACY FILTERS
+// ============================================================
 
 const getOverviewFilters = async (req, res) => {
   try {
@@ -110,10 +134,18 @@ const getOverviewFilters = async (req, res) => {
   }
 };
 
+// ============================================================
+// EXPORT
+// ============================================================
+
 module.exports = {
   getSummary,
+
   getVehicleSummary,
+
   getGenerationTrend,
+
   getMapData,
+
   getOverviewFilters,
 };

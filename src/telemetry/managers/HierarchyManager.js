@@ -15,25 +15,35 @@ class HierarchyManager {
     const dayTable = await metadataManager.ensureDayTable(tx, packetDate);
 
     // ===================================================
-    // 2. WEEK TABLE
+    // 2. HEARTBEAT TABLE
+    // ===================================================
+
+    const heartbeatTable = await metadataManager.ensureHeartbeatTable(
+      tx,
+      vehicleNumber,
+      packetDate,
+    );
+
+    // ===================================================
+    // 3. WEEK TABLE
     // ===================================================
 
     const weekTable = await metadataManager.ensureWeekTable(tx, packetDate);
 
     // ===================================================
-    // 3. MONTH TABLE
+    // 4. MONTH TABLE
     // ===================================================
 
     const monthTable = await metadataManager.ensureMonthTable(tx, packetDate);
 
     // ===================================================
-    // 4. YEAR TABLE
+    // 5. YEAR TABLE
     // ===================================================
 
     const yearTable = await metadataManager.ensureYearTable(tx, packetDate);
 
     // ===================================================
-    // 5. REGISTER COMPLETE HIERARCHY
+    // 6. REGISTER COMPLETE HIERARCHY
     // ===================================================
 
     await metadataManager.registerHierarchy(tx, {
@@ -43,17 +53,23 @@ class HierarchyManager {
       yearTable,
       vehicleNumber,
       vehicleTable,
+      heartbeatTable,
     });
 
     // ===================================================
-    // 6. RETURN HIERARCHY
+    // 7. RETURN HIERARCHY
     // ===================================================
 
     return {
       dayTable,
+
       weekTable,
+
       monthTable,
+
       yearTable,
+
+      heartbeatTable,
     };
   }
 }

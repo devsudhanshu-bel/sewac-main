@@ -125,14 +125,15 @@ exports.getUsers = async (req, res) => {
       take: pageSize,
 
       select: {
-        id: true,
-        full_name: true,
-        email: true,
-        phone_number: true,
-        role: true,
-        status: true,
-        created_at: true,
-      },
+  id: true,
+  full_name: true,
+  email: true,
+  phone_number: true,
+  role: true,
+  status: true,
+  created_at: true,
+  parent_admin_id: true,
+},
     });
 
     const totalPages =
