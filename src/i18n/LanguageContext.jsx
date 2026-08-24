@@ -195,6 +195,10 @@ export const LanguageProvider = ({ children }) => {
           name: "தமிழ்",
         },
         {
+          code: "ta",
+          name: "தமிழ்",    
+        },
+        {
           code: "ma",
           name: "മലയാളം",
         },
