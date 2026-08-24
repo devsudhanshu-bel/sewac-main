@@ -73,7 +73,7 @@ function normalizeGeoJSON(value) {
 }
 
 /* ============================================================
-   GET BOUNDARY
+   GET SELECTED BOUNDARY
 ============================================================ */
 
 function getBoundary(
@@ -134,6 +134,48 @@ function getBoundary(
 }
 
 /* ============================================================
+   GPS COORDINATE NORMALIZER
+============================================================ */
+
+/*
+ * IMPORTANT
+ *
+ * Your HB telemetry values are reversed:
+ *
+ * point.latitude  -> actual LONGITUDE
+ * point.longitude -> actual LATITUDE
+ *
+ * Leaflet expects:
+ *
+ * [LATITUDE, LONGITUDE]
+ *
+ * Therefore:
+ *
+ * actualLongitude = point.latitude
+ * actualLatitude  = point.longitude
+ *
+ * and finally:
+ *
+ * [actualLatitude, actualLongitude]
+ */
+
+function normalizeGpsPoint(point) {
+  if (!point) {
+    return null;
+  }
+
+  const actualLongitude = Number(point.latitude);
+
+  const actualLatitude = Number(point.longitude);
+
+  if (!Number.isFinite(actualLatitude) || !Number.isFinite(actualLongitude)) {
+    return null;
+  }
+
+  return [actualLatitude, actualLongitude];
+}
+
+/* ============================================================
    MAP SIZE CONTROLLER
 ============================================================ */
 
@@ -174,7 +216,10 @@ function RouteBounds({ routes, boundary }) {
 
   useEffect(() => {
     /*
-     * Boundary takes priority for initial geographic context.
+     * Boundary takes priority.
+     *
+     * IMPORTANT:
+     * GeoJSON boundary coordinates are NOT modified.
      */
 
     if (boundary) {
@@ -200,8 +245,8 @@ function RouteBounds({ routes, boundary }) {
     }
 
     /*
-     * If no boundary is available,
-     * fit to route GPS points.
+     * No boundary:
+     * fit to GPS route points.
      */
 
     if (!Array.isArray(routes) || routes.length === 0) {
@@ -216,11 +261,10 @@ function RouteBounds({ routes, boundary }) {
       }
 
       route.points.forEach((point) => {
-        const longitude = Number(point.longitude);
-        const latitude = Number(point.latitude);
+        const position = normalizeGpsPoint(point);
 
-        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-          bounds.extend([latitude, longitude]);
+        if (position) {
+          bounds.extend(position);
         }
       });
     });
@@ -318,6 +362,8 @@ const RouteMap = ({
   const defaultCenter = useMemo(() => {
     /*
      * Try selected boundary first.
+     *
+     * GeoJSON is left untouched.
      */
 
     if (selectedBoundary) {
@@ -338,6 +384,10 @@ const RouteMap = ({
 
     /*
      * Then use first GPS point.
+     *
+     * normalizeGpsPoint()
+     * performs the required
+     * coordinate inversion.
      */
 
     for (const route of routes) {
@@ -346,11 +396,10 @@ const RouteMap = ({
       }
 
       for (const point of route.points) {
-        const lng = Number(point.longitude);
-        const lat = Number(point.latitude);
+        const position = normalizeGpsPoint(point);
 
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          return [lat, lng];
+        if (position) {
+          return position;
         }
       }
     }
@@ -410,7 +459,7 @@ const RouteMap = ({
         "
       >
         {/* ==================================================
-            MAP
+            MAP TILES
         ================================================== */}
 
         <TileLayer
@@ -470,12 +519,19 @@ const RouteMap = ({
         {routes.map((route, routeIndex) => {
           const points = Array.isArray(route.points) ? route.points : [];
 
+          /*
+           * IMPORTANT:
+           *
+           * normalizeGpsPoint()
+           * returns:
+           *
+           * [actualLatitude,
+           *  actualLongitude]
+           */
+
           const positions = points
-            .map((point) => [Number(point.longitude), Number(point.latitude)])
-            .filter(
-              (position) =>
-                Number.isFinite(position[0]) && Number.isFinite(position[1]),
-            );
+            .map((point) => normalizeGpsPoint(point))
+            .filter((position) => Array.isArray(position));
 
           if (positions.length === 0) {
             return null;
@@ -514,7 +570,7 @@ const RouteMap = ({
               )}
 
               {/* ==========================================
-                    START
+                    START POSITION
                 ========================================== */}
 
               <CircleMarker
