@@ -7,9 +7,19 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+
+    "prisma:generate": "npm run prisma:generate:master && npm run prisma:generate:sewac && npm run prisma:generate:helper",
+
+    "prisma:generate:master": "prisma generate --schema=prisma/master_citizen.schema.prisma",
+    "prisma:generate:sewac": "prisma generate --schema=prisma/sewac/schema.prisma",
+    "prisma:generate:helper": "prisma generate --schema=prisma/helper/schema.prisma",
+
+    "db:pull:master": "prisma db pull --schema=prisma/master_citizen.schema.prisma",
     "db:pull:helper": "prisma db pull --schema=prisma/helper/schema.prisma",
-    "db:generate:helper": "prisma generate --schema=prisma/helper/schema.prisma",
     "db:pull:sewac": "prisma db pull --schema=prisma/sewac/schema.prisma",
+
+    "db:generate:master": "prisma generate --schema=prisma/master_citizen.schema.prisma",
+    "db:generate:helper": "prisma generate --schema=prisma/helper/schema.prisma",
     "db:generate:sewac": "prisma generate --schema=prisma/sewac/schema.prisma"
   },
   "keywords": [
