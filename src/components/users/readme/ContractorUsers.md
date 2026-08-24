@@ -1,129 +1,67 @@
 # ContractorUsers Component Documentation
 
-## 1. File Overview
+## File
+`src/components/users/ContractorUsers.jsx`
 
-**File:** `ContractorUsers.jsx`  
-**Location:** `src/components/users/ContractorUsers.jsx`
+## Purpose
+`ContractorUsers` manages Contractor/Admin Level 2 users.
 
-`ContractorUsers` provides the Contractor Users section of the Users module.
-
-It displays a header, search interface, add-contractor button, and a reusable `UserTable`.
-
----
-
-## 2. Dependencies
-
-The component imports:
-
+## API
+The component loads users from:
 ```text
-React
-Building2
-Plus
-Search
-UserTable
+GET /api/users
 ```
 
-`Building2`, `Plus`, and `Search` come from `lucide-react`.
-
----
-
-## 3. Contractor Data
-
-The component defines a local `contractorUsers` array.
-
-Each record contains:
-
+with:
 ```text
-id
-name
-email
-role
-lastLogin
-status
+type=ADMIN_LAYER_2
 ```
 
-The current implementation contains three sample contractor records.
-
----
-
-## 4. Header
-
-The section title is:
-
-```text
-Contractor Users
-```
-
-The badge is:
-
-```text
-Limited Access
-```
-
-The description is:
-
-```text
-Manage contractor accounts and permissions.
-```
-
-The `Building2` icon is used to represent contractor accounts.
-
----
-
-## 5. Search
-
-A search input is displayed with:
-
-```text
-Search contractors...
-```
-
-The current search field does not have local state or filtering behavior.
-
-It is currently a UI element.
-
----
-
-## 6. Add Contractor
-
-The component displays:
-
-```text
-Add Contractor
-```
-
-with a `Plus` icon.
-
-The button currently does not have an event handler.
-
----
-
-## 7. Reusable UserTable
-
-Instead of rendering its own table, `ContractorUsers` passes the contractor data to:
-
-```jsx
-<UserTable users={contractorUsers} />
-```
-
-This keeps the table rendering logic reusable.
-
----
-
-## 8. Component Flow
-
+## State
+The component manages:
 ```text
 contractorUsers
-      ↓
-ContractorUsers
-      ↓
-UserTable
-      ↓
-Contractor table
+search
+loading
+error
+currentPage
+showAddContractorModal
+showEditModal
+showDeleteModal
+selectedUser
 ```
 
----
+## Search
+Search input is used to filter the loaded contractor records.
 
-## 9. Summary
+## Pagination
+The component uses:
+```text
+10 rows per page
+```
 
-`ContractorUsers.jsx` is a wrapper/presentation component for contractor accounts. It provides the contractor-specific header and controls and delegates table rendering to `UserTable.jsx`.
+and provides previous/next page handling.
+
+## Create
+`AddUserModal` is opened with the contractor role. Successful creation refreshes the contractor list.
+
+## Edit
+The selected contractor is passed to `EditUserModal`.
+
+## Delete
+The selected contractor is passed to `DeleteUserModal`.
+
+## Localization
+The current language is mapped to:
+```text
+en-IN
+kn-IN
+hi-IN
+```
+for localized date formatting.
+
+## Status
+User status is normalized and translated before display.
+
+## Summary
+`ContractorUsers.jsx` is the backend-connected Contractor/Admin Level 2 user-management section with search, pagination, creation, editing, deletion, localization, and refresh handling.

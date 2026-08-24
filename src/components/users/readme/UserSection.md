@@ -1,146 +1,51 @@
 # UserSection Component Documentation
 
-## 1. File Overview
+## File
+`src/components/users/UserSection.jsx`
 
-**File:** `UserSection.jsx`  
-**Location:** `src/components/users/UserSection.jsx`
+## Purpose
+`UserSection` is a reusable layout component for configurable user-management sections.
 
-`UserSection` is a reusable section component for displaying different categories of users using the same layout.
-
-It accepts configuration through props instead of hard-coding a specific user type.
-
----
-
-## 2. Props
-
-The component receives:
-
-| Prop | Purpose |
-|---|---|
-| `title` | Section heading |
-| `description` | Supporting description |
-| `badge` | Access/status badge text |
-| `badgeColor` | Tailwind classes for the icon container |
-| `buttonColor` | Tailwind classes for the add button |
-| `buttonText` | Add button label |
-| `searchPlaceholder` | Search input placeholder |
-| `icon` | Icon component |
-| `users` | User data passed to `UserTable` |
-| `onAdd` | Handler executed by the add button |
-
----
-
-## 3. Dynamic Icon
-
-The icon is received through:
-
-```js
-icon: Icon
-```
-
-and rendered as:
-
-```jsx
-<Icon className="w-4 h-4" />
-```
-
-This allows different user sections to supply different icons.
-
----
-
-## 4. Header
-
-The header dynamically displays:
-
+## Inputs
+It accepts configuration for:
 ```text
 title
-badge
 description
-```
-
-This makes the component reusable for multiple user categories.
-
----
-
-## 5. Search Field
-
-The search input uses:
-
-```text
-searchPlaceholder
-```
-
-to determine its placeholder text.
-
-The current component does not manage search state or filtering.
-
----
-
-## 6. Add Button
-
-The button uses:
-
-```text
+badge
+badgeColor
 buttonColor
 buttonText
+searchPlaceholder
+icon
+users
 onAdd
 ```
 
-The click handler is:
+It also supports translation-key variants for the displayed text.
 
-```js
-onClick={onAdd}
+## Search
+The component maintains:
+```text
+searchTerm
 ```
 
-Therefore, the parent component controls what happens when a user clicks Add.
+and filters the supplied `users` array client-side.
 
----
+Searchable user values are combined into a normalized searchable representation.
 
-## 7. UserTable Integration
+## Add Action
+The Add button calls:
+```text
+onAdd
+```
 
-The component renders:
+so the parent owns the actual creation flow.
 
+## Table
+Filtered users are passed to:
 ```jsx
-<UserTable users={users} />
+<UserTable />
 ```
 
-This separates the section header/control UI from the actual user table.
-
----
-
-## 8. Reusability
-
-The intended structure is:
-
-```text
-UserSection
-├── Section Header
-├── Badge
-├── Search
-├── Add Button
-└── UserTable
-```
-
-The same component can therefore support different user groups by changing its props.
-
----
-
-## 9. Component Flow
-
-```text
-Parent
-  ↓
-UserSection props
-  ↓
-Header + Search + Add Button
-  ↓
-UserTable
-  ↓
-User Data
-```
-
----
-
-## 10. Summary
-
-`UserSection.jsx` is the reusable layout component for user-management sections. It receives configuration and user data through props and delegates table rendering to `UserTable.jsx`.
+## Summary
+`UserSection.jsx` provides the shared header, badge, search, add-button, and table layout for user sections while leaving data/action ownership to the parent.

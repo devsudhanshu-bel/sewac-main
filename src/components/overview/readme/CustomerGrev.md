@@ -1,288 +1,58 @@
-# CustomerGrev.jsx Documentation
+# CustomerGrev Component Documentation
 
-## 1. File Overview
-
-### File Name
-`CustomerGrev.jsx`
-
-### File Location
+## File
 `src/components/overview/CustomerGrev.jsx`
 
-### Purpose
+## Purpose
+`CustomerGrev` displays customer grievance/complaint locations on an interactive Leaflet map.
 
-`CustomerGrev` displays customer complaint locations on an interactive Leaflet map.
-
-It retrieves complaint location data from the backend and places complaint markers on the Bengaluru map.
-
----
-
-## 2. Backend Endpoint
-
-The component uses:
-
+## Data Source
+The component retrieves complaint-location data from:
 ```text
 /api/complaints-grev/locations
 ```
 
-The base URL is taken from:
+The response is normalized before it is displayed.
 
-```js
-VITE_API_BASE_URL
-```
+## Map
+The default map is centered around Bengaluru and uses Leaflet.
 
-or:
+The component:
+- Converts complaint coordinates to numeric latitude/longitude values.
+- Reads complaint boundary information when available.
+- Converts supported GeoJSON/boundary structures into drawable Leaflet paths.
+- Fits the map to the available complaint/boundary area.
 
-```js
-VITE_BACKEND_URL
-```
-
-with the deployed backend as the final fallback.
-
----
-
-## 3. Main Technologies
-
-The component uses:
-
+## Complaint Information
+The component prepares translated labels for:
 ```text
-React
-React Leaflet
-Leaflet
+Complaint
+Ticket
+Status
+Category
+Phone
+Description
+Address
+Latitude
+Longitude
 ```
 
-React hooks used include:
+A complaint marker can expose the corresponding complaint information to the user.
 
-```text
-useEffect
-useState
-```
+## Boundary Processing
+The component contains helpers for:
+- Parsing possible JSON geometry.
+- Converting GeoJSON to paths.
+- Normalizing boundary structures.
+- Testing whether complaint points fall inside polygons.
 
----
+This allows complaint visibility to be constrained by the available geographic boundary.
 
-## 4. Map Components
+## Localization
+All user-facing labels are obtained through `useLanguage`, including loading, error, complaint details, and unavailable-value messages.
 
-The component uses:
+## Loading and Error States
+The component fetches its data asynchronously and provides translated loading/error UI instead of silently failing.
 
-```text
-MapContainer
-TileLayer
-Marker
-Popup
-useMap
-```
-
-### MapContainer
-
-Creates the interactive Leaflet map.
-
-### TileLayer
-
-Displays the base map.
-
-### Marker
-
-Displays individual complaint locations.
-
-### Popup
-
-Displays complaint details when a marker is selected.
-
-### useMap
-
-Provides access to the Leaflet map instance.
-
----
-
-## 5. Bengaluru Boundary
-
-The component defines:
-
-```js
-BENGALURU_BOUNDS
-```
-
-using:
-
-```text
-South-West: 12.83, 77.40
-North-East: 13.15, 77.80
-```
-
-This boundary is used to:
-
-- Remove complaints outside Bengaluru.
-- Keep the map focused around Bengaluru.
-- Prevent unnecessary map movement outside the intended area.
-
----
-
-## 6. Default Map Position
-
-The default map center is:
-
-```text
-12.9715987
-77.5945627
-```
-
-which represents Bengaluru.
-
----
-
-## 7. Complaint Categories
-
-The component maps complaint category codes to readable labels.
-
-Supported categories include:
-
-```text
-MISSED_COLLECTION
-OVERFLOWING_BIN
-ILLEGAL_DUMPING
-STREET_LITTER
-DAMAGED_BIN
-OTHER
-```
-
-The labels displayed to users are:
-
-```text
-Missed Collection
-Overflowing Bin
-Illegal Dumping
-Street Litter
-Damaged Bin
-Other
-```
-
----
-
-## 8. Complaint Status Styles
-
-The component defines styling for complaint statuses:
-
-```text
-PENDING
-ASSIGNED
-IN_PROGRESS
-READY_FOR_VERIFICATION
-OTP_SENT
-CLOSED
-```
-
-These styles allow complaint state information to be displayed consistently.
-
----
-
-## 9. Data Fetching
-
-The component uses `useEffect` to request complaint locations from the backend.
-
-The general flow is:
-
-```text
-Component Mount
-      ↓
-Fetch Complaint Locations
-      ↓
-Backend API
-      ↓
-Complaint Location Data
-      ↓
-Filter Geographic Data
-      ↓
-Render Markers
-```
-
----
-
-## 10. Geographic Filtering
-
-Complaint records are checked against the Bengaluru map bounds.
-
-Locations outside the configured boundary are removed before marker rendering.
-
-This prevents invalid or unrelated coordinates from appearing on the Overview map.
-
----
-
-## 11. Complaint Markers
-
-Each valid complaint location is represented by a Leaflet marker.
-
-Selecting a marker opens a popup containing complaint-related information.
-
----
-
-## 12. Map Bounds
-
-The Bengaluru bounds also help keep the map focused on the intended operating region.
-
-The component uses Leaflet's map functionality to manage the displayed geographic area.
-
----
-
-## 13. Complaint Data Flow
-
-```text
-SEWAC Backend
-      ↓
-/api/complaints-grev/locations
-      ↓
-CustomerGrev.jsx
-      ↓
-Validate Coordinates
-      ↓
-Bengaluru Boundary Filter
-      ↓
-Leaflet Markers
-      ↓
-Complaint Popups
-```
-
----
-
-## 14. Error/Loading Handling
-
-The component maintains React state for fetched complaint data and performs the API request inside an effect.
-
-The UI is therefore driven by the latest backend complaint-location result available to the component.
-
----
-
-## 15. Integration With Overview
-
-`CustomerGrev` is imported by:
-
-```text
-CityOverviewMap.jsx
-```
-
-This makes complaint locations part of the Overview map experience.
-
-The relationship is:
-
-```text
-Overview
-   ↓
-CityOverviewMap
-   ↓
-CustomerGrev
-   ↓
-Complaint Locations
-```
-
----
-
-## 16. Summary
-
-`CustomerGrev.jsx` provides a geographical visualization of customer complaints.
-
-Its main responsibilities are:
-
-- Fetch complaint locations.
-- Filter locations to Bengaluru.
-- Render complaint markers.
-- Display complaint information in popups.
-- Provide complaint category/status information.
-- Integrate complaint visualization with the Overview map.
+## Summary
+`CustomerGrev.jsx` is the complaint-location map used in the Overview area. Its main responsibility is to retrieve grievance locations, normalize geographic data, display complaint markers, and present complaint details in the selected language.

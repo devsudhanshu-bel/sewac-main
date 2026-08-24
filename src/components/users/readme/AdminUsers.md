@@ -1,167 +1,61 @@
 # AdminUsers Component Documentation
 
-## 1. File Overview
+## File
+`src/components/users/AdminUsers.jsx`
 
-**File:** `AdminUsers.jsx`  
-**Location:** `src/components/users/AdminUsers.jsx`
+## Purpose
+`AdminUsers` manages and displays Admin Level 1 users.
 
-`AdminUsers` displays a management table for Admin Level 1 users.
-
-The current implementation uses a local static `adminUsers` array.
-
----
-
-## 2. Admin User Data
-
-The component defines sample admin records containing:
-
+## API
+The component loads Admin Level 1 users from:
 ```text
-id
-name
-email
-phone
-status
-createdAt
+GET /api/users
 ```
 
-The current list contains four sample users.
-
----
-
-## 3. Header
-
-The header identifies the section as:
-
+with:
 ```text
-Admin Level 1 Users
+type=ADMIN_LAYER_1
 ```
 
-and displays the badge:
-
+## State
+The component manages:
 ```text
-Full access to system
+adminUsers
+search
+loading
+error
+currentPage
+showAddAdminModal
+showEditModal
+showDeleteModal
+selectedUser
 ```
 
-The description explains that the section manages other Admin Level 1 users.
+## Search
+The loaded Admin users are filtered client-side using the current search value.
 
-The `ShieldCheck` icon is used for the section indicator.
-
----
-
-## 4. Search
-
-The component displays a search input with:
-
+## Pagination
+The component uses a fixed page size of:
 ```text
-Search by name, email or phone...
+10 rows
 ```
 
-The search field is currently presentational.
+It calculates filtered totals, page indexes, and paginated Admin records.
 
-There is no state or filtering logic attached to it in the current implementation.
+## Create
+`AddUserModal` is opened for Admin creation. After a successful create operation, the Admin list is refreshed.
 
----
+## Edit
+The selected user is passed to `EditUserModal`. On successful update, the list is refreshed.
 
-## 5. Add Admin Button
+## Delete
+The selected user is passed to `DeleteUserModal`. On successful deletion, the list is refreshed.
 
-The header includes:
+## Status
+Status values are normalized and translated into the application's language.
 
-```text
-Add Admin
-```
+## Dates
+Created dates are formatted using the current language/locale.
 
-with a `Plus` icon.
-
-The button is currently visual and does not have an `onClick` handler.
-
----
-
-## 6. Admin Table
-
-The table displays:
-
-```text
-SL.No
-Admin Name
-Email
-Phone Number
-Status
-Created At
-Actions
-```
-
-The rows are generated using:
-
-```js
-adminUsers.map(...)
-```
-
----
-
-## 7. Status
-
-Each user displays an `Active` status badge.
-
-The current styling uses a green badge.
-
----
-
-## 8. Actions
-
-Each row displays:
-
-```text
-Edit
-Delete
-```
-
-using:
-
-```text
-Pencil
-Trash2
-```
-
-icons.
-
-The buttons currently do not contain action handlers.
-
----
-
-## 9. Pagination Footer
-
-The footer displays:
-
-```text
-Showing 1 to 4 of 4 entries
-```
-
-and provides a rows-per-page select containing:
-
-```text
-10
-25
-50
-```
-
-The pagination controls are currently presentational.
-
----
-
-## 10. Data Flow
-
-```text
-adminUsers static array
-        ↓
-AdminUsers
-        ↓
-Map users into table rows
-        ↓
-Display admin information
-```
-
----
-
-## 11. Summary
-
-`AdminUsers.jsx` is the Admin Level 1 user-management table. The current implementation is UI-focused and uses local static data; search, add, edit, delete, and pagination controls do not currently contain functional handlers.
+## Summary
+`AdminUsers.jsx` is the backend-connected Admin Level 1 management section. It handles loading, search, pagination, create, edit, delete, status translation, and refresh behavior.

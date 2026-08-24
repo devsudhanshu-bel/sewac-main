@@ -1,376 +1,115 @@
 # ListOfWorkers Component Documentation
 
-## 1. File Overview
+## File
+`src/components/users2/ListOfWorkers.jsx`
 
-**File:** `ListOfWorkers.jsx`  
-**Location:** `src/components/users2/ListOfWorkers.jsx`
+## Purpose
+`ListOfWorkers` is the complete worker-management interface. Unlike the earlier static implementation, the current version is connected to the backend and supports worker creation, editing, deletion, searching, and pagination.
 
-`ListOfWorkers` is the worker-management component under the `users2` module.
-
-It displays a searchable list of workers, provides an Add Workers modal, and provides a per-worker action menu.
-
----
-
-## 2. Main Dependencies
-
-The component uses React hooks:
-
+## API
+Workers are loaded with:
 ```text
-useState
-useEffect
-useRef
+GET /api/users?type=WORKER&page=1&limit=100
 ```
 
-It also uses Lucide icons:
-
+Worker updates/deletion use:
 ```text
-PlusCircle
-Search
-MoreHorizontal
-Trash2
-ChevronDown
-X
+PUT /api/users/:id
+DELETE /api/users/:id
 ```
 
----
+Worker creation uses the user-management API through the shared Axios instance.
 
-## 3. Worker Data
-
-The current component uses a local static `workers` array.
-
-Each worker contains:
-
+## Authentication
+The component checks:
 ```text
-id
-name
-phone
-zone
-wards
+token
+authToken
+accessToken
 ```
+from localStorage/session authentication sources and sends a Bearer token when available.
 
-The current data contains seven worker records.
-
----
-
-## 4. State Management
-
-The component maintains three pieces of state.
-
-### Search
-
-```js
-const [search, setSearch] = useState("");
-```
-
-Stores the current search text.
-
-### Active Menu
-
-```js
-const [activeMenu, setActiveMenu] = useState(null);
-```
-
-Stores the worker whose action menu is currently open.
-
-### Show Modal
-
-```js
-const [showModal, setShowModal] = useState(false);
-```
-
-Controls the Add Worker modal.
-
----
-
-## 5. Outside-Click Handling
-
-The component creates:
-
-```js
-const menuRef = useRef(null);
-```
-
-An effect adds a `mousedown` event listener to the document.
-
-If the click occurs outside the active menu, the component executes:
-
-```js
-setActiveMenu(null);
-```
-
-This automatically closes the worker action menu.
-
----
-
-## 6. Search Filtering
-
-Workers are filtered by:
-
+## State
+The component manages:
 ```text
-Name
-Phone Number
-Zone
+workers
+search
+showModal
+showEditModal
+selectedWorker
+showDeleteModal
+workerToDelete
+loading
+saving
+deleting
+error
+successMessage
+currentPage
+rowsPerPage
 ```
 
-The search value is converted to lowercase and compared with the worker's name and zone.
-
-The phone number is checked directly using:
-
-```js
-worker.phone.includes(value)
-```
-
----
-
-## 7. Search Flow
-
+## Add Worker
+The Add Worker form contains:
 ```text
-User enters search
-      ↓
-setSearch()
-      ↓
-workers.filter()
-      ↓
-Name / Phone / Zone matching
-      ↓
-filteredWorkers
-      ↓
-Table
+full_name
+email
+phone_number
+password
 ```
 
----
+Submitting the form sends the worker creation request and refreshes the worker list after success.
 
-## 8. Header
-
-The component displays:
-
+## Edit Worker
+The selected worker is loaded into:
 ```text
-List of Workers
+editForm
 ```
 
-and a search field with:
-
+with:
 ```text
-Search by phone number, name or zone...
+full_name
+email
+phone_number
 ```
 
----
+The update operation sends the changed worker information to `/api/users/:id`.
 
-## 9. Add Workers Button
-
-The button displays:
-
+## Delete Worker
+Deletion is a two-step flow:
 ```text
-Add workers
+Worker action
+   ↓
+Confirmation modal
+   ↓
+DELETE /api/users/:id
+   ↓
+Refresh workers
 ```
 
-with a `PlusCircle` icon.
+## Search
+Workers can be filtered from the loaded list using the search value.
 
-Clicking the button executes:
-
-```js
-setShowModal(true)
-```
-
-which opens the Add Worker modal.
-
----
-
-## 10. Worker Table
-
-The table contains:
-
+## Pagination
+The component maintains:
 ```text
-Sl.No
-Worker Name
-Phone Number
-Zone Name
-Number of Wards under the Zone
-Actions
+currentPage
+rowsPerPage
 ```
 
-The rows are generated from:
-
-```js
-filteredWorkers.map(...)
-```
-
----
-
-## 11. Worker Action Menu
-
-Each worker has a three-dot action button.
-
-The button toggles:
-
-```js
-activeMenu
-```
-
-between the worker ID and `null`.
-
-The currently displayed menu contains:
-
+and derives:
 ```text
-Delete
+totalEntries
+totalPages
+startIndex
+endIndex
+paginatedWorkers
 ```
 
-with the `Trash2` icon.
+## Date Formatting
+Created dates are formatted using the `en-IN` locale with date and time.
 
-The Delete button is currently visual and does not contain deletion logic.
+## Loading and Errors
+The component displays loading, error, and success states while worker operations are in progress.
 
----
-
-## 12. Table Footer
-
-The footer displays:
-
-```text
-Showing 1 to {filteredWorkers.length} of {workers.length} entries
-```
-
-It also displays:
-
-```text
-Rows per page: 10
-```
-
-with a dropdown-style button.
-
-The rows-per-page control is currently visual.
-
----
-
-## 13. Add Worker Modal
-
-The modal appears when:
-
-```js
-showModal === true
-```
-
-The overlay uses:
-
-```text
-fixed
-inset-0
-z-[999]
-bg-black/25
-backdrop-blur-sm
-```
-
----
-
-## 14. Add Worker Fields
-
-The modal contains:
-
-### Name
-
-```text
-Enter worker name
-```
-
-### Phone Number
-
-```text
-Enter phone number
-```
-
-### Zone Name
-
-A button displays:
-
-```text
-Select Zone
-```
-
-with a `ChevronDown` icon.
-
----
-
-## 15. Modal Actions
-
-The modal has:
-
-```text
-Cancel
-Save
-```
-
-The Cancel button closes the modal using:
-
-```js
-setShowModal(false)
-```
-
-The Save button currently has no submission handler.
-
----
-
-## 16. Worker Data Flow
-
-```text
-workers static array
-       ↓
-Search input
-       ↓
-filteredWorkers
-       ↓
-Worker Table
-       ↓
-Action Menu
-```
-
----
-
-## 17. Add Worker Flow
-
-```text
-Add workers
-     ↓
-setShowModal(true)
-     ↓
-Add Worker Modal
-     ↓
-Name / Phone / Zone fields
-     ↓
-Cancel or Save
-```
-
----
-
-## 18. Current Implementation Scope
-
-The current component is primarily a frontend UI implementation.
-
-It currently does not contain:
-
-```text
-Backend worker API calls
-Database operations
-Worker creation submission
-Worker deletion API
-Zone API integration
-Server-side pagination
-```
-
-The worker list and form controls are currently represented locally.
-
----
-
-## 19. Summary
-
-`ListOfWorkers.jsx` is the worker-management UI under `users2`.
-
-It provides:
-
-- Worker listing
-- Search by name, phone, and zone
-- Add Worker modal
-- Worker action menu
-- Delete action UI
-- Rows-per-page UI
-- Outside-click handling for the action menu
-
-The current worker records are local static data and the Add/Delete operations are not yet connected to backend functionality.
+## Summary
+`ListOfWorkers.jsx` is the backend-connected worker management screen. It covers the full worker CRUD lifecycle plus search, pagination, authentication headers, and operation feedback.
