@@ -1,11 +1,12 @@
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Cell,
 } from "recharts";
 
 import { BarChart3 } from "lucide-react";
@@ -17,14 +18,78 @@ import api from "../../api/axios";
 import { useLanguage } from "../../i18n";
 
 /* ===========================================================
-   DEFAULT DATA
+   EMPTY DATA
 =========================================================== */
 
 const EMPTY_DATA = [];
 
 /* ===========================================================
-   CUSTOM X-AXIS TICK
-   Prevents zone labels from overlapping
+   ZONE BAR COLORS
+=========================================================== */
+
+const BAR_COLORS = [
+  "#6C2BFF",
+  "#8B5CF6",
+  "#A855F7",
+  "#7C3AED",
+  "#9333EA",
+  "#5B21B6",
+  "#4F46E5",
+  "#6366F1",
+];
+
+/* ===========================================================
+   FORMAT WASTE
+=========================================================== */
+
+/*
+|--------------------------------------------------------------------------
+| IMPORTANT
+|--------------------------------------------------------------------------
+|
+| Backend waste value is treated as KG.
+|
+| < 1000 KG
+|       ↓
+| 850.25 kg
+|
+| >= 1000 KG
+|       ↓
+| 3.24 Ton
+|
+|--------------------------------------------------------------------------
+*/
+
+function formatWaste(value) {
+  const kg = Number(value) || 0;
+
+  if (kg >= 1000) {
+    return {
+      value: Number((kg / 1000).toFixed(2)),
+
+      unit: "Ton",
+    };
+  }
+
+  return {
+    value: Number(kg.toFixed(2)),
+
+    unit: "kg",
+  };
+}
+
+/* ===========================================================
+   FORMAT WASTE TEXT
+=========================================================== */
+
+function formatWasteText(value) {
+  const formatted = formatWaste(value);
+
+  return `${formatted.value.toFixed(2)} ${formatted.unit}`;
+}
+
+/* ===========================================================
+   CUSTOM X AXIS
 =========================================================== */
 
 function CustomXAxisTick({ x, y, payload }) {
@@ -53,7 +118,7 @@ function CustomXAxisTick({ x, y, payload }) {
    CUSTOM TOOLTIP
 =========================================================== */
 
-function CustomTooltip({ active, payload, t, overallAverage }) {
+function CustomTooltip({ active, payload, t }) {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -64,48 +129,46 @@ function CustomTooltip({ active, payload, t, overallAverage }) {
     return null;
   }
 
+  const zoneName = String(data.zone || "Unknown Zone").replace("\n", " ");
+
   const waste = Number(data.waste) || 0;
 
-  const average = Number(overallAverage) || 0;
-
-  const difference = (waste - average).toFixed(2);
-
-  const isAboveAverage = waste >= average;
+  const vehicles = Number(data.vehicles) || 0;
 
   return (
     <div className="bg-white rounded-xl border border-[#ECECF3] shadow-xl px-4 py-3 min-w-[240px]">
-      <div className="space-y-2 text-[12px]">
-        {/* =====================================================
+      <div className="space-y-3 text-[12px]">
+        {/* =================================================
             ZONE NAME
-        ===================================================== */}
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
             {t("vehicles.averageWeightChart.zoneName", "Zone Name")}
           </span>
 
-          <span className="font-semibold text-right">
-            {String(data.zone || "-").replace("\n", " ")}
+          <span className="font-semibold text-right text-[#111827]">
+            {zoneName}
           </span>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             WASTE GENERATED
-        ===================================================== */}
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
             {t("vehicles.averageWeightChart.wasteGenerated", "Waste Generated")}
           </span>
 
-          <span className="font-semibold">
-            {waste.toFixed(2)} {t("units.ton", "Ton")}
+          <span className="font-semibold text-[#111827]">
+            {formatWasteText(waste)}
           </span>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             VEHICLES
-        ===================================================== */}
+        ================================================= */}
 
         <div className="flex justify-between gap-5">
           <span className="font-semibold text-[#374151]">
@@ -115,54 +178,7 @@ function CustomTooltip({ active, payload, t, overallAverage }) {
             )}
           </span>
 
-          <span className="font-semibold">{Number(data.vehicles || 0)}</span>
-        </div>
-
-        {/* =====================================================
-            DIFFERENCE FROM OVERALL AVERAGE
-        ===================================================== */}
-
-        <div className="flex justify-between gap-5">
-          <span className="font-semibold text-[#374151]">
-            {t("vehicles.averageWeightChart.difference", "Difference")}
-          </span>
-
-          <span
-            className={`font-semibold ${
-              isAboveAverage ? "text-green-600" : "text-red-500"
-            }`}
-          >
-            {isAboveAverage ? "+" : ""}
-            {difference} {t("units.ton", "Ton")}
-          </span>
-        </div>
-
-        {/* =====================================================
-            ABOVE / BELOW AVERAGE
-        ===================================================== */}
-
-        <div className="text-center pt-0.5">
-          <span
-            className={`font-semibold ${
-              isAboveAverage ? "text-green-600" : "text-red-500"
-            }`}
-          >
-            {isAboveAverage ? "(Above Average)" : "(Below Average)"}
-          </span>
-        </div>
-
-        {/* =====================================================
-            OVERALL AVERAGE
-        ===================================================== */}
-
-        <div className="border-t border-[#EEF0F4] pt-2 flex justify-between gap-5">
-          <span className="font-semibold text-[#374151]">
-            {t("vehicles.averageWeightChart.averageWaste", "Average Waste")}
-          </span>
-
-          <span className="font-semibold">
-            {average.toFixed(2)} {t("units.ton", "Ton")}
-          </span>
+          <span className="font-semibold text-[#111827]">{vehicles}</span>
         </div>
       </div>
     </div>
@@ -189,7 +205,7 @@ export default function AverageWeightChart() {
   const [error, setError] = useState("");
 
   /* =========================================================
-     LOAD REAL ZONE DATA
+     FETCH REAL ZONE DATA
   ========================================================= */
 
   useEffect(() => {
@@ -201,7 +217,15 @@ export default function AverageWeightChart() {
 
         setError("");
 
+        /*
+         * Current date
+         */
+
         const today = new Date().toISOString().split("T")[0];
+
+        /*
+         * Existing backend endpoint
+         */
 
         const response = await api.get("/api/vehicles/average-weight-by-zone", {
           params: {
@@ -217,6 +241,12 @@ export default function AverageWeightChart() {
 
         const zones = Array.isArray(data?.zones) ? data.zones : [];
 
+        /*
+         * =================================================
+         * FORMAT EVERY ZONE
+         * =================================================
+         */
+
         const formattedZones = zones.map((zone) => {
           const zoneName = String(
             zone?.zone || zone?.zoneName || "Unknown Zone",
@@ -224,6 +254,10 @@ export default function AverageWeightChart() {
 
           return {
             zone: zoneName.replace(" City Corporation", "\nCity Corporation"),
+
+            /*
+             * KEEP RAW KG VALUE
+             */
 
             waste: Number(zone?.waste) || 0,
 
@@ -234,6 +268,11 @@ export default function AverageWeightChart() {
         });
 
         setChartData(formattedZones);
+
+        /*
+         * Backend average is also
+         * treated as KG.
+         */
 
         setOverallAverage(Number(data?.averageWasteGenerated) || 0);
       } catch (err) {
@@ -275,12 +314,22 @@ export default function AverageWeightChart() {
 
     const maximum = Math.max(...values, 0);
 
+    /*
+     * Empty / zero case
+     */
+
     if (maximum <= 0) {
       return {
-        domain: [0, 100],
-        ticks: [0, 20, 40, 60, 80, 100],
+        domain: [0, 1000],
+
+        ticks: [0, 200, 400, 600, 800, 1000],
       };
     }
+
+    /*
+     * Keep approximately
+     * five intervals.
+     */
 
     const rawStep = maximum / 5;
 
@@ -316,6 +365,12 @@ export default function AverageWeightChart() {
   }, [chartData]);
 
   /* =========================================================
+     HEADER AVERAGE DISPLAY
+  ========================================================= */
+
+  const formattedAverage = formatWaste(overallAverage);
+
+  /* =========================================================
      RENDER
   ========================================================= */
 
@@ -325,9 +380,7 @@ export default function AverageWeightChart() {
           HEADER
       ===================================================== */}
 
-      <div className="flex items-center justify-between px-7 py-5 border-b border-[#F5F6FA]">
-        {/* ================= LEFT ================= */}
-
+      <div className="px-7 py-5 border-b border-[#F5F6FA]">
         <div className="min-w-0">
           <div className="flex items-start gap-2.5">
             <BarChart3
@@ -339,12 +392,14 @@ export default function AverageWeightChart() {
             <h2 className="text-[16px] font-semibold text-[#111827] uppercase tracking-[-0.01em] leading-6">
               {t(
                 "vehicles.averageWeightChart.title",
-                "Average Weight Generated (Line Graph)",
+                "Average Weight Generated (Bar Graph)",
               )}
             </h2>
           </div>
 
-          {/* ================= AVERAGE ================= */}
+          {/* =================================================
+              AVERAGE
+          ================================================= */}
 
           <p className="mt-2.5 text-[14px] font-semibold text-[#1E3A8A]">
             {t(
@@ -353,7 +408,7 @@ export default function AverageWeightChart() {
             )}
 
             <span className="ml-1.5 text-[#233876]">
-              {overallAverage.toFixed(2)} {t("units.ton", "Ton")}
+              {formattedAverage.value.toFixed(2)} {formattedAverage.unit}
             </span>
           </p>
         </div>
@@ -367,7 +422,7 @@ export default function AverageWeightChart() {
         <p className="text-[13px] font-semibold text-[#233876] mb-5">
           {t(
             "vehicles.averageWeightChart.weightOfWaste",
-            "Weight of Waste (Ton)",
+            "Weight of Waste (kg)",
           )}
         </p>
 
@@ -412,13 +467,13 @@ export default function AverageWeightChart() {
         )}
 
         {/* =================================================
-            CHART
+            BAR GRAPH
         ================================================= */}
 
         {!loading && !error && chartData.length > 0 && (
           <div className="h-[325px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <BarChart
                 data={chartData}
                 margin={{
                   top: 12,
@@ -426,16 +481,17 @@ export default function AverageWeightChart() {
                   left: -8,
                   bottom: 10,
                 }}
+                barCategoryGap="25%"
               >
-                {/* =================================================
+                {/* =======================================
                       GRID
-                  ================================================= */}
+                  ======================================= */}
 
                 <CartesianGrid stroke="#F2F4F7" vertical={false} />
 
-                {/* =================================================
+                {/* =======================================
                       X AXIS
-                  ================================================= */}
+                  ======================================= */}
 
                 <XAxis
                   dataKey="zone"
@@ -447,9 +503,9 @@ export default function AverageWeightChart() {
                   tick={<CustomXAxisTick />}
                 />
 
-                {/* =================================================
+                {/* =======================================
                       Y AXIS
-                  ================================================= */}
+                  ======================================= */}
 
                 <YAxis
                   domain={yAxisConfig.domain}
@@ -463,45 +519,36 @@ export default function AverageWeightChart() {
                   axisLine={false}
                 />
 
-                {/* =================================================
+                {/* =======================================
                       TOOLTIP
-                  ================================================= */}
+                  ======================================= */}
 
                 <Tooltip
                   cursor={{
-                    stroke: "#6C2BFF",
-                    strokeWidth: 1.5,
-                    strokeDasharray: "4 4",
+                    fill: "rgba(108,43,255,0.05)",
                   }}
-                  content={
-                    <CustomTooltip t={t} overallAverage={overallAverage} />
-                  }
+                  content={<CustomTooltip t={t} />}
                 />
 
-                {/* =================================================
-                      WASTE LINE
-                  ================================================= */}
+                {/* =======================================
+                      BARS
+                  ======================================= */}
 
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="waste"
-                  stroke="#6C2BFF"
-                  strokeWidth={2.8}
-                  dot={{
-                    r: 5,
-                    strokeWidth: 3,
-                    fill: "#FFFFFF",
-                    stroke: "#6C2BFF",
-                  }}
-                  activeDot={{
-                    r: 7,
-                    fill: "#6C2BFF",
-                    stroke: "#FFFFFF",
-                    strokeWidth: 3,
-                  }}
-                  animationDuration={1200}
-                />
-              </LineChart>
+                  name="Waste Generated"
+                  radius={[7, 7, 0, 0]}
+                  maxBarSize={65}
+                  animationDuration={900}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`zone-bar-${index}`}
+                      fill={BAR_COLORS[index % BAR_COLORS.length]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         )}
@@ -512,12 +559,12 @@ export default function AverageWeightChart() {
 
         <div className="flex justify-center items-center gap-10 mt-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-5 h-[3px] bg-[#6C2BFF] rounded-full shrink-0" />
+            <div className="w-5 h-3 bg-[#6C2BFF] rounded-[3px] shrink-0" />
 
             <span className="text-[12px] font-medium text-[#233876]">
               {t(
                 "vehicles.averageWeightChart.wasteGeneratedLegend",
-                "Waste Generated (Ton)",
+                "Waste Generated",
               )}
             </span>
           </div>
