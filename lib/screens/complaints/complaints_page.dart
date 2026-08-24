@@ -46,11 +46,46 @@ class ComplaintsPage extends StatefulWidget {
 class _ComplaintsPageState extends State<ComplaintsPage>
     with TickerProviderStateMixin {
 
+  Future<void> _recoverLostImage() async {
+    try {
+      final LostDataResponse response =
+      await _picker.retrieveLostData();
+
+      if (response.isEmpty) return;
+
+      final List<XFile>? files = response.files;
+
+      if (files != null && files.isNotEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _selectedPhoto = File(files.first.path);
+        });
+
+        _showSnackBar(
+          "Photo recovered successfully",
+          isError: false,
+        );
+      } else if (response.exception != null) {
+        debugPrint(
+          "Lost image error: ${response.exception}",
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        "Failed to recover lost image: $e",
+      );
+    }
+  }
+
   final ComplaintService _complaintService = ComplaintService();
 
   List<ComplaintModel> _complaints = [];
 
   bool _isLoadingComplaints = true;
+
+  Timer? _complaintRefreshTimer;
+  bool _isRefreshingComplaints = false;
 
   static const double _bottomNavOffset = 96;
 
@@ -124,6 +159,9 @@ class _ComplaintsPageState extends State<ComplaintsPage>
     _staggerController.forward();
 
     _loadComplaints();
+    _startAutoRefresh();
+
+    _recoverLostImage();
 
     if (_cachedAddress == null) {
       _refreshLocation();
@@ -136,6 +174,8 @@ class _ComplaintsPageState extends State<ComplaintsPage>
 
   @override
   void dispose() {
+    _complaintRefreshTimer?.cancel();
+
     _descriptionController.dispose();
 
     _descriptionFocusNode.removeListener(
@@ -161,109 +201,119 @@ class _ComplaintsPageState extends State<ComplaintsPage>
     }
   }
 
-Future<void> _loadComplaints() async {
-  try {
-    final complaints = await _complaintService.getComplaints();
-
-    final updatedComplaints = await Future.wait(
-      complaints.map((complaint) async {
-        final ticketNumber = complaint.ticketNumber;
-
-        if (ticketNumber == null ||
-            ticketNumber.isEmpty ||
-            complaint.status.toUpperCase() != "OTP_SENT") {
-          return complaint;
-        }
-
-        try {
-          final verification =
-              await _complaintService.getComplaintVerification(
-            ticketNumber,
-          );
-
-          final code = verification["verification_code"] ??
-              verification["verificationCode"];
-
-          final expiresAtRaw =
-              verification["verification_expires_at"] ??
-              verification["verificationExpiresAt"];
-
-          return complaint.copyWith(
-            verificationCode: code?.toString(),
-            verificationExpiresAt: expiresAtRaw != null
-                ? DateTime.tryParse(expiresAtRaw.toString())
-                : null,
-          );
-        } catch (_) {
-          return complaint;
-        }
-      }),
+  void _startAutoRefresh() {
+    _complaintRefreshTimer?.cancel();
+    _complaintRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+          (_) => _refreshComplaints(silent: true),
     );
-
-    if (!mounted) return;
-
-    setState(() {
-      _complaints = updatedComplaints;
-      _isLoadingComplaints = false;
-    });
-  } catch (_) {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingComplaints = false;
-    });
-
-    _showSnackBar("Unable to load complaints.");
   }
-}
+
+  Future<void> _refreshComplaints({bool silent = false}) async {
+    if (_isRefreshingComplaints) return;
+
+    _isRefreshingComplaints = true;
+
+    try {
+      final complaints = await _complaintService.getComplaints();
+
+      final updatedComplaints = await Future.wait(
+        complaints.map((complaint) async {
+          final ticketNumber = complaint.ticketNumber;
+
+          if (ticketNumber == null ||
+              ticketNumber.isEmpty ||
+              complaint.status.toUpperCase() != "OTP_SENT") {
+            return complaint;
+          }
+
+          try {
+            final verificationCode =
+            await _complaintService.getComplaintVerification(
+              ticketNumber,
+            );
+
+            if (verificationCode?.isEmpty ?? true) {
+              return complaint;
+            }
+
+            return complaint.copyWith(
+              verificationCode: verificationCode,
+            );
+          } catch (_) {
+            return complaint;
+          }
+        }),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _complaints = updatedComplaints;
+        _isLoadingComplaints = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingComplaints = false;
+      });
+
+      if (!silent) {
+        _showSnackBar("Unable to load complaints.");
+      }
+    } finally {
+      _isRefreshingComplaints = false;
+    }
+  }
+
+  Future<void> _loadComplaints() async {
+    await _refreshComplaints(silent: false);
+  }
 
   Future<void> _refreshLocation({
     bool forceRefresh = false,
   }) async {
-
     if (_isLocating) return;
 
-    if (!forceRefresh &&
-        _cachedAddress != null) {
+    if (!forceRefresh && _cachedAddress != null) {
+      if (!mounted) return;
 
       setState(() {
-        _currentLocation =
-        _cachedAddress!;
-
+        _currentLocation = _cachedAddress!;
         _latitude = _cachedLat;
-
         _longitude = _cachedLng;
-
         _isLocating = false;
       });
 
       return;
     }
 
+    if (!mounted) return;
+
     setState(() {
       _isLocating = true;
-
-      _currentLocation =
-      "Fetching your current location...";
+      _currentLocation = "Fetching your current location...";
     });
 
-    _pulseController.repeat(
-      reverse: true,
-    );
+    _pulseController.repeat(reverse: true);
 
     try {
-
-      bool enabled =
-      await Geolocator
-          .isLocationServiceEnabled();
+      final bool enabled =
+      await Geolocator.isLocationServiceEnabled();
 
       if (!enabled) {
+        if (!mounted) return;
+
         setState(() {
           _currentLocation =
           "Please enable location services.";
-
           _isLocating = false;
         });
+
+        _showSnackBar(
+          "Please enable location services.",
+        );
 
         return;
       }
@@ -271,87 +321,143 @@ Future<void> _loadComplaints() async {
       LocationPermission permission =
       await Geolocator.checkPermission();
 
-      if (permission ==
-          LocationPermission.denied ||
-          permission ==
-              LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied) {
+        if (!mounted) return;
 
         setState(() {
           _currentLocation =
-          "Location permission unavailable.";
-
+          "Location permission denied.";
           _isLocating = false;
         });
+
+        _showSnackBar(
+          "Please allow location permission.",
+        );
 
         return;
       }
 
-      Position position =
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+
+        setState(() {
+          _currentLocation =
+          "Location permission permanently denied.";
+          _isLocating = false;
+        });
+
+        _showSnackBar(
+          "Please enable location permission from Settings.",
+        );
+
+        return;
+      }
+
+      final Position position =
       await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
+          accuracy: LocationAccuracy.high,
         ),
       );
 
-      _latitude = position.latitude;
+      final double latitude = position.latitude;
+      final double longitude = position.longitude;
 
-      _longitude = position.longitude;
-
-      final placemarks =
-      await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
+      _latitude = latitude;
+      _longitude = longitude;
 
       String address;
 
-      if (placemarks.isNotEmpty) {
+      try {
+        final List<Placemark> placemarks =
+        await placemarkFromCoordinates(
+          latitude,
+          longitude,
+        );
 
-        final p = placemarks.first;
+        if (placemarks.isNotEmpty) {
+          final Placemark p = placemarks.first;
 
-        address = [
-          p.street,
-          p.subLocality,
-          p.locality,
-        ]
-            .where(
-              (e) =>
-          e != null &&
-              e.isNotEmpty,
-        )
-            .join(", ");
+          final parts = <String>[
+            if (p.street != null && p.street!.trim().isNotEmpty)
+              p.street!.trim(),
 
-      } else {
+            if (p.subLocality != null &&
+                p.subLocality!.trim().isNotEmpty)
+              p.subLocality!.trim(),
+
+            if (p.locality != null &&
+                p.locality!.trim().isNotEmpty)
+              p.locality!.trim(),
+
+            if (p.administrativeArea != null &&
+                p.administrativeArea!.trim().isNotEmpty)
+              p.administrativeArea!.trim(),
+          ];
+
+          address = parts.join(", ");
+
+          if (address.trim().isEmpty) {
+            address =
+            "${latitude.toStringAsFixed(6)}, "
+                "${longitude.toStringAsFixed(6)}";
+          }
+        } else {
+          address =
+          "${latitude.toStringAsFixed(6)}, "
+              "${longitude.toStringAsFixed(6)}";
+        }
+      } catch (e) {
+        debugPrint(
+          "Reverse geocoding failed: $e",
+        );
 
         address =
-        "${position.latitude}, ${position.longitude}";
+        "${latitude.toStringAsFixed(6)}, "
+            "${longitude.toStringAsFixed(6)}";
       }
 
       _cachedAddress = address;
+      _cachedLat = latitude;
+      _cachedLng = longitude;
 
-      _cachedLat = position.latitude;
-
-      _cachedLng = position.longitude;
+      if (!mounted) return;
 
       setState(() {
         _currentLocation = address;
-
+        _latitude = latitude;
+        _longitude = longitude;
         _isLocating = false;
       });
 
-    } catch (_) {
+      debugPrint("LOCATION SUCCESS");
+      debugPrint("Latitude: $latitude");
+      debugPrint("Longitude: $longitude");
+      debugPrint("Address: $address");
+
+    } catch (e) {
+      debugPrint(
+        "LOCATION ERROR: $e",
+      );
+
+      if (!mounted) return;
 
       setState(() {
         _currentLocation =
         "Unable to fetch location";
-
         _isLocating = false;
       });
 
+      _showSnackBar(
+        "Unable to get your current location.",
+      );
+
     } finally {
-
       _pulseController.stop();
-
       _pulseController.reset();
     }
   }
@@ -360,10 +466,14 @@ Future<void> _loadComplaints() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        imageQuality: 80,
+        imageQuality: 75,
+        maxWidth: 1280,
+        maxHeight: 1280,
       );
 
       if (image == null) return;
+
+      if (!mounted) return;
 
       setState(() {
         _selectedPhoto = File(image.path);
@@ -375,9 +485,13 @@ Future<void> _loadComplaints() async {
             : "Photo selected successfully",
         isError: false,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint("Image picker error: $e");
+
+      if (!mounted) return;
+
       _showSnackBar(
-        "Unable to open ${source.name}",
+        "Unable to open ${source.name}: $e",
       );
     }
   }
@@ -506,30 +620,24 @@ Future<void> _loadComplaints() async {
   }
 
   Future<void> _showSuccessBottomSheet() async {
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor:
-      Colors.transparent,
-      barrierColor:
-      Colors.black.withValues(
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(
         alpha: 0.65,
       ),
-      builder: (_) =>
-      const ComplaintSuccessBottomSheet(),
+      builder: (_) => const ComplaintSuccessBottomSheet(),
     );
   }
 
   void _navigateToViewAllPage() {
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            ViewAllComplaintsPage(
-              complaints: _complaints,
-            ),
+        builder: (_) => ViewAllComplaintsPage(
+          complaints: _complaints,
+        ),
       ),
     );
   }
@@ -565,141 +673,133 @@ Future<void> _loadComplaints() async {
             padding: EdgeInsets.only(
               bottom: bottomInset,
             ),
-            child: SingleChildScrollView(
-              physics:
-              const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: _bottomNavOffset,
-              ),
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
+            child: RefreshIndicator(
+              onRefresh: () => _refreshComplaints(silent: false),
+              color: const Color(0xFFC084FC),
+              backgroundColor: const Color(0xFF3B0B68),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: _bottomNavOffset,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
 
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 0,
-                    child: _buildHeader(),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 1,
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle(
-                          "Add Photo",
-                        ),
-                        const SizedBox(
-                          height: 12,
-                        ),
-                        _buildPhotoUploadCard(),
-                      ],
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 0,
+                      child: _buildHeader(),
                     ),
-                  ),
 
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 2,
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle(
-                          "Category",
-                        ),
-                        const SizedBox(
-                          height: 12,
-                        ),
-                        _buildCategoryDropdown(),
-                      ],
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle(
+                            "Add Photo",
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          _buildPhotoUploadCard(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 3,
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle(
-                          "Description",
-                        ),
-                        const SizedBox(
-                          height: 12,
-                        ),
-                        _buildDescriptionField(),
-                      ],
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle(
+                            "Category",
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          _buildCategoryDropdown(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 4,
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle(
-                          "Location",
-                        ),
-                        const SizedBox(
-                          height: 12,
-                        ),
-                        _buildLocationCard(),
-                      ],
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle(
+                            "Description",
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          _buildDescriptionField(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 28),
 
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 5,
-                    child:
-                    _buildSubmitButton(),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  _StaggeredAnimatedItem(
-                    controller:
-                    _staggerController,
-                    index: 6,
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        _buildRecentComplaintsHeader(),
-                        const SizedBox(
-                          height: 16,
-                        ),
-                        _buildRecentComplaintsList(),
-                      ],
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle(
+                            "Location",
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          _buildLocationCard(),
+                        ],
+                      ),
                     ),
-                  ),
 
-                ],
+                    const SizedBox(height: 32),
+
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 5,
+                      child: _buildSubmitButton(),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    _StaggeredAnimatedItem(
+                      controller: _staggerController,
+                      index: 6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildRecentComplaintsHeader(),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          _buildRecentComplaintsList(),
+                        ],
+                      ),
+                    ),
+
+                  ],
+                ),
               ),
             ),
           ),
@@ -1598,10 +1698,10 @@ class _HomeComplaintCardItem extends StatelessWidget {
     return "${dt.day} ${months[dt.month - 1]} ${dt.year} • $hour:$minute $ampm";
   }
 
-bool get showVerificationCode =>
-    item.status.toUpperCase() == "OTP_SENT" &&
-        item.verificationCode != null &&
-        item.verificationCode!.isNotEmpty;
+  bool get showVerificationCode =>
+      item.status.toUpperCase() == "OTP_SENT" &&
+          item.verificationCode != null &&
+          item.verificationCode!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1774,63 +1874,86 @@ class _ViewAllComplaintsPageState
   late List<ComplaintModel> _complaints;
   final ComplaintService _complaintService = ComplaintService();
 
+  Timer? _viewAllRefreshTimer;
+  bool _isRefreshingViewAll = false;
+
   @override
   void initState() {
     super.initState();
     _complaints = List.from(widget.complaints);
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _viewAllRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _viewAllRefreshTimer?.cancel();
+    _viewAllRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+          (_) => _silentRefresh(),
+    );
+  }
+
+  Future<void> _silentRefresh() async {
+    if (_isRefreshingViewAll) return;
+
+    _isRefreshingViewAll = true;
+
+    try {
+      final complaints = await _loadComplaintsWithVerification();
+
+      if (!mounted) return;
+
+      setState(() {
+        _complaints = complaints;
+      });
+    } catch (_) {
+      // Keep existing list on failure
+    } finally {
+      _isRefreshingViewAll = false;
+    }
   }
 
   Future<void> _handleRefresh() async {
-  try {
-    final complaints =
-        await _loadComplaintsWithVerification();
-
-    if (!mounted) return;
-
-    setState(() {
-      _complaints = complaints;
-    });
-  } catch (_) {
-    // Keep existing complaints if refresh fails.
+    await _silentRefresh();
   }
-}
 
   Future<List<ComplaintModel>> _loadComplaintsWithVerification() async {
-  final complaints = await _complaintService.getComplaints();
+    final complaints = await _complaintService.getComplaints();
 
-  return Future.wait(
-    complaints.map((complaint) async {
-      final ticketNumber = complaint.ticketNumber;
+    return Future.wait(
+      complaints.map((complaint) async {
+        final ticketNumber = complaint.ticketNumber;
 
-      if (ticketNumber == null ||
-          ticketNumber.isEmpty ||
-          complaint.status.toUpperCase() != "OTP_SENT") {
-        return complaint;
-      }
+        if (ticketNumber == null ||
+            ticketNumber.isEmpty ||
+            complaint.status.toUpperCase() != "OTP_SENT") {
+          return complaint;
+        }
 
-      try {
-        final verification =
-            await _complaintService.getComplaintVerification(ticketNumber);
+        try {
+          final verificationCode =
+          await _complaintService.getComplaintVerification(
+            ticketNumber,
+          );
 
-        final code = verification["verification_code"] ??
-            verification["verificationCode"];
+          if (verificationCode?.isEmpty ?? true) {
+            return complaint;
+          }
 
-        final expiresAtRaw =
-            verification["verification_expires_at"] ??
-            verification["verificationExpiresAt"];
-
-        return complaint.copyWith(
-          verificationCode: code?.toString(),
-          verificationExpiresAt: expiresAtRaw != null
-              ? DateTime.tryParse(expiresAtRaw.toString())
-              : null,
-        );
-      } catch (_) {
-        return complaint;
-      }
-    }),
-  );
-}
+          return complaint.copyWith(
+            verificationCode: verificationCode,
+          );
+        } catch (_) {
+          return complaint;
+        }
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2026,10 +2149,10 @@ class _ViewAllComplaintCardItem extends StatelessWidget {
     }
   }
 
-bool get showVerificationCode =>
-    item.status.toUpperCase() == "OTP_SENT" &&
-        item.verificationCode != null &&
-        item.verificationCode!.isNotEmpty;
+  bool get showVerificationCode =>
+      item.status.toUpperCase() == "OTP_SENT" &&
+          item.verificationCode != null &&
+          item.verificationCode!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
