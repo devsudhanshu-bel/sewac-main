@@ -14,20 +14,30 @@ import SewacLogo from "../../assets/sewac_logo.svg";
 
 /* =========================================================
    LANGUAGE OPTIONS
+
+   IMPORTANT:
+   Language names are intentionally NOT translated.
+
+   English  -> English
+   Kannada  -> ಕನ್ನಡ
+   Hindi    -> हिंदी
+
+   These labels must always remain in their own language,
+   regardless of the currently selected application language.
 ========================================================= */
 
 const languages = [
   {
     code: "en",
-    translationKey: "language.english",
+    label: "English",
   },
   {
     code: "kn",
-    translationKey: "language.kannada",
+    label: "ಕನ್ನಡ",
   },
   {
     code: "hi",
-    translationKey: "language.hindi",
+    label: "हिंदी",
   },
 ];
 
@@ -216,26 +226,26 @@ function Dropdown({
         <div
           ref={menuRef}
           className="
-    absolute
-    top-11
-    left-0
-    w-full
-    max-h-[315px]
+            absolute
+            top-11
+            left-0
+            w-full
+            max-h-[315px]
 
-    overflow-x-auto
-    overflow-y-auto
+            overflow-x-auto
+            overflow-y-auto
 
-    rounded-2xl
-    bg-white
-    border
-    border-gray-100
-    shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-    z-[10000]
+            rounded-2xl
+            bg-white
+            border
+            border-gray-100
+            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+            z-[10000]
 
-    scrollbar-thin
-    scrollbar-thumb-violet-300
-    scrollbar-track-transparent
-  "
+            scrollbar-thin
+            scrollbar-thumb-violet-300
+            scrollbar-track-transparent
+          "
         >
           {options.length === 0 ? (
             <div
@@ -278,7 +288,9 @@ function Dropdown({
                     transition
                   "
                 >
-                  <span className="whitespace-nowrap min-w-max">{label}</span>
+                  <span className="whitespace-nowrap min-w-max">
+                    {label}
+                  </span>
 
                   {isSelected && (
                     <Check
@@ -543,7 +555,9 @@ export default function Header({
   const handleLogout = () => {
     sessionStorage.clear();
 
-    window.location.replace("https://app-authentication-frontend.onrender.com");
+    window.location.replace(
+      "https://app-authentication-frontend.onrender.com",
+    );
   };
 
   /* =========================================================
@@ -1048,10 +1062,23 @@ export default function Header({
                       transition
                     "
                   >
-                    {t(item.translationKey)}
+                    {/* =================================================
+                        IMPORTANT:
+                        DO NOT use t() here.
+
+                        These names must ALWAYS remain:
+                        English
+                        ಕನ್ನಡ
+                        हिंदी
+                    ================================================== */}
+
+                    <span>{item.label}</span>
 
                     {language === item.code && (
-                      <Check size={14} className="text-violet-600" />
+                      <Check
+                        size={14}
+                        className="text-violet-600"
+                      />
                     )}
                   </button>
                 ))}
