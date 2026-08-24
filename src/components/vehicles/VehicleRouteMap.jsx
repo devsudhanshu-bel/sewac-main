@@ -15,9 +15,19 @@ import {
 
 import L from "leaflet";
 
-import { Route, Loader2, Factory, MapPinned, User, Truck } from "lucide-react";
+import {
+  Route,
+  Loader2,
+  Factory,
+  MapPinned,
+  User,
+  Truck,
+  Radio,
+} from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
+
+import LiveMap from "./LiveMap";
 
 import "leaflet/dist/leaflet.css";
 
@@ -138,13 +148,13 @@ function normalizeGpsPoint(point) {
   }
 
   /*
-   * IMPORTANT:
-   *
    * Backend:
+   *
    * latitude
    * longitude
    *
    * Leaflet:
+   *
    * [latitude, longitude]
    */
 
@@ -346,6 +356,15 @@ export default function VehicleRouteMap({ selectedDate }) {
     useFilters();
 
   /* ==========================================================
+     MAP MODE
+     
+     route = historical route map
+     live  = socket.io live map
+  ========================================================== */
+
+  const [mapMode, setMapMode] = useState("route");
+
+  /* ==========================================================
      ROUTES
   ========================================================== */
 
@@ -371,6 +390,8 @@ export default function VehicleRouteMap({ selectedDate }) {
 
   /* ==========================================================
      FETCH ROUTES + PLANTS
+     
+     THIS REMAINS THE SAME EXISTING API FLOW.
   ========================================================== */
 
   useEffect(() => {
@@ -391,7 +412,9 @@ export default function VehicleRouteMap({ selectedDate }) {
       ) {
         if (mounted) {
           setRoutes([]);
+
           setPlants([]);
+
           setLoading(false);
         }
 
@@ -459,16 +482,12 @@ export default function VehicleRouteMap({ selectedDate }) {
 
         /* ==================================================
              EXISTING ROUTE MAP API
-             
-             NO BACKEND CHANGE.
           ================================================== */
 
         const routeRequest = api.get(`/api/admin/overview/map?${queryString}`);
 
         /* ==================================================
              EXISTING PLANT LOCATION API
-             
-             NO BACKEND CHANGE.
           ================================================== */
 
         const plantRequest = api.get("/api/plants/locations");
@@ -512,10 +531,6 @@ export default function VehicleRouteMap({ selectedDate }) {
 
         setPlants(returnedPlants);
 
-        /* ==================================================
-             DEBUG
-          ================================================== */
-
         console.log("VEHICLE ROUTE MAP RESPONSE:", routeData);
 
         console.log("ROUTES FOUND:", returnedRoutes.length);
@@ -529,15 +544,6 @@ export default function VehicleRouteMap({ selectedDate }) {
         console.error("Vehicle Route Map Error:", err);
 
         setRoutes([]);
-
-        /*
-         * Keep plant rendering independent.
-         *
-         * If route API fails but plant API succeeded,
-         * the plant request is handled by Promise.all,
-         * so the error state is shown rather than breaking
-         * the application.
-         */
 
         setError(
           err?.response?.data?.message ||
@@ -592,18 +598,6 @@ export default function VehicleRouteMap({ selectedDate }) {
     return routes
       .map((vehicle, index) => {
         const vehicleId = getVehicleId(vehicle);
-
-        /*
-         * Existing backend route contract:
-         *
-         * points: [
-         *   {
-         *     latitude,
-         *     longitude,
-         *     timestamp
-         *   }
-         * ]
-         */
 
         const points = Array.isArray(vehicle.points)
           ? vehicle.points.map(normalizeGpsPoint).filter(Boolean)
@@ -666,19 +660,11 @@ export default function VehicleRouteMap({ selectedDate }) {
   ========================================================== */
 
   const defaultCenter = useMemo(() => {
-    /*
-     * Prefer vehicle route location when available.
-     */
-
     for (const vehicle of preparedRoutes) {
       if (vehicle._points.length > 0) {
         return vehicle._points[0];
       }
     }
-
-    /*
-     * Otherwise use plant location.
-     */
 
     for (const plant of validPlants) {
       const position = getPlantPosition(plant);
@@ -688,12 +674,44 @@ export default function VehicleRouteMap({ selectedDate }) {
       }
     }
 
-    /*
-     * Bengaluru fallback.
-     */
-
     return [12.9716, 77.5946];
   }, [preparedRoutes, validPlants]);
+
+  /* ==========================================================
+     MAP DATA FOR LIVE MAP
+     
+     We deliberately pass the already-fetched route data
+     into LiveMap so it can use the latest historical point
+     as its initial position before Socket.IO updates arrive.
+  ========================================================== */
+
+  const liveMapData = useMemo(
+    () => ({
+      routes: preparedRoutes.map((route) => ({
+        ...route,
+
+        /*
+         * LiveMap expects the original backend point
+         * objects here, not Leaflet [lat,lng] arrays.
+         */
+        points: Array.isArray(route.points) ? route.points : [],
+
+        endPoint:
+          route.endPoint ||
+          (Array.isArray(route.points)
+            ? route.points[route.points.length - 1]
+            : null),
+      })),
+
+      totalVehicles: preparedRoutes.length,
+
+      totalRoutePoints: preparedRoutes.reduce(
+        (total, route) => total + Number(route.points?.length || 0),
+        0,
+      ),
+    }),
+    [preparedRoutes],
+  );
 
   /* ==========================================================
      RENDER
@@ -724,16 +742,18 @@ export default function VehicleRouteMap({ selectedDate }) {
           py-4
           flex
           flex-col
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
+          lg:flex-row
+          lg:items-center
+          lg:justify-between
           gap-4
           border-b
           border-[#EEF2F7]
           bg-white
         "
       >
-        {/* LEFT */}
+        {/* ===================================================
+            TITLE
+        =================================================== */}
 
         <div
           className="
@@ -757,7 +777,23 @@ export default function VehicleRouteMap({ selectedDate }) {
               justify-center
             "
           >
-            <Route size={20} strokeWidth={2.2} className="text-[#6C2BFF]" />
+            {mapMode === "live" ? (
+              <Radio
+                size={20}
+                strokeWidth={2.2}
+                className="
+                  text-[#16A34A]
+                "
+              />
+            ) : (
+              <Route
+                size={20}
+                strokeWidth={2.2}
+                className="
+                  text-[#6C2BFF]
+                "
+              />
+            )}
           </div>
 
           <div
@@ -774,7 +810,7 @@ export default function VehicleRouteMap({ selectedDate }) {
                 leading-tight
               "
             >
-              Vehicle Route Map
+              {mapMode === "live" ? "Live Vehicle Map" : "Vehicle Route Map"}
             </h2>
 
             <p
@@ -786,122 +822,320 @@ export default function VehicleRouteMap({ selectedDate }) {
                 truncate
               "
             >
-              Vehicle routes and plant locations
+              {mapMode === "live"
+                ? "Real-time vehicle tracking"
+                : "Vehicle routes and plant locations"}
             </p>
           </div>
         </div>
 
-        {/* RIGHT STATS */}
+        {/* ===================================================
+            MAP MODE SWITCH
+        =================================================== */}
 
         <div
           className="
             flex
             items-center
-            gap-2
-            flex-wrap
-            sm:justify-end
+            gap-1
+            p-1
+            rounded-xl
+            bg-[#F3F4F6]
+            border
+            border-[#E5E7EB]
+            shrink-0
           "
         >
-          {/* VEHICLES */}
+          {/* ROUTE MAP */}
 
-          <div
-            className="
-              px-3
-              sm:px-4
-              py-1.5
-              rounded-full
-              bg-[#EEF4FF]
-            "
+          <button
+            type="button"
+            onClick={() => setMapMode("route")}
+            className={`
+              flex
+              items-center
+              justify-center
+              gap-2
+              px-4
+              sm:px-5
+              py-2
+              rounded-lg
+              text-xs
+              sm:text-sm
+              font-semibold
+              transition-all
+              duration-200
+              ${
+                mapMode === "route"
+                  ? `
+                    bg-white
+                    text-[#6C2BFF]
+                    shadow-sm
+                  `
+                  : `
+                    text-[#64748B]
+                    hover:text-[#34475B]
+                  `
+              }
+            `}
+          >
+            <Route size={16} strokeWidth={2.2} />
+
+            <span>Route Map</span>
+          </button>
+
+          {/* LIVE MAP */}
+
+          <button
+            type="button"
+            onClick={() => setMapMode("live")}
+            className={`
+              flex
+              items-center
+              justify-center
+              gap-2
+              px-4
+              sm:px-5
+              py-2
+              rounded-lg
+              text-xs
+              sm:text-sm
+              font-semibold
+              transition-all
+              duration-200
+              ${
+                mapMode === "live"
+                  ? `
+                    bg-white
+                    text-[#16A34A]
+                    shadow-sm
+                  `
+                  : `
+                    text-[#64748B]
+                    hover:text-[#34475B]
+                  `
+              }
+            `}
           >
             <span
-              className="
-                text-[11px]
-                sm:text-xs
-                font-semibold
-                text-[#2563EB]
-                whitespace-nowrap
-              "
+              className={`
+                relative
+                flex
+                items-center
+                justify-center
+                w-4
+                h-4
+              `}
             >
-              {preparedRoutes.length} Vehicles
+              <span
+                className={`
+                  absolute
+                  w-2.5
+                  h-2.5
+                  rounded-full
+                  ${mapMode === "live" ? "bg-[#16A34A]" : "bg-[#94A3B8]"}
+                `}
+              />
+
+              {mapMode === "live" && (
+                <span
+                  className="
+                    absolute
+                    w-4
+                    h-4
+                    rounded-full
+                    bg-[#16A34A]/20
+                    animate-ping
+                  "
+                />
+              )}
             </span>
-          </div>
 
-          {/* ACTIVE */}
+            <span>Live Map</span>
+          </button>
+        </div>
 
+        {/* ===================================================
+            ROUTE MODE STATS
+        =================================================== */}
+
+        {mapMode === "route" && (
           <div
             className="
+              flex
+              items-center
+              gap-2
+              flex-wrap
+              lg:justify-end
+            "
+          >
+            {/* VEHICLES */}
+
+            <div
+              className="
+                px-3
+                sm:px-4
+                py-1.5
+                rounded-full
+                bg-[#EEF4FF]
+              "
+            >
+              <span
+                className="
+                  text-[11px]
+                  sm:text-xs
+                  font-semibold
+                  text-[#2563EB]
+                  whitespace-nowrap
+                "
+              >
+                {preparedRoutes.length} Vehicles
+              </span>
+            </div>
+
+            {/* ACTIVE */}
+
+            <div
+              className="
+                px-3
+                sm:px-4
+                py-1.5
+                rounded-full
+                bg-[#ECFDF3]
+              "
+            >
+              <span
+                className="
+                  text-[11px]
+                  sm:text-xs
+                  font-semibold
+                  text-[#16A34A]
+                  whitespace-nowrap
+                "
+              >
+                {activeVehicles.length} Active
+              </span>
+            </div>
+
+            {/* PLANTS */}
+
+            <div
+              className="
+                px-3
+                sm:px-4
+                py-1.5
+                rounded-full
+                bg-[#F3F4F6]
+              "
+            >
+              <span
+                className="
+                  text-[11px]
+                  sm:text-xs
+                  font-semibold
+                  text-[#374151]
+                  whitespace-nowrap
+                "
+              >
+                {validPlants.length} Plants
+              </span>
+            </div>
+
+            {/* DISTANCE */}
+
+            <div
+              className="
+                px-3
+                sm:px-4
+                py-1.5
+                rounded-full
+                bg-[#FEF3C7]
+              "
+            >
+              <span
+                className="
+                  text-[11px]
+                  sm:text-xs
+                  font-semibold
+                  text-[#D97706]
+                  whitespace-nowrap
+                "
+              >
+                {formatDistance(totalDistance)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================
+            LIVE MODE STATUS
+        =================================================== */}
+
+        {mapMode === "live" && (
+          <div
+            className="
+              flex
+              items-center
+              gap-2
               px-3
               sm:px-4
               py-1.5
               rounded-full
               bg-[#ECFDF3]
+              border
+              border-[#BBF7D0]
             "
           >
+            <span
+              className="
+                relative
+                flex
+                w-2.5
+                h-2.5
+              "
+            >
+              <span
+                className="
+                  absolute
+                  inline-flex
+                  w-full
+                  h-full
+                  rounded-full
+                  bg-[#22C55E]
+                  opacity-75
+                  animate-ping
+                "
+              />
+
+              <span
+                className="
+                  relative
+                  inline-flex
+                  w-2.5
+                  h-2.5
+                  rounded-full
+                  bg-[#16A34A]
+                "
+              />
+            </span>
+
             <span
               className="
                 text-[11px]
                 sm:text-xs
                 font-semibold
-                text-[#16A34A]
+                text-[#15803D]
                 whitespace-nowrap
               "
             >
-              {activeVehicles.length} Active
+              LIVE TRACKING
             </span>
           </div>
-
-          {/* PLANTS */}
-
-          <div
-            className="
-              px-3
-              sm:px-4
-              py-1.5
-              rounded-full
-              bg-[#F3F4F6]
-            "
-          >
-            <span
-              className="
-                text-[11px]
-                sm:text-xs
-                font-semibold
-                text-[#374151]
-                whitespace-nowrap
-              "
-            >
-              {validPlants.length} Plants
-            </span>
-          </div>
-
-          {/* DISTANCE */}
-
-          <div
-            className="
-              px-3
-              sm:px-4
-              py-1.5
-              rounded-full
-              bg-[#FEF3C7]
-            "
-          >
-            <span
-              className="
-                text-[11px]
-                sm:text-xs
-                font-semibold
-                text-[#D97706]
-                whitespace-nowrap
-              "
-            >
-              {formatDistance(totalDistance)}
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* =====================================================
-          MAP
+          MAP CONTENT
       ===================================================== */}
 
       <div
@@ -914,809 +1148,815 @@ export default function VehicleRouteMap({ selectedDate }) {
           xl:h-[580px]
         "
       >
-        <MapContainer
-          center={defaultCenter}
-          zoom={12}
-          zoomControl={false}
-          scrollWheelZoom
-          className="
-            w-full
-            h-full
-          "
-        >
-          <ZoomControl position="topleft" />
-
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            maxZoom={20}
-          />
-
-          <MapSizeController />
-
-          <FitVehicleAndPlantBounds
-            routes={preparedRoutes}
-            plants={validPlants}
-          />
-
-          {/* ==================================================
-              PLANT LOCATIONS
-              
-              IMPORTANT:
-              Plants are independent.
-              NO vehicle relationship.
-              NO dashed line.
-          ================================================== */}
-
-          {validPlants.map((plant, index) => {
-            const position = getPlantPosition(plant);
-
-            if (!position) {
-              return null;
-            }
-
-            const plantId = plant.id ?? plant.plant_id ?? index;
-
-            return (
-              <Marker
-                key={`plant-${plantId}`}
-                position={position}
-                icon={plantIcon}
-              >
-                <Popup maxWidth={300} minWidth={240}>
-                  <div className="p-1 sm:p-2">
-                    {/* PLANT HEADER */}
-
-                    <div
-                      className="
-                          flex
-                          items-center
-                          gap-3
-                          mb-4
-                        "
-                    >
-                      <div
-                        className="
-                            w-11
-                            h-11
-                            rounded-xl
-                            bg-violet-100
-                            flex
-                            items-center
-                            justify-center
-                            shrink-0
-                          "
-                      >
-                        <Factory size={23} className="text-violet-600" />
-                      </div>
-
-                      <div
-                        className="
-                            min-w-0
-                          "
-                      >
-                        <h3
-                          className="
-                              font-bold
-                              text-[15px]
-                              text-gray-900
-                            "
-                        >
-                          {plant.plant_name ?? plant.name ?? "Plant"}
-                        </h3>
-
-                        {plant.status && (
-                          <span
-                            className={`
-                                text-xs
-                                font-semibold
-                                ${
-                                  String(plant.status).toUpperCase() ===
-                                  "ACTIVE"
-                                    ? "text-green-600"
-                                    : "text-red-500"
-                                }
-                              `}
-                          >
-                            ● {plant.status}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* DETAILS */}
-
-                    <div
-                      className="
-                          space-y-3
-                          text-[13px]
-                        "
-                    >
-                      {plant.zone && (
-                        <div
-                          className="
-                              flex
-                              items-start
-                              gap-2
-                            "
-                        >
-                          <MapPinned
-                            size={15}
-                            className="
-                                text-violet-600
-                                mt-0.5
-                                shrink-0
-                              "
-                          />
-
-                          <span>{plant.zone}</span>
-                        </div>
-                      )}
-
-                      {plant.plant_manager && (
-                        <div
-                          className="
-                              flex
-                              items-start
-                              gap-2
-                            "
-                        >
-                          <User
-                            size={15}
-                            className="
-                                text-violet-600
-                                mt-0.5
-                                shrink-0
-                              "
-                          />
-
-                          <span>{plant.plant_manager}</span>
-                        </div>
-                      )}
-
-                      {plant.capacity_ton_per_day !== undefined && (
-                        <div
-                          className="
-                              flex
-                              items-center
-                              gap-2
-                            "
-                        >
-                          <Factory
-                            size={15}
-                            className="
-                                text-violet-600
-                                shrink-0
-                              "
-                          />
-
-                          <span>{plant.capacity_ton_per_day} Ton/Day</span>
-                        </div>
-                      )}
-
-                      {plant.vehicles_enrolled !== undefined && (
-                        <div
-                          className="
-                              flex
-                              items-center
-                              gap-2
-                            "
-                        >
-                          <Truck
-                            size={15}
-                            className="
-                                text-violet-600
-                                shrink-0
-                              "
-                          />
-
-                          <span>{plant.vehicles_enrolled} Vehicles</span>
-                        </div>
-                      )}
-
-                      <div
-                        className="
-                            flex
-                            items-start
-                            gap-2
-                          "
-                      >
-                        <MapPinned
-                          size={15}
-                          className="
-                              text-violet-600
-                              mt-0.5
-                              shrink-0
-                            "
-                        />
-
-                        <span>
-                          {position[0]}, {position[1]}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      className="
-                          mt-4
-                          pt-3
-                          border-t
-                          border-gray-200
-                          text-xs
-                          text-gray-400
-                        "
-                    >
-                      Plant location
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-          {/* ==================================================
-              VEHICLE ROUTES
-          ================================================== */}
-
-          {preparedRoutes.map((vehicle) => {
-            const vehicleId = vehicle._vehicleId;
-
-            const routeColor = vehicle._routeColor;
-
-            const positions = vehicle._points;
-
-            if (positions.length === 0) {
-              return null;
-            }
-
-            const firstPosition = positions[0];
-
-            const lastPosition = positions[positions.length - 1];
-
-            return (
-              <div key={`vehicle-group-${vehicleId}`}>
-                {/* ==========================================
-                      ROUTE POLYLINE
-                  ========================================== */}
-
-                {positions.length > 1 && (
-                  <Polyline
-                    positions={positions}
-                    pathOptions={{
-                      color: routeColor,
-
-                      weight: 5,
-
-                      opacity: 0.92,
-
-                      lineCap: "round",
-
-                      lineJoin: "round",
-                    }}
-                  />
-                )}
-
-                {/* ==========================================
-                      ROUTE START
-                  ========================================== */}
-
-                <CircleMarker
-                  center={firstPosition}
-                  radius={6}
-                  pathOptions={{
-                    color: "#FFFFFF",
-
-                    weight: 3,
-
-                    fillColor: routeColor,
-
-                    fillOpacity: 1,
-                  }}
-                >
-                  <Popup>
-                    <div
-                      className="
-                          min-w-[200px]
-                        "
-                    >
-                      <div
-                        className="
-                            font-semibold
-                            text-sm
-                            mb-2
-                          "
-                      >
-                        Route Start
-                      </div>
-
-                      <div
-                        className="
-                            text-sm
-                          "
-                      >
-                        Vehicle: <strong>{vehicleId}</strong>
-                      </div>
-
-                      <div
-                        className="
-                            mt-2
-                            flex
-                            items-center
-                            gap-2
-                          "
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-
-                            width: "30px",
-
-                            height: "5px",
-
-                            borderRadius: "999px",
-
-                            backgroundColor: routeColor,
-                          }}
-                        />
-
-                        <span
-                          className="
-                              text-xs
-                              text-gray-500
-                            "
-                        >
-                          Vehicle route
-                        </span>
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-
-                {/* ==========================================
-                      CURRENT / LAST POSITION
-                  ========================================== */}
-
-                <Marker
-                  position={lastPosition}
-                  icon={createTruckIcon(routeColor)}
-                >
-                  <Popup maxWidth={280}>
-                    <div
-                      className="
-                          min-w-[220px]
-                          text-sm
-                        "
-                    >
-                      <div
-                        className="
-                            text-base
-                            font-semibold
-                            text-[#16295A]
-                            mb-3
-                          "
-                      >
-                        Vehicle Details
-                      </div>
-
-                      <div
-                        className="
-                            space-y-2
-                          "
-                      >
-                        <div>
-                          Vehicle: <strong>{vehicleId}</strong>
-                        </div>
-
-                        <div>
-                          Status:{" "}
-                          <strong
-                            className={
-                              String(vehicle.status ?? "").toLowerCase() ===
-                              "active"
-                                ? "text-green-600"
-                                : "text-gray-500"
-                            }
-                          >
-                            {vehicle.status ?? "N/A"}
-                          </strong>
-                        </div>
-
-                        <div>
-                          Ward: <strong>{vehicle.wardNo ?? "N/A"}</strong>
-                        </div>
-
-                        <div>
-                          GPS Points: <strong>{positions.length}</strong>
-                        </div>
-
-                        <div>
-                          Distance:{" "}
-                          <strong>{formatDistance(vehicle.distance)}</strong>
-                        </div>
-
-                        <div>
-                          Duration:{" "}
-                          <strong>{formatDuration(vehicle.duration)}</strong>
-                        </div>
-
-                        <div>
-                          Last Update:{" "}
-                          <strong>
-                            {vehicle.endPoint?.timestamp
-                              ? new Date(
-                                  vehicle.endPoint.timestamp,
-                                ).toLocaleString()
-                              : "N/A"}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div
-                        className="
-                            mt-3
-                            pt-2
-                            border-t
-                            border-gray-200
-                            flex
-                            items-center
-                            gap-2
-                          "
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-
-                            width: "32px",
-
-                            height: "5px",
-
-                            borderRadius: "999px",
-
-                            backgroundColor: routeColor,
-                          }}
-                        />
-
-                        <span
-                          className="
-                              text-xs
-                              text-gray-500
-                            "
-                        >
-                          Vehicle route
-                        </span>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              </div>
-            );
-          })}
-        </MapContainer>
-
         {/* ===================================================
-            LOADING
+            LIVE MAP
         =================================================== */}
 
-        {loading && (
+        {mapMode === "live" && (
           <div
             className="
               absolute
               inset-0
-              bg-white/70
-              backdrop-blur-sm
-              flex
-              flex-col
-              items-center
-              justify-center
-              z-[1000]
             "
           >
-            <Loader2
-              size={34}
-              className="
-                animate-spin
-                text-[#6C2BFF]
-              "
+            <LiveMap
+              mapData={liveMapData}
+              selectedDate={selectedDate}
+              selectedCity={selectedCity}
+              selectedZone={selectedZone}
+              selectedDivision={selectedDivision}
+              selectedWard={selectedWard}
             />
-
-            <h3
-              className="
-                mt-4
-                text-base
-                font-semibold
-                text-[#111827]
-              "
-            >
-              Loading Vehicle Routes
-            </h3>
-
-            <p
-              className="
-                mt-1
-                text-xs
-                text-gray-500
-              "
-            >
-              Loading routes and plant locations...
-            </p>
           </div>
         )}
 
         {/* ===================================================
-            ERROR
+            ROUTE MAP
         =================================================== */}
 
-        {!loading && error && (
-          <div
-            className="
-                absolute
-                inset-0
-                bg-white/90
-                flex
-                items-center
-                justify-center
-                z-[1000]
-                px-5
+        {mapMode === "route" && (
+          <>
+            <MapContainer
+              center={defaultCenter}
+              zoom={12}
+              zoomControl={false}
+              scrollWheelZoom
+              className="
+                w-full
+                h-full
               "
-          >
+            >
+              <ZoomControl position="topleft" />
+
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                maxZoom={20}
+              />
+
+              <MapSizeController />
+
+              <FitVehicleAndPlantBounds
+                routes={preparedRoutes}
+                plants={validPlants}
+              />
+
+              {/* ==================================================
+                  PLANT LOCATIONS
+              ================================================== */}
+
+              {validPlants.map((plant, index) => {
+                const position = getPlantPosition(plant);
+
+                if (!position) {
+                  return null;
+                }
+
+                const plantId = plant.id ?? plant.plant_id ?? index;
+
+                return (
+                  <Marker
+                    key={`plant-${plantId}`}
+                    position={position}
+                    icon={plantIcon}
+                  >
+                    <Popup maxWidth={300} minWidth={240}>
+                      <div className="p-1 sm:p-2">
+                        <div
+                          className="
+                              flex
+                              items-center
+                              gap-3
+                              mb-4
+                            "
+                        >
+                          <div
+                            className="
+                                w-11
+                                h-11
+                                rounded-xl
+                                bg-violet-100
+                                flex
+                                items-center
+                                justify-center
+                                shrink-0
+                              "
+                          >
+                            <Factory size={23} className="text-violet-600" />
+                          </div>
+
+                          <div
+                            className="
+                                min-w-0
+                              "
+                          >
+                            <h3
+                              className="
+                                  font-bold
+                                  text-[15px]
+                                  text-gray-900
+                                "
+                            >
+                              {plant.plant_name ?? plant.name ?? "Plant"}
+                            </h3>
+
+                            {plant.status && (
+                              <span
+                                className={`
+                                    text-xs
+                                    font-semibold
+                                    ${
+                                      String(plant.status).toUpperCase() ===
+                                      "ACTIVE"
+                                        ? "text-green-600"
+                                        : "text-red-500"
+                                    }
+                                  `}
+                              >
+                                ● {plant.status}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className="
+                              space-y-3
+                              text-[13px]
+                            "
+                        >
+                          {plant.zone && (
+                            <div
+                              className="
+                                  flex
+                                  items-start
+                                  gap-2
+                                "
+                            >
+                              <MapPinned
+                                size={15}
+                                className="
+                                    text-violet-600
+                                    mt-0.5
+                                    shrink-0
+                                  "
+                              />
+
+                              <span>{plant.zone}</span>
+                            </div>
+                          )}
+
+                          {plant.plant_manager && (
+                            <div
+                              className="
+                                  flex
+                                  items-start
+                                  gap-2
+                                "
+                            >
+                              <User
+                                size={15}
+                                className="
+                                    text-violet-600
+                                    mt-0.5
+                                    shrink-0
+                                  "
+                              />
+
+                              <span>{plant.plant_manager}</span>
+                            </div>
+                          )}
+
+                          {plant.capacity_ton_per_day !== undefined && (
+                            <div
+                              className="
+                                  flex
+                                  items-center
+                                  gap-2
+                                "
+                            >
+                              <Factory
+                                size={15}
+                                className="
+                                    text-violet-600
+                                    shrink-0
+                                  "
+                              />
+
+                              <span>{plant.capacity_ton_per_day} Ton/Day</span>
+                            </div>
+                          )}
+
+                          {plant.vehicles_enrolled !== undefined && (
+                            <div
+                              className="
+                                  flex
+                                  items-center
+                                  gap-2
+                                "
+                            >
+                              <Truck
+                                size={15}
+                                className="
+                                    text-violet-600
+                                    shrink-0
+                                  "
+                              />
+
+                              <span>{plant.vehicles_enrolled} Vehicles</span>
+                            </div>
+                          )}
+
+                          <div
+                            className="
+                                flex
+                                items-start
+                                gap-2
+                              "
+                          >
+                            <MapPinned
+                              size={15}
+                              className="
+                                  text-violet-600
+                                  mt-0.5
+                                  shrink-0
+                                "
+                            />
+
+                            <span>
+                              {position[0]}, {position[1]}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div
+                          className="
+                              mt-4
+                              pt-3
+                              border-t
+                              border-gray-200
+                              text-xs
+                              text-gray-400
+                            "
+                        >
+                          Plant location
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+
+              {/* ==================================================
+                  VEHICLE ROUTES
+              ================================================== */}
+
+              {preparedRoutes.map((vehicle) => {
+                const vehicleId = vehicle._vehicleId;
+
+                const routeColor = vehicle._routeColor;
+
+                const positions = vehicle._points;
+
+                if (positions.length === 0) {
+                  return null;
+                }
+
+                const firstPosition = positions[0];
+
+                const lastPosition = positions[positions.length - 1];
+
+                return (
+                  <div key={`vehicle-group-${vehicleId}`}>
+                    {/* ROUTE */}
+
+                    {positions.length > 1 && (
+                      <Polyline
+                        positions={positions}
+                        pathOptions={{
+                          color: routeColor,
+
+                          weight: 5,
+
+                          opacity: 0.92,
+
+                          lineCap: "round",
+
+                          lineJoin: "round",
+                        }}
+                      />
+                    )}
+
+                    {/* START */}
+
+                    <CircleMarker
+                      center={firstPosition}
+                      radius={6}
+                      pathOptions={{
+                        color: "#FFFFFF",
+
+                        weight: 3,
+
+                        fillColor: routeColor,
+
+                        fillOpacity: 1,
+                      }}
+                    >
+                      <Popup>
+                        <div
+                          className="
+                              min-w-[200px]
+                            "
+                        >
+                          <div
+                            className="
+                                font-semibold
+                                text-sm
+                                mb-2
+                              "
+                          >
+                            Route Start
+                          </div>
+
+                          <div className="text-sm">
+                            Vehicle: <strong>{vehicleId}</strong>
+                          </div>
+
+                          <div
+                            className="
+                                mt-2
+                                flex
+                                items-center
+                                gap-2
+                              "
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+
+                                width: "30px",
+
+                                height: "5px",
+
+                                borderRadius: "999px",
+
+                                backgroundColor: routeColor,
+                              }}
+                            />
+
+                            <span
+                              className="
+                                  text-xs
+                                  text-gray-500
+                                "
+                            >
+                              Vehicle route
+                            </span>
+                          </div>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+
+                    {/* CURRENT / LAST */}
+
+                    <Marker
+                      position={lastPosition}
+                      icon={createTruckIcon(routeColor)}
+                    >
+                      <Popup maxWidth={280}>
+                        <div
+                          className="
+                              min-w-[220px]
+                              text-sm
+                            "
+                        >
+                          <div
+                            className="
+                                text-base
+                                font-semibold
+                                text-[#16295A]
+                                mb-3
+                              "
+                          >
+                            Vehicle Details
+                          </div>
+
+                          <div className="space-y-2">
+                            <div>
+                              Vehicle: <strong>{vehicleId}</strong>
+                            </div>
+
+                            <div>
+                              Status:{" "}
+                              <strong
+                                className={
+                                  String(vehicle.status ?? "").toLowerCase() ===
+                                  "active"
+                                    ? "text-green-600"
+                                    : "text-gray-500"
+                                }
+                              >
+                                {vehicle.status ?? "N/A"}
+                              </strong>
+                            </div>
+
+                            <div>
+                              Ward: <strong>{vehicle.wardNo ?? "N/A"}</strong>
+                            </div>
+
+                            <div>
+                              GPS Points: <strong>{positions.length}</strong>
+                            </div>
+
+                            <div>
+                              Distance:{" "}
+                              <strong>
+                                {formatDistance(vehicle.distance)}
+                              </strong>
+                            </div>
+
+                            <div>
+                              Duration:{" "}
+                              <strong>
+                                {formatDuration(vehicle.duration)}
+                              </strong>
+                            </div>
+
+                            <div>
+                              Last Update:{" "}
+                              <strong>
+                                {vehicle.endPoint?.timestamp
+                                  ? new Date(
+                                      vehicle.endPoint.timestamp,
+                                    ).toLocaleString()
+                                  : "N/A"}
+                              </strong>
+                            </div>
+                          </div>
+
+                          <div
+                            className="
+                                mt-3
+                                pt-2
+                                border-t
+                                border-gray-200
+                                flex
+                                items-center
+                                gap-2
+                              "
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+
+                                width: "32px",
+
+                                height: "5px",
+
+                                borderRadius: "999px",
+
+                                backgroundColor: routeColor,
+                              }}
+                            />
+
+                            <span
+                              className="
+                                  text-xs
+                                  text-gray-500
+                                "
+                            >
+                              Vehicle route
+                            </span>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </div>
+                );
+              })}
+            </MapContainer>
+
+            {/* =================================================
+                ROUTE LOADING
+            ================================================= */}
+
+            {loading && (
+              <div
+                className="
+                  absolute
+                  inset-0
+                  bg-white/70
+                  backdrop-blur-sm
+                  flex
+                  flex-col
+                  items-center
+                  justify-center
+                  z-[1000]
+                "
+              >
+                <Loader2
+                  size={34}
+                  className="
+                    animate-spin
+                    text-[#6C2BFF]
+                  "
+                />
+
+                <h3
+                  className="
+                    mt-4
+                    text-base
+                    font-semibold
+                    text-[#111827]
+                  "
+                >
+                  Loading Vehicle Routes
+                </h3>
+
+                <p
+                  className="
+                    mt-1
+                    text-xs
+                    text-gray-500
+                  "
+                >
+                  Loading routes and plant locations...
+                </p>
+              </div>
+            )}
+
+            {/* =================================================
+                ROUTE ERROR
+            ================================================= */}
+
+            {!loading && error && (
+              <div
+                className="
+                    absolute
+                    inset-0
+                    bg-white/90
+                    flex
+                    items-center
+                    justify-center
+                    z-[1000]
+                    px-5
+                  "
+              >
+                <div
+                  className="
+                      text-center
+                      max-w-md
+                    "
+                >
+                  <h3
+                    className="
+                        text-lg
+                        font-semibold
+                        text-red-600
+                      "
+                  >
+                    Failed to Load Vehicle Routes
+                  </h3>
+
+                  <p
+                    className="
+                        text-sm
+                        text-gray-500
+                        mt-2
+                      "
+                  >
+                    {error}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* =================================================
+                LEGEND
+            ================================================= */}
+
             <div
               className="
-                  text-center
-                  max-w-md
-                "
+                absolute
+                top-4
+                right-4
+                sm:top-5
+                sm:right-5
+                z-[999]
+                w-[205px]
+                rounded-2xl
+                bg-white
+                border
+                border-[#ECECF3]
+                shadow-lg
+                p-4
+              "
             >
               <h3
                 className="
-                    text-lg
-                    font-semibold
-                    text-red-600
-                  "
+                  text-sm
+                  font-semibold
+                  text-[#111827]
+                  mb-4
+                "
               >
-                Failed to Load Vehicle Routes
+                Map Legend
               </h3>
 
-              <p
-                className="
-                    text-sm
-                    text-gray-500
-                    mt-2
+              <div className="space-y-3">
+                {/* PLANT */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2.5
                   "
-              >
-                {error}
-              </p>
-            </div>
-          </div>
-        )}
+                >
+                  <div
+                    className="
+                      w-5
+                      h-5
+                      rounded-md
+                      bg-[#111827]
+                      flex
+                      items-center
+                      justify-center
+                      text-[10px]
+                    "
+                  >
+                    🏭
+                  </div>
 
-        {/* ===================================================
-            MAP LEGEND
-        =================================================== */}
+                  <span
+                    className="
+                      text-xs
+                      text-[#111827]
+                    "
+                  >
+                    Plant Location
+                  </span>
+                </div>
 
-        <div
-          className="
-            absolute
-            top-4
-            right-4
-            sm:top-5
-            sm:right-5
-            z-[999]
-            w-[205px]
-            rounded-2xl
-            bg-white
-            border
-            border-[#ECECF3]
-            shadow-lg
-            p-4
-          "
-        >
-          <h3
-            className="
-              text-sm
-              font-semibold
-              text-[#111827]
-              mb-4
-            "
-          >
-            Map Legend
-          </h3>
+                {/* VEHICLE */}
 
-          <div
-            className="
-              space-y-3
-            "
-          >
-            {/* PLANT */}
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2.5
+                  "
+                >
+                  <div
+                    className="
+                      w-5
+                      h-5
+                      rounded-full
+                      bg-[#16C47F]
+                      border-2
+                      border-white
+                      shadow
+                      flex
+                      items-center
+                      justify-center
+                      text-[9px]
+                    "
+                  >
+                    🚛
+                  </div>
 
-            <div
-              className="
-                flex
-                items-center
-                gap-2.5
-              "
-            >
-              <div
-                className="
-                  w-5
-                  h-5
-                  rounded-md
-                  bg-[#111827]
-                  flex
-                  items-center
-                  justify-center
-                  text-[10px]
-                "
-              >
-                🏭
+                  <span
+                    className="
+                      text-xs
+                      text-[#111827]
+                    "
+                  >
+                    Vehicle
+                  </span>
+                </div>
+
+                {/* ROUTE */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2.5
+                  "
+                >
+                  <div
+                    className="
+                      w-8
+                      h-1
+                      rounded-full
+                      bg-[#6C2BFF]
+                    "
+                  />
+
+                  <span
+                    className="
+                      text-xs
+                      text-[#111827]
+                    "
+                  >
+                    Vehicle Route
+                  </span>
+                </div>
+
+                <div className="pt-1">
+                  <span
+                    className="
+                      text-[10px]
+                      text-gray-400
+                    "
+                  >
+                    Each vehicle has a unique route color.
+                  </span>
+                </div>
               </div>
-
-              <span
-                className="
-                  text-xs
-                  text-[#111827]
-                "
-              >
-                Plant Location
-              </span>
             </div>
 
-            {/* VEHICLE */}
+            {/* =================================================
+                DATE
+            ================================================= */}
 
-            <div
-              className="
-                flex
-                items-center
-                gap-2.5
-              "
-            >
+            {selectedDate && (
               <div
                 className="
-                  w-5
-                  h-5
-                  rounded-full
-                  bg-[#16C47F]
-                  border-2
-                  border-white
-                  shadow
-                  flex
-                  items-center
-                  justify-center
-                  text-[9px]
+                  absolute
+                  bottom-4
+                  right-4
+                  z-[999]
+                  rounded-xl
+                  bg-white/95
+                  border
+                  border-[#ECECF3]
+                  shadow-md
+                  px-4
+                  py-2
                 "
               >
-                🚛
+                <span
+                  className="
+                    text-xs
+                    font-semibold
+                    text-[#60758B]
+                  "
+                >
+                  Date:{" "}
+                  <span
+                    className="
+                      text-[#34475B]
+                    "
+                  >
+                    {selectedDate}
+                  </span>
+                </span>
               </div>
-
-              <span
-                className="
-                  text-xs
-                  text-[#111827]
-                "
-              >
-                Vehicle
-              </span>
-            </div>
-
-            {/* ROUTE */}
-
-            <div
-              className="
-                flex
-                items-center
-                gap-2.5
-              "
-            >
-              <div
-                className="
-                  w-8
-                  h-1
-                  rounded-full
-                  bg-[#6C2BFF]
-                "
-              />
-
-              <span
-                className="
-                  text-xs
-                  text-[#111827]
-                "
-              >
-                Vehicle Route
-              </span>
-            </div>
-
-            {/* INFO */}
-
-            <div
-              className="
-                pt-1
-              "
-            >
-              <span
-                className="
-                  text-[10px]
-                  text-gray-400
-                "
-              >
-                Each vehicle has a unique route color.
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ===================================================
-            DATE
-        =================================================== */}
-
-        {selectedDate && (
-          <div
-            className="
-              absolute
-              bottom-4
-              right-4
-              z-[999]
-              rounded-xl
-              bg-white/95
-              border
-              border-[#ECECF3]
-              shadow-md
-              px-4
-              py-2
-            "
-          >
-            <span
-              className="
-                text-xs
-                font-semibold
-                text-[#60758B]
-              "
-            >
-              Date:{" "}
-              <span
-                className="
-                  text-[#34475B]
-                "
-              >
-                {selectedDate}
-              </span>
-            </span>
-          </div>
+            )}
+          </>
         )}
       </div>
 
       {/* =====================================================
-          NO ROUTES
+          ROUTE EMPTY STATE
+          
+          Only shown in Route Map mode.
       ===================================================== */}
 
-      {!loading && !error && preparedRoutes.length === 0 && (
-        <div
-          className="
+      {mapMode === "route" &&
+        !loading &&
+        !error &&
+        preparedRoutes.length === 0 && (
+          <div
+            className="
               px-6
               py-10
               text-center
             "
-        >
-          <div
-            className="
+          >
+            <div
+              className="
                 text-base
                 font-semibold
                 text-[#34475B]
               "
-          >
-            No vehicle route data available
-          </div>
+            >
+              No vehicle route data available
+            </div>
 
-          <div
-            className="
+            <div
+              className="
                 mt-1
                 text-sm
                 text-[#8AA1BB]
               "
-          >
-            No vehicle GPS route data was found for the selected date and
-            filters.
+            >
+              No vehicle GPS route data was found for the selected date and
+              filters.
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </section>
   );
 }
