@@ -775,7 +775,49 @@ const getAverageWeightByZone = async (date) => {
    * =========================================================
    */
 
-  const { value: selectedDate, date: dateObject } = validateDate(date);
+  /*
+|--------------------------------------------------------------------------
+| VALIDATE DATE
+|--------------------------------------------------------------------------
+*/
+
+  let selectedDate;
+
+  if (date) {
+    const dateString = String(date).trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      throw new Error("date must be in YYYY-MM-DD format");
+    }
+
+    const parsedDate = new Date(`${dateString}T00:00:00`);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new Error("Invalid date");
+    }
+
+    selectedDate = dateString;
+  } else {
+    const now = new Date();
+
+    const yyyy = now.getFullYear();
+
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+
+    const dd = String(now.getDate()).padStart(2, "0");
+
+    selectedDate = `${yyyy}-${mm}-${dd}`;
+  }
+
+  /*
+|--------------------------------------------------------------------------
+| DATE OBJECT FOR DYNAMIC TABLE
+|--------------------------------------------------------------------------
+*/
+
+  const [year, month, day] = selectedDate.split("-").map(Number);
+
+  const dateObject = new Date(year, month - 1, day);
 
   /*
    * =========================================================
