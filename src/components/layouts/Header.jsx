@@ -392,7 +392,27 @@ export default function Header({
      USER
   ======================================================= */
 
-  const user = getUserFromToken();
+  const getCurrentUser = () => {
+    try {
+      const storedAdmin = sessionStorage.getItem("admin");
+
+      if (storedAdmin) {
+        const admin = JSON.parse(storedAdmin);
+
+        return {
+          name: admin?.full_name || "Admin",
+          role: admin?.role || "ADMIN_LAYER_1",
+        };
+      }
+    } catch (error) {
+      console.error("Failed to read stored admin:", error);
+    }
+
+    // Fallback to JWT if stored admin is unavailable
+    return getUserFromToken();
+  };
+
+  const user = getCurrentUser();
 
   const roleLabel = getRoleLabel(user.role);
 
