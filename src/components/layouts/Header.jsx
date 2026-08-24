@@ -1,8 +1,20 @@
-import { Search, Globe, ChevronDown, LogOut, Check, Menu } from "lucide-react";
+import {
+  Search,
+  Globe,
+  ChevronDown,
+  LogOut,
+  Check,
+  Menu,
+} from "lucide-react";
 
 import { useFilters } from "../../contexts/FilterContext";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { gsap } from "gsap";
 
@@ -21,8 +33,9 @@ import SewacLogo from "../../assets/sewac_logo.svg";
    English  -> English
    Kannada  -> ಕನ್ನಡ
    Hindi    -> हिंदी
+   Telugu   -> తెలుగు
 
-   These labels must always remain in their own language,
+   These labels always remain in their own language,
    regardless of the currently selected application language.
 ========================================================= */
 
@@ -39,7 +52,7 @@ const languages = [
     code: "hi",
     label: "हिंदी",
   },
-    {
+  {
     code: "te",
     label: "తెలుగు",
   },
@@ -76,15 +89,24 @@ function getUserFromToken() {
     }
 
     const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+      atob(
+        payload
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
     );
 
     return {
       name: decoded.full_name || "Admin",
-      role: decoded.role || "ADMIN_LAYER_1",
+      role:
+        decoded.role ||
+        "ADMIN_LAYER_1",
     };
   } catch (error) {
-    console.error("Failed to decode authentication token:", error);
+    console.error(
+      "Failed to decode authentication token:",
+      error
+    );
 
     return {
       name: "Admin",
@@ -94,7 +116,11 @@ function getUserFromToken() {
 }
 
 function getRoleLabel(role) {
-  return ROLE_LABELS[role] || role || "Admin Layer 1";
+  return (
+    ROLE_LABELS[role] ||
+    role ||
+    "Admin Layer 1"
+  );
 }
 
 /* =========================================================
@@ -110,10 +136,14 @@ function Dropdown({
   getLabel,
   getKey,
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
-  const wrapperRef = useRef(null);
-  const menuRef = useRef(null);
+  const wrapperRef =
+    useRef(null);
+
+  const menuRef =
+    useRef(null);
 
   /* =======================================================
      CLOSE OUTSIDE
@@ -121,15 +151,25 @@ function Dropdown({
 
   useEffect(() => {
     function close(event) {
-      if (!wrapperRef.current?.contains(event.target)) {
+      if (
+        !wrapperRef.current?.contains(
+          event.target
+        )
+      ) {
         setOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
@@ -138,7 +178,10 @@ function Dropdown({
   ======================================================= */
 
   useEffect(() => {
-    if (open && menuRef.current) {
+    if (
+      open &&
+      menuRef.current
+    ) {
       gsap.fromTo(
         menuRef.current,
         {
@@ -152,7 +195,7 @@ function Dropdown({
           y: 0,
           duration: 0.22,
           ease: "power3.out",
-        },
+        }
       );
     }
   }, [open]);
@@ -161,7 +204,9 @@ function Dropdown({
      OPTION HELPERS
   ======================================================= */
 
-  const getOptionLabel = (item) => {
+  const getOptionLabel = (
+    item
+  ) => {
     if (getLabel) {
       return getLabel(item);
     }
@@ -175,7 +220,10 @@ function Dropdown({
     );
   };
 
-  const getOptionKey = (item, index) => {
+  const getOptionKey = (
+    item,
+    index
+  ) => {
     if (getKey) {
       return getKey(item);
     }
@@ -190,10 +238,15 @@ function Dropdown({
   };
 
   return (
-    <div ref={wrapperRef} className={`relative shrink-0 ${width}`}>
+    <div
+      ref={wrapperRef}
+      className={`relative shrink-0 ${width}`}
+    >
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() =>
+          setOpen(!open)
+        }
         className="
           w-full
           h-9
@@ -213,7 +266,9 @@ function Dropdown({
           duration-300
         "
       >
-        <span className="truncate">{value || placeholder}</span>
+        <span className="truncate">
+          {value || placeholder}
+        </span>
 
         <ChevronDown
           size={14}
@@ -221,7 +276,11 @@ function Dropdown({
             shrink-0
             transition-transform
             duration-300
-            ${open ? "rotate-180" : ""}
+            ${
+              open
+                ? "rotate-180"
+                : ""
+            }
           `}
         />
       </button>
@@ -235,17 +294,14 @@ function Dropdown({
             left-0
             w-full
             max-h-[315px]
-
             overflow-x-auto
             overflow-y-auto
-
             rounded-2xl
             bg-white
             border
             border-gray-100
             shadow-[0_15px_40px_rgba(0,0,0,0.08)]
             z-[10000]
-
             scrollbar-thin
             scrollbar-thumb-violet-300
             scrollbar-track-transparent
@@ -263,51 +319,66 @@ function Dropdown({
               No options available
             </div>
           ) : (
-            options.map((item, index) => {
-              const label = getOptionLabel(item);
-              const key = getOptionKey(item, index);
-              const isSelected = label === value;
+            options.map(
+              (
+                item,
+                index
+              ) => {
+                const label =
+                  getOptionLabel(
+                    item
+                  );
 
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  onClick={() => {
-                    onChange(item);
-                    setOpen(false);
-                  }}
-                  className="
-                    w-full
-                    min-w-max
-                    px-4
-                    py-2.5
-                    flex
-                    items-center
-                    justify-between
-                    gap-6
-                    text-left
-                    text-[12px]
-                    text-[#16295A]
-                    hover:bg-violet-50
-                    transition
-                  "
-                >
-                  <span className="whitespace-nowrap min-w-max">
-                    {label}
-                  </span>
+                const key =
+                  getOptionKey(
+                    item,
+                    index
+                  );
 
-                  {isSelected && (
-                    <Check
-                      size={14}
-                      className="
-                        shrink-0
-                        text-violet-600
-                      "
-                    />
-                  )}
-                </button>
-              );
-            })
+                const isSelected =
+                  label === value;
+
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => {
+                      onChange(item);
+                      setOpen(false);
+                    }}
+                    className="
+                      w-full
+                      min-w-max
+                      px-4
+                      py-2.5
+                      flex
+                      items-center
+                      justify-between
+                      gap-6
+                      text-left
+                      text-[12px]
+                      text-[#16295A]
+                      hover:bg-violet-50
+                      transition
+                    "
+                  >
+                    <span className="whitespace-nowrap min-w-max">
+                      {label}
+                    </span>
+
+                    {isSelected && (
+                      <Check
+                        size={14}
+                        className="
+                          shrink-0
+                          text-violet-600
+                        "
+                      />
+                    )}
+                  </button>
+                );
+              }
+            )
           )}
         </div>
       )}
@@ -336,7 +407,10 @@ export default function Header({
    * Overview.jsx does the same.
    */
 
-  selectedDate = new Date().toISOString().split("T")[0],
+  selectedDate =
+    new Date()
+      .toISOString()
+      .split("T")[0],
 
   setSelectedDate = () => {},
 }) {
@@ -344,7 +418,11 @@ export default function Header({
      LANGUAGE
   ======================================================= */
 
-  const { language, setLanguage, t } = useLanguage();
+  const {
+    language,
+    setLanguage,
+    t,
+  } = useLanguage();
 
   /* =======================================================
      FILTER CONTEXT
@@ -371,173 +449,226 @@ export default function Header({
      REFS
   ======================================================= */
 
-  const headerRef = useRef(null);
+  const headerRef =
+    useRef(null);
 
-  const controlsRef = useRef(null);
+  const controlsRef =
+    useRef(null);
 
-  const searchRef = useRef(null);
+  const searchRef =
+    useRef(null);
 
-  const profileRef = useRef(null);
+  const profileRef =
+    useRef(null);
 
-  const languageRef = useRef(null);
+  const languageRef =
+    useRef(null);
 
-  const languageMenuRef = useRef(null);
+  const languageMenuRef =
+    useRef(null);
 
   /* =======================================================
      LOCAL UI STATE
   ======================================================= */
 
-  /*
-   * IMPORTANT:
-   * DO NOT create selectedDate state here.
-   *
-   * The date belongs to the parent page.
-   */
+  const [dayType, setDayType] =
+    useState("wet");
 
-  const [dayType, setDayType] = useState("wet");
+  const [search, setSearch] =
+    useState("");
 
-  const [search, setSearch] = useState("");
+  const [profileOpen, setProfileOpen] =
+    useState(false);
 
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] =
+    useState(false);
 
-  const [languageOpen, setLanguageOpen] = useState(false);
-
-  const isDashboard = variant === "dashboard";
+  const isDashboard =
+    variant === "dashboard";
 
   /* =======================================================
-   USER
-======================================================= */
-
-  /* =======================================================
-   USER
-======================================================= */
+     USER
+  ======================================================= */
 
   const getCurrentUser = () => {
     try {
-      // =====================================================
-      // 1. READ AUTH HANDOFF FROM LOGIN FRONTEND
-      // =====================================================
+      /* =====================================================
+         1. READ AUTH HANDOFF FROM LOGIN FRONTEND
+      ===================================================== */
 
-      const hash = window.location.hash;
+      const hash =
+        window.location.hash;
 
-      if (hash.startsWith("#auth=")) {
-        const encodedAuth = hash.substring("#auth=".length);
+      if (
+        hash.startsWith(
+          "#auth="
+        )
+      ) {
+        const encodedAuth =
+          hash.substring(
+            "#auth=".length
+          );
 
-        const authData = JSON.parse(decodeURIComponent(encodedAuth));
+        const authData =
+          JSON.parse(
+            decodeURIComponent(
+              encodedAuth
+            )
+          );
 
-        // Store token in SEWAC Main session
         if (authData?.token) {
-          sessionStorage.setItem("token", authData.token);
+          sessionStorage.setItem(
+            "token",
+            authData.token
+          );
         }
 
-        // Store admin information in SEWAC Main session
         if (authData?.admin) {
-          sessionStorage.setItem("admin", JSON.stringify(authData.admin));
+          sessionStorage.setItem(
+            "admin",
+            JSON.stringify(
+              authData.admin
+            )
+          );
         }
 
-        // Remove authentication data from URL
         window.history.replaceState(
           null,
           "",
-          window.location.pathname + window.location.search,
+          window.location.pathname +
+            window.location.search
         );
       }
 
-      // =====================================================
-      // 2. READ STORED ADMIN
-      // =====================================================
+      /* =====================================================
+         2. READ STORED ADMIN
+      ===================================================== */
 
-      const storedAdmin = sessionStorage.getItem("admin");
+      const storedAdmin =
+        sessionStorage.getItem(
+          "admin"
+        );
 
       let admin = null;
 
       if (storedAdmin) {
         try {
-          admin = JSON.parse(storedAdmin);
+          admin =
+            JSON.parse(
+              storedAdmin
+            );
         } catch (error) {
-          console.error("Failed to parse stored admin:", error);
+          console.error(
+            "Failed to parse stored admin:",
+            error
+          );
         }
       }
 
-      // =====================================================
-      // 3. READ JWT
-      // =====================================================
+      /* =====================================================
+         3. READ JWT
+      ===================================================== */
 
-      const token = sessionStorage.getItem("token");
+      const token =
+        sessionStorage.getItem(
+          "token"
+        );
 
       let decoded = null;
 
       if (token) {
         try {
-          const payload = token.split(".")[1];
+          const payload =
+            token.split(".")[1];
 
           if (payload) {
-            decoded = JSON.parse(
-              atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
-            );
+            decoded =
+              JSON.parse(
+                atob(
+                  payload
+                    .replace(
+                      /-/g,
+                      "+"
+                    )
+                    .replace(
+                      /_/g,
+                      "/"
+                    )
+                )
+              );
           }
         } catch (error) {
-          console.error("Failed to decode authentication token:", error);
+          console.error(
+            "Failed to decode authentication token:",
+            error
+          );
         }
       }
 
-      // =====================================================
-      // 4. RESOLVE ACTUAL USER
-      // =====================================================
+      /* =====================================================
+         4. RESOLVE ACTUAL USER
+      ===================================================== */
 
-      if (admin || decoded) {
+      if (
+        admin ||
+        decoded
+      ) {
         return {
-          // Actual admin/worker name
-          // First try stored admin, then JWT
-          name: admin?.full_name || decoded?.full_name || "Admin",
+          name:
+            admin?.full_name ||
+            decoded?.full_name ||
+            "Admin",
 
-          // Actual role
-          // First try stored admin, then JWT
-          role: admin?.role || decoded?.role || "ADMIN_LAYER_1",
+          role:
+            admin?.role ||
+            decoded?.role ||
+            "ADMIN_LAYER_1",
         };
       }
     } catch (error) {
-      console.error("Failed to read authenticated user:", error);
+      console.error(
+        "Failed to read authenticated user:",
+        error
+      );
     }
 
-    // =====================================================
-    // 5. EXISTING JWT FALLBACK
-    // =====================================================
+    /* =====================================================
+       5. EXISTING JWT FALLBACK
+    ===================================================== */
 
     return getUserFromToken();
   };
 
-  const user = getCurrentUser();
+  const user =
+    getCurrentUser();
 
-  const roleLabel = getRoleLabel(user.role);
+  const roleLabel =
+    getRoleLabel(
+      user.role
+    );
 
-  const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "A";
+  const userInitial =
+    user?.name
+      ?.trim()
+      ?.charAt(0)
+      ?.toUpperCase() ||
+    "A";
 
   /* =========================================================
      DATE / DAY TYPE
   ========================================================= */
 
-  /*
-   * selectedDate comes from the parent.
-   *
-   * Expected format:
-   *
-   * YYYY-MM-DD
-   *
-   * Example:
-   *
-   * 2026-08-21
-   */
+  const selectedDateObj =
+    selectedDate
+      ? new Date(
+          `${selectedDate}T12:00:00`
+        )
+      : new Date();
 
-  const selectedDateObj = selectedDate
-    ? new Date(`${selectedDate}T12:00:00`)
-    : new Date();
-
-  const selectedDay = selectedDateObj.getDay();
+  const selectedDay =
+    selectedDateObj.getDay();
 
   /*
-   * JavaScript:
-   *
    * Sunday    = 0
    * Monday    = 1
    * Tuesday   = 2
@@ -547,30 +678,25 @@ export default function Header({
    * Saturday  = 6
    */
 
-  const isDryDay = selectedDay === 3 || selectedDay === 6;
+  const isDryDay =
+    selectedDay === 3 ||
+    selectedDay === 6;
 
   /*
-   * IMPORTANT:
-   *
    * Dry Day exists ONLY on:
    *
    * Wednesday
    * Saturday
-   *
-   * All other days are Wet Day.
    */
 
   useEffect(() => {
-    /*
-     * If selected date is NOT Wednesday
-     * or Saturday, Dry Day must not remain
-     * selected.
-     */
-
     if (!isDryDay) {
       setDayType("wet");
     }
-  }, [selectedDate, isDryDay]);
+  }, [
+    selectedDate,
+    isDryDay,
+  ]);
 
   /* =========================================================
      GSAP HEADER ANIMATION
@@ -581,18 +707,26 @@ export default function Header({
       return;
     }
 
-    const tl = gsap.timeline();
+    const tl =
+      gsap.timeline();
 
-    tl.from(headerRef.current, {
-      y: -24,
-      opacity: 0,
-      duration: 0.45,
-      ease: "power4.out",
-    });
+    tl.from(
+      headerRef.current,
+      {
+        y: -24,
+        opacity: 0,
+        duration: 0.45,
+        ease: "power4.out",
+      }
+    );
 
-    if (controlsRef.current?.children) {
+    if (
+      controlsRef.current
+        ?.children
+    ) {
       tl.from(
-        controlsRef.current.children,
+        controlsRef.current
+          .children,
         {
           y: -14,
           opacity: 0,
@@ -600,7 +734,7 @@ export default function Header({
           stagger: 0.05,
           ease: "power3.out",
         },
-        "-=0.2",
+        "-=0.2"
       );
     }
 
@@ -615,19 +749,33 @@ export default function Header({
 
   useEffect(() => {
     function close(event) {
-      if (!profileRef.current?.contains(event.target)) {
+      if (
+        !profileRef.current?.contains(
+          event.target
+        )
+      ) {
         setProfileOpen(false);
       }
 
-      if (!languageRef.current?.contains(event.target)) {
+      if (
+        !languageRef.current?.contains(
+          event.target
+        )
+      ) {
         setLanguageOpen(false);
       }
     }
 
-    window.addEventListener("mousedown", close);
+    window.addEventListener(
+      "mousedown",
+      close
+    );
 
     return () => {
-      window.removeEventListener("mousedown", close);
+      window.removeEventListener(
+        "mousedown",
+        close
+      );
     };
   }, []);
 
@@ -637,17 +785,26 @@ export default function Header({
 
   useEffect(() => {
     function shortcut(event) {
-      if (event.key === "/" && variant !== "dashboard") {
+      if (
+        event.key === "/" &&
+        variant !== "dashboard"
+      ) {
         event.preventDefault();
 
         searchRef.current?.focus();
       }
     }
 
-    window.addEventListener("keydown", shortcut);
+    window.addEventListener(
+      "keydown",
+      shortcut
+    );
 
     return () => {
-      window.removeEventListener("keydown", shortcut);
+      window.removeEventListener(
+        "keydown",
+        shortcut
+      );
     };
   }, [variant]);
 
@@ -659,7 +816,7 @@ export default function Header({
     sessionStorage.clear();
 
     window.location.replace(
-      "https://app-authentication-frontend.onrender.com",
+      "https://app-authentication-frontend.onrender.com"
     );
   };
 
@@ -667,20 +824,19 @@ export default function Header({
      DATE FORMAT
   ========================================================= */
 
-  /*
-   * IMPORTANT:
-   * Use local date values instead of toISOString()
-   * when sending the selected date back to the parent.
-   *
-   * This prevents timezone-related one-day shifts.
-   */
+  const formatLocalDate = (
+    date
+  ) => {
+    const year =
+      date.getFullYear();
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear();
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
 
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-
-    const day = String(date.getDate()).padStart(2, "0");
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   };
@@ -689,32 +845,64 @@ export default function Header({
      DATE CHANGE HANDLER
   ========================================================= */
 
-  const handleDateChange = (date) => {
+  const handleDateChange = (
+    date
+  ) => {
     if (!date) {
       return;
     }
 
-    const formattedDate = formatLocalDate(date);
+    const formattedDate =
+      formatLocalDate(date);
 
-    setSelectedDate(formattedDate);
+    setSelectedDate(
+      formattedDate
+    );
   };
 
   /* =========================================================
      LANGUAGE HANDLER
   ========================================================= */
 
-  const handleLanguageChange = (languageCode) => {
-    setLanguage(languageCode);
+  const handleLanguageChange = (
+    languageCode
+  ) => {
+    if (
+      !languages.some(
+        (item) =>
+          item.code ===
+          languageCode
+      )
+    ) {
+      return;
+    }
+
+    setLanguage(
+      languageCode
+    );
 
     setLanguageOpen(false);
   };
 
   /* =========================================================
      CURRENT LANGUAGE
+
+     EN -> English
+     KN -> ಕನ್ನಡ
+     HI -> हिंदी
+     TE -> తెలుగు
   ========================================================= */
 
   const currentLanguageCode =
-    language === "en" ? "EN" : language === "kn" ? "KN" : "HI";
+    language === "en"
+      ? "EN"
+      : language === "kn"
+      ? "KN"
+      : language === "hi"
+      ? "HI"
+      : language === "te"
+      ? "TE"
+      : "EN";
 
   /* =========================================================
      DYNAMIC LOCATION FILTERS
@@ -732,12 +920,26 @@ export default function Header({
           sm:w-[155px]
           2xl:w-[118px]
         "
-        value={selectedCity?.city_name || t("filters.city", "Select City")}
+        value={
+          selectedCity?.city_name ||
+          t(
+            "filters.city",
+            "Select City"
+          )
+        }
         options={cities}
         onChange={setSelectedCity}
-        placeholder={t("filters.city", "Select City")}
-        getLabel={(city) => city?.city_name || ""}
-        getKey={(city) => city?.city_id}
+        placeholder={t(
+          "filters.city",
+          "Select City"
+        )}
+        getLabel={(city) =>
+          city?.city_name ||
+          ""
+        }
+        getKey={(city) =>
+          city?.city_id
+        }
       />
 
       {/* =================================================
@@ -750,12 +952,26 @@ export default function Header({
           sm:w-[235px]
           2xl:w-[200px]
         "
-        value={selectedZone?.zone_name || t("filters.zone", "Select Zone")}
+        value={
+          selectedZone?.zone_name ||
+          t(
+            "filters.zone",
+            "Select Zone"
+          )
+        }
         options={zones}
         onChange={setSelectedZone}
-        placeholder={t("filters.zone", "Select Zone")}
-        getLabel={(zone) => zone?.zone_name || ""}
-        getKey={(zone) => zone?.zone_id}
+        placeholder={t(
+          "filters.zone",
+          "Select Zone"
+        )}
+        getLabel={(zone) =>
+          zone?.zone_name ||
+          ""
+        }
+        getKey={(zone) =>
+          zone?.zone_id
+        }
       />
 
       {/* =================================================
@@ -768,12 +984,34 @@ export default function Header({
           sm:w-[180px]
           2xl:w-[138px]
         "
-        value={selectedDivision?.division_name || "Select Division"}
+        value={
+          selectedDivision
+            ?.division_name ||
+          t(
+            "filters.division",
+            "Select Division"
+          )
+        }
         options={divisions}
-        onChange={setSelectedDivision}
-        placeholder="Select Division"
-        getLabel={(division) => division?.division_name || ""}
-        getKey={(division) => division?.division_id}
+        onChange={
+          setSelectedDivision
+        }
+        placeholder={t(
+          "filters.division",
+          "Select Division"
+        )}
+        getLabel={(
+          division
+        ) =>
+          division
+            ?.division_name ||
+          ""
+        }
+        getKey={(
+          division
+        ) =>
+          division?.division_id
+        }
       />
 
       {/* =================================================
@@ -788,20 +1026,38 @@ export default function Header({
         "
         value={
           selectedWard
-            ? `${selectedWard.ward_name} (${selectedWard.ward_no})`
-            : "Select Ward"
+            ? `${selectedWard.ward_name}${
+                selectedWard.ward_no !==
+                undefined
+                  ? ` (${selectedWard.ward_no})`
+                  : ""
+              }`
+            : t(
+                "filters.ward",
+                "Select Ward"
+              )
         }
         options={wards}
-        onChange={setSelectedWard}
-        placeholder="Select Ward"
+        onChange={
+          setSelectedWard
+        }
+        placeholder={t(
+          "filters.ward",
+          "Select Ward"
+        )}
         getLabel={(ward) =>
           ward
             ? `${ward.ward_name}${
-                ward.ward_no !== undefined ? ` (${ward.ward_no})` : ""
+                ward.ward_no !==
+                undefined
+                  ? ` (${ward.ward_no})`
+                  : ""
               }`
             : ""
         }
-        getKey={(ward) => ward?.ward_id}
+        getKey={(ward) =>
+          ward?.ward_id
+        }
       />
     </>
   );
@@ -828,8 +1084,15 @@ export default function Header({
         ref={searchRef}
         type="text"
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder={t("header.search", "Search...")}
+        onChange={(event) =>
+          setSearch(
+            event.target.value
+          )
+        }
+        placeholder={t(
+          "header.search",
+          "Search..."
+        )}
         className="
           w-full
           h-9
@@ -999,7 +1262,14 @@ export default function Header({
           ================================================= */}
 
           <div className="relative shrink-0">
-            <Calendar value={selectedDateObj} onChange={handleDateChange} />
+            <Calendar
+              value={
+                selectedDateObj
+              }
+              onChange={
+                handleDateChange
+              }
+            />
           </div>
 
           {/* =================================================
@@ -1028,7 +1298,11 @@ export default function Header({
               {isDryDay && (
                 <button
                   type="button"
-                  onClick={() => setDayType("dry")}
+                  onClick={() =>
+                    setDayType(
+                      "dry"
+                    )
+                  }
                   className={`
                     h-9
                     px-4
@@ -1036,15 +1310,18 @@ export default function Header({
                     font-semibold
                     transition-all
                     duration-300
-
                     ${
-                      dayType === "dry"
+                      dayType ===
+                      "dry"
                         ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                         : "bg-white text-[#16295A] hover:bg-gray-50"
                     }
                   `}
                 >
-                  {t("header.dryDay", "Dry Day")}
+                  {t(
+                    "header.dryDay",
+                    "Dry Day"
+                  )}
                 </button>
               )}
 
@@ -1055,7 +1332,11 @@ export default function Header({
 
               <button
                 type="button"
-                onClick={() => setDayType("wet")}
+                onClick={() =>
+                  setDayType(
+                    "wet"
+                  )
+                }
                 className={`
                   h-9
                   px-4
@@ -1063,15 +1344,18 @@ export default function Header({
                   font-semibold
                   transition-all
                   duration-300
-
                   ${
-                    dayType === "wet"
+                    dayType ===
+                    "wet"
                       ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                       : "bg-white text-[#16295A] hover:bg-gray-50"
                   }
                 `}
               >
-                {t("header.wetDay", "Wet Day")}
+                {t(
+                  "header.wetDay",
+                  "Wet Day"
+                )}
               </button>
             </div>
           )}
@@ -1089,7 +1373,11 @@ export default function Header({
           >
             <button
               type="button"
-              onClick={() => setLanguageOpen(!languageOpen)}
+              onClick={() =>
+                setLanguageOpen(
+                  !languageOpen
+                )
+              }
               className="
                 h-9
                 px-2.5
@@ -1107,7 +1395,10 @@ export default function Header({
                 duration-300
               "
             >
-              <Globe size={15} className="text-violet-600" />
+              <Globe
+                size={15}
+                className="text-violet-600"
+              />
 
               <span
                 className="
@@ -1125,14 +1416,20 @@ export default function Header({
                 className={`
                   transition-transform
                   duration-300
-                  ${languageOpen ? "rotate-180" : ""}
+                  ${
+                    languageOpen
+                      ? "rotate-180"
+                      : ""
+                  }
                 `}
               />
             </button>
 
             {languageOpen && (
               <div
-                ref={languageMenuRef}
+                ref={
+                  languageMenuRef
+                }
                 className="
                   absolute
                   right-0
@@ -1147,44 +1444,54 @@ export default function Header({
                   z-[10000]
                 "
               >
-                {languages.map((item) => (
-                  <button
-                    type="button"
-                    key={item.code}
-                    onClick={() => handleLanguageChange(item.code)}
-                    className="
-                      w-full
-                      px-4
-                      py-3
-                      flex
-                      items-center
-                      justify-between
-                      text-[12px]
-                      text-[#16295A]
-                      hover:bg-violet-50
-                      transition
-                    "
-                  >
-                    {/* =================================================
-                        IMPORTANT:
-                        DO NOT use t() here.
+                {languages.map(
+                  (item) => (
+                    <button
+                      type="button"
+                      key={
+                        item.code
+                      }
+                      onClick={() =>
+                        handleLanguageChange(
+                          item.code
+                        )
+                      }
+                      className="
+                        w-full
+                        px-4
+                        py-3
+                        flex
+                        items-center
+                        justify-between
+                        text-[12px]
+                        text-[#16295A]
+                        hover:bg-violet-50
+                        transition
+                      "
+                    >
+                      {/* IMPORTANT:
+                          Do NOT use t() here.
+                          Language names always remain
+                          in their native language. */}
 
-                        These names must ALWAYS remain:
-                        English
-                        ಕನ್ನಡ
-                        हिंदी
-                    ================================================== */}
+                      <span>
+                        {
+                          item.label
+                        }
+                      </span>
 
-                    <span>{item.label}</span>
-
-                    {language === item.code && (
-                      <Check
-                        size={14}
-                        className="text-violet-600"
-                      />
-                    )}
-                  </button>
-                ))}
+                      {language ===
+                        item.code && (
+                        <Check
+                          size={14}
+                          className="
+                            text-violet-600
+                          "
+                        />
+                      )}
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -1202,8 +1509,14 @@ export default function Header({
           >
             <button
               type="button"
-              onClick={() => setProfileOpen(!profileOpen)}
-              aria-expanded={profileOpen}
+              onClick={() =>
+                setProfileOpen(
+                  !profileOpen
+                )
+              }
+              aria-expanded={
+                profileOpen
+              }
               className="
                 h-9
                 pl-1
@@ -1285,7 +1598,11 @@ export default function Header({
                 className={`
                   transition-transform
                   duration-300
-                  ${profileOpen ? "rotate-180" : ""}
+                  ${
+                    profileOpen
+                      ? "rotate-180"
+                      : ""
+                  }
                 `}
               />
             </button>
@@ -1325,7 +1642,7 @@ export default function Header({
                         y: 0,
                         duration: 0.22,
                         ease: "power3.out",
-                      },
+                      }
                     );
                   }
                 }}
@@ -1398,7 +1715,9 @@ export default function Header({
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileOpen(false);
+                    setProfileOpen(
+                      false
+                    );
 
                     handleLogout();
                   }}
@@ -1416,9 +1735,14 @@ export default function Header({
                     text-left
                   "
                 >
-                  <LogOut size={16} />
+                  <LogOut
+                    size={16}
+                  />
 
-                  {t("sidebar.logout")}
+                  {t(
+                    "sidebar.logout",
+                    "Logout"
+                  )}
                 </button>
               </div>
             )}
@@ -1439,7 +1763,9 @@ export default function Header({
             px-0.5
           "
         >
-          <div className="w-full">{searchInput}</div>
+          <div className="w-full">
+            {searchInput}
+          </div>
         </div>
       )}
 
