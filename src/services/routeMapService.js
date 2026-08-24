@@ -1,3 +1,4 @@
+const mainDb = require("../config/mainDb");
 const masterCitizenPrisma = require("../config/masterCitizenPrisma");
 const telemetryDb = require("../config/telemetryDb");
 
@@ -19,39 +20,53 @@ const quoteIdentifier = (identifier) => {
 
 /*
 |--------------------------------------------------------------------------
-| ID PARSER
+| INPUT PARSERS
 |--------------------------------------------------------------------------
 */
 
 const parsePositiveInteger = (value, fieldName) => {
   if (value === undefined || value === null || value === "") {
-    throw new Error(`${fieldName} is required`);
+    const error = new Error(
+      "latitude, longitude, cityId, zoneId, divisionId and wardId are required.",
+    );
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const parsed = Number(value);
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${fieldName} must be a positive integer`);
+    const error = new Error(`${fieldName} must be a positive integer`);
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   return parsed;
 };
 
-/*
-|--------------------------------------------------------------------------
-| COORDINATE PARSER
-|--------------------------------------------------------------------------
-*/
-
 const parseCoordinate = (value, fieldName, min, max) => {
-  const parsed = Number(value);
+  if (value === undefined || value === null || value === "") {
+    const error = new Error(
+      "latitude, longitude, cityId, zoneId, divisionId and wardId are required.",
+    );
 
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`${fieldName} must be a valid number`);
+    error.statusCode = 400;
+
+    throw error;
   }
 
-  if (parsed < min || parsed > max) {
-    throw new Error(`${fieldName} is outside valid range`);
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    const error = new Error("Invalid latitude or longitude.");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   return parsed;
@@ -83,16 +98,10 @@ const getDayTableName = (date) => {
 
 /*
 |--------------------------------------------------------------------------
-| GET SELECTED WARD
+| CITY → ZONE → DIVISION → WARD
 |--------------------------------------------------------------------------
 |
-| City
-|   ↓
-| Zone
-|   ↓
-| Division
-|   ↓
-| Ward
+| Uses the existing Master Citizen hierarchy.
 |
 |--------------------------------------------------------------------------
 */
@@ -117,11 +126,19 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   });
 
   if (!city) {
-    throw new Error("City not found");
+    const error = new Error("City not found");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   if (!city.city_table_name) {
-    throw new Error("City has no dynamic table registered");
+    const error = new Error("City has no dynamic table registered");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const cityTable = quoteIdentifier(city.city_table_name);
@@ -144,13 +161,21 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   );
 
   if (zones.length === 0) {
-    throw new Error("Zone not found in selected city");
+    const error = new Error("Zone not found in selected city");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const zone = zones[0];
 
   if (!zone.zone_table_name) {
-    throw new Error("Selected zone has no dynamic table registered");
+    const error = new Error("Selected zone has no dynamic table registered");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const zoneTable = quoteIdentifier(zone.zone_table_name);
@@ -173,13 +198,23 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   );
 
   if (divisions.length === 0) {
-    throw new Error("Division not found in selected zone");
+    const error = new Error("Division not found in selected zone");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const division = divisions[0];
 
   if (!division.division_table_name) {
-    throw new Error("Selected division has no dynamic table registered");
+    const error = new Error(
+      "Selected division has no dynamic table registered",
+    );
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const divisionTable = quoteIdentifier(division.division_table_name);
@@ -203,7 +238,11 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   );
 
   if (wards.length === 0) {
-    throw new Error("Ward not found in selected division");
+    const error = new Error("Ward not found in selected division");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   const ward = wards[0];
@@ -211,42 +250,195 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
   const wardNo = Number(ward.ward_no);
 
   if (!Number.isInteger(wardNo)) {
-    throw new Error("Selected ward has an invalid ward number");
+    const error = new Error("Selected ward has an invalid ward number");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
   return {
     cityId: selectedCityId,
-
     cityName: city.city_name,
 
     zoneId: selectedZoneId,
-
     zoneName: zone.zone_name,
 
     divisionId: selectedDivisionId,
-
     divisionName: division.division_name,
 
     wardId: selectedWardId,
-
     wardNo,
-
     wardName: ward.ward_name,
-
     wardTableName: ward.ward_table_name,
   };
 };
 
 /*
 |--------------------------------------------------------------------------
-| GET VEHICLE TABLES FOR WARD
+| VEHICLES FOR SELECTED WARD
+|--------------------------------------------------------------------------
+|
+| vehicle_master is the source of registered vehicles.
+|
+| day_DDMMYYYY is used only to resolve the existing
+| vehicle-specific telemetry table.
+|
 |--------------------------------------------------------------------------
 */
 
-const getVehicleTablesForWard = async (date, wardNo) => {
+const getVehicleTablesForWard = async (date, ward) => {
+  /*
+   * Get registered vehicles from vehicle_master.
+   *
+   * The geographic hierarchy has already been validated
+   * above, so the selected ward is now matched against
+   * the existing vehicle_master fields.
+   */
+
+  const vehicleResult = await mainDb.query(
+    `
+        SELECT
+          vehicle_id,
+          vehicle_type,
+          city,
+          zone,
+          division,
+          ward,
+          ward_no
+        FROM vehicle_master
+        WHERE ward_no = $1
+          AND city = $2
+          AND zone = $3
+          AND division = $4
+          AND ward = $5
+        ORDER BY vehicle_id ASC
+      `,
+    [
+      ward.wardNo,
+      ward.cityName,
+      ward.zoneName,
+      ward.divisionName,
+      ward.wardName,
+    ],
+  );
+
+  const registeredVehicles = vehicleResult.rows.map((row) => ({
+    vehicleNumber:
+      row.vehicle_id === null || row.vehicle_id === undefined
+        ? null
+        : String(row.vehicle_id).trim(),
+
+    vehicleType: row.vehicle_type || null,
+
+    wardNo:
+      row.ward_no === null || row.ward_no === undefined
+        ? ward.wardNo
+        : Number(row.ward_no),
+
+    vehicleTableName: null,
+  }));
+
+  /*
+   * No registered vehicles.
+   */
+
+  if (registeredVehicles.length === 0) {
+    return [];
+  }
+
+  /*
+   * Resolve today's vehicle telemetry tables.
+   */
+
   const dayTable = getDayTableName(date);
 
   const dayIdentifier = quoteIdentifier(dayTable);
+
+  const mappingByVehicle = new Map();
+
+  try {
+    const rows = await telemetryDb.$queryRawUnsafe(
+      `
+          SELECT
+            vehicle_number,
+            vehicle_table_name,
+            ward_no
+          FROM ${dayIdentifier}
+          WHERE ward_no = $1
+            AND vehicle_number IS NOT NULL
+            AND vehicle_table_name IS NOT NULL
+        `,
+      ward.wardNo,
+    );
+
+    for (const row of rows) {
+      const vehicleNumber =
+        row.vehicle_number === null || row.vehicle_number === undefined
+          ? null
+          : String(row.vehicle_number).trim();
+
+      if (
+        !vehicleNumber ||
+        typeof row.vehicle_table_name !== "string" ||
+        !IDENTIFIER_REGEX.test(row.vehicle_table_name)
+      ) {
+        continue;
+      }
+
+      mappingByVehicle.set(vehicleNumber, row.vehicle_table_name);
+    }
+  } catch (error) {
+    /*
+     * Missing day table simply means there is no
+     * telemetry mapping for today.
+     */
+
+    if (error?.code !== "42P01") {
+      throw error;
+    }
+  }
+
+  /*
+   * Keep ALL registered vehicles.
+   *
+   * Vehicles without telemetry are returned as:
+   *
+   * latitude: null
+   * longitude: null
+   * status: INACTIVE
+   */
+
+  return registeredVehicles.map((vehicle) => ({
+    ...vehicle,
+
+    vehicleTableName: mappingByVehicle.get(vehicle.vehicleNumber) || null,
+  }));
+};
+
+/*
+|--------------------------------------------------------------------------
+| ADD YESTERDAY'S TELEMETRY TABLE REFERENCES
+|--------------------------------------------------------------------------
+|
+| This allows the 30-minute status calculation to work
+| correctly around midnight.
+|
+|--------------------------------------------------------------------------
+*/
+
+const addYesterdayTelemetryMappings = async (vehicleTables, wardNo) => {
+  const yesterday = new Date();
+
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const yesterdayDayTable = getDayTableName(yesterday);
+
+  const yesterdayIdentifier = quoteIdentifier(yesterdayDayTable);
+
+  const knownVehicles = new Set(
+    vehicleTables.map((vehicle) => vehicle.vehicleNumber).filter(Boolean),
+  );
 
   try {
     const rows = await telemetryDb.$queryRawUnsafe(
@@ -255,33 +447,50 @@ const getVehicleTablesForWard = async (date, wardNo) => {
               vehicle_number,
               vehicle_table_name,
               ward_no
-            FROM ${dayIdentifier}
+            FROM ${yesterdayIdentifier}
             WHERE ward_no = $1
               AND vehicle_number IS NOT NULL
               AND vehicle_table_name IS NOT NULL
-            ORDER BY vehicle_number ASC
           `,
       wardNo,
     );
 
-    return rows
-      .filter(
-        (row) =>
-          typeof row.vehicle_table_name === "string" &&
-          IDENTIFIER_REGEX.test(row.vehicle_table_name),
-      )
-      .map((row) => ({
-        vehicleNumber: row.vehicle_number
-          ? String(row.vehicle_number).trim()
-          : null,
+    const mappingByVehicle = new Map();
 
-        vehicleTableName: row.vehicle_table_name,
+    for (const row of rows) {
+      const vehicleNumber =
+        row.vehicle_number === null || row.vehicle_number === undefined
+          ? null
+          : String(row.vehicle_number).trim();
 
-        wardNo: Number(row.ward_no),
-      }));
+      if (
+        !vehicleNumber ||
+        !knownVehicles.has(vehicleNumber) ||
+        typeof row.vehicle_table_name !== "string" ||
+        !IDENTIFIER_REGEX.test(row.vehicle_table_name)
+      ) {
+        continue;
+      }
+
+      mappingByVehicle.set(vehicleNumber, row.vehicle_table_name);
+    }
+
+    return vehicleTables.map((vehicle) => {
+      const yesterdayTable = mappingByVehicle.get(vehicle.vehicleNumber);
+
+      if (yesterdayTable && yesterdayTable !== vehicle.vehicleTableName) {
+        return {
+          ...vehicle,
+
+          additionalVehicleTableName: yesterdayTable,
+        };
+      }
+
+      return vehicle;
+    });
   } catch (error) {
     if (error?.code === "42P01") {
-      return [];
+      return vehicleTables;
     }
 
     throw error;
@@ -292,20 +501,12 @@ const getVehicleTablesForWard = async (date, wardNo) => {
 |--------------------------------------------------------------------------
 | HAVERSINE DISTANCE
 |--------------------------------------------------------------------------
-|
-| Returns straight-line geographic distance.
-|
-| Result:
-|   meters
-|   kilometers
-|
-|--------------------------------------------------------------------------
 */
 
-const calculateDistance = (latitude1, longitude1, latitude2, longitude2) => {
-  const EARTH_RADIUS_METERS = 6371000;
+const calculateDistanceKm = (latitude1, longitude1, latitude2, longitude2) => {
+  const EARTH_RADIUS_KM = 6371;
 
-  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const toRadians = (value) => (value * Math.PI) / 180;
 
   const dLatitude = toRadians(latitude2 - latitude1);
 
@@ -321,154 +522,205 @@ const calculateDistance = (latitude1, longitude1, latitude2, longitude2) => {
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  const meters = EARTH_RADIUS_METERS * c;
-
-  return {
-    meters: Number(meters.toFixed(2)),
-
-    kilometers: Number((meters / 1000).toFixed(3)),
-  };
+  return Number((EARTH_RADIUS_KM * c).toFixed(2));
 };
 
 /*
 |--------------------------------------------------------------------------
-| GET LATEST TELEMETRY FOR VEHICLES
+| LATEST GPS + LIVE STATUS
 |--------------------------------------------------------------------------
 */
 
 const getLatestVehiclePositions = async (vehicleTables) => {
-  const latestVehicles = [];
+  const now = new Date();
+
+  /*
+   * Existing SEWAC live-status rule:
+   *
+   * <= 30 minutes = ACTIVE
+   * > 30 minutes = INACTIVE
+   */
+
+  const inactivityLimit = new Date(now.getTime() - 30 * 60 * 1000);
+
+  const results = [];
 
   for (const vehicle of vehicleTables) {
-    if (!vehicle.vehicleTableName) {
+    if (!vehicle.vehicleNumber) {
       continue;
     }
 
-    const table = quoteIdentifier(vehicle.vehicleTableName);
+    const tableNames = [
+      vehicle.vehicleTableName,
 
-    try {
-      /*
-       * IMPORTANT:
-       *
-       * Get the latest GPS packet
-       * from THIS vehicle table.
-       */
+      vehicle.additionalVehicleTableName,
+    ].filter(
+      (name, index, array) =>
+        name && IDENTIFIER_REGEX.test(name) && array.indexOf(name) === index,
+    );
 
-      const rows = await telemetryDb.$queryRawUnsafe(
-        `
-              SELECT
-                id,
-                latitude,
-                longitude,
-                vehicleNumber,
-                receivedTimestamp,
-                iotTimestamp,
-                driverName,
-                unitNumber
-              FROM ${table}
-              WHERE latitude IS NOT NULL
-                AND longitude IS NOT NULL
-              ORDER BY
-                receivedTimestamp DESC,
-                id DESC
-              LIMIT 1
-            `,
-      );
+    let latest = null;
 
-      if (rows.length === 0) {
+    /*
+     * Look through the existing dynamic
+     * telemetry tables and keep only the
+     * newest valid GPS packet.
+     */
+
+    for (const vehicleTableName of tableNames) {
+      const table = quoteIdentifier(vehicleTableName);
+
+      try {
+        const rows = await telemetryDb.$queryRawUnsafe(
+          `
+                SELECT
+                  id,
+                  latitude,
+                  longitude,
+                  vehicleNumber,
+                  receivedTimestamp,
+                  iotTimestamp,
+                  driverName,
+                  unitNumber
+                FROM ${table}
+                WHERE latitude IS NOT NULL
+                  AND longitude IS NOT NULL
+                ORDER BY
+                  receivedTimestamp DESC NULLS LAST,
+                  id DESC
+                LIMIT 1
+              `,
+        );
+
+        if (rows.length === 0) {
+          continue;
+        }
+
+        const row = rows[0];
+
+        const latitude = Number(row.latitude);
+
+        const longitude = Number(row.longitude);
+
         /*
-         * Vehicle exists in the ward
-         * but has no GPS packet.
+         * Ignore malformed GPS.
          */
 
-        latestVehicles.push({
-          vehicleId: vehicle.vehicleNumber,
+        if (
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude) ||
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
+        ) {
+          continue;
+        }
 
-          vehicleNumber: vehicle.vehicleNumber,
+        const receivedTimestamp = row.receivedTimestamp
+          ? new Date(row.receivedTimestamp)
+          : null;
 
-          wardNo: vehicle.wardNo,
+        if (!receivedTimestamp || Number.isNaN(receivedTimestamp.getTime())) {
+          continue;
+        }
 
-          latitude: null,
+        /*
+         * Keep only newest packet.
+         */
 
-          longitude: null,
+        if (!latest || receivedTimestamp > latest.receivedTimestamp) {
+          latest = {
+            latitude,
+            longitude,
 
-          receivedTimestamp: null,
+            receivedTimestamp,
 
-          iotTimestamp: null,
+            iotTimestamp: row.iotTimestamp || null,
 
-          driverName: null,
+            driverName: row.driverName || null,
 
-          unitNumber: null,
+            unitNumber: row.unitNumber || null,
+          };
+        }
+      } catch (error) {
+        /*
+         * One bad telemetry table must
+         * never crash the complete map.
+         */
 
-          hasGps: false,
-        });
+        if (error?.code === "42P01") {
+          continue;
+        }
 
-        continue;
+        console.warn(
+          `Live route map: unable to inspect telemetry table ${vehicleTableName}:`,
+          error.message,
+        );
       }
+    }
 
-      const row = rows[0];
+    /*
+     * No valid telemetry.
+     */
 
-      const latitude = Number(row.latitude);
-
-      const longitude = Number(row.longitude);
-
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        latestVehicles.push({
-          vehicleId: vehicle.vehicleNumber,
-
-          vehicleNumber: vehicle.vehicleNumber,
-
-          wardNo: vehicle.wardNo,
-
-          latitude: null,
-
-          longitude: null,
-
-          receivedTimestamp: row.receivedTimestamp || null,
-
-          iotTimestamp: row.iotTimestamp || null,
-
-          driverName: row.driverName || null,
-
-          unitNumber: row.unitNumber || null,
-
-          hasGps: false,
-        });
-
-        continue;
-      }
-
-      latestVehicles.push({
+    if (!latest) {
+      results.push({
         vehicleId: vehicle.vehicleNumber,
 
-        vehicleNumber: row.vehicleNumber || vehicle.vehicleNumber,
+        latitude: null,
 
-        wardNo: vehicle.wardNo,
+        longitude: null,
 
-        latitude,
+        distance: null,
 
-        longitude,
+        distanceUnit: "km",
 
-        receivedTimestamp: row.receivedTimestamp || null,
+        status: "INACTIVE",
 
-        iotTimestamp: row.iotTimestamp || null,
+        lastUpdated: null,
 
-        driverName: row.driverName || null,
-
-        unitNumber: row.unitNumber || null,
-
-        hasGps: true,
+        ...(vehicle.vehicleType
+          ? {
+              vehicleType: vehicle.vehicleType,
+            }
+          : {}),
       });
-    } catch (error) {
-      if (error?.code === "42P01") {
-        continue;
-      }
 
-      throw error;
+      continue;
     }
+
+    /*
+     * Determine live status.
+     */
+
+    const status =
+      latest.receivedTimestamp >= inactivityLimit ? "ACTIVE" : "INACTIVE";
+
+    results.push({
+      vehicleId: vehicle.vehicleNumber,
+
+      latitude: latest.latitude,
+
+      longitude: latest.longitude,
+
+      distance: null,
+
+      distanceUnit: "km",
+
+      status,
+
+      lastUpdated: latest.receivedTimestamp.toISOString(),
+
+      ...(vehicle.vehicleType
+        ? {
+            vehicleType: vehicle.vehicleType,
+          }
+        : {}),
+    });
   }
 
-  return latestVehicles;
+  return results;
 };
 
 /*
@@ -486,9 +738,7 @@ const getLiveRouteMap = async ({
   wardId,
 }) => {
   /*
-   * ========================================================
    * 1. PERSON LOCATION
-   * ========================================================
    */
 
   const personLatitude = parseCoordinate(latitude, "latitude", -90, 90);
@@ -496,9 +746,7 @@ const getLiveRouteMap = async ({
   const personLongitude = parseCoordinate(longitude, "longitude", -180, 180);
 
   /*
-   * ========================================================
-   * 2. RESOLVE GEOGRAPHIC HIERARCHY
-   * ========================================================
+   * 2. VALIDATE CITY → ZONE → DIVISION → WARD
    */
 
   const ward = await getSelectedWard({
@@ -509,122 +757,113 @@ const getLiveRouteMap = async ({
   });
 
   /*
-   * ========================================================
-   * 3. TODAY
-   * ========================================================
+   * 3. REGISTERED VEHICLES
    */
 
-  const now = new Date();
+  let vehicleTables = await getVehicleTablesForWard(new Date(), ward);
 
   /*
-   * ========================================================
-   * 4. VEHICLES REGISTERED TO SELECTED WARD
-   * ========================================================
+   * 4. CHECK YESTERDAY TOO
+   *
+   * Needed around midnight for the 30-minute
+   * ACTIVE/INACTIVE calculation.
    */
 
-  const vehicleTables = await getVehicleTablesForWard(now, ward.wardNo);
+  vehicleTables = await addYesterdayTelemetryMappings(
+    vehicleTables,
+    ward.wardNo,
+  );
 
   /*
-   * ========================================================
    * 5. LATEST GPS
-   * ========================================================
    */
 
-  const vehicles = await getLatestVehiclePositions(vehicleTables);
+  let vehicles = await getLatestVehiclePositions(vehicleTables);
 
   /*
-   * ========================================================
-   * 6. DISTANCE FROM PERSON
-   * ========================================================
+   * 6. DISTANCE
    */
 
-  const enrichedVehicles = vehicles
-    .map((vehicle) => {
-      if (!vehicle.hasGps) {
-        return {
-          ...vehicle,
+  vehicles = vehicles.map((vehicle) => {
+    /*
+     * Vehicle has no valid GPS.
+     */
 
-          distanceMeters: null,
-
-          distanceKm: null,
-        };
-      }
-
-      const distance = calculateDistance(
-        personLatitude,
-        personLongitude,
-        vehicle.latitude,
-        vehicle.longitude,
-      );
-
+    if (vehicle.latitude === null || vehicle.longitude === null) {
       return {
         ...vehicle,
 
-        distanceMeters: distance.meters,
+        distance: null,
 
-        distanceKm: distance.kilometers,
+        distanceUnit: "km",
+
+        status: "INACTIVE",
+
+        lastUpdated: null,
       };
-    })
-    .sort((a, b) => {
-      if (a.distanceMeters === null) {
-        return 1;
-      }
+    }
 
-      if (b.distanceMeters === null) {
-        return -1;
-      }
+    /*
+     * Haversine distance.
+     */
 
-      return a.distanceMeters - b.distanceMeters;
-    });
+    const distance = calculateDistanceKm(
+      personLatitude,
+      personLongitude,
+
+      vehicle.latitude,
+      vehicle.longitude,
+    );
+
+    return {
+      ...vehicle,
+
+      distance,
+
+      distanceUnit: "km",
+    };
+  });
 
   /*
-   * ========================================================
-   * 7. RETURN
-   * ========================================================
+   * 7. NEAREST → FARTHEST
+   *
+   * Vehicles without GPS go last.
+   */
+
+  vehicles.sort((a, b) => {
+    if (a.distance === null) {
+      return 1;
+    }
+
+    if (b.distance === null) {
+      return -1;
+    }
+
+    return a.distance - b.distance;
+  });
+
+  /*
+   * 8. FLUTTER-FRIENDLY RESPONSE
    */
 
   return {
-    success: true,
-
-    person: {
+    personLocation: {
       latitude: personLatitude,
 
       longitude: personLongitude,
     },
 
-    location: {
-      city: {
-        id: ward.cityId,
-        name: ward.cityName,
-      },
+    filters: {
+      cityId: ward.cityId,
 
-      zone: {
-        id: ward.zoneId,
-        name: ward.zoneName,
-      },
+      zoneId: ward.zoneId,
 
-      division: {
-        id: ward.divisionId,
-        name: ward.divisionName,
-      },
+      divisionId: ward.divisionId,
 
-      ward: {
-        id: ward.wardId,
-
-        number: ward.wardNo,
-
-        name: ward.wardName,
-      },
+      wardId: ward.wardId,
     },
 
-    vehicles: enrichedVehicles,
-
-    totalVehicles: enrichedVehicles.length,
-
-    vehiclesWithGps: enrichedVehicles.filter((vehicle) => vehicle.hasGps)
-      .length,
-
-    timestamp: now.toISOString(),
+    vehicles,
   };
 };
 

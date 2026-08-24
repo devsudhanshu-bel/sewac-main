@@ -4,16 +4,18 @@ const router = express.Router();
 
 const { getLiveRouteMap } = require("../controllers/routeMapController");
 
+const authMiddleware = require("../middlewares/authMiddleware");
+
 /*
 |--------------------------------------------------------------------------
-| LIVE ROUTE MAP
+| LIVE VEHICLE MAP
 |--------------------------------------------------------------------------
 |
 | GET
 |
 | /api/route-map/live
 |
-| Query:
+| Query parameters:
 |
 | latitude
 | longitude
@@ -25,6 +27,6 @@ const { getLiveRouteMap } = require("../controllers/routeMapController");
 |--------------------------------------------------------------------------
 */
 
-router.get("/live", getLiveRouteMap);
+router.get("/live", authMiddleware, getLiveRouteMap);
 
 module.exports = router;
