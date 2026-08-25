@@ -12,7 +12,6 @@ import { useFilters } from "../../contexts/FilterContext";
 import {
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -26,65 +25,19 @@ import { useLanguage } from "../../i18n";
 import SewacLogo from "../../assets/sewac_logo.svg";
 
 /* =========================================================
-   API CONFIGURATION
-
-   IMPORTANT:
-   Header now uses the SAME City Overview Map endpoint
-   as CityMapOverview.jsx.
-
-   This makes the Header geographic hierarchy come from
-   the actual master-citizen DB map data.
-========================================================= */
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://sewac-main.onrender.com";
-
-/* =========================================================
-   SAME ENDPOINT USED BY CITY OVERVIEW MAP
-========================================================= */
-
-const CITY_MAP_ENDPOINT = (cityId) =>
-  `${API_BASE_URL}/api/master-citizen/map/city/${encodeURIComponent(
-    cityId
-  )}`;
-
-/* =========================================================
-   FALLBACK CITY ENDPOINT
-
-   Used only if FilterContext has not populated cities.
-========================================================= */
-
-const CITIES_ENDPOINT =
-  `${API_BASE_URL}/api/filters/cities`;
-
-/* =========================================================
-   ZONE COLORS
-
-   EXACT SAME SOFT COLORS USED BY CITY OVERVIEW MAP.
-========================================================= */
-
-const ZONE_COLORS = [
-  "#93C5FD",
-  "#C4B5FD",
-  "#86EFAC",
-  "#FDE68A",
-  "#F9A8D4",
-];
-
-/* =========================================================
    LANGUAGE OPTIONS
 
    IMPORTANT:
-   These labels are plain strings.
+   Language names are intentionally NOT translated.
 
-   NEVER write:
+   English  -> English
+   Kannada  -> ಕನ್ನಡ
+   Hindi    -> हिंदी
+   Telugu   -> తెలుగు
+   Malayalam -> മലയാളം
 
-      label: Telugu
-
-   Always write:
-
-      label: "తెలుగు"
+   These labels always remain in their own language,
+   regardless of the currently selected application language.
 ========================================================= */
 
 const languages = [
@@ -115,7 +68,7 @@ const languages = [
 ];
 
 /* =========================================================
-   ROLE LABELS
+   ROLE HELPERS
 ========================================================= */
 
 const ROLE_LABELS = {
@@ -124,14 +77,9 @@ const ROLE_LABELS = {
   WORKER: "Worker",
 };
 
-/* =========================================================
-   GET USER FROM TOKEN
-========================================================= */
-
 function getUserFromToken() {
   try {
-    const token =
-      sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     if (!token) {
       return {
@@ -140,8 +88,7 @@ function getUserFromToken() {
       };
     }
 
-    const payload =
-      token.split(".")[1];
+    const payload = token.split(".")[1];
 
     if (!payload) {
       return {
@@ -150,20 +97,16 @@ function getUserFromToken() {
       };
     }
 
-    const decoded =
-      JSON.parse(
-        atob(
-          payload
-            .replace(/-/g, "+")
-            .replace(/_/g, "/")
-        )
-      );
+    const decoded = JSON.parse(
+      atob(
+        payload
+          .replace(/-/g, "+")
+          .replace(/_/g, "/")
+      )
+    );
 
     return {
-      name:
-        decoded.full_name ||
-        "Admin",
-
+      name: decoded.full_name || "Admin",
       role:
         decoded.role ||
         "ADMIN_LAYER_1",
@@ -181,258 +124,12 @@ function getUserFromToken() {
   }
 }
 
-/* =========================================================
-   ROLE LABEL
-========================================================= */
-
 function getRoleLabel(role) {
   return (
     ROLE_LABELS[role] ||
     role ||
     "Admin Layer 1"
   );
-}
-
-/* =========================================================
-   ENTITY HELPERS
-
-   These intentionally support both:
-   - snake_case DB response
-   - camelCase map response
-========================================================= */
-
-function getCityId(city) {
-  if (!city) {
-    return null;
-  }
-
-  return (
-    city.city_id ??
-    city.cityId ??
-    city.id ??
-    null
-  );
-}
-
-function getCityName(city) {
-  if (!city) {
-    return "";
-  }
-
-  return (
-    city.city_name ??
-    city.cityName ??
-    city.name ??
-    ""
-  );
-}
-
-function getZoneId(zone) {
-  if (!zone) {
-    return null;
-  }
-
-  return (
-    zone.zone_id ??
-    zone.zoneId ??
-    zone.id ??
-    null
-  );
-}
-
-function getZoneName(zone) {
-  if (!zone) {
-    return "";
-  }
-
-  return (
-    zone.zone_name ??
-    zone.zoneName ??
-    zone.name ??
-    ""
-  );
-}
-
-function getDivisionId(division) {
-  if (!division) {
-    return null;
-  }
-
-  return (
-    division.division_id ??
-    division.divisionId ??
-    division.id ??
-    null
-  );
-}
-
-function getDivisionName(division) {
-  if (!division) {
-    return "";
-  }
-
-  return (
-    division.division_name ??
-    division.divisionName ??
-    division.name ??
-    ""
-  );
-}
-
-function getWardId(ward) {
-  if (!ward) {
-    return null;
-  }
-
-  return (
-    ward.ward_id ??
-    ward.wardId ??
-    ward.id ??
-    null
-  );
-}
-
-function getWardName(ward) {
-  if (!ward) {
-    return "";
-  }
-
-  return (
-    ward.ward_name ??
-    ward.wardName ??
-    ward.name ??
-    ""
-  );
-}
-
-function getWardNumber(ward) {
-  if (!ward) {
-    return null;
-  }
-
-  return (
-    ward.ward_no ??
-    ward.wardNo ??
-    ward.ward_number ??
-    ward.wardNumber ??
-    null
-  );
-}
-
-/* =========================================================
-   CHILD COLLECTION HELPERS
-
-   City Overview Map's actual response contains:
-
-   zones
-      ↓
-   divisions
-      ↓
-   wards
-
-   We support both nested and alternate property names.
-========================================================= */
-
-function getZoneDivisions(zone) {
-  if (!zone) {
-    return [];
-  }
-
-  if (Array.isArray(zone.divisions)) {
-    return zone.divisions;
-  }
-
-  if (Array.isArray(zone.zone_divisions)) {
-    return zone.zone_divisions;
-  }
-
-  return [];
-}
-
-function getDivisionWards(division) {
-  if (!division) {
-    return [];
-  }
-
-  if (Array.isArray(division.wards)) {
-    return division.wards;
-  }
-
-  if (Array.isArray(division.division_wards)) {
-    return division.division_wards;
-  }
-
-  return [];
-}
-
-/* =========================================================
-   SAME ENTITY
-
-   Handles number/string ID differences safely.
-========================================================= */
-
-function sameId(a, b) {
-  if (
-    a === null ||
-    a === undefined ||
-    b === null ||
-    b === undefined
-  ) {
-    return false;
-  }
-
-  return String(a) === String(b);
-}
-
-function sameEntity(
-  first,
-  second,
-  idGetter,
-  nameGetter
-) {
-  if (!first || !second) {
-    return false;
-  }
-
-  const firstId =
-    idGetter(first);
-
-  const secondId =
-    idGetter(second);
-
-  if (
-    firstId !== null &&
-    firstId !== undefined &&
-    secondId !== null &&
-    secondId !== undefined
-  ) {
-    return sameId(
-      firstId,
-      secondId
-    );
-  }
-
-  const firstName =
-    nameGetter(first);
-
-  const secondName =
-    nameGetter(second);
-
-  if (
-    firstName &&
-    secondName
-  ) {
-    return (
-      String(firstName)
-        .trim()
-        .toLowerCase() ===
-      String(secondName)
-        .trim()
-        .toLowerCase()
-    );
-  }
-
-  return false;
 }
 
 /* =========================================================
@@ -447,9 +144,6 @@ function Dropdown({
   placeholder = "Select",
   getLabel,
   getKey,
-  renderOption,
-  loading = false,
-  disabled = false,
 }) {
   const [open, setOpen] =
     useState(false);
@@ -465,7 +159,7 @@ function Dropdown({
   ======================================================= */
 
   useEffect(() => {
-    const close = (event) => {
+    function close(event) {
       if (
         !wrapperRef.current?.contains(
           event.target
@@ -473,7 +167,7 @@ function Dropdown({
       ) {
         setOpen(false);
       }
-    };
+    }
 
     window.addEventListener(
       "mousedown",
@@ -489,7 +183,7 @@ function Dropdown({
   }, []);
 
   /* =======================================================
-     GSAP DROPDOWN ANIMATION
+     DROPDOWN ANIMATION
   ======================================================= */
 
   useEffect(() => {
@@ -516,7 +210,7 @@ function Dropdown({
   }, [open]);
 
   /* =======================================================
-     OPTION LABEL
+     OPTION HELPERS
   ======================================================= */
 
   const getOptionLabel = (
@@ -528,72 +222,41 @@ function Dropdown({
 
     return (
       item?.city_name ||
-      item?.cityName ||
       item?.zone_name ||
-      item?.zoneName ||
       item?.division_name ||
-      item?.divisionName ||
       item?.ward_name ||
-      item?.wardName ||
       String(item ?? "")
     );
   };
-
-  /* =======================================================
-     OPTION KEY
-  ======================================================= */
 
   const getOptionKey = (
     item,
     index
   ) => {
     if (getKey) {
-      return (
-        getKey(item) ??
-        `${getOptionLabel(item)}-${index}`
-      );
+      return getKey(item);
     }
 
     return (
-      item?.city_id ??
-      item?.cityId ??
-      item?.zone_id ??
-      item?.zoneId ??
-      item?.division_id ??
-      item?.divisionId ??
-      item?.ward_id ??
-      item?.wardId ??
-      `${getOptionLabel(item)}-${index}`
+      item?.city_id ||
+      item?.zone_id ||
+      item?.division_id ||
+      item?.ward_id ||
+      `${item}-${index}`
     );
   };
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
 
   return (
     <div
       ref={wrapperRef}
-      className={`
-        relative
-        shrink-0
-        ${width}
-      `}
+      className={`relative shrink-0 ${width}`}
     >
       <button
         type="button"
-        disabled={disabled}
-        onClick={() => {
-          if (disabled) {
-            return;
-          }
-
-          setOpen(
-            (previous) =>
-              !previous
-          );
-        }}
-        className={`
+        onClick={() =>
+          setOpen(!open)
+        }
+        className="
           w-full
           h-9
           rounded-xl
@@ -604,30 +267,16 @@ function Dropdown({
           flex
           items-center
           justify-between
-          gap-2
           text-[12px]
           font-medium
           text-[#16295A]
+          hover:border-violet-400
           transition-all
           duration-300
-          ${
-            disabled
-              ? "cursor-not-allowed bg-gray-50 text-gray-400"
-              : "hover:border-violet-400"
-          }
-        `}
+        "
       >
-        <span
-          className="
-            min-w-0
-            truncate
-            text-left
-          "
-        >
-          {loading
-            ? "Loading..."
-            : value ||
-              placeholder}
+        <span className="truncate">
+          {value || placeholder}
         </span>
 
         <ChevronDown
@@ -645,7 +294,7 @@ function Dropdown({
         />
       </button>
 
-      {open && !disabled && (
+      {open && (
         <div
           ref={menuRef}
           className="
@@ -667,22 +316,11 @@ function Dropdown({
             scrollbar-track-transparent
           "
         >
-          {loading ? (
+          {options.length === 0 ? (
             <div
               className="
                 px-4
-                py-3
-                text-[12px]
-                text-gray-400
-              "
-            >
-              Loading...
-            </div>
-          ) : options.length === 0 ? (
-            <div
-              className="
-                px-4
-                py-3
+                py-2.5
                 text-[12px]
                 text-gray-400
               "
@@ -714,13 +352,8 @@ function Dropdown({
                     type="button"
                     key={key}
                     onClick={() => {
-                      onChange?.(
-                        item
-                      );
-
-                      setOpen(
-                        false
-                      );
+                      onChange(item);
+                      setOpen(false);
                     }}
                     className="
                       w-full
@@ -730,7 +363,7 @@ function Dropdown({
                       flex
                       items-center
                       justify-between
-                      gap-5
+                      gap-6
                       text-left
                       text-[12px]
                       text-[#16295A]
@@ -738,21 +371,8 @@ function Dropdown({
                       transition
                     "
                   >
-                    <span
-                      className="
-                        whitespace-nowrap
-                        min-w-max
-                        flex
-                        items-center
-                        gap-2
-                      "
-                    >
-                      {renderOption
-                        ? renderOption(
-                            item,
-                            index
-                          )
-                        : label}
+                    <span className="whitespace-nowrap min-w-max">
+                      {label}
                     </span>
 
                     {isSelected && (
@@ -782,6 +402,20 @@ function Dropdown({
 export default function Header({
   variant = "dashboard",
 
+  /*
+   * IMPORTANT:
+   * Date is owned by the page.
+   *
+   * WasteGenerators.jsx:
+   *
+   * <Header
+   *   selectedDate={selectedDate}
+   *   setSelectedDate={setSelectedDate}
+   * />
+   *
+   * Overview.jsx does the same.
+   */
+
   selectedDate =
     new Date()
       .toISOString()
@@ -800,7 +434,7 @@ export default function Header({
   } = useLanguage();
 
   /* =======================================================
-     GLOBAL FILTER CONTEXT
+     FILTER CONTEXT
   ======================================================= */
 
   const {
@@ -815,62 +449,13 @@ export default function Header({
     setSelectedWard,
 
     cities,
+    zones,
+    divisions,
+    wards,
   } = useFilters();
 
   /* =======================================================
-     LOCAL MASTER-CITIZEN MAP DATA
-
-     IMPORTANT:
-
-     We intentionally DO NOT use the old generic
-     `zones`, `divisions`, `wards` arrays from FilterContext.
-
-     Header now uses the exact same geographic source
-     as City Overview Map.
-
-     API:
-
-       /api/master-citizen/map/city/:cityId
-
-     Response:
-
-       city
-       zones[]
-         divisions[]
-           wards[]
-  ======================================================= */
-
-  const [
-    mapZones,
-    setMapZones,
-  ] = useState([]);
-
-  const [
-    mapLoading,
-    setMapLoading,
-  ] = useState(false);
-
-  const [
-    mapError,
-    setMapError,
-  ] = useState("");
-
-  /* =======================================================
-     FALLBACK CITIES
-
-     Usually FilterContext already has cities.
-
-     This fallback prevents the Header from being empty
-     if the context has not finished loading.
-  ======================================================= */
-
-  const [
-    fallbackCities,
-    setFallbackCities,
-  ] = useState([]);
-
-  /* =======================================================
-     LOCAL REFS
+     REFS
   ======================================================= */
 
   const headerRef =
@@ -888,12 +473,19 @@ export default function Header({
   const languageRef =
     useRef(null);
 
-  const mapRequestRef =
-    useRef(0);
+  const languageMenuRef =
+    useRef(null);
 
   /* =======================================================
-     UI STATE
+     LOCAL UI STATE
   ======================================================= */
+
+  /*
+   * IMPORTANT:
+   * DO NOT create selectedDate state here.
+   *
+   * The date belongs to the parent page.
+   */
 
   const [dayType, setDayType] =
     useState("wet");
@@ -911,39 +503,22 @@ export default function Header({
     variant === "dashboard";
 
   /* =======================================================
-     CITY OPTIONS
-
-     Prefer FilterContext.
-
-     Fallback to API only when necessary.
-  ======================================================= */
-
-  const cityOptions =
-    useMemo(() => {
-      if (
-        Array.isArray(cities) &&
-        cities.length > 0
-      ) {
-        return cities;
-      }
-
-      return fallbackCities;
-    }, [
-      cities,
-      fallbackCities,
-    ]);
-
-  /* =======================================================
      USER
   ======================================================= */
 
   const getCurrentUser = () => {
     try {
+      /* =====================================================
+         1. READ AUTH HANDOFF FROM LOGIN FRONTEND
+      ===================================================== */
+
       const hash =
         window.location.hash;
 
       if (
-        hash.startsWith("#auth=")
+        hash.startsWith(
+          "#auth="
+        )
       ) {
         const encodedAuth =
           hash.substring(
@@ -981,6 +556,10 @@ export default function Header({
         );
       }
 
+      /* =====================================================
+         2. READ STORED ADMIN
+      ===================================================== */
+
       const storedAdmin =
         sessionStorage.getItem(
           "admin"
@@ -1001,6 +580,10 @@ export default function Header({
           );
         }
       }
+
+      /* =====================================================
+         3. READ JWT
+      ===================================================== */
 
       const token =
         sessionStorage.getItem(
@@ -1038,6 +621,10 @@ export default function Header({
         }
       }
 
+      /* =====================================================
+         4. RESOLVE ACTUAL USER
+      ===================================================== */
+
       if (
         admin ||
         decoded
@@ -1061,6 +648,10 @@ export default function Header({
       );
     }
 
+    /* =====================================================
+       5. EXISTING JWT FALLBACK
+    ===================================================== */
+
     return getUserFromToken();
   };
 
@@ -1079,9 +670,9 @@ export default function Header({
       ?.toUpperCase() ||
     "A";
 
-  /* =======================================================
-     DATE
-  ======================================================= */
+  /* =========================================================
+     DATE / DAY TYPE
+  ========================================================= */
 
   const selectedDateObj =
     selectedDate
@@ -1093,9 +684,26 @@ export default function Header({
   const selectedDay =
     selectedDateObj.getDay();
 
+  /*
+   * Sunday    = 0
+   * Monday    = 1
+   * Tuesday   = 2
+   * Wednesday = 3
+   * Thursday  = 4
+   * Friday    = 5
+   * Saturday  = 6
+   */
+
   const isDryDay =
     selectedDay === 3 ||
     selectedDay === 6;
+
+  /*
+   * Dry Day exists ONLY on:
+   *
+   * Wednesday
+   * Saturday
+   */
 
   useEffect(() => {
     if (!isDryDay) {
@@ -1106,763 +714,9 @@ export default function Header({
     isDryDay,
   ]);
 
-  /* =======================================================
-     LOAD FALLBACK CITIES
-
-     Only runs if FilterContext does not have cities.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      Array.isArray(cities) &&
-      cities.length > 0
-    ) {
-      return;
-    }
-
-    let cancelled =
-      false;
-
-    const loadCities =
-      async () => {
-        try {
-          const response =
-            await fetch(
-              CITIES_ENDPOINT,
-              {
-                method: "GET",
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-              }
-            );
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              `City request failed with status ${response.status}`
-            );
-          }
-
-          const result =
-            await response.json();
-
-          const data =
-            Array.isArray(
-              result
-            )
-              ? result
-              : Array.isArray(
-                  result?.data
-                )
-                ? result.data
-                : [];
-
-          if (!cancelled) {
-            setFallbackCities(
-              data
-            );
-          }
-        } catch (error) {
-          console.error(
-            "Header city fallback request failed:",
-            error
-          );
-
-          if (!cancelled) {
-            setFallbackCities(
-              []
-            );
-          }
-        }
-      };
-
-    loadCities();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cities]);
-
-  /* =======================================================
-     LOAD EXACT CITY OVERVIEW MAP DATA
-
-     THIS IS THE MAIN FIX.
-
-     City Overview Map uses this same endpoint.
-  ======================================================= */
-
-  useEffect(() => {
-    const cityId =
-      getCityId(
-        selectedCity
-      );
-
-    if (!cityId) {
-      setMapZones([]);
-      setMapError("");
-      setMapLoading(false);
-      return;
-    }
-
-    const requestId =
-      ++mapRequestRef.current;
-
-    const controller =
-      new AbortController();
-
-    const loadCityMap =
-      async () => {
-        try {
-          setMapLoading(true);
-          setMapError("");
-
-          const endpoint =
-            CITY_MAP_ENDPOINT(
-              cityId
-            );
-
-          console.log(
-            "============================================================"
-          );
-
-          console.log(
-            "HEADER CITY MAP REQUEST"
-          );
-
-          console.log(
-            "CITY ID:",
-            cityId
-          );
-
-          console.log(
-            "ENDPOINT:",
-            endpoint
-          );
-
-          console.log(
-            "============================================================"
-          );
-
-          const response =
-            await fetch(
-              endpoint,
-              {
-                method: "GET",
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-                signal:
-                  controller.signal,
-              }
-            );
-
-          if (
-            !response.ok
-          ) {
-            throw new Error(
-              `City map request failed with status ${response.status}`
-            );
-          }
-
-          const result =
-            await response.json();
-
-          if (
-            result?.success ===
-            false
-          ) {
-            throw new Error(
-              result.message ||
-                "Unable to load city geographic data."
-            );
-          }
-
-          const loadedZones =
-            Array.isArray(
-              result?.zones
-            )
-              ? result.zones
-              : [];
-
-          if (
-            requestId !==
-            mapRequestRef.current
-          ) {
-            return;
-          }
-
-          setMapZones(
-            loadedZones
-          );
-
-          console.log(
-            "HEADER CITY MAP LOADED"
-          );
-
-          console.log(
-            "CITY:",
-            result?.city?.cityName ||
-              result?.city?.city_name
-          );
-
-          console.log(
-            "ZONES:",
-            loadedZones.length
-          );
-
-          console.log(
-            "ZONE NAMES:",
-            loadedZones.map(
-              (zone) =>
-                getZoneName(
-                  zone
-                )
-            )
-          );
-        } catch (
-          error
-        ) {
-          if (
-            error?.name ===
-            "AbortError"
-          ) {
-            return;
-          }
-
-          console.error(
-            "HEADER CITY MAP ERROR:",
-            error
-          );
-
-          if (
-            requestId ===
-            mapRequestRef.current
-          ) {
-            setMapZones(
-              []
-            );
-
-            setMapError(
-              error?.message ||
-                "Unable to load geographic data."
-            );
-          }
-        } finally {
-          if (
-            requestId ===
-            mapRequestRef.current
-          ) {
-            setMapLoading(
-              false
-            );
-          }
-        }
-      };
-
-    loadCityMap();
-
-    return () => {
-      controller.abort();
-    };
-  }, [
-    getCityId(selectedCity),
-  ]);
-
-  /* =======================================================
-     ACTUAL ZONE OPTIONS
-
-     Directly from City Overview Map response.
-  ======================================================= */
-
-  const zones =
-    useMemo(() => {
-      return Array.isArray(
-        mapZones
-      )
-        ? mapZones
-        : [];
-    }, [
-      mapZones,
-    ]);
-
-  /* =======================================================
-     ACTUAL DIVISION OPTIONS
-
-     Derived from the selected zone's actual DB object.
-  ======================================================= */
-
-  const divisions =
-    useMemo(() => {
-      if (!selectedZone) {
-        return [];
-      }
-
-      const matchedZone =
-        zones.find(
-          (zone) =>
-            sameEntity(
-              zone,
-              selectedZone,
-              getZoneId,
-              getZoneName
-            )
-        );
-
-      return getZoneDivisions(
-        matchedZone ||
-          selectedZone
-      );
-    }, [
-      zones,
-      selectedZone,
-    ]);
-
-  /* =======================================================
-     ACTUAL WARD OPTIONS
-
-     Derived from the selected division's actual DB object.
-  ======================================================= */
-
-  const wards =
-    useMemo(() => {
-      if (
-        !selectedDivision
-      ) {
-        return [];
-      }
-
-      const matchedDivision =
-        divisions.find(
-          (division) =>
-            sameEntity(
-              division,
-              selectedDivision,
-              getDivisionId,
-              getDivisionName
-            )
-        );
-
-      return getDivisionWards(
-        matchedDivision ||
-          selectedDivision
-      );
-    }, [
-      divisions,
-      selectedDivision,
-    ]);
-
-  /* =======================================================
-     RECONCILE SELECTED ZONE
-
-     If FilterContext already has a selected zone,
-     replace it with the exact object returned by
-     City Overview Map API.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedZone ||
-      zones.length === 0
-    ) {
-      return;
-    }
-
-    const exactZone =
-      zones.find(
-        (zone) =>
-          sameEntity(
-            zone,
-            selectedZone,
-            getZoneId,
-            getZoneName
-          )
-      );
-
-    if (
-      exactZone &&
-      exactZone !== selectedZone
-    ) {
-      setSelectedZone(
-        exactZone
-      );
-    }
-  }, [
-    zones,
-    selectedZone,
-    setSelectedZone,
-  ]);
-
-  /* =======================================================
-     RECONCILE SELECTED DIVISION
-
-     Replace context object with exact DB object.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedDivision ||
-      divisions.length === 0
-    ) {
-      return;
-    }
-
-    const exactDivision =
-      divisions.find(
-        (division) =>
-          sameEntity(
-            division,
-            selectedDivision,
-            getDivisionId,
-            getDivisionName
-          )
-      );
-
-    if (
-      exactDivision &&
-      exactDivision !==
-        selectedDivision
-    ) {
-      setSelectedDivision(
-        exactDivision
-      );
-    }
-  }, [
-    divisions,
-    selectedDivision,
-    setSelectedDivision,
-  ]);
-
-  /* =======================================================
-     RECONCILE SELECTED WARD
-
-     Replace context object with exact DB object.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedWard ||
-      wards.length === 0
-    ) {
-      return;
-    }
-
-    const exactWard =
-      wards.find(
-        (ward) =>
-          sameEntity(
-            ward,
-            selectedWard,
-            getWardId,
-            getWardName
-          )
-      );
-
-    if (
-      exactWard &&
-      exactWard !==
-        selectedWard
-    ) {
-      setSelectedWard(
-        exactWard
-      );
-    }
-  }, [
-    wards,
-    selectedWard,
-    setSelectedWard,
-  ]);
-
-  /* =======================================================
-     VALIDATE SELECTED ZONE AFTER CITY LOAD
-
-     If city changes and old zone does not belong to the
-     new city, clear the dependent hierarchy.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedZone ||
-      mapLoading
-    ) {
-      return;
-    }
-
-    if (
-      zones.length === 0
-    ) {
-      setSelectedZone(null);
-      setSelectedDivision(null);
-      setSelectedWard(null);
-      return;
-    }
-
-    const exists =
-      zones.some(
-        (zone) =>
-          sameEntity(
-            zone,
-            selectedZone,
-            getZoneId,
-            getZoneName
-          )
-      );
-
-    if (!exists) {
-      setSelectedZone(null);
-      setSelectedDivision(null);
-      setSelectedWard(null);
-    }
-  }, [
-    zones,
-    selectedZone,
-    mapLoading,
-    setSelectedZone,
-    setSelectedDivision,
-    setSelectedWard,
-  ]);
-
-  /* =======================================================
-     VALIDATE SELECTED DIVISION
-
-     Prevents stale division when zone changes.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedDivision
-    ) {
-      return;
-    }
-
-    if (
-      divisions.length === 0
-    ) {
-      setSelectedDivision(null);
-      setSelectedWard(null);
-      return;
-    }
-
-    const exists =
-      divisions.some(
-        (division) =>
-          sameEntity(
-            division,
-            selectedDivision,
-            getDivisionId,
-            getDivisionName
-          )
-      );
-
-    if (!exists) {
-      setSelectedDivision(null);
-      setSelectedWard(null);
-    }
-  }, [
-    divisions,
-    selectedDivision,
-    setSelectedDivision,
-    setSelectedWard,
-  ]);
-
-  /* =======================================================
-     VALIDATE SELECTED WARD
-
-     Prevents stale ward when division changes.
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !selectedWard
-    ) {
-      return;
-    }
-
-    if (
-      wards.length === 0
-    ) {
-      setSelectedWard(null);
-      return;
-    }
-
-    const exists =
-      wards.some(
-        (ward) =>
-          sameEntity(
-            ward,
-            selectedWard,
-            getWardId,
-            getWardName
-          )
-      );
-
-    if (!exists) {
-      setSelectedWard(null);
-    }
-  }, [
-    wards,
-    selectedWard,
-    setSelectedWard,
-  ]);
-
-  /* =======================================================
-     CITY SELECTION
-
-     City changes:
-       City
-         ↓
-       reload zones
-         ↓
-       clear zone
-         ↓
-       clear division
-         ↓
-       clear ward
-  ======================================================= */
-
-  const handleCityChange =
-    (city) => {
-      setSelectedCity(
-        city
-      );
-
-      setSelectedZone(
-        null
-      );
-
-      setSelectedDivision(
-        null
-      );
-
-      setSelectedWard(
-        null
-      );
-
-      setMapZones([]);
-      setMapError("");
-    };
-
-  /* =======================================================
-     ZONE SELECTION
-
-     Zone changes:
-       Zone
-         ↓
-       actual DB divisions
-         ↓
-       clear division
-         ↓
-       clear ward
-  ======================================================= */
-
-  const handleZoneChange =
-    (zone) => {
-      if (!zone) {
-        setSelectedZone(null);
-        setSelectedDivision(null);
-        setSelectedWard(null);
-        return;
-      }
-
-      const exactZone =
-        zones.find(
-          (item) =>
-            sameEntity(
-              item,
-              zone,
-              getZoneId,
-              getZoneName
-            )
-        ) ||
-        zone;
-
-      setSelectedZone(
-        exactZone
-      );
-
-      setSelectedDivision(
-        null
-      );
-
-      setSelectedWard(
-        null
-      );
-    };
-
-  /* =======================================================
-     DIVISION SELECTION
-
-     Division changes:
-       Division
-         ↓
-       actual DB wards
-         ↓
-       clear ward
-  ======================================================= */
-
-  const handleDivisionChange =
-    (division) => {
-      if (!division) {
-        setSelectedDivision(null);
-        setSelectedWard(null);
-        return;
-      }
-
-      const exactDivision =
-        divisions.find(
-          (item) =>
-            sameEntity(
-              item,
-              division,
-              getDivisionId,
-              getDivisionName
-            )
-        ) ||
-        division;
-
-      setSelectedDivision(
-        exactDivision
-      );
-
-      setSelectedWard(
-        null
-      );
-    };
-
-  /* =======================================================
-     WARD SELECTION
-  ======================================================= */
-
-  const handleWardChange =
-    (ward) => {
-      if (!ward) {
-        setSelectedWard(null);
-        return;
-      }
-
-      const exactWard =
-        wards.find(
-          (item) =>
-            sameEntity(
-              item,
-              ward,
-              getWardId,
-              getWardName
-            )
-        ) ||
-        ward;
-
-      setSelectedWard(
-        exactWard
-      );
-    };
-
-  /* =======================================================
+  /* =========================================================
      GSAP HEADER ANIMATION
-  ======================================================= */
+  ========================================================= */
 
   useLayoutEffect(() => {
     if (!headerRef.current) {
@@ -1905,12 +759,12 @@ export default function Header({
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      CLOSE DROPDOWNS
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
-    const close = (event) => {
+    function close(event) {
       if (
         !profileRef.current?.contains(
           event.target
@@ -1926,7 +780,7 @@ export default function Header({
       ) {
         setLanguageOpen(false);
       }
-    };
+    }
 
     window.addEventListener(
       "mousedown",
@@ -1941,14 +795,12 @@ export default function Header({
     };
   }, []);
 
-  /* =======================================================
+  /* =========================================================
      SEARCH SHORTCUT
-  ======================================================= */
+  ========================================================= */
 
   useEffect(() => {
-    const shortcut = (
-      event
-    ) => {
+    function shortcut(event) {
       if (
         event.key === "/" &&
         variant !== "dashboard"
@@ -1957,7 +809,7 @@ export default function Header({
 
         searchRef.current?.focus();
       }
-    };
+    }
 
     window.addEventListener(
       "keydown",
@@ -1970,128 +822,112 @@ export default function Header({
         shortcut
       );
     };
-  }, [
-    variant,
-  ]);
+  }, [variant]);
 
-  /* =======================================================
+  /* =========================================================
      LOGOUT
-  ======================================================= */
+  ========================================================= */
 
-  const handleLogout =
-    () => {
-      sessionStorage.clear();
+  const handleLogout = () => {
+    sessionStorage.clear();
 
-      window.location.replace(
-        "https://app-authentication-frontend.onrender.com"
-      );
-    };
+    window.location.replace(
+      "https://app-authentication-frontend.onrender.com"
+    );
+  };
 
-  /* =======================================================
+  /* =========================================================
      DATE FORMAT
-  ======================================================= */
+  ========================================================= */
 
-  const formatLocalDate =
-    (date) => {
-      const year =
-        date.getFullYear();
+  const formatLocalDate = (
+    date
+  ) => {
+    const year =
+      date.getFullYear();
 
-      const month =
-        String(
-          date.getMonth() + 1
-        ).padStart(
-          2,
-          "0"
-        );
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
 
-      const day =
-        String(
-          date.getDate()
-        ).padStart(
-          2,
-          "0"
-        );
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
 
-      return `${year}-${month}-${day}`;
-    };
+    return `${year}-${month}-${day}`;
+  };
 
-  /* =======================================================
-     DATE HANDLER
-  ======================================================= */
+  /* =========================================================
+     DATE CHANGE HANDLER
+  ========================================================= */
 
-  const handleDateChange =
-    (date) => {
-      if (!date) {
-        return;
-      }
+  const handleDateChange = (
+    date
+  ) => {
+    if (!date) {
+      return;
+    }
 
-      setSelectedDate(
-        formatLocalDate(
-          date
-        )
-      );
-    };
+    const formattedDate =
+      formatLocalDate(date);
 
-  /* =======================================================
+    setSelectedDate(
+      formattedDate
+    );
+  };
+
+  /* =========================================================
      LANGUAGE HANDLER
-  ======================================================= */
+  ========================================================= */
 
-  const handleLanguageChange =
-    (languageCode) => {
-      const selectedLanguage =
-        languages.find(
-          (item) =>
-            item.code ===
-            languageCode
-        );
+  const handleLanguageChange = (
+    languageCode
+  ) => {
+    if (
+      !languages.some(
+        (item) =>
+          item.code ===
+          languageCode
+      )
+    ) {
+      return;
+    }
 
-      if (!selectedLanguage) {
-        console.warn(
-          `Unsupported language code: ${languageCode}`
-        );
+    setLanguage(
+      languageCode
+    );
 
-        return;
-      }
+    setLanguageOpen(false);
+  };
 
-      setLanguage(
-        selectedLanguage.code
-      );
-
-      setLanguageOpen(false);
-    };
-
-  /* =======================================================
+  /* =========================================================
      CURRENT LANGUAGE
-  ======================================================= */
 
-  const currentLanguageCode =
-    {
-      en: "EN",
-      kn: "KN",
-      hi: "HI",
-      te: "TE",
-      ta: "TA",
-      ma: "MA",
-    }[language] ||
-    "EN";
+     EN -> English
+     KN -> ಕನ್ನಡ
+     HI -> हिंदी
+     TE -> తెలుగు
+     MA -> മലയാളം
+  ========================================================= */
 
-  /* =======================================================
-     LOCATION FILTERS
+const currentLanguageCode =
+  language === "en"
+    ? "EN"
+    : language === "kn"
+    ? "KN"
+    : language === "hi"
+    ? "HI"
+    : language === "te"
+    ? "TE"
+    : language === "ta"
+    ? "TA"
+    : language === "ma"
+    ? "MA"
+    : "EN";
 
-     IMPORTANT:
-
-     These are now backed by City Overview Map data.
-
-     City
-       ↓
-     Map API
-       ↓
-     Zones
-       ↓
-     Divisions
-       ↓
-     Wards
-  ======================================================= */
+  /* =========================================================
+     DYNAMIC LOCATION FILTERS
+  ========================================================= */
 
   const locationFilters = (
     <>
@@ -2106,29 +942,24 @@ export default function Header({
           2xl:w-[118px]
         "
         value={
-          getCityName(
-            selectedCity
-          ) ||
+          selectedCity?.city_name ||
           t(
             "filters.city",
             "Select City"
           )
         }
-        options={
-          cityOptions
-        }
-        onChange={
-          handleCityChange
-        }
+        options={cities}
+        onChange={setSelectedCity}
         placeholder={t(
           "filters.city",
           "Select City"
         )}
-        getLabel={
-          getCityName
+        getLabel={(city) =>
+          city?.city_name ||
+          ""
         }
-        getKey={
-          getCityId
+        getKey={(city) =>
+          city?.city_id
         }
       />
 
@@ -2143,81 +974,25 @@ export default function Header({
           2xl:w-[200px]
         "
         value={
-          getZoneName(
-            selectedZone
-          ) ||
+          selectedZone?.zone_name ||
           t(
             "filters.zone",
             "Select Zone"
           )
         }
-        options={
-          zones
+        options={zones}
+        onChange={setSelectedZone}
+        placeholder={t(
+          "filters.zone",
+          "Select Zone"
+        )}
+        getLabel={(zone) =>
+          zone?.zone_name ||
+          ""
         }
-        onChange={
-          handleZoneChange
+        getKey={(zone) =>
+          zone?.zone_id
         }
-        placeholder={
-          mapLoading
-            ? "Loading Zones..."
-            : t(
-                "filters.zone",
-                "Select Zone"
-              )
-        }
-        getLabel={
-          getZoneName
-        }
-        getKey={
-          getZoneId
-        }
-        loading={
-          mapLoading
-        }
-        disabled={
-          !selectedCity ||
-          mapLoading
-        }
-        renderOption={(
-          zone,
-          index
-        ) => {
-          const color =
-            ZONE_COLORS[
-              index %
-                ZONE_COLORS.length
-            ];
-
-          return (
-            <>
-              <span
-                className="
-                  w-2.5
-                  h-2.5
-                  rounded-full
-                  shrink-0
-                  border
-                  border-white
-                  shadow-sm
-                "
-                style={{
-                  backgroundColor:
-                    color,
-                }}
-              />
-
-              <span
-                className="
-                  whitespace-nowrap
-                "
-              >
-                {getZoneName(
-                  zone
-                )}
-              </span>
-            </>
-          );
-        }}
       />
 
       {/* =================================================
@@ -2231,39 +1006,32 @@ export default function Header({
           2xl:w-[138px]
         "
         value={
-          getDivisionName(
-            selectedDivision
-          ) ||
+          selectedDivision
+            ?.division_name ||
           t(
             "filters.division",
             "Select Division"
           )
         }
-        options={
-          divisions
-        }
+        options={divisions}
         onChange={
-          handleDivisionChange
+          setSelectedDivision
         }
-        placeholder={
-          !selectedZone
-            ? "Select Zone First"
-            : divisions.length === 0
-              ? "No Divisions"
-              : t(
-                  "filters.division",
-                  "Select Division"
-                )
+        placeholder={t(
+          "filters.division",
+          "Select Division"
+        )}
+        getLabel={(
+          division
+        ) =>
+          division
+            ?.division_name ||
+          ""
         }
-        getLabel={
-          getDivisionName
-        }
-        getKey={
-          getDivisionId
-        }
-        disabled={
-          !selectedZone ||
-          divisions.length === 0
+        getKey={(
+          division
+        ) =>
+          division?.division_id
         }
       />
 
@@ -2279,19 +1047,10 @@ export default function Header({
         "
         value={
           selectedWard
-            ? `${getWardName(
-                selectedWard
-              )}${
-                getWardNumber(
-                  selectedWard
-                ) !== null &&
-                getWardNumber(
-                  selectedWard
-                ) !==
-                  undefined
-                  ? ` (${getWardNumber(
-                      selectedWard
-                    )})`
+            ? `${selectedWard.ward_name}${
+                selectedWard.ward_no !==
+                undefined
+                  ? ` (${selectedWard.ward_no})`
                   : ""
               }`
             : t(
@@ -2299,63 +1058,37 @@ export default function Header({
                 "Select Ward"
               )
         }
-        options={
-          wards
-        }
+        options={wards}
         onChange={
-          handleWardChange
+          setSelectedWard
         }
-        placeholder={
-          !selectedDivision
-            ? "Select Division First"
-            : wards.length === 0
-              ? "No Wards"
-              : t(
-                  "filters.ward",
-                  "Select Ward"
-                )
-        }
+        placeholder={t(
+          "filters.ward",
+          "Select Ward"
+        )}
         getLabel={(ward) =>
           ward
-            ? `${getWardName(
-                ward
-              )}${
-                getWardNumber(
-                  ward
-                ) !== null &&
-                getWardNumber(
-                  ward
-                ) !==
-                  undefined
-                  ? ` (${getWardNumber(
-                      ward
-                    )})`
+            ? `${ward.ward_name}${
+                ward.ward_no !==
+                undefined
+                  ? ` (${ward.ward_no})`
                   : ""
               }`
             : ""
         }
-        getKey={
-          getWardId
-        }
-        disabled={
-          !selectedDivision ||
-          wards.length === 0
+        getKey={(ward) =>
+          ward?.ward_id
         }
       />
     </>
   );
 
-  /* =======================================================
+  /* =========================================================
      SEARCH INPUT
-  ======================================================= */
+  ========================================================= */
 
   const searchInput = (
-    <div
-      className="
-        relative
-        w-[280px]
-      "
-    >
+    <div className="relative w-[280px]">
       <Search
         size={15}
         className="
@@ -2372,9 +1105,7 @@ export default function Header({
         ref={searchRef}
         type="text"
         value={search}
-        onChange={(
-          event
-        ) =>
+        onChange={(event) =>
           setSearch(
             event.target.value
           )
@@ -2405,9 +1136,9 @@ export default function Header({
     </div>
   );
 
-  /* =======================================================
+  /* =========================================================
      RENDER
-  ======================================================= */
+  ========================================================= */
 
   return (
     <header
@@ -2430,7 +1161,7 @@ export default function Header({
       "
     >
       {/* ===================================================
-          MAIN HEADER ROW
+          PRIMARY HEADER ROW
       =================================================== */}
 
       <div
@@ -2457,9 +1188,9 @@ export default function Header({
             flex-1
           "
         >
-          {/* ===============================================
-              MOBILE LOGO
-          =============================================== */}
+          {/* =================================================
+              MOBILE / TABLET BRAND
+          ================================================= */}
 
           <div
             className="
@@ -2486,9 +1217,7 @@ export default function Header({
                 md:hidden
               "
             >
-              <Menu
-                size={17}
-              />
+              <Menu size={17} />
             </button>
 
             <img
@@ -2507,11 +1236,9 @@ export default function Header({
             />
           </div>
 
-          {/* ===============================================
-              DASHBOARD DESKTOP FILTERS
-
-              2XL AND ABOVE
-          =============================================== */}
+          {/* =================================================
+              DESKTOP DASHBOARD FILTERS
+          ================================================= */}
 
           {isDashboard ? (
             <div
@@ -2540,7 +1267,7 @@ export default function Header({
         </div>
 
         {/* =================================================
-            RIGHT SIDE
+            RIGHT SIDE CONTROLS
         ================================================= */}
 
         <div
@@ -2551,16 +1278,11 @@ export default function Header({
             shrink-0
           "
         >
-          {/* ===============================================
-              CALENDAR
-          =============================================== */}
+          {/* =================================================
+              DATE
+          ================================================= */}
 
-          <div
-            className="
-              relative
-              shrink-0
-            "
-          >
+          <div className="relative shrink-0">
             <Calendar
               value={
                 selectedDateObj
@@ -2571,9 +1293,9 @@ export default function Header({
             />
           </div>
 
-          {/* ===============================================
-              WET / DRY DAY
-          =============================================== */}
+          {/* =================================================
+              DAY TYPE
+          ================================================= */}
 
           {isDashboard && (
             <div
@@ -2589,6 +1311,11 @@ export default function Header({
                 shrink-0
               "
             >
+              {/* =============================================
+                  DRY DAY
+                  ONLY WEDNESDAY / SATURDAY
+              ============================================= */}
+
               {isDryDay && (
                 <button
                   type="button"
@@ -2618,6 +1345,11 @@ export default function Header({
                   )}
                 </button>
               )}
+
+              {/* =============================================
+                  WET DAY
+                  ALWAYS AVAILABLE
+              ============================================= */}
 
               <button
                 type="button"
@@ -2649,9 +1381,9 @@ export default function Header({
             </div>
           )}
 
-          {/* ===============================================
+          {/* =================================================
               LANGUAGE
-          =============================================== */}
+          ================================================= */}
 
           <div
             ref={languageRef}
@@ -2664,8 +1396,7 @@ export default function Header({
               type="button"
               onClick={() =>
                 setLanguageOpen(
-                  (previous) =>
-                    !previous
+                  !languageOpen
                 )
               }
               className="
@@ -2687,9 +1418,7 @@ export default function Header({
             >
               <Globe
                 size={15}
-                className="
-                  text-violet-600
-                "
+                className="text-violet-600"
               />
 
               <span
@@ -2700,9 +1429,7 @@ export default function Header({
                   text-[#16295A]
                 "
               >
-                {
-                  currentLanguageCode
-                }
+                {currentLanguageCode}
               </span>
 
               <ChevronDown
@@ -2721,6 +1448,9 @@ export default function Header({
 
             {languageOpen && (
               <div
+                ref={
+                  languageMenuRef
+                }
                 className="
                   absolute
                   right-0
@@ -2736,9 +1466,7 @@ export default function Header({
                 "
               >
                 {languages.map(
-                  (
-                    item
-                  ) => (
+                  (item) => (
                     <button
                       type="button"
                       key={
@@ -2762,6 +1490,11 @@ export default function Header({
                         transition
                       "
                     >
+                      {/* IMPORTANT:
+                          Do NOT use t() here.
+                          Language names always remain
+                          in their native language. */}
+
                       <span>
                         {
                           item.label
@@ -2771,9 +1504,7 @@ export default function Header({
                       {language ===
                         item.code && (
                         <Check
-                          size={
-                            14
-                          }
+                          size={14}
                           className="
                             text-violet-600
                           "
@@ -2786,9 +1517,9 @@ export default function Header({
             )}
           </div>
 
-          {/* ===============================================
+          {/* =================================================
               PROFILE
-          =============================================== */}
+          ================================================= */}
 
           <div
             ref={profileRef}
@@ -2801,8 +1532,7 @@ export default function Header({
               type="button"
               onClick={() =>
                 setProfileOpen(
-                  (previous) =>
-                    !previous
+                  !profileOpen
                 )
               }
               aria-expanded={
@@ -2827,6 +1557,8 @@ export default function Header({
                 duration-300
               "
             >
+              {/* AVATAR */}
+
               <div
                 className="
                   w-8
@@ -2844,10 +1576,10 @@ export default function Header({
                   shrink-0
                 "
               >
-                {
-                  userInitial
-                }
+                {userInitial}
               </div>
+
+              {/* USER INFO */}
 
               <div
                 className="
@@ -2867,9 +1599,7 @@ export default function Header({
                     max-w-[100px]
                   "
                 >
-                  {
-                    user.name
-                  }
+                  {user.name}
                 </h4>
 
                 <p
@@ -2880,9 +1610,7 @@ export default function Header({
                     max-w-[100px]
                   "
                 >
-                  {
-                    roleLabel
-                  }
+                  {roleLabel}
                 </p>
               </div>
 
@@ -2900,6 +1628,11 @@ export default function Header({
               />
             </button>
 
+            {/* =================================================
+                PROFILE DROPDOWN
+                SETTINGS REMOVED
+            ================================================= */}
+
             {profileOpen && (
               <div
                 className="
@@ -2915,6 +1648,25 @@ export default function Header({
                   overflow-hidden
                   z-[10000]
                 "
+                ref={(element) => {
+                  if (element) {
+                    gsap.fromTo(
+                      element,
+                      {
+                        opacity: 0,
+                        scale: 0.96,
+                        y: -8,
+                      },
+                      {
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                        duration: 0.22,
+                        ease: "power3.out",
+                      }
+                    );
+                  }
+                }}
               >
                 <div
                   className="
@@ -2948,16 +1700,10 @@ export default function Header({
                         shrink-0
                       "
                     >
-                      {
-                        userInitial
-                      }
+                      {userInitial}
                     </div>
 
-                    <div
-                      className="
-                        min-w-0
-                      "
-                    >
+                    <div className="min-w-0">
                       <h3
                         className="
                           font-semibold
@@ -2966,9 +1712,7 @@ export default function Header({
                           truncate
                         "
                       >
-                        {
-                          user.name
-                        }
+                        {user.name}
                       </h3>
 
                       <p
@@ -2979,13 +1723,15 @@ export default function Header({
                           truncate
                         "
                       >
-                        {
-                          roleLabel
-                        }
+                        {roleLabel}
                       </p>
                     </div>
                   </div>
                 </div>
+
+                {/* =================================================
+                    LOGOUT ONLY
+                ================================================= */}
 
                 <button
                   type="button"
@@ -3026,7 +1772,7 @@ export default function Header({
       </div>
 
       {/* ===================================================
-          NON-DASHBOARD MOBILE SEARCH
+          NON-DASHBOARD SMALL SCREEN SEARCH ROW
       =================================================== */}
 
       {!isDashboard && (
@@ -3038,11 +1784,7 @@ export default function Header({
             px-0.5
           "
         >
-          <div
-            className="
-              w-full
-            "
-          >
+          <div className="w-full">
             {searchInput}
           </div>
         </div>
@@ -3051,20 +1793,7 @@ export default function Header({
       {/* ===================================================
           DASHBOARD RESPONSIVE FILTER ROW
 
-          IMPORTANT:
-
-          Below 2XL the filters remain on their own row.
-
-          This is what keeps:
-
-            logo
-            calendar
-            wet/dry
-            language
-            profile
-
-          from getting crushed.
-
+          Below 1536px
       =================================================== */}
 
       {isDashboard && (
@@ -3090,9 +1819,7 @@ export default function Header({
               px-0.5
             "
           >
-            {
-              locationFilters
-            }
+            {locationFilters}
           </div>
         </div>
       )}
