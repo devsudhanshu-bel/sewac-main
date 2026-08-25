@@ -81,7 +81,8 @@ const ROLE_LABELS = {
 
 function getUserFromToken() {
   try {
-    const token = sessionStorage.getItem("token");
+    const token =
+      sessionStorage.getItem("token");
 
     if (!token) {
       return {
@@ -90,7 +91,8 @@ function getUserFromToken() {
       };
     }
 
-    const payload = token.split(".")[1];
+    const payload =
+      token.split(".")[1];
 
     if (!payload) {
       return {
@@ -99,16 +101,20 @@ function getUserFromToken() {
       };
     }
 
-    const decoded = JSON.parse(
-      atob(
-        payload
-          .replace(/-/g, "+")
-          .replace(/_/g, "/")
-      )
-    );
+    const decoded =
+      JSON.parse(
+        atob(
+          payload
+            .replace(/-/g, "+")
+            .replace(/_/g, "/")
+        )
+      );
 
     return {
-      name: decoded.full_name || "Admin",
+      name:
+        decoded.full_name ||
+        "Admin",
+
       role:
         decoded.role ||
         "ADMIN_LAYER_1",
@@ -213,21 +219,6 @@ function Dropdown({
 
   /* =======================================================
      OPTION HELPERS
-
-     IMPORTANT:
-     Support both API formats:
-
-     snake_case:
-       city_name
-       zone_name
-       division_name
-       ward_name
-
-     camelCase:
-       cityName
-       zoneName
-       divisionName
-       wardName
   ======================================================= */
 
   const getOptionLabel = (
@@ -239,24 +230,9 @@ function Dropdown({
 
     return (
       item?.city_name ||
-      item?.cityName ||
       item?.zone_name ||
-      item?.zoneName ||
       item?.division_name ||
-      item?.divisionName ||
       item?.ward_name ||
-      item?.wardName ||
-      item?.name ||
-      (
-        item?.ward_no !== undefined
-          ? `Ward ${item.ward_no}`
-          : ""
-      ) ||
-      (
-        item?.wardNo !== undefined
-          ? `Ward ${item.wardNo}`
-          : ""
-      ) ||
       String(item ?? "")
     );
   };
@@ -271,16 +247,9 @@ function Dropdown({
 
     return (
       item?.city_id ||
-      item?.cityId ||
       item?.zone_id ||
-      item?.zoneId ||
       item?.division_id ||
-      item?.divisionId ||
       item?.ward_id ||
-      item?.wardId ||
-      item?.id ||
-      item?.ward_no ||
-      item?.wardNo ||
       `${item}-${index}`
     );
   };
@@ -922,18 +891,36 @@ export default function Header({
   const handleLanguageChange = (
     languageCode
   ) => {
-    if (
-      !languages.some(
+    /*
+     * IMPORTANT:
+     *
+     * Only accept languages that are
+     * explicitly registered above.
+     */
+
+    const selectedLanguage =
+      languages.find(
         (item) =>
           item.code ===
           languageCode
-      )
-    ) {
+      );
+
+    if (!selectedLanguage) {
+      console.warn(
+        `Unsupported language code: ${languageCode}`
+      );
+
       return;
     }
 
+    /*
+     * The i18n provider is responsible
+     * for validating whether the actual
+     * translation file exists.
+     */
+
     setLanguage(
-      languageCode
+      selectedLanguage.code
     );
 
     setLanguageOpen(false);
@@ -983,8 +970,6 @@ export default function Header({
         "
         value={
           selectedCity?.city_name ||
-          selectedCity?.cityName ||
-          selectedCity?.name ||
           t(
             "filters.city",
             "Select City"
@@ -998,14 +983,10 @@ export default function Header({
         )}
         getLabel={(city) =>
           city?.city_name ||
-          city?.cityName ||
-          city?.name ||
           ""
         }
         getKey={(city) =>
-          city?.city_id ||
-          city?.cityId ||
-          city?.id
+          city?.city_id
         }
       />
 
@@ -1021,8 +1002,6 @@ export default function Header({
         "
         value={
           selectedZone?.zone_name ||
-          selectedZone?.zoneName ||
-          selectedZone?.name ||
           t(
             "filters.zone",
             "Select Zone"
@@ -1036,14 +1015,10 @@ export default function Header({
         )}
         getLabel={(zone) =>
           zone?.zone_name ||
-          zone?.zoneName ||
-          zone?.name ||
           ""
         }
         getKey={(zone) =>
-          zone?.zone_id ||
-          zone?.zoneId ||
-          zone?.id
+          zone?.zone_id
         }
       />
 
@@ -1058,9 +1033,8 @@ export default function Header({
           2xl:w-[138px]
         "
         value={
-          selectedDivision?.division_name ||
-          selectedDivision?.divisionName ||
-          selectedDivision?.name ||
+          selectedDivision
+            ?.division_name ||
           t(
             "filters.division",
             "Select Division"
@@ -1074,16 +1048,17 @@ export default function Header({
           "filters.division",
           "Select Division"
         )}
-        getLabel={(division) =>
-          division?.division_name ||
-          division?.divisionName ||
-          division?.name ||
+        getLabel={(
+          division
+        ) =>
+          division
+            ?.division_name ||
           ""
         }
-        getKey={(division) =>
-          division?.division_id ||
-          division?.divisionId ||
-          division?.id
+        getKey={(
+          division
+        ) =>
+          division?.division_id
         }
       />
 
@@ -1099,21 +1074,12 @@ export default function Header({
         "
         value={
           selectedWard
-            ? (
-                selectedWard.ward_name ||
-                selectedWard.wardName ||
-                selectedWard.name ||
-                ""
-              ) +
-              (
+            ? `${selectedWard.ward_name}${
                 selectedWard.ward_no !==
                 undefined
                   ? ` (${selectedWard.ward_no})`
-                  : selectedWard.wardNo !==
-                    undefined
-                  ? ` (${selectedWard.wardNo})`
                   : ""
-              )
+              }`
             : t(
                 "filters.ward",
                 "Select Ward"
@@ -1129,29 +1095,16 @@ export default function Header({
         )}
         getLabel={(ward) =>
           ward
-            ? (
-                ward.ward_name ||
-                ward.wardName ||
-                ward.name ||
-                ""
-              ) +
-              (
+            ? `${ward.ward_name}${
                 ward.ward_no !==
                 undefined
                   ? ` (${ward.ward_no})`
-                  : ward.wardNo !==
-                    undefined
-                  ? ` (${ward.wardNo})`
                   : ""
-              )
+              }`
             : ""
         }
         getKey={(ward) =>
-          ward?.ward_id ||
-          ward?.wardId ||
-          ward?.id ||
-          ward?.ward_no ||
-          ward?.wardNo
+          ward?.ward_id
         }
       />
     </>
@@ -1564,10 +1517,11 @@ export default function Header({
                         transition
                       "
                     >
-                      {/* IMPORTANT:
-                          Do NOT use t() here.
-                          Language names always remain
-                          in their native language. */}
+                      {/* =================================================
+                          IMPORTANT:
+                          Language names are NEVER passed through t().
+                          They remain in their native language.
+                      ================================================= */}
 
                       <span>
                         {
