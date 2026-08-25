@@ -543,13 +543,70 @@ export default function VehicleRouteMap({ selectedDate }) {
 
         console.error("Vehicle Route Map Error:", err);
 
+        /*
+         * =====================================================
+         * NO TELEMETRY / MISSING DAY TABLE
+         * =====================================================
+         *
+         * PostgreSQL:
+         *
+         * 42P01
+         *
+         * means the requested telemetry table does not exist.
+         *
+         * Example:
+         *
+         * relation "day_25082026" does not exist
+         *
+         * This is NOT a frontend/API failure.
+         *
+         * It simply means there are no heartbeat GPS
+         * points available for the selected date.
+         *
+         * Therefore:
+         *
+         * routes = []
+         * error  = ""
+         *
+         * and the UI will show the normal
+         * "No vehicle route data available" bar.
+         * =====================================================
+         */
+
+        const backendMessage =
+          err?.response?.data?.message || err?.message || "";
+
+        const isMissingTelemetryDay =
+          err?.response?.status === 404 ||
+          backendMessage.includes("42P01") ||
+          backendMessage.includes("does not exist") ||
+          (backendMessage.includes("relation") &&
+            backendMessage.includes("day_"));
+
+        if (isMissingTelemetryDay) {
+          console.warn(
+            "No heartbeat GPS data available for selected date and filters.",
+          );
+
+          setRoutes([]);
+
+          setError("");
+
+          return;
+        }
+
+        /*
+         * =====================================================
+         * REAL ERROR
+         * =====================================================
+         *
+         * Keep showing an actual error for genuine failures.
+         * =====================================================
+         */
+
         setRoutes([]);
 
-        setError(
-          err?.response?.data?.message ||
-            err?.message ||
-            "Unable to load vehicle route data.",
-        );
+        setError(backendMessage || "Unable to load vehicle route data.");
       } finally {
         if (mounted) {
           setLoading(false);
@@ -959,113 +1016,66 @@ export default function VehicleRouteMap({ selectedDate }) {
             ROUTE MODE STATS
         =================================================== */}
 
-        {mapMode === "route" && (
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-              flex-wrap
-              lg:justify-end
-            "
-          >
-            {/* VEHICLES */}
+        {/* =================================================
+    NO ROUTE DATA
+================================================= */}
 
+        {mapMode === "route" &&
+          !loading &&
+          !error &&
+          preparedRoutes.length === 0 && (
             <div
               className="
-                px-3
-                sm:px-4
-                py-1.5
-                rounded-full
-                bg-[#EEF4FF]
-              "
+        absolute
+        inset-0
+        z-[1000]
+        flex
+        items-center
+        justify-center
+        pointer-events-none
+        px-4
+      "
             >
-              <span
+              <div
                 className="
-                  text-[11px]
-                  sm:text-xs
-                  font-semibold
-                  text-[#2563EB]
-                  whitespace-nowrap
-                "
+          w-full
+          max-w-[520px]
+          rounded-[18px]
+          bg-white/95
+          backdrop-blur-sm
+          border
+          border-[#E5E7EB]
+          shadow-[0_10px_35px_rgba(0,0,0,0.10)]
+          px-6
+          py-5
+          text-center
+        "
               >
-                {preparedRoutes.length} Vehicles
-              </span>
+                <h3
+                  className="
+            text-[16px]
+            sm:text-[17px]
+            font-semibold
+            text-[#34475B]
+          "
+                >
+                  No vehicle route data available
+                </h3>
+
+                <p
+                  className="
+            mt-2
+            text-[13px]
+            sm:text-[14px]
+            text-[#8AA1BB]
+          "
+                >
+                  No heartbeat GPS points were found for the selected date and
+                  filters.
+                </p>
+              </div>
             </div>
-
-            {/* ACTIVE */}
-
-            <div
-              className="
-                px-3
-                sm:px-4
-                py-1.5
-                rounded-full
-                bg-[#ECFDF3]
-              "
-            >
-              <span
-                className="
-                  text-[11px]
-                  sm:text-xs
-                  font-semibold
-                  text-[#16A34A]
-                  whitespace-nowrap
-                "
-              >
-                {activeVehicles.length} Active
-              </span>
-            </div>
-
-            {/* PLANTS */}
-
-            <div
-              className="
-                px-3
-                sm:px-4
-                py-1.5
-                rounded-full
-                bg-[#F3F4F6]
-              "
-            >
-              <span
-                className="
-                  text-[11px]
-                  sm:text-xs
-                  font-semibold
-                  text-[#374151]
-                  whitespace-nowrap
-                "
-              >
-                {validPlants.length} Plants
-              </span>
-            </div>
-
-            {/* DISTANCE */}
-
-            <div
-              className="
-                px-3
-                sm:px-4
-                py-1.5
-                rounded-full
-                bg-[#FEF3C7]
-              "
-            >
-              <span
-                className="
-                  text-[11px]
-                  sm:text-xs
-                  font-semibold
-                  text-[#D97706]
-                  whitespace-nowrap
-                "
-              >
-                {formatDistance(totalDistance)}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
 
         {/* ===================================================
             LIVE MODE STATUS
