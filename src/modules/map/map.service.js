@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from "axios";
 
 /*
 |--------------------------------------------------------------------------
@@ -40,8 +40,9 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
   }
 
   /*
-   * Keep your existing nearest-vehicle
-   * implementation here if you already have one.
+   * Keep the existing nearest-vehicle
+   * implementation if your project already
+   * has one.
    */
 
   const error = new Error(
@@ -61,8 +62,8 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
 
 const getLiveVehicles = async () => {
   /*
-   * Keep your existing implementation here
-   * if this endpoint is already being used elsewhere.
+   * Keep the existing implementation if
+   * this endpoint is already used elsewhere.
    */
 
   const error = new Error(
@@ -90,8 +91,8 @@ const getVehicle = async (vehicleId) => {
   }
 
   /*
-   * Keep your existing implementation here
-   * if this endpoint is already being used elsewhere.
+   * Keep the existing implementation if
+   * this endpoint is already used elsewhere.
    */
 
   const error = new Error(
@@ -109,12 +110,12 @@ const getVehicle = async (vehicleId) => {
 |--------------------------------------------------------------------------
 |
 | Flutter
-|   ↓
+|     ↓
 | Citizen Backend
-|   ↓
+|     ↓
 | Admin Backend
-|   ↓
-| Existing Admin telemetry/database
+|     ↓
+| Admin telemetry/database
 |
 |--------------------------------------------------------------------------
 */
@@ -158,6 +159,8 @@ const getLiveVehicleLocations = async ({
    * Example:
    *
    * Bearer eyJhbGci...
+   *
+   * ----------------------------------------------------------
    */
 
   if (!authorization || typeof authorization !== "string") {
@@ -272,13 +275,8 @@ const getLiveVehicleLocations = async ({
    * CALL ADMIN BACKEND
    * ----------------------------------------------------------
    *
-   * IMPORTANT FIX:
-   *
+   * IMPORTANT:
    * Forward the Citizen JWT.
-   *
-   * The Admin route has authentication middleware,
-   * so it requires the Authorization header.
-   *
    * ----------------------------------------------------------
    */
 
@@ -519,7 +517,22 @@ const getLiveVehicleLocations = async ({
   }
 };
 
-module.exports = {
+/*
+|--------------------------------------------------------------------------
+| DEFAULT EXPORT
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| map.controller.js uses:
+|
+| import mapService from "./map.service.js";
+|
+| Therefore this MUST be a default ESM export.
+|--------------------------------------------------------------------------
+*/
+
+export default {
   getNearestVehicle,
   getLiveVehicles,
   getVehicle,
