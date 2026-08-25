@@ -1,210 +1,241 @@
-import mapService from "./map.service.js";
+const mapService = require("../services/mapService");
 
-class MapController {
-  // ==========================================================
-  // EXISTING: NEAREST TRUCK
-  // ==========================================================
+/*
+|--------------------------------------------------------------------------
+| GET NEAREST VEHICLE
+|--------------------------------------------------------------------------
+*/
 
-  async getNearestTruck(req, res, next) {
-    try {
-      const { latitude, longitude } = req.query;
+const getNearestVehicle = async (req, res) => {
+  try {
+    const {
+      latitude,
+      longitude,
+    } = req.query;
 
-      if (latitude === undefined || longitude === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "Latitude and longitude are required.",
-          data: null,
-        });
-      }
+    const data =
+      await mapService.getNearestVehicle({
+        latitude,
+        longitude,
+      });
 
-      const parsedLatitude = Number(latitude);
+    return res.status(200).json({
+      success: true,
+      message:
+        "Nearest vehicle fetched successfully.",
+      data,
+    });
+  } catch (error) {
+    console.error(
+      "GET /api/citizen/map/nearest error:",
+      error,
+    );
 
-      const parsedLongitude = Number(longitude);
+    const statusCode =
+      Number.isInteger(
+        error?.statusCode,
+      )
+        ? error.statusCode
+        : 500;
 
-      if (
-        !Number.isFinite(parsedLatitude) ||
-        !Number.isFinite(parsedLongitude)
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid latitude or longitude.",
-          data: null,
-        });
-      }
+    return res.status(statusCode).json({
+      success: false,
+      message:
+        error?.publicMessage ||
+        error?.message ||
+        "Unable to fetch nearest vehicle.",
+      data: null,
+    });
+  }
+};
 
-      const truck = await mapService.findNearestTruck(
-        parsedLatitude,
-        parsedLongitude,
+/*
+|--------------------------------------------------------------------------
+| GET ALL LIVE VEHICLES
+|--------------------------------------------------------------------------
+*/
+
+const getLiveVehicles = async (
+  req,
+  res,
+) => {
+  try {
+    const data =
+      await mapService.getLiveVehicles();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Live vehicles fetched successfully.",
+      data,
+    });
+  } catch (error) {
+    console.error(
+      "GET /api/citizen/map/live error:",
+      error,
+    );
+
+    const statusCode =
+      Number.isInteger(
+        error?.statusCode,
+      )
+        ? error.statusCode
+        : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+      message:
+        error?.publicMessage ||
+        error?.message ||
+        "Unable to fetch live vehicles.",
+      data: null,
+    });
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE VEHICLE
+|--------------------------------------------------------------------------
+*/
+
+const getVehicle = async (
+  req,
+  res,
+) => {
+  try {
+    const {
+      vehicleId,
+    } = req.params;
+
+    const data =
+      await mapService.getVehicle(
+        vehicleId,
       );
 
-      if (!truck) {
-        return res.status(404).json({
-          success: false,
-          message: "No nearby truck found.",
-          data: null,
-        });
-      }
+    return res.status(200).json({
+      success: true,
+      message:
+        "Vehicle fetched successfully.",
+      data,
+    });
+  } catch (error) {
+    console.error(
+      "GET /api/citizen/map/live/:vehicleId error:",
+      error,
+    );
 
-      return res.status(200).json({
-        success: true,
-        message: "Nearest truck found successfully.",
-        data: truck,
-      });
-    } catch (error) {
-      next(error);
-    }
+    const statusCode =
+      Number.isInteger(
+        error?.statusCode,
+      )
+        ? error.statusCode
+        : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+      message:
+        error?.publicMessage ||
+        error?.message ||
+        "Unable to fetch vehicle.",
+      data: null,
+    });
   }
+};
 
-  // ==========================================================
-  // EXISTING: SPECIFIC TRUCK
-  // ==========================================================
+/*
+|--------------------------------------------------------------------------
+| GET LIVE VEHICLE LOCATIONS
+|--------------------------------------------------------------------------
+|
+| Citizen Flutter calls:
+|
+| GET /api/route-map/live
+|
+| Citizen backend forwards the existing
+| Authorization header to Admin backend.
+|
+|--------------------------------------------------------------------------
+*/
 
-  async getTruck(req, res, next) {
+const getLiveVehicleLocations =
+  async (req, res) => {
     try {
-      const { vehicleId } = req.params;
+      const {
+        latitude,
+        longitude,
+        cityId,
+        zoneId,
+        divisionId,
+        wardId,
+      } = req.query;
 
-      const truck = await mapService.getTruck(vehicleId);
+      /*
+       * Forward the existing Citizen JWT.
+       *
+       * Example:
+       *
+       * Authorization: Bearer eyJ...
+       */
 
-      if (!truck) {
-        return res.status(404).json({
-          success: false,
-          message: "Vehicle not found.",
-          data: null,
+      const authorization =
+        req.headers.authorization ||
+        null;
+
+      const data =
+        await mapService.getLiveVehicleLocations({
+          latitude,
+          longitude,
+          cityId,
+          zoneId,
+          divisionId,
+          wardId,
+          authorization,
         });
-      }
 
-      return res.status(200).json({
-        success: true,
-        message: "Vehicle fetched successfully.",
-        data: truck,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // ==========================================================
-  // NEW: LIVE VEHICLE LOCATIONS
-  // ==========================================================
-
-  async getLiveVehicleLocations(req, res, next) {
-    try {
-      const { latitude, longitude, cityId, zoneId, divisionId, wardId } =
-        req.query;
-
-      // ------------------------------------------------------
-      // REQUIRED PARAMETERS
-      // ------------------------------------------------------
-
-      if (
-        latitude === undefined ||
-        longitude === undefined ||
-        cityId === undefined ||
-        zoneId === undefined ||
-        divisionId === undefined ||
-        wardId === undefined
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "latitude, longitude, cityId, zoneId, divisionId and wardId are required.",
-          data: null,
-        });
-      }
-
-      // ------------------------------------------------------
-      // COORDINATES
-      // ------------------------------------------------------
-
-      const parsedLatitude = Number(latitude);
-
-      const parsedLongitude = Number(longitude);
-
-      if (
-        !Number.isFinite(parsedLatitude) ||
-        !Number.isFinite(parsedLongitude) ||
-        parsedLatitude < -90 ||
-        parsedLatitude > 90 ||
-        parsedLongitude < -180 ||
-        parsedLongitude > 180
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid latitude or longitude.",
-          data: null,
-        });
-      }
-
-      // ------------------------------------------------------
-      // IDS
-      // ------------------------------------------------------
-
-      const parsedCityId = Number(cityId);
-
-      const parsedZoneId = Number(zoneId);
-
-      const parsedDivisionId = Number(divisionId);
-
-      const parsedWardId = Number(wardId);
-
-      if (
-        !Number.isInteger(parsedCityId) ||
-        parsedCityId <= 0 ||
-        !Number.isInteger(parsedZoneId) ||
-        parsedZoneId <= 0 ||
-        !Number.isInteger(parsedDivisionId) ||
-        parsedDivisionId <= 0 ||
-        !Number.isInteger(parsedWardId) ||
-        parsedWardId <= 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid cityId, zoneId, divisionId or wardId.",
-          data: null,
-        });
-      }
-
-      // ------------------------------------------------------
-      // SERVICE
-      // ------------------------------------------------------
-
-      const result = await mapService.getLiveVehicleLocations({
-        latitude: parsedLatitude,
-
-        longitude: parsedLongitude,
-
-        cityId: parsedCityId,
-
-        zoneId: parsedZoneId,
-
-        divisionId: parsedDivisionId,
-
-        wardId: parsedWardId,
-      });
+      const hasVehicles =
+        Array.isArray(
+          data?.vehicles,
+        ) &&
+        data.vehicles.length > 0;
 
       return res.status(200).json({
         success: true,
 
-        message:
-          result.vehicles.length > 0
-            ? "Live vehicle locations fetched successfully."
-            : "No vehicles found for the selected ward.",
+        message: hasVehicles
+          ? "Live vehicle locations fetched successfully."
+          : "No vehicles found for the selected ward.",
 
-        data: result,
+        data,
       });
     } catch (error) {
-      console.error("Live vehicle route error:", error);
+      console.error(
+        "GET /api/route-map/live error:",
+        error,
+      );
 
-      return res.status(error.statusCode || 500).json({
+      const statusCode =
+        Number.isInteger(
+          error?.statusCode,
+        )
+          ? error.statusCode
+          : 500;
+
+      return res.status(statusCode).json({
         success: false,
 
         message:
-          error.publicMessage || "Unable to fetch live vehicle locations.",
+          error?.publicMessage ||
+          "Unable to fetch live vehicle locations.",
 
         data: null,
       });
     }
-  }
-}
+  };
 
-export default new MapController();
+module.exports = {
+  getNearestVehicle,
+  getLiveVehicles,
+  getVehicle,
+  getLiveVehicleLocations,
+};

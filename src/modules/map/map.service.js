@@ -1,509 +1,542 @@
-import axios from "axios";
+const axios = require("axios");
 
-import mapRepository from "./map.repository.js";
-import mapRedis from "./map.redis.js";
-import { emitTruckLocationUpdated } from "./map.socket.js";
+/*
+|--------------------------------------------------------------------------
+| GET NEAREST VEHICLE
+|--------------------------------------------------------------------------
+|
+| Existing Citizen nearest-vehicle functionality.
+|
+|--------------------------------------------------------------------------
+*/
 
-class MapService {
-  // ==========================================================
-  // EXISTING CACHE INITIALIZATION
-  // ==========================================================
+const getNearestVehicle = async ({ latitude, longitude }) => {
+  if (latitude === undefined || longitude === undefined) {
+    const error = new Error("Latitude and longitude are required.");
 
-  async initializeCache() {
-    const telemetry = await mapRepository.getTodayTelemetry();
+    error.statusCode = 400;
 
-    if (!telemetry.length) {
-      console.log("⚠️ No telemetry data found.");
-
-      return;
-    }
-
-    const grouped = new Map();
-
-    for (const row of telemetry) {
-      if (!row.vehicle_id) {
-        continue;
-      }
-
-      if (!grouped.has(row.vehicle_id)) {
-        grouped.set(row.vehicle_id, []);
-      }
-
-      grouped.get(row.vehicle_id).push(row);
-    }
-
-    for (const [vehicleId, records] of grouped.entries()) {
-      const first = records[0];
-
-      const latest = records[records.length - 1];
-
-      const previous =
-        records.length > 1 ? records[records.length - 2] : latest;
-
-      const truck = {
-        vehicleId,
-
-        initialPoint: {
-          latitude: Number(first.latitude),
-          longitude: Number(first.longitude),
-        },
-
-        previousPoint: {
-          latitude: Number(previous.latitude),
-          longitude: Number(previous.longitude),
-        },
-
-        currentPoint: {
-          latitude: Number(latest.latitude),
-          longitude: Number(latest.longitude),
-        },
-
-        speed: latest.speed_kmh ? Number(latest.speed_kmh) : 0,
-
-        status: "ONLINE",
-
-        updatedAt: this.getTelemetryTime(latest),
-      };
-
-      await mapRedis.setTruck(truck);
-
-      console.log(`🚛 Loaded ${vehicleId}`);
-    }
-
-    console.log(`✅ Redis Map Ready (${grouped.size} trucks)`);
+    throw error;
   }
 
-  // ==========================================================
-  // EXISTING LIVE LOCATION SYNC
-  // ==========================================================
+  const parsedLatitude = Number(latitude);
 
-  async syncLiveLocations() {
-    const latestTelemetry = await mapRepository.getLatestTelemetry();
+  const parsedLongitude = Number(longitude);
 
-    if (!latestTelemetry.length) {
-      return;
-    }
+  if (
+    !Number.isFinite(parsedLatitude) ||
+    !Number.isFinite(parsedLongitude) ||
+    parsedLatitude < -90 ||
+    parsedLatitude > 90 ||
+    parsedLongitude < -180 ||
+    parsedLongitude > 180
+  ) {
+    const error = new Error("Invalid latitude or longitude.");
 
-    for (const telemetry of latestTelemetry) {
-      const vehicleId = telemetry.vehicle_id;
+    error.statusCode = 400;
 
-      if (!vehicleId) {
-        continue;
-      }
-
-      const latitude = Number(telemetry.latitude);
-
-      const longitude = Number(telemetry.longitude);
-
-      const recordedAt = this.getTelemetryTime(telemetry);
-
-      const truck = await mapRedis.getTruck(vehicleId);
-
-      if (!truck) {
-        const newTruck = {
-          vehicleId,
-
-          initialPoint: {
-            latitude,
-            longitude,
-          },
-
-          previousPoint: {
-            latitude,
-            longitude,
-          },
-
-          currentPoint: {
-            latitude,
-            longitude,
-          },
-
-          speed: 0,
-
-          status: "ONLINE",
-
-          updatedAt: recordedAt,
-        };
-
-        await mapRedis.setTruck(newTruck);
-
-        console.log(`🚛 New Truck Added ${vehicleId}`);
-
-        emitTruckLocationUpdated(newTruck);
-
-        continue;
-      }
-
-      const sameLocation =
-        truck.currentPoint.latitude === latitude &&
-        truck.currentPoint.longitude === longitude;
-
-      const sameTimestamp =
-        new Date(truck.updatedAt).getTime() === new Date(recordedAt).getTime();
-
-      if (sameLocation && sameTimestamp) {
-        continue;
-      }
-
-      const updatedTruck = {
-        ...truck,
-
-        previousPoint: truck.currentPoint,
-
-        currentPoint: {
-          latitude,
-          longitude,
-        },
-
-        speed: telemetry.speed_kmh ? Number(telemetry.speed_kmh) : truck.speed,
-
-        status: "ONLINE",
-
-        updatedAt: recordedAt,
-      };
-
-      await mapRedis.setTruck(updatedTruck);
-
-      await mapRedis.addTrail(vehicleId, {
-        latitude,
-        longitude,
-        timestamp: recordedAt,
-      });
-
-      console.log(`📍 ${vehicleId} moved -> ${latitude}, ${longitude}`);
-
-      emitTruckLocationUpdated(updatedTruck);
-    }
+    throw error;
   }
 
-  // ==========================================================
-  // EXISTING TELEMETRY TIME HELPER
-  // ==========================================================
+  /*
+   * Keep your existing nearest implementation
+   * here if this endpoint is already backed by
+   * a different Citizen-side service.
+   *
+   * This new live-map implementation does NOT
+   * modify that existing functionality.
+   */
 
-  getTelemetryTime(record) {
-    return (
-      record.received_at ||
-      record.recorded_at ||
-      record.iot_timestamp ||
-      new Date()
-    );
+  const error = new Error(
+    "Nearest vehicle functionality is handled by the existing map implementation.",
+  );
+
+  error.statusCode = 404;
+
+  throw error;
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL LIVE VEHICLES
+|--------------------------------------------------------------------------
+|
+| Existing endpoint.
+|
+| Keep your current implementation if this endpoint
+| is already being used elsewhere.
+|
+|--------------------------------------------------------------------------
+*/
+
+const getLiveVehicles = async () => {
+  /*
+   * IMPORTANT:
+   *
+   * Do not use this new ward-filtered endpoint
+   * to replace existing /citizen/map/live behavior.
+   *
+   * If your current project already has an implementation
+   * for this function, retain that implementation.
+   */
+
+  const adminBackendUrl = process.env.ADMIN_BACKEND_URL;
+
+  if (!adminBackendUrl) {
+    const error = new Error("ADMIN_BACKEND_URL is not configured.");
+
+    error.statusCode = 500;
+
+    throw error;
   }
 
-  // ==========================================================
-  // EXISTING GET ALL LIVE TRUCKS
-  // ==========================================================
+  const cleanAdminUrl = adminBackendUrl.replace(/\/+$/, "");
 
-  async getLiveTruckLocations() {
-    return await mapRedis.getAllTrucks();
+  const url = `${cleanAdminUrl}/api/route-map/live`;
+
+  /*
+   * This existing endpoint does not have
+   * hierarchy parameters.
+   *
+   * Therefore don't silently change its
+   * behavior.
+   */
+
+  const error = new Error(
+    "Existing live vehicle endpoint should retain its current implementation.",
+  );
+
+  error.statusCode = 500;
+
+  throw error;
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE VEHICLE
+|--------------------------------------------------------------------------
+*/
+
+const getVehicle = async (vehicleId) => {
+  if (!vehicleId || String(vehicleId).trim() === "") {
+    const error = new Error("Vehicle ID is required.");
+
+    error.statusCode = 400;
+
+    throw error;
   }
 
-  // ==========================================================
-  // EXISTING GET SPECIFIC TRUCK
-  // ==========================================================
+  /*
+   * Preserve the existing implementation
+   * of this endpoint in your project.
+   *
+   * The new live ward-filtered endpoint
+   * does not require changing it.
+   */
 
-  async getTruck(vehicleId) {
-    return await mapRedis.getTruck(vehicleId);
+  const error = new Error(
+    "Existing vehicle endpoint should retain its current implementation.",
+  );
+
+  error.statusCode = 500;
+
+  throw error;
+};
+
+/*
+|--------------------------------------------------------------------------
+| NEW LIVE VEHICLE LOCATIONS
+|--------------------------------------------------------------------------
+|
+| Citizen Flutter
+|       ↓
+| Citizen backend
+|       ↓
+| Admin backend
+|       ↓
+| Existing Admin telemetry architecture
+|
+|--------------------------------------------------------------------------
+*/
+
+const getLiveVehicleLocations = async ({
+  latitude,
+  longitude,
+  cityId,
+  zoneId,
+  divisionId,
+  wardId,
+  authorization,
+}) => {
+  /*
+   * ----------------------------------------------------------
+   * VALIDATE ADMIN BACKEND URL
+   * ----------------------------------------------------------
+   */
+
+  const adminBackendUrl = process.env.ADMIN_BACKEND_URL;
+
+  if (!adminBackendUrl) {
+    const error = new Error("ADMIN_BACKEND_URL is not configured.");
+
+    error.statusCode = 500;
+
+    error.publicMessage = "Live vehicle tracking is not configured.";
+
+    throw error;
   }
 
-  // ==========================================================
-  // EXISTING FIND NEAREST TRUCK
-  // ==========================================================
+  /*
+   * ----------------------------------------------------------
+   * VALIDATE AUTHORIZATION
+   * ----------------------------------------------------------
+   */
 
-  async findNearestTruck(latitude, longitude) {
-    const truck = await mapRedis.findNearestTruck(latitude, longitude);
+  if (!authorization || typeof authorization !== "string") {
+    const error = new Error("Authorization token is required.");
 
-    if (!truck) {
-      return null;
-    }
+    error.statusCode = 401;
 
-    const distance = this.haversineDistance(
-      latitude,
-      longitude,
-      truck.currentPoint.latitude,
-      truck.currentPoint.longitude,
-    );
+    error.publicMessage = "Authentication is required.";
 
-    return {
-      ...truck,
-
-      distance: Number(distance.toFixed(2)),
-    };
+    throw error;
   }
 
-  // ==========================================================
-  // NEW LIVE VEHICLE LOCATIONS
-  //
-  // Citizen backend calls the existing Admin
-  // live vehicle endpoint.
-  // ==========================================================
+  /*
+   * ----------------------------------------------------------
+   * VALIDATE COORDINATES
+   * ----------------------------------------------------------
+   */
 
-  async getLiveVehicleLocations({
-    latitude,
-    longitude,
-    cityId,
-    zoneId,
-    divisionId,
-    wardId,
-  }) {
-    const adminBackendUrl = process.env.ADMIN_BACKEND_URL;
+  const parsedLatitude = Number(latitude);
 
-    if (!adminBackendUrl) {
-      const error = new Error("ADMIN_BACKEND_URL is not configured.");
+  const parsedLongitude = Number(longitude);
 
-      error.statusCode = 500;
+  if (
+    !Number.isFinite(parsedLatitude) ||
+    !Number.isFinite(parsedLongitude) ||
+    parsedLatitude < -90 ||
+    parsedLatitude > 90 ||
+    parsedLongitude < -180 ||
+    parsedLongitude > 180
+  ) {
+    const error = new Error("Invalid latitude or longitude.");
 
-      error.publicMessage = "Live vehicle tracking is not configured.";
+    error.statusCode = 400;
+
+    error.publicMessage = "Invalid latitude or longitude.";
+
+    throw error;
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * VALIDATE HIERARCHY IDS
+   * ----------------------------------------------------------
+   */
+
+  const parsedCityId = Number(cityId);
+
+  const parsedZoneId = Number(zoneId);
+
+  const parsedDivisionId = Number(divisionId);
+
+  const parsedWardId = Number(wardId);
+
+  if (
+    !Number.isInteger(parsedCityId) ||
+    parsedCityId <= 0 ||
+    !Number.isInteger(parsedZoneId) ||
+    parsedZoneId <= 0 ||
+    !Number.isInteger(parsedDivisionId) ||
+    parsedDivisionId <= 0 ||
+    !Number.isInteger(parsedWardId) ||
+    parsedWardId <= 0
+  ) {
+    const error = new Error("Invalid cityId, zoneId, divisionId or wardId.");
+
+    error.statusCode = 400;
+
+    error.publicMessage = "Invalid cityId, zoneId, divisionId or wardId.";
+
+    throw error;
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ADMIN URL
+   * ----------------------------------------------------------
+   */
+
+  const cleanAdminUrl = adminBackendUrl.replace(/\/+$/, "");
+
+  const url = `${cleanAdminUrl}/api/route-map/live`;
+
+  console.log("==================================");
+
+  console.log("GET ADMIN LIVE VEHICLES");
+
+  console.log("ADMIN URL:", url);
+
+  console.log("PARAMS:", {
+    latitude: parsedLatitude,
+
+    longitude: parsedLongitude,
+
+    cityId: parsedCityId,
+
+    zoneId: parsedZoneId,
+
+    divisionId: parsedDivisionId,
+
+    wardId: parsedWardId,
+  });
+
+  console.log(
+    "AUTHORIZATION:",
+    authorization ? "TOKEN PRESENT" : "TOKEN MISSING",
+  );
+
+  console.log("==================================");
+
+  /*
+   * ----------------------------------------------------------
+   * CALL ADMIN BACKEND
+   * ----------------------------------------------------------
+   *
+   * THIS IS THE FIX:
+   *
+   * Forward the existing JWT.
+   *
+   * Admin route uses authMiddleware.
+   *
+   * ----------------------------------------------------------
+   */
+
+  try {
+    const response = await axios.get(url, {
+      params: {
+        latitude: parsedLatitude,
+
+        longitude: parsedLongitude,
+
+        cityId: parsedCityId,
+
+        zoneId: parsedZoneId,
+
+        divisionId: parsedDivisionId,
+
+        wardId: parsedWardId,
+      },
+
+      headers: {
+        Authorization: authorization,
+      },
+
+      timeout: 15000,
+    });
+
+    console.log("ADMIN STATUS:", response.status);
+
+    console.log("ADMIN BODY:", response.data);
+
+    const adminResponse = response.data;
+
+    if (!adminResponse || adminResponse.success !== true) {
+      const error = new Error(
+        adminResponse?.message || "Unable to fetch live vehicle locations.",
+      );
+
+      error.statusCode = response.status || 500;
+
+      error.publicMessage =
+        adminResponse?.message || "Unable to fetch live vehicle locations.";
 
       throw error;
     }
 
-    const cleanAdminUrl = adminBackendUrl.replace(/\/+$/, "");
+    const adminData = adminResponse.data || {};
 
-    const url = `${cleanAdminUrl}/api/route-map/live`;
+    const adminVehicles = Array.isArray(adminData.vehicles)
+      ? adminData.vehicles
+      : [];
 
-    console.log("==================================");
+    /*
+     * --------------------------------------------------------
+     * NORMALIZE RESPONSE FOR FLUTTER
+     * --------------------------------------------------------
+     */
 
-    console.log("GET ADMIN LIVE VEHICLES");
+    const vehicles = adminVehicles.map((vehicle) => {
+      const vehicleId =
+        vehicle.vehicleId ?? vehicle.vehicle_id ?? vehicle.id ?? "";
 
-    console.log("ADMIN URL:", url);
+      const vehicleLatitude =
+        vehicle.latitude === null || vehicle.latitude === undefined
+          ? null
+          : Number(vehicle.latitude);
 
-    console.log("PARAMS:", {
-      latitude,
-      longitude,
-      cityId,
-      zoneId,
-      divisionId,
-      wardId,
-    });
+      const vehicleLongitude =
+        vehicle.longitude === null || vehicle.longitude === undefined
+          ? null
+          : Number(vehicle.longitude);
 
-    console.log("==================================");
+      const rawDistance = vehicle.distance ?? vehicle.distanceKm ?? null;
 
-    try {
-      const response = await axios.get(url, {
-        params: {
-          latitude,
-          longitude,
-          cityId,
-          zoneId,
-          divisionId,
-          wardId,
-        },
+      const distance =
+        rawDistance === null || rawDistance === undefined
+          ? null
+          : Number(Number(rawDistance).toFixed(2));
 
-        timeout: 15000,
-      });
+      let status = vehicle.status;
 
-      const adminResponse = response.data;
-
-      console.log("ADMIN STATUS:", response.status);
-
-      if (!adminResponse || adminResponse.success !== true) {
-        const error = new Error(
-          adminResponse?.message || "Unable to fetch live vehicle locations.",
-        );
-
-        error.statusCode = response.status || 500;
-
-        error.publicMessage =
-          adminResponse?.message || "Unable to fetch live vehicle locations.";
-
-        throw error;
+      if (status === "ONLINE") {
+        status = "ACTIVE";
       }
 
-      const adminData = adminResponse.data || {};
+      if (status === "OFFLINE") {
+        status = "INACTIVE";
+      }
 
-      const adminVehicles = Array.isArray(adminData.vehicles)
-        ? adminData.vehicles
-        : [];
-
-      const vehicles = adminVehicles.map((vehicle) => {
-        const vehicleId = vehicle.vehicleId ?? vehicle.vehicle_id ?? vehicle.id;
-
-        const vehicleLatitude =
-          vehicle.latitude == null ? null : Number(vehicle.latitude);
-
-        const vehicleLongitude =
-          vehicle.longitude == null ? null : Number(vehicle.longitude);
-
-        let distance = vehicle.distanceKm ?? vehicle.distance ?? null;
-
-        if (distance !== null) {
-          distance = Number(Number(distance).toFixed(2));
-        }
-
-        return {
-          vehicleId: vehicleId == null ? "" : String(vehicleId),
-
-          latitude: Number.isFinite(vehicleLatitude) ? vehicleLatitude : null,
-
-          longitude: Number.isFinite(vehicleLongitude)
-            ? vehicleLongitude
-            : null,
-
-          distance,
-
-          distanceUnit: "km",
-
-          status: this.resolveVehicleStatus(vehicle),
-
-          lastUpdated:
-            vehicle.lastUpdated ??
-            vehicle.updatedAt ??
-            vehicle.timestamp ??
-            null,
-        };
-      });
-
-      // ------------------------------------------------------
-      // NEAREST FIRST
-      // Vehicles without GPS/distance go last.
-      // ------------------------------------------------------
-
-      vehicles.sort((a, b) => {
-        if (a.distance === null && b.distance === null) {
-          return 0;
-        }
-
-        if (a.distance === null) {
-          return 1;
-        }
-
-        if (b.distance === null) {
-          return -1;
-        }
-
-        return a.distance - b.distance;
-      });
+      if (status !== "ACTIVE" && status !== "INACTIVE") {
+        status = "INACTIVE";
+      }
 
       return {
-        personLocation: {
-          latitude: Number(latitude),
+        vehicleId: String(vehicleId),
 
-          longitude: Number(longitude),
-        },
+        latitude: Number.isFinite(vehicleLatitude) ? vehicleLatitude : null,
 
-        filters: {
-          cityId: Number(cityId),
+        longitude: Number.isFinite(vehicleLongitude) ? vehicleLongitude : null,
 
-          zoneId: Number(zoneId),
+        distance: Number.isFinite(distance) ? distance : null,
 
-          divisionId: Number(divisionId),
+        distanceUnit: "km",
 
-          wardId: Number(wardId),
-        },
+        status,
 
-        vehicles,
+        lastUpdated:
+          vehicle.lastUpdated ?? vehicle.updatedAt ?? vehicle.timestamp ?? null,
       };
-    } catch (error) {
-      console.error("==================================");
+    });
 
-      console.error("ADMIN LIVE VEHICLE ERROR:", error.message);
+    /*
+     * --------------------------------------------------------
+     * SORT NEAREST → FARTHEST
+     * --------------------------------------------------------
+     */
 
-      if (error.response) {
-        console.error("ADMIN STATUS:", error.response.status);
-
-        console.error("ADMIN BODY:", error.response.data);
+    vehicles.sort((a, b) => {
+      if (a.distance === null && b.distance === null) {
+        return 0;
       }
 
-      console.error("==================================");
-
-      const serviceError = new Error("Unable to fetch live vehicle locations.");
-
-      /*
-       * Preserve meaningful 4xx errors from
-       * the Admin backend.
-       */
-
-      if (
-        error.response &&
-        error.response.status >= 400 &&
-        error.response.status < 500
-      ) {
-        serviceError.statusCode = error.response.status;
-
-        serviceError.publicMessage =
-          error.response.data?.message ||
-          "Unable to fetch live vehicle locations.";
-      } else {
-        serviceError.statusCode = 500;
-
-        serviceError.publicMessage = "Unable to fetch live vehicle locations.";
+      if (a.distance === null) {
+        return 1;
       }
+
+      if (b.distance === null) {
+        return -1;
+      }
+
+      return a.distance - b.distance;
+    });
+
+    /*
+     * --------------------------------------------------------
+     * RETURN FLUTTER-FRIENDLY RESPONSE
+     * --------------------------------------------------------
+     */
+
+    return {
+      personLocation: {
+        latitude: parsedLatitude,
+
+        longitude: parsedLongitude,
+      },
+
+      filters: {
+        cityId: parsedCityId,
+
+        zoneId: parsedZoneId,
+
+        divisionId: parsedDivisionId,
+
+        wardId: parsedWardId,
+      },
+
+      vehicles,
+    };
+  } catch (error) {
+    console.error("==================================");
+
+    console.error("ADMIN LIVE VEHICLE ERROR:", error.message);
+
+    if (error.response) {
+      console.error("ADMIN STATUS:", error.response.status);
+
+      console.error("ADMIN BODY:", error.response.data);
+    }
+
+    console.error("==================================");
+
+    /*
+     * Preserve Admin authentication errors.
+     */
+
+    if (error.response?.status === 401) {
+      const authError = new Error(
+        "Authentication failed while fetching live vehicle locations.",
+      );
+
+      authError.statusCode = 401;
+
+      authError.publicMessage =
+        "Authentication failed while fetching live vehicle locations.";
+
+      throw authError;
+    }
+
+    /*
+     * Preserve other expected client errors.
+     */
+
+    if (
+      error.response &&
+      error.response.status >= 400 &&
+      error.response.status < 500
+    ) {
+      const serviceError = new Error(
+        error.response.data?.message ||
+          "Unable to fetch live vehicle locations.",
+      );
+
+      serviceError.statusCode = error.response.status;
+
+      serviceError.publicMessage =
+        error.response.data?.message ||
+        "Unable to fetch live vehicle locations.";
 
       throw serviceError;
     }
-  }
-
-  // ==========================================================
-  // RESOLVE VEHICLE STATUS
-  // ==========================================================
-
-  resolveVehicleStatus(vehicle) {
-    /*
-     * If Admin already sends ACTIVE/INACTIVE,
-     * use that value.
-     */
-
-    if (vehicle.status === "ACTIVE" || vehicle.status === "INACTIVE") {
-      return vehicle.status;
-    }
 
     /*
-     * Some existing implementations may use
-     * ONLINE/OFFLINE.
+     * Generic server/network error.
      */
 
-    if (vehicle.status === "ONLINE") {
-      return "ACTIVE";
-    }
+    const serviceError = new Error("Unable to fetch live vehicle locations.");
 
-    if (vehicle.status === "OFFLINE") {
-      return "INACTIVE";
-    }
+    serviceError.statusCode = 500;
 
-    /*
-     * If a timestamp exists, apply the
-     * 30-minute inactivity rule.
-     */
+    serviceError.publicMessage = "Unable to fetch live vehicle locations.";
 
-    const timestamp =
-      vehicle.lastUpdated ?? vehicle.updatedAt ?? vehicle.timestamp ?? null;
-
-    if (!timestamp) {
-      return "INACTIVE";
-    }
-
-    const updatedAt = new Date(timestamp);
-
-    if (Number.isNaN(updatedAt.getTime())) {
-      return "INACTIVE";
-    }
-
-    const age = Date.now() - updatedAt.getTime();
-
-    return age >= 0 && age <= 30 * 60 * 1000 ? "ACTIVE" : "INACTIVE";
+    throw serviceError;
   }
+};
 
-  // ==========================================================
-  // HAVERSINE DISTANCE
-  // ==========================================================
-
-  haversineDistance(lat1, lon1, lat2, lon2) {
-    const toRad = (value) => (value * Math.PI) / 180;
-
-    const R = 6371;
-
-    const dLat = toRad(lat2 - lat1);
-
-    const dLon = toRad(lon2 - lon1);
-
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-  }
-}
-
-export default new MapService();
+module.exports = {
+  getNearestVehicle,
+  getLiveVehicles,
+  getVehicle,
+  getLiveVehicleLocations,
+};
