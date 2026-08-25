@@ -20,12 +20,14 @@ const en = {
     included: "Included",
   },
 
-  language: {
-    english: "English",
-    kannada: "ಕನ್ನಡ",
-    hindi: "हिंदी",
-    Telugu
-  },
+language: {
+  english: "English",
+  kannada: "ಕನ್ನಡ",
+  hindi: "हिंदी",
+  telugu: "తెలుగు",
+  tamil: "தமிழ்",
+  malayalam: "മലയാളം",
+},
 
   header: {
     search: "Search...",
