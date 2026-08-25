@@ -2,6 +2,70 @@ import axios from "axios";
 
 /*
 |--------------------------------------------------------------------------
+| LIVE VEHICLE CACHE
+|--------------------------------------------------------------------------
+|
+| Admin owns telemetry.
+| Citizen only requests the current live vehicle data.
+|
+| Flutter can poll frequently, so Citizen caches the Admin
+| response for 5 seconds.
+|--------------------------------------------------------------------------
+*/
+
+const LIVE_CACHE_TTL_MS = 5000;
+
+const liveVehicleCache = new Map();
+
+/*
+|--------------------------------------------------------------------------
+| CACHE KEY
+|--------------------------------------------------------------------------
+*/
+
+const createCacheKey = ({ cityId, zoneId, divisionId, wardId }) => {
+  return [cityId, zoneId, divisionId, wardId].join(":");
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET CACHE
+|--------------------------------------------------------------------------
+*/
+
+const getCachedLiveVehicles = (key) => {
+  const cached = liveVehicleCache.get(key);
+
+  if (!cached) {
+    return null;
+  }
+
+  const age = Date.now() - cached.timestamp;
+
+  if (age > LIVE_CACHE_TTL_MS) {
+    liveVehicleCache.delete(key);
+
+    return null;
+  }
+
+  return cached.data;
+};
+
+/*
+|--------------------------------------------------------------------------
+| SET CACHE
+|--------------------------------------------------------------------------
+*/
+
+const setCachedLiveVehicles = (key, data) => {
+  liveVehicleCache.set(key, {
+    timestamp: Date.now(),
+    data,
+  });
+};
+
+/*
+|--------------------------------------------------------------------------
 | GET NEAREST VEHICLE
 |--------------------------------------------------------------------------
 */
@@ -40,13 +104,13 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
   }
 
   /*
-   * Keep the existing nearest-vehicle
-   * implementation if your project already
-   * has one.
+   * Keep compatibility with the existing route.
+   *
+   * The live map uses getLiveVehicleLocations().
    */
 
   const error = new Error(
-    "Nearest vehicle functionality is handled by the existing map implementation.",
+    "Nearest vehicle functionality is handled by the live vehicle endpoint.",
   );
 
   error.statusCode = 404;
@@ -61,16 +125,11 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
 */
 
 const getLiveVehicles = async () => {
-  /*
-   * Keep the existing implementation if
-   * this endpoint is already used elsewhere.
-   */
+  const error = new Error("Use the ward-filtered live vehicle endpoint.");
 
-  const error = new Error(
-    "Existing live vehicle endpoint should retain its current implementation.",
-  );
+  error.statusCode = 400;
 
-  error.statusCode = 500;
+  error.publicMessage = "Use the ward-filtered live vehicle endpoint.";
 
   throw error;
 };
@@ -90,33 +149,36 @@ const getVehicle = async (vehicleId) => {
     throw error;
   }
 
-  /*
-   * Keep the existing implementation if
-   * this endpoint is already used elsewhere.
-   */
+  const error = new Error("Single vehicle lookup is not used by the live map.");
 
-  const error = new Error(
-    "Existing vehicle endpoint should retain its current implementation.",
-  );
-
-  error.statusCode = 500;
+  error.statusCode = 404;
 
   throw error;
 };
 
 /*
 |--------------------------------------------------------------------------
-| GET LIVE VEHICLE LOCATIONS
+| SYNC LIVE LOCATIONS
 |--------------------------------------------------------------------------
 |
-| Flutter
-|     ↓
-| Citizen Backend
-|     ↓
-| Admin Backend
-|     ↓
-| Admin telemetry/database
+| IMPORTANT:
 |
+| Telemetry synchronization belongs to the Admin backend.
+|
+| Citizen must NOT maintain a separate telemetry worker.
+|
+| This function remains only for compatibility with any old
+| imports that may still reference it.
+|--------------------------------------------------------------------------
+*/
+
+const syncLiveLocations = async () => {
+  return;
+};
+
+/*
+|--------------------------------------------------------------------------
+| GET LIVE VEHICLE LOCATIONS
 |--------------------------------------------------------------------------
 */
 
@@ -149,17 +211,14 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * AUTHORIZATION
+   * CITIZEN AUTHENTICATION
    * ----------------------------------------------------------
    *
-   * The Citizen controller passes:
+   * Flutter's Citizen JWT is still required for the
+   * Citizen endpoint.
    *
-   * req.headers.authorization
-   *
-   * Example:
-   *
-   * Bearer eyJhbGci...
-   *
+   * We DO NOT forward this JWT to Admin because Admin
+   * has a different JWT_SECRET.
    * ----------------------------------------------------------
    */
 
@@ -175,7 +234,25 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * COORDINATES
+   * INTERNAL SECRET
+   * ----------------------------------------------------------
+   */
+
+  const internalSecret = process.env.CITIZEN_INTERNAL_API_SECRET;
+
+  if (!internalSecret) {
+    const error = new Error("CITIZEN_INTERNAL_API_SECRET is not configured.");
+
+    error.statusCode = 500;
+
+    error.publicMessage = "Internal live-map authentication is not configured.";
+
+    throw error;
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * VALIDATE COORDINATES
    * ----------------------------------------------------------
    */
 
@@ -202,7 +279,7 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * HIERARCHY IDS
+   * VALIDATE HIERARCHY
    * ----------------------------------------------------------
    */
 
@@ -235,7 +312,47 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * ADMIN ENDPOINT
+   * CACHE KEY
+   * ----------------------------------------------------------
+   */
+
+  const cacheKey = createCacheKey({
+    cityId: parsedCityId,
+
+    zoneId: parsedZoneId,
+
+    divisionId: parsedDivisionId,
+
+    wardId: parsedWardId,
+  });
+
+  /*
+   * ----------------------------------------------------------
+   * CACHE HIT
+   * ----------------------------------------------------------
+   */
+
+  const cached = getCachedLiveVehicles(cacheKey);
+
+  if (cached) {
+    console.log("🚛 Live vehicle cache HIT:", cacheKey);
+
+    return {
+      ...cached,
+
+      personLocation: {
+        latitude: parsedLatitude,
+
+        longitude: parsedLongitude,
+      },
+    };
+  }
+
+  console.log("🚛 Live vehicle cache MISS:", cacheKey);
+
+  /*
+   * ----------------------------------------------------------
+   * ADMIN URL
    * ----------------------------------------------------------
    */
 
@@ -264,19 +381,34 @@ const getLiveVehicleLocations = async ({
   });
 
   console.log(
-    "AUTHORIZATION:",
+    "CITIZEN AUTHORIZATION:",
     authorization ? "TOKEN PRESENT" : "TOKEN MISSING",
+  );
+
+  console.log(
+    "INTERNAL AUTH:",
+    internalSecret ? "SECRET PRESENT" : "SECRET MISSING",
   );
 
   console.log("==================================");
 
   /*
    * ----------------------------------------------------------
-   * CALL ADMIN BACKEND
+   * CALL ADMIN
    * ----------------------------------------------------------
    *
-   * IMPORTANT:
-   * Forward the Citizen JWT.
+   * CRITICAL:
+   *
+   * DO NOT send:
+   *
+   * Authorization: Citizen JWT
+   *
+   * Send:
+   *
+   * X-Citizen-Internal-Secret
+   *
+   * because Admin validates this request using the shared
+   * internal secret.
    * ----------------------------------------------------------
    */
 
@@ -297,7 +429,7 @@ const getLiveVehicleLocations = async ({
       },
 
       headers: {
-        Authorization: authorization,
+        "X-Citizen-Internal-Secret": internalSecret,
       },
 
       timeout: 15000,
@@ -309,7 +441,7 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * ADMIN RESPONSE
+     * VALIDATE ADMIN RESPONSE
      * --------------------------------------------------------
      */
 
@@ -361,10 +493,6 @@ const getLiveVehicleLocations = async ({
           ? null
           : Number(Number(rawDistance).toFixed(2));
 
-      /*
-       * Normalize status.
-       */
-
       let status = vehicle.status;
 
       if (status === "ONLINE") {
@@ -399,7 +527,7 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * SORT NEAREST → FARTHEST
+     * SORT BY DISTANCE
      * --------------------------------------------------------
      */
 
@@ -421,11 +549,11 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * RETURN CITIZEN RESPONSE
+     * RESULT
      * --------------------------------------------------------
      */
 
-    return {
+    const result = {
       personLocation: {
         latitude: parsedLatitude,
 
@@ -444,6 +572,16 @@ const getLiveVehicleLocations = async ({
 
       vehicles,
     };
+
+    /*
+     * --------------------------------------------------------
+     * CACHE RESULT
+     * --------------------------------------------------------
+     */
+
+    setCachedLiveVehicles(cacheKey, result);
+
+    return result;
   } catch (error) {
     console.error("==================================");
 
@@ -465,20 +603,55 @@ const getLiveVehicleLocations = async ({
 
     if (error.response?.status === 401) {
       const authError = new Error(
-        "Authentication failed while fetching live vehicle locations.",
+        "Internal authentication failed while fetching live vehicle locations.",
       );
 
       authError.statusCode = 401;
 
       authError.publicMessage =
-        "Authentication failed while fetching live vehicle locations.";
+        "Internal authentication failed while fetching live vehicle locations.";
 
       throw authError;
     }
 
     /*
      * --------------------------------------------------------
-     * ADMIN 4XX
+     * ADMIN 429
+     * --------------------------------------------------------
+     */
+
+    if (error.response?.status === 429) {
+      const stale = liveVehicleCache.get(cacheKey);
+
+      if (stale) {
+        console.warn("⚠️ Admin returned 429. Using cached vehicle data.");
+
+        return {
+          ...stale.data,
+
+          personLocation: {
+            latitude: parsedLatitude,
+
+            longitude: parsedLongitude,
+          },
+        };
+      }
+
+      const rateLimitError = new Error(
+        "Live vehicle service is temporarily busy.",
+      );
+
+      rateLimitError.statusCode = 429;
+
+      rateLimitError.publicMessage =
+        "Live vehicle service is temporarily busy. Please try again shortly.";
+
+      throw rateLimitError;
+    }
+
+    /*
+     * --------------------------------------------------------
+     * OTHER 4XX
      * --------------------------------------------------------
      */
 
@@ -503,7 +676,7 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * NETWORK / SERVER ERROR
+     * SERVER / NETWORK ERROR
      * --------------------------------------------------------
      */
 
@@ -519,16 +692,7 @@ const getLiveVehicleLocations = async ({
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT EXPORT
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-|
-| map.controller.js uses:
-|
-| import mapService from "./map.service.js";
-|
-| Therefore this MUST be a default ESM export.
+| EXPORT
 |--------------------------------------------------------------------------
 */
 
@@ -537,4 +701,5 @@ export default {
   getLiveVehicles,
   getVehicle,
   getLiveVehicleLocations,
+  syncLiveLocations,
 };
