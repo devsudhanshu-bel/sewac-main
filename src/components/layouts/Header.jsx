@@ -28,19 +28,13 @@ import SewacLogo from "../../assets/sewac_logo.svg";
    LANGUAGE OPTIONS
 
    IMPORTANT:
+   These labels are plain strings.
+   NEVER write:
+       label: Telugu
 
-   Language names are intentionally NOT translated.
-
-   English   -> English
-   Kannada   -> ಕನ್ನಡ
-   Hindi     -> हिंदी
-   Telugu    -> తెలుగు
-   Tamil     -> தமிழ்
-   Malayalam -> മലയാളം
-
-   These labels always remain in their own language,
-   regardless of the currently selected application language.
-========================================================= */
+   Always write:
+       label: "తెలుగు"
+   ========================================================= */
 
 const languages = [
   {
@@ -70,14 +64,18 @@ const languages = [
 ];
 
 /* =========================================================
-   ROLE HELPERS
-========================================================= */
+   ROLE LABELS
+   ========================================================= */
 
 const ROLE_LABELS = {
   ADMIN_LAYER_1: "Admin Layer 1",
   ADMIN_LAYER_2: "Admin Layer 2",
   WORKER: "Worker",
 };
+
+/* =========================================================
+   GET USER FROM TOKEN
+   ========================================================= */
 
 function getUserFromToken() {
   try {
@@ -132,6 +130,10 @@ function getUserFromToken() {
   }
 }
 
+/* =========================================================
+   ROLE LABEL
+   ========================================================= */
+
 function getRoleLabel(role) {
   return (
     ROLE_LABELS[role] ||
@@ -142,7 +144,7 @@ function getRoleLabel(role) {
 
 /* =========================================================
    DROPDOWN
-========================================================= */
+   ========================================================= */
 
 function Dropdown({
   width,
@@ -162,12 +164,8 @@ function Dropdown({
   const menuRef =
     useRef(null);
 
-  /* =======================================================
-     CLOSE OUTSIDE
-  ======================================================= */
-
   useEffect(() => {
-    function close(event) {
+    const close = (event) => {
       if (
         !wrapperRef.current?.contains(
           event.target
@@ -175,7 +173,7 @@ function Dropdown({
       ) {
         setOpen(false);
       }
-    }
+    };
 
     window.addEventListener(
       "mousedown",
@@ -189,10 +187,6 @@ function Dropdown({
       );
     };
   }, []);
-
-  /* =======================================================
-     DROPDOWN ANIMATION
-  ======================================================= */
 
   useEffect(() => {
     if (
@@ -216,10 +210,6 @@ function Dropdown({
       );
     }
   }, [open]);
-
-  /* =======================================================
-     OPTION HELPERS
-  ======================================================= */
 
   const getOptionLabel = (
     item
@@ -262,7 +252,7 @@ function Dropdown({
       <button
         type="button"
         onClick={() =>
-          setOpen(!open)
+          setOpen((previous) => !previous)
         }
         className="
           w-full
@@ -337,14 +327,9 @@ function Dropdown({
             </div>
           ) : (
             options.map(
-              (
-                item,
-                index
-              ) => {
+              (item, index) => {
                 const label =
-                  getOptionLabel(
-                    item
-                  );
+                  getOptionLabel(item);
 
                 const key =
                   getOptionKey(
@@ -379,7 +364,10 @@ function Dropdown({
                       transition
                     "
                   >
-                    <span className="whitespace-nowrap min-w-max">
+                    <span className="
+                      whitespace-nowrap
+                      min-w-max
+                    ">
                       {label}
                     </span>
 
@@ -405,24 +393,10 @@ function Dropdown({
 
 /* =========================================================
    HEADER
-========================================================= */
+   ========================================================= */
 
 export default function Header({
   variant = "dashboard",
-
-  /*
-   * IMPORTANT:
-   * Date is owned by the page.
-   *
-   * WasteGenerators.jsx:
-   *
-   * <Header
-   *   selectedDate={selectedDate}
-   *   setSelectedDate={setSelectedDate}
-   * />
-   *
-   * Overview.jsx does the same.
-   */
 
   selectedDate =
     new Date()
@@ -431,19 +405,11 @@ export default function Header({
 
   setSelectedDate = () => {},
 }) {
-  /* =======================================================
-     LANGUAGE
-  ======================================================= */
-
   const {
     language,
     setLanguage,
     t,
   } = useLanguage();
-
-  /* =======================================================
-     FILTER CONTEXT
-  ======================================================= */
 
   const {
     selectedCity,
@@ -462,10 +428,6 @@ export default function Header({
     wards,
   } = useFilters();
 
-  /* =======================================================
-     REFS
-  ======================================================= */
-
   const headerRef =
     useRef(null);
 
@@ -480,20 +442,6 @@ export default function Header({
 
   const languageRef =
     useRef(null);
-
-  const languageMenuRef =
-    useRef(null);
-
-  /* =======================================================
-     LOCAL UI STATE
-  ======================================================= */
-
-  /*
-   * IMPORTANT:
-   * DO NOT create selectedDate state here.
-   *
-   * The date belongs to the parent page.
-   */
 
   const [dayType, setDayType] =
     useState("wet");
@@ -516,17 +464,11 @@ export default function Header({
 
   const getCurrentUser = () => {
     try {
-      /* =====================================================
-         1. READ AUTH HANDOFF FROM LOGIN FRONTEND
-      ===================================================== */
-
       const hash =
         window.location.hash;
 
       if (
-        hash.startsWith(
-          "#auth="
-        )
+        hash.startsWith("#auth=")
       ) {
         const encodedAuth =
           hash.substring(
@@ -564,10 +506,6 @@ export default function Header({
         );
       }
 
-      /* =====================================================
-         2. READ STORED ADMIN
-      ===================================================== */
-
       const storedAdmin =
         sessionStorage.getItem(
           "admin"
@@ -588,10 +526,6 @@ export default function Header({
           );
         }
       }
-
-      /* =====================================================
-         3. READ JWT
-      ===================================================== */
 
       const token =
         sessionStorage.getItem(
@@ -629,10 +563,6 @@ export default function Header({
         }
       }
 
-      /* =====================================================
-         4. RESOLVE ACTUAL USER
-      ===================================================== */
-
       if (
         admin ||
         decoded
@@ -656,10 +586,6 @@ export default function Header({
       );
     }
 
-    /* =====================================================
-       5. EXISTING JWT FALLBACK
-    ===================================================== */
-
     return getUserFromToken();
   };
 
@@ -678,9 +604,9 @@ export default function Header({
       ?.toUpperCase() ||
     "A";
 
-  /* =========================================================
-     DATE / DAY TYPE
-  ========================================================= */
+  /* =======================================================
+     DATE
+  ======================================================= */
 
   const selectedDateObj =
     selectedDate
@@ -692,26 +618,9 @@ export default function Header({
   const selectedDay =
     selectedDateObj.getDay();
 
-  /*
-   * Sunday    = 0
-   * Monday    = 1
-   * Tuesday   = 2
-   * Wednesday = 3
-   * Thursday  = 4
-   * Friday    = 5
-   * Saturday  = 6
-   */
-
   const isDryDay =
     selectedDay === 3 ||
     selectedDay === 6;
-
-  /*
-   * Dry Day exists ONLY on:
-   *
-   * Wednesday
-   * Saturday
-   */
 
   useEffect(() => {
     if (!isDryDay) {
@@ -722,9 +631,9 @@ export default function Header({
     isDryDay,
   ]);
 
-  /* =========================================================
-     GSAP HEADER ANIMATION
-  ========================================================= */
+  /* =======================================================
+     GSAP
+  ======================================================= */
 
   useLayoutEffect(() => {
     if (!headerRef.current) {
@@ -767,12 +676,12 @@ export default function Header({
     };
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      CLOSE DROPDOWNS
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
-    function close(event) {
+    const close = (event) => {
       if (
         !profileRef.current?.contains(
           event.target
@@ -788,7 +697,7 @@ export default function Header({
       ) {
         setLanguageOpen(false);
       }
-    }
+    };
 
     window.addEventListener(
       "mousedown",
@@ -803,12 +712,12 @@ export default function Header({
     };
   }, []);
 
-  /* =========================================================
-     SEARCH SHORTCUT
-  ========================================================= */
+  /* =======================================================
+     SEARCH
+  ======================================================= */
 
   useEffect(() => {
-    function shortcut(event) {
+    const shortcut = (event) => {
       if (
         event.key === "/" &&
         variant !== "dashboard"
@@ -817,7 +726,7 @@ export default function Header({
 
         searchRef.current?.focus();
       }
-    }
+    };
 
     window.addEventListener(
       "keydown",
@@ -832,9 +741,9 @@ export default function Header({
     };
   }, [variant]);
 
-  /* =========================================================
+  /* =======================================================
      LOGOUT
-  ========================================================= */
+  ======================================================= */
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -844,9 +753,9 @@ export default function Header({
     );
   };
 
-  /* =========================================================
-     DATE FORMAT
-  ========================================================= */
+  /* =======================================================
+     DATE HANDLER
+  ======================================================= */
 
   const formatLocalDate = (
     date
@@ -865,10 +774,6 @@ export default function Header({
     return `${year}-${month}-${day}`;
   };
 
-  /* =========================================================
-     DATE CHANGE HANDLER
-  ========================================================= */
-
   const handleDateChange = (
     date
   ) => {
@@ -876,28 +781,18 @@ export default function Header({
       return;
     }
 
-    const formattedDate =
-      formatLocalDate(date);
-
     setSelectedDate(
-      formattedDate
+      formatLocalDate(date)
     );
   };
 
-  /* =========================================================
+  /* =======================================================
      LANGUAGE HANDLER
-  ========================================================= */
+  ======================================================= */
 
   const handleLanguageChange = (
     languageCode
   ) => {
-    /*
-     * IMPORTANT:
-     *
-     * Only accept languages that are
-     * explicitly registered above.
-     */
-
     const selectedLanguage =
       languages.find(
         (item) =>
@@ -913,12 +808,6 @@ export default function Header({
       return;
     }
 
-    /*
-     * The i18n provider is responsible
-     * for validating whether the actual
-     * translation file exists.
-     */
-
     setLanguage(
       selectedLanguage.code
     );
@@ -926,42 +815,26 @@ export default function Header({
     setLanguageOpen(false);
   };
 
-  /* =========================================================
+  /* =======================================================
      CURRENT LANGUAGE
-
-     EN -> English
-     KN -> ಕನ್ನಡ
-     HI -> हिंदी
-     TE -> తెలుగు
-     TA -> தமிழ்
-     MA -> മലയാളം
-  ========================================================= */
+  ======================================================= */
 
   const currentLanguageCode =
-    language === "en"
-      ? "EN"
-      : language === "kn"
-      ? "KN"
-      : language === "hi"
-      ? "HI"
-      : language === "te"
-      ? "TE"
-      : language === "ta"
-      ? "TA"
-      : language === "ma"
-      ? "MA"
-      : "EN";
+    {
+      en: "EN",
+      kn: "KN",
+      hi: "HI",
+      te: "TE",
+      ta: "TA",
+      ma: "MA",
+    }[language] || "EN";
 
-  /* =========================================================
-     DYNAMIC LOCATION FILTERS
-  ========================================================= */
+  /* =======================================================
+     LOCATION FILTERS
+  ======================================================= */
 
   const locationFilters = (
     <>
-      {/* =================================================
-          CITY
-      ================================================= */}
-
       <Dropdown
         width="
           w-[148px]
@@ -982,17 +855,12 @@ export default function Header({
           "Select City"
         )}
         getLabel={(city) =>
-          city?.city_name ||
-          ""
+          city?.city_name || ""
         }
         getKey={(city) =>
           city?.city_id
         }
       />
-
-      {/* =================================================
-          ZONE
-      ================================================= */}
 
       <Dropdown
         width="
@@ -1014,17 +882,12 @@ export default function Header({
           "Select Zone"
         )}
         getLabel={(zone) =>
-          zone?.zone_name ||
-          ""
+          zone?.zone_name || ""
         }
         getKey={(zone) =>
           zone?.zone_id
         }
       />
-
-      {/* =================================================
-          DIVISION
-      ================================================= */}
 
       <Dropdown
         width="
@@ -1048,23 +911,14 @@ export default function Header({
           "filters.division",
           "Select Division"
         )}
-        getLabel={(
-          division
-        ) =>
-          division
-            ?.division_name ||
+        getLabel={(division) =>
+          division?.division_name ||
           ""
         }
-        getKey={(
-          division
-        ) =>
+        getKey={(division) =>
           division?.division_id
         }
       />
-
-      {/* =================================================
-          WARD
-      ================================================= */}
 
       <Dropdown
         width="
@@ -1110,9 +964,9 @@ export default function Header({
     </>
   );
 
-  /* =========================================================
+  /* =======================================================
      SEARCH INPUT
-  ========================================================= */
+  ======================================================= */
 
   const searchInput = (
     <div className="relative w-[280px]">
@@ -1163,9 +1017,9 @@ export default function Header({
     </div>
   );
 
-  /* =========================================================
+  /* =======================================================
      RENDER
-  ========================================================= */
+  ======================================================= */
 
   return (
     <header
@@ -1187,10 +1041,6 @@ export default function Header({
         overflow-visible
       "
     >
-      {/* ===================================================
-          PRIMARY HEADER ROW
-      =================================================== */}
-
       <div
         className="
           flex
@@ -1201,10 +1051,6 @@ export default function Header({
           xl:h-full
         "
       >
-        {/* =================================================
-            LEFT SIDE
-        ================================================= */}
-
         <div
           ref={controlsRef}
           className="
@@ -1215,10 +1061,6 @@ export default function Header({
             flex-1
           "
         >
-          {/* =================================================
-              MOBILE / TABLET BRAND
-          ================================================= */}
-
           <div
             className="
               flex
@@ -1263,10 +1105,6 @@ export default function Header({
             />
           </div>
 
-          {/* =================================================
-              DESKTOP DASHBOARD FILTERS
-          ================================================= */}
-
           {isDashboard ? (
             <div
               className="
@@ -1293,10 +1131,6 @@ export default function Header({
           )}
         </div>
 
-        {/* =================================================
-            RIGHT SIDE CONTROLS
-        ================================================= */}
-
         <div
           className="
             flex
@@ -1305,24 +1139,14 @@ export default function Header({
             shrink-0
           "
         >
-          {/* =================================================
-              DATE
-          ================================================= */}
-
           <div className="relative shrink-0">
             <Calendar
-              value={
-                selectedDateObj
-              }
+              value={selectedDateObj}
               onChange={
                 handleDateChange
               }
             />
           </div>
-
-          {/* =================================================
-              DAY TYPE
-          ================================================= */}
 
           {isDashboard && (
             <div
@@ -1338,18 +1162,11 @@ export default function Header({
                 shrink-0
               "
             >
-              {/* =============================================
-                  DRY DAY
-                  ONLY WEDNESDAY / SATURDAY
-              ============================================= */}
-
               {isDryDay && (
                 <button
                   type="button"
                   onClick={() =>
-                    setDayType(
-                      "dry"
-                    )
+                    setDayType("dry")
                   }
                   className={`
                     h-9
@@ -1359,8 +1176,7 @@ export default function Header({
                     transition-all
                     duration-300
                     ${
-                      dayType ===
-                      "dry"
+                      dayType === "dry"
                         ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                         : "bg-white text-[#16295A] hover:bg-gray-50"
                     }
@@ -1373,17 +1189,10 @@ export default function Header({
                 </button>
               )}
 
-              {/* =============================================
-                  WET DAY
-                  ALWAYS AVAILABLE
-              ============================================= */}
-
               <button
                 type="button"
                 onClick={() =>
-                  setDayType(
-                    "wet"
-                  )
+                  setDayType("wet")
                 }
                 className={`
                   h-9
@@ -1393,8 +1202,7 @@ export default function Header({
                   transition-all
                   duration-300
                   ${
-                    dayType ===
-                    "wet"
+                    dayType === "wet"
                       ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
                       : "bg-white text-[#16295A] hover:bg-gray-50"
                   }
@@ -1409,7 +1217,7 @@ export default function Header({
           )}
 
           {/* =================================================
-              LANGUAGE
+              LANGUAGE DROPDOWN
           ================================================= */}
 
           <div
@@ -1423,7 +1231,8 @@ export default function Header({
               type="button"
               onClick={() =>
                 setLanguageOpen(
-                  !languageOpen
+                  (previous) =>
+                    !previous
                 )
               }
               className="
@@ -1475,9 +1284,6 @@ export default function Header({
 
             {languageOpen && (
               <div
-                ref={
-                  languageMenuRef
-                }
                 className="
                   absolute
                   right-0
@@ -1496,9 +1302,7 @@ export default function Header({
                   (item) => (
                     <button
                       type="button"
-                      key={
-                        item.code
-                      }
+                      key={item.code}
                       onClick={() =>
                         handleLanguageChange(
                           item.code
@@ -1517,16 +1321,8 @@ export default function Header({
                         transition
                       "
                     >
-                      {/* =================================================
-                          IMPORTANT:
-                          Language names are NEVER passed through t().
-                          They remain in their native language.
-                      ================================================= */}
-
                       <span>
-                        {
-                          item.label
-                        }
+                        {item.label}
                       </span>
 
                       {language ===
@@ -1560,7 +1356,8 @@ export default function Header({
               type="button"
               onClick={() =>
                 setProfileOpen(
-                  !profileOpen
+                  (previous) =>
+                    !previous
                 )
               }
               aria-expanded={
@@ -1585,8 +1382,6 @@ export default function Header({
                 duration-300
               "
             >
-              {/* AVATAR */}
-
               <div
                 className="
                   w-8
@@ -1606,8 +1401,6 @@ export default function Header({
               >
                 {userInitial}
               </div>
-
-              {/* USER INFO */}
 
               <div
                 className="
@@ -1656,11 +1449,6 @@ export default function Header({
               />
             </button>
 
-            {/* =================================================
-                PROFILE DROPDOWN
-                SETTINGS REMOVED
-            ================================================= */}
-
             {profileOpen && (
               <div
                 className="
@@ -1676,25 +1464,6 @@ export default function Header({
                   overflow-hidden
                   z-[10000]
                 "
-                ref={(element) => {
-                  if (element) {
-                    gsap.fromTo(
-                      element,
-                      {
-                        opacity: 0,
-                        scale: 0.96,
-                        y: -8,
-                      },
-                      {
-                        opacity: 1,
-                        scale: 1,
-                        y: 0,
-                        duration: 0.22,
-                        ease: "power3.out",
-                      }
-                    );
-                  }
-                }}
               >
                 <div
                   className="
@@ -1757,10 +1526,6 @@ export default function Header({
                   </div>
                 </div>
 
-                {/* =================================================
-                    LOGOUT ONLY
-                ================================================= */}
-
                 <button
                   type="button"
                   onClick={() => {
@@ -1784,9 +1549,7 @@ export default function Header({
                     text-left
                   "
                 >
-                  <LogOut
-                    size={16}
-                  />
+                  <LogOut size={16} />
 
                   {t(
                     "sidebar.logout",
@@ -1798,10 +1561,6 @@ export default function Header({
           </div>
         </div>
       </div>
-
-      {/* ===================================================
-          NON-DASHBOARD SMALL SCREEN SEARCH ROW
-      =================================================== */}
 
       {!isDashboard && (
         <div
@@ -1817,12 +1576,6 @@ export default function Header({
           </div>
         </div>
       )}
-
-      {/* ===================================================
-          DASHBOARD RESPONSIVE FILTER ROW
-
-          Below 1536px
-      =================================================== */}
 
       {isDashboard && (
         <div

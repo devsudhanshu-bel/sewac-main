@@ -27,6 +27,37 @@ const translations = {
 };
 
 /* =========================================================
+   LANGUAGE OPTIONS
+   ========================================================= */
+
+const AVAILABLE_LANGUAGES = [
+  {
+    code: "en",
+    name: "English",
+  },
+  {
+    code: "kn",
+    name: "ಕನ್ನಡ",
+  },
+  {
+    code: "hi",
+    name: "हिंदी",
+  },
+  {
+    code: "te",
+    name: "తెలుగు",
+  },
+  {
+    code: "ta",
+    name: "தமிழ்",
+  },
+  {
+    code: "ma",
+    name: "മലയാളം",
+  },
+];
+
+/* =========================================================
    LANGUAGE CONTEXT
    ========================================================= */
 
@@ -50,13 +81,23 @@ const STORAGE_KEY = "sewac-language";
 
 const getInitialLanguage = () => {
   try {
-    const savedLanguage = localStorage.getItem(STORAGE_KEY);
+    const savedLanguage =
+      localStorage.getItem(STORAGE_KEY);
 
-    if (savedLanguage && translations[savedLanguage]) {
+    if (
+      savedLanguage &&
+      Object.prototype.hasOwnProperty.call(
+        translations,
+        savedLanguage
+      )
+    ) {
       return savedLanguage;
     }
   } catch (error) {
-    console.warn("Unable to read saved language:", error);
+    console.warn(
+      "Unable to read saved language:",
+      error
+    );
   }
 
   return DEFAULT_LANGUAGE;
@@ -66,31 +107,60 @@ const getInitialLanguage = () => {
    GET NESTED TRANSLATION VALUE
    ========================================================= */
 
-const getNestedValue = (object, path) => {
-  return path.split(".").reduce((current, key) => {
-    if (current === undefined || current === null) {
-      return undefined;
-    }
+const getNestedValue = (
+  object,
+  path
+) => {
+  if (
+    !object ||
+    !path ||
+    typeof path !== "string"
+  ) {
+    return undefined;
+  }
 
-    return current[key];
-  }, object);
+  return path
+    .split(".")
+    .reduce(
+      (current, key) => {
+        if (
+          current === undefined ||
+          current === null
+        ) {
+          return undefined;
+        }
+
+        return current[key];
+      },
+      object
+    );
 };
 
 /* =========================================================
    LANGUAGE PROVIDER
    ========================================================= */
 
-export const LanguageProvider = ({ children }) => {
-  const [language, setLanguageState] = useState(
-    getInitialLanguage
-  );
+export const LanguageProvider = ({
+  children,
+}) => {
+  const [
+    language,
+    setLanguageState,
+  ] = useState(getInitialLanguage);
 
   /* =======================================================
      CHANGE LANGUAGE
-     ======================================================= */
+  ======================================================= */
 
-  const setLanguage = (newLanguage) => {
-    if (!translations[newLanguage]) {
+  const setLanguage = (
+    newLanguage
+  ) => {
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        translations,
+        newLanguage
+      )
+    ) {
       console.warn(
         `Unsupported language: ${newLanguage}`
       );
@@ -115,53 +185,79 @@ export const LanguageProvider = ({ children }) => {
 
   /* =======================================================
      TRANSLATION FUNCTION
-     ======================================================= */
+  ======================================================= */
 
-  const t = (key, fallback) => {
-    const value = getNestedValue(
-      translations[language],
-      key
-    );
+  const t = (
+    key,
+    fallback
+  ) => {
+    const currentTranslations =
+      translations[language];
 
-    if (value !== undefined) {
+    /* -----------------------------------------------------
+       Selected language
+    ----------------------------------------------------- */
+
+    const value =
+      getNestedValue(
+        currentTranslations,
+        key
+      );
+
+    if (
+      value !== undefined &&
+      value !== null
+    ) {
       return value;
     }
 
-    /*
-     * If the selected language does not contain
-     * the requested key, try English as a fallback.
-     *
-     * This prevents missing text when a translation
-     * has not yet been added to one language file.
-     */
+    /* -----------------------------------------------------
+       English fallback
+    ----------------------------------------------------- */
 
-    const englishValue = getNestedValue(
-      translations.en,
-      key
-    );
+    const englishValue =
+      getNestedValue(
+        translations.en,
+        key
+      );
 
-    if (englishValue !== undefined) {
+    if (
+      englishValue !== undefined &&
+      englishValue !== null
+    ) {
       return englishValue;
     }
 
-    if (fallback !== undefined) {
+    /* -----------------------------------------------------
+       Explicit fallback
+    ----------------------------------------------------- */
+
+    if (
+      fallback !== undefined &&
+      fallback !== null
+    ) {
       return fallback;
     }
+
+    /* -----------------------------------------------------
+       Final fallback
+    ----------------------------------------------------- */
 
     return key;
   };
 
   /* =======================================================
      UPDATE HTML LANGUAGE
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
-    document.documentElement.lang = language;
+    document.documentElement.lang =
+      language;
   }, [language]);
 
   /* =======================================================
      CONTEXT VALUE
-     ======================================================= */
+  ======================================================= */
 
   const value = useMemo(
     () => ({
@@ -171,44 +267,23 @@ export const LanguageProvider = ({ children }) => {
 
       t,
 
-      translations: translations[language],
+      translations:
+        translations[language],
 
-      availableLanguages: [
-        {
-          code: "en",
-          name: "English",
-        },
-        {
-          code: "kn",
-          name: "ಕನ್ನಡ",
-        },
-        {
-          code: "hi",
-          name: "हिंदी",
-        },
-        {
-          code: "te",
-          name: "తెలుగు",
-        },
-        {
-          code: "ta",
-          name: "தமிழ்",
-        },
-        {
-          code: "ma",
-          name: "മലയാളം",
-        },
-      ],
+      availableLanguages:
+        AVAILABLE_LANGUAGES,
     }),
     [language]
   );
 
   /* =======================================================
      PROVIDER
-     ======================================================= */
+  ======================================================= */
 
   return (
-    <LanguageContext.Provider value={value}>
+    <LanguageContext.Provider
+      value={value}
+    >
       {children}
     </LanguageContext.Provider>
   );
@@ -219,7 +294,10 @@ export const LanguageProvider = ({ children }) => {
    ========================================================= */
 
 export const useLanguage = () => {
-  const context = useContext(LanguageContext);
+  const context =
+    useContext(
+      LanguageContext
+    );
 
   if (!context) {
     throw new Error(
