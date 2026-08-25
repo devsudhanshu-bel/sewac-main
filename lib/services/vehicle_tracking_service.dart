@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../models/vehicle_location.dart';
+import '../models/live_vehicle_response.dart';
 
 class VehicleTrackingService {
   VehicleTrackingService();
@@ -92,5 +93,54 @@ class VehicleTrackingService {
     return VehicleLocation.fromJson(
       body["data"],
     );
+  }
+
+  //==========================================================
+  // GET LIVE VEHICLES FOR SELECTED CITY → ZONE → DIVISION → WARD
+  //==========================================================
+
+  Future<LiveVehicleResponse> getLiveVehicleLocations({
+    required double latitude,
+    required double longitude,
+    required int cityId,
+    required int zoneId,
+    required int divisionId,
+    required int wardId,
+  }) async {
+    final url =
+        "${ApiConstants.liveVehicleLocations}"
+        "?latitude=$latitude"
+        "&longitude=$longitude"
+        "&cityId=$cityId"
+        "&zoneId=$zoneId"
+        "&divisionId=$divisionId"
+        "&wardId=$wardId";
+
+    print("==================================");
+    print("GET LIVE VEHICLE LOCATIONS");
+    print("GET URL: $url");
+
+    final response = await ApiClient.get(url);
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+    print("==================================");
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        "Failed to fetch live vehicle locations.",
+      );
+    }
+
+    final body = jsonDecode(response.body);
+
+    if (body["success"] != true) {
+      throw Exception(
+        body["message"] ??
+            "Failed to fetch live vehicle locations.",
+      );
+    }
+
+    return LiveVehicleResponse.fromJson(body);
   }
 }

@@ -249,46 +249,46 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   void _startEnrollmentCountdown(int seconds) {
-  _enrollmentTimer?.cancel();
+    _enrollmentTimer?.cancel();
 
-  setState(() {
-    _remainingSeconds = seconds;
-    _isEnrollmentPending = true;
-  });
+    setState(() {
+      _remainingSeconds = seconds;
+      _isEnrollmentPending = true;
+    });
 
-  _enrollmentTimer = Timer.periodic(
-    const Duration(seconds: 1),
-    (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _enrollmentTimer = Timer.periodic(
+      const Duration(seconds: 1),
+          (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
 
-      if (_remainingSeconds <= 1) {
-        timer.cancel();
+        if (_remainingSeconds <= 1) {
+          timer.cancel();
+
+          setState(() {
+            _remainingSeconds = 0;
+            _isEnrollmentPending = false;
+          });
+
+          return;
+        }
 
         setState(() {
-          _remainingSeconds = 0;
-          _isEnrollmentPending = false;
+          _remainingSeconds--;
         });
+      },
+    );
+  }
 
-        return;
-      }
+  String _formatRemainingTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
 
-      setState(() {
-        _remainingSeconds--;
-      });
-    },
-  );
-}
-
-String _formatRemainingTime(int seconds) {
-  final minutes = seconds ~/ 60;
-  final secs = seconds % 60;
-
-  return '${minutes.toString().padLeft(2, '0')}:'
-      '${secs.toString().padLeft(2, '0')}';
-}
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${secs.toString().padLeft(2, '0')}';
+  }
 
   Future<bool> _requestLocationPermission() async {
     PermissionStatus status = await Permission.location.status;
@@ -570,22 +570,22 @@ String _formatRemainingTime(int seconds) {
         ),
       );
     } on DeviceEnrollmentException catch (e) {
-  if (!mounted) return;
+      if (!mounted) return;
 
-  _startEnrollmentCountdown(
-    e.remainingSeconds,
-  );
+      _startEnrollmentCountdown(
+        e.remainingSeconds,
+      );
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      backgroundColor: Colors.orange,
-      behavior: SnackBarBehavior.floating,
-      content: Text(
-        'New device detected. Please wait '
-        '${_formatRemainingTime(e.remainingSeconds)}.',
-      ),
-    ),
-  );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'New device detected. Please wait '
+                '${_formatRemainingTime(e.remainingSeconds)}.',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -920,89 +920,89 @@ String _formatRemainingTime(int seconds) {
                                 child: ScaleTransition(
                                   scale: _buttonScale,
                                   child: PremiumGradientButton(
-                                          text: _isEnrollmentPending
-                                                ? 'WAIT ${_formatRemainingTime(_remainingSeconds)}'
-                                                : 'LOGIN TO SEWAC',
-                                          isLoading: _isLoading,
-                                          breathAnimation: _buttonBreathController,
-                                          onPressed: _isLoading || _isEnrollmentPending
-                                              ? null
-                                              : _login,
-                                          ),
+                                    text: _isEnrollmentPending
+                                        ? 'WAIT ${_formatRemainingTime(_remainingSeconds)}'
+                                        : 'LOGIN TO SEWAC',
+                                    isLoading: _isLoading,
+                                    breathAnimation: _buttonBreathController,
+                                    onPressed: _isLoading || _isEnrollmentPending
+                                        ? null
+                                        : _login,
+                                  ),
                                 ),
                               ),
                               if (_isEnrollmentPending)
-  Padding(
-    padding: const EdgeInsets.only(top: 16),
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.6),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.lock_clock_rounded,
-            color: Colors.orange,
-            size: 30,
-          ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.orange.withValues(alpha: 0.6),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_clock_rounded,
+                                          color: Colors.orange,
+                                          size: 30,
+                                        ),
 
-          const SizedBox(height: 8),
+                                        const SizedBox(height: 8),
 
-          Text(
-            'New device detected',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
+                                        Text(
+                                          'New device detected',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
 
-          const SizedBox(height: 5),
+                                        const SizedBox(height: 5),
 
-          Text(
-            'Please wait before logging in from this device.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              color: Colors.white.withValues(alpha: 0.75),
-            ),
-          ),
+                                        Text(
+                                          'Please wait before logging in from this device.',
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12.5,
+                                            color: Colors.white.withValues(alpha: 0.75),
+                                          ),
+                                        ),
 
-          const SizedBox(height: 10),
+                                        const SizedBox(height: 10),
 
-          Text(
-            _formatRemainingTime(_remainingSeconds),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
+                                        Text(
+                                          _formatRemainingTime(_remainingSeconds),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
 
-          Text(
-            'TIME REMAINING',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.6),
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
-      ),
-    ),
-  ),
+                                        Text(
+                                          'TIME REMAINING',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            letterSpacing: 1.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               const SizedBox(height: 24),
 
                               // --- 6. NEED HELP CARD ---

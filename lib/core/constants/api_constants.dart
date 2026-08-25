@@ -64,11 +64,16 @@ class ApiConstants {
   static const String liveVehicles =
       "$baseUrl/citizen/map/live";
 
+  /// Returns live vehicle locations for the selected
+  /// City → Zone → Division → Ward hierarchy.
+  static const String liveVehicleLocations =
+      "$baseUrl/route-map/live";
+
   /// Returns nearest vehicle location to given coordinates
   static String nearestVehicle(
-    double latitude,
-    double longitude,
-  ) =>
+      double latitude,
+      double longitude,
+      ) =>
       "$baseUrl/citizen/map/nearest?latitude=$latitude&longitude=$longitude";
 
   /// Returns a specific vehicle
