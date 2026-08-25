@@ -357,7 +357,7 @@ export default function VehicleRouteMap({ selectedDate }) {
 
   /* ==========================================================
      MAP MODE
-     
+
      route = historical route map
      live  = socket.io live map
   ========================================================== */
@@ -390,19 +390,15 @@ export default function VehicleRouteMap({ selectedDate }) {
 
   /* ==========================================================
      FETCH ROUTES + PLANTS
-     
-     THIS REMAINS THE SAME EXISTING API FLOW.
   ========================================================== */
 
   useEffect(() => {
     let mounted = true;
 
     const fetchMapData = async () => {
-      /*
-       * ------------------------------------------------------
-       * WAIT FOR FILTER CASCADE
-       * ------------------------------------------------------
-       */
+      /* ------------------------------------------------------
+         WAIT FOR FILTER CASCADE
+      ------------------------------------------------------ */
 
       if (
         !selectedCity ||
@@ -416,6 +412,8 @@ export default function VehicleRouteMap({ selectedDate }) {
           setPlants([]);
 
           setLoading(false);
+
+          setError("");
         }
 
         return;
@@ -427,8 +425,8 @@ export default function VehicleRouteMap({ selectedDate }) {
         setError("");
 
         /* ==================================================
-             FILTER IDS
-          ================================================== */
+           FILTER IDS
+        ================================================== */
 
         const cityId =
           selectedCity.city_id ?? selectedCity.cityId ?? selectedCity.id;
@@ -445,8 +443,8 @@ export default function VehicleRouteMap({ selectedDate }) {
           selectedWard.ward_id ?? selectedWard.wardId ?? selectedWard.id;
 
         /* ==================================================
-             QUERY
-          ================================================== */
+           QUERY
+        ================================================== */
 
         const params = new URLSearchParams();
 
@@ -481,14 +479,14 @@ export default function VehicleRouteMap({ selectedDate }) {
         console.log("=================================================");
 
         /* ==================================================
-             EXISTING ROUTE MAP API
-          ================================================== */
+           EXISTING ROUTE MAP API
+        ================================================== */
 
         const routeRequest = api.get(`/api/admin/overview/map?${queryString}`);
 
         /* ==================================================
-             EXISTING PLANT LOCATION API
-          ================================================== */
+           EXISTING PLANT LOCATION API
+        ================================================== */
 
         const plantRequest = api.get("/api/plants/locations");
 
@@ -502,8 +500,8 @@ export default function VehicleRouteMap({ selectedDate }) {
         }
 
         /* ==================================================
-             ROUTE RESPONSE
-          ================================================== */
+           ROUTE RESPONSE
+        ================================================== */
 
         const routeData = routeResponse?.data?.data || {};
 
@@ -512,8 +510,8 @@ export default function VehicleRouteMap({ selectedDate }) {
           : [];
 
         /* ==================================================
-             PLANT RESPONSE
-          ================================================== */
+           PLANT RESPONSE
+        ================================================== */
 
         const plantData = plantResponse?.data?.data;
 
@@ -524,8 +522,8 @@ export default function VehicleRouteMap({ selectedDate }) {
             : [];
 
         /* ==================================================
-             STORE
-          ================================================== */
+           STORE
+        ================================================== */
 
         setRoutes(returnedRoutes);
 
@@ -543,35 +541,29 @@ export default function VehicleRouteMap({ selectedDate }) {
 
         console.error("Vehicle Route Map Error:", err);
 
-        /*
-         * =====================================================
-         * NO TELEMETRY / MISSING DAY TABLE
-         * =====================================================
-         *
-         * PostgreSQL:
-         *
-         * 42P01
-         *
-         * means the requested telemetry table does not exist.
-         *
-         * Example:
-         *
-         * relation "day_25082026" does not exist
-         *
-         * This is NOT a frontend/API failure.
-         *
-         * It simply means there are no heartbeat GPS
-         * points available for the selected date.
-         *
-         * Therefore:
-         *
-         * routes = []
-         * error  = ""
-         *
-         * and the UI will show the normal
-         * "No vehicle route data available" bar.
-         * =====================================================
-         */
+        /* =====================================================
+           NO TELEMETRY / MISSING DAY TABLE
+        =====================================================
+
+           PostgreSQL error 42P01 means the requested telemetry
+           relation/table does not exist.
+
+           Example:
+
+           relation "day_25082026" does not exist
+
+           For the Vehicle Route Map this means there are no
+           heartbeat GPS points available for that date.
+
+           This must NOT be shown to the user as a system error.
+
+           Instead:
+
+             routes = []
+             error  = ""
+
+           and the map displays the centered no-data overlay.
+        ===================================================== */
 
         const backendMessage =
           err?.response?.data?.message || err?.message || "";
@@ -595,14 +587,9 @@ export default function VehicleRouteMap({ selectedDate }) {
           return;
         }
 
-        /*
-         * =====================================================
-         * REAL ERROR
-         * =====================================================
-         *
-         * Keep showing an actual error for genuine failures.
-         * =====================================================
-         */
+        /* =====================================================
+           REAL ERROR
+        ===================================================== */
 
         setRoutes([]);
 
@@ -736,10 +723,6 @@ export default function VehicleRouteMap({ selectedDate }) {
 
   /* ==========================================================
      MAP DATA FOR LIVE MAP
-     
-     We deliberately pass the already-fetched route data
-     into LiveMap so it can use the latest historical point
-     as its initial position before Socket.IO updates arrive.
   ========================================================== */
 
   const liveMapData = useMemo(
@@ -747,10 +730,6 @@ export default function VehicleRouteMap({ selectedDate }) {
       routes: preparedRoutes.map((route) => ({
         ...route,
 
-        /*
-         * LiveMap expects the original backend point
-         * objects here, not Leaflet [lat,lng] arrays.
-         */
         points: Array.isArray(route.points) ? route.points : [],
 
         endPoint:
@@ -835,29 +814,13 @@ export default function VehicleRouteMap({ selectedDate }) {
             "
           >
             {mapMode === "live" ? (
-              <Radio
-                size={20}
-                strokeWidth={2.2}
-                className="
-                  text-[#16A34A]
-                "
-              />
+              <Radio size={20} strokeWidth={2.2} className="text-[#16A34A]" />
             ) : (
-              <Route
-                size={20}
-                strokeWidth={2.2}
-                className="
-                  text-[#6C2BFF]
-                "
-              />
+              <Route size={20} strokeWidth={2.2} className="text-[#6C2BFF]" />
             )}
           </div>
 
-          <div
-            className="
-              min-w-0
-            "
-          >
+          <div className="min-w-0">
             <h2
               className="
                 text-[17px]
@@ -903,8 +866,6 @@ export default function VehicleRouteMap({ selectedDate }) {
             shrink-0
           "
         >
-          {/* ROUTE MAP */}
-
           <button
             type="button"
             onClick={() => setMapMode("route")}
@@ -941,8 +902,6 @@ export default function VehicleRouteMap({ selectedDate }) {
             <span>Route Map</span>
           </button>
 
-          {/* LIVE MAP */}
-
           <button
             type="button"
             onClick={() => setMapMode("live")}
@@ -974,16 +933,7 @@ export default function VehicleRouteMap({ selectedDate }) {
               }
             `}
           >
-            <span
-              className={`
-                relative
-                flex
-                items-center
-                justify-center
-                w-4
-                h-4
-              `}
-            >
+            <span className="relative flex items-center justify-center w-4 h-4">
               <span
                 className={`
                   absolute
@@ -1013,71 +963,6 @@ export default function VehicleRouteMap({ selectedDate }) {
         </div>
 
         {/* ===================================================
-            ROUTE MODE STATS
-        =================================================== */}
-
-        {/* =================================================
-    NO ROUTE DATA
-================================================= */}
-
-        {mapMode === "route" &&
-          !loading &&
-          !error &&
-          preparedRoutes.length === 0 && (
-            <div
-              className="
-        absolute
-        inset-0
-        z-[1000]
-        flex
-        items-center
-        justify-center
-        pointer-events-none
-        px-4
-      "
-            >
-              <div
-                className="
-          w-full
-          max-w-[520px]
-          rounded-[18px]
-          bg-white/95
-          backdrop-blur-sm
-          border
-          border-[#E5E7EB]
-          shadow-[0_10px_35px_rgba(0,0,0,0.10)]
-          px-6
-          py-5
-          text-center
-        "
-              >
-                <h3
-                  className="
-            text-[16px]
-            sm:text-[17px]
-            font-semibold
-            text-[#34475B]
-          "
-                >
-                  No vehicle route data available
-                </h3>
-
-                <p
-                  className="
-            mt-2
-            text-[13px]
-            sm:text-[14px]
-            text-[#8AA1BB]
-          "
-                >
-                  No heartbeat GPS points were found for the selected date and
-                  filters.
-                </p>
-              </div>
-            </div>
-          )}
-
-        {/* ===================================================
             LIVE MODE STATUS
         =================================================== */}
 
@@ -1096,14 +981,7 @@ export default function VehicleRouteMap({ selectedDate }) {
               border-[#BBF7D0]
             "
           >
-            <span
-              className="
-                relative
-                flex
-                w-2.5
-                h-2.5
-              "
-            >
+            <span className="relative flex w-2.5 h-2.5">
               <span
                 className="
                   absolute
@@ -1163,12 +1041,7 @@ export default function VehicleRouteMap({ selectedDate }) {
         =================================================== */}
 
         {mapMode === "live" && (
-          <div
-            className="
-              absolute
-              inset-0
-            "
-          >
+          <div className="absolute inset-0">
             <LiveMap
               mapData={liveMapData}
               plants={validPlants}
@@ -1192,10 +1065,7 @@ export default function VehicleRouteMap({ selectedDate }) {
               zoom={12}
               zoomControl={false}
               scrollWheelZoom
-              className="
-                w-full
-                h-full
-              "
+              className="w-full h-full"
             >
               <ZoomControl position="topleft" />
 
@@ -1235,38 +1105,34 @@ export default function VehicleRouteMap({ selectedDate }) {
                       <div className="p-1 sm:p-2">
                         <div
                           className="
-                              flex
-                              items-center
-                              gap-3
-                              mb-4
-                            "
+                            flex
+                            items-center
+                            gap-3
+                            mb-4
+                          "
                         >
                           <div
                             className="
-                                w-11
-                                h-11
-                                rounded-xl
-                                bg-violet-100
-                                flex
-                                items-center
-                                justify-center
-                                shrink-0
-                              "
+                              w-11
+                              h-11
+                              rounded-xl
+                              bg-violet-100
+                              flex
+                              items-center
+                              justify-center
+                              shrink-0
+                            "
                           >
                             <Factory size={23} className="text-violet-600" />
                           </div>
 
-                          <div
-                            className="
-                                min-w-0
-                              "
-                          >
+                          <div className="min-w-0">
                             <h3
                               className="
-                                  font-bold
-                                  text-[15px]
-                                  text-gray-900
-                                "
+                                font-bold
+                                text-[15px]
+                                text-gray-900
+                              "
                             >
                               {plant.plant_name ?? plant.name ?? "Plant"}
                             </h3>
@@ -1274,15 +1140,15 @@ export default function VehicleRouteMap({ selectedDate }) {
                             {plant.status && (
                               <span
                                 className={`
-                                    text-xs
-                                    font-semibold
-                                    ${
-                                      String(plant.status).toUpperCase() ===
-                                      "ACTIVE"
-                                        ? "text-green-600"
-                                        : "text-red-500"
-                                    }
-                                  `}
+                                  text-xs
+                                  font-semibold
+                                  ${
+                                    String(plant.status).toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "text-green-600"
+                                      : "text-red-500"
+                                  }
+                                `}
                               >
                                 ● {plant.status}
                               </span>
@@ -1292,25 +1158,25 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                         <div
                           className="
-                              space-y-3
-                              text-[13px]
-                            "
+                            space-y-3
+                            text-[13px]
+                          "
                         >
                           {plant.zone && (
                             <div
                               className="
-                                  flex
-                                  items-start
-                                  gap-2
-                                "
+                                flex
+                                items-start
+                                gap-2
+                              "
                             >
                               <MapPinned
                                 size={15}
                                 className="
-                                    text-violet-600
-                                    mt-0.5
-                                    shrink-0
-                                  "
+                                  text-violet-600
+                                  mt-0.5
+                                  shrink-0
+                                "
                               />
 
                               <span>{plant.zone}</span>
@@ -1320,18 +1186,18 @@ export default function VehicleRouteMap({ selectedDate }) {
                           {plant.plant_manager && (
                             <div
                               className="
-                                  flex
-                                  items-start
-                                  gap-2
-                                "
+                                flex
+                                items-start
+                                gap-2
+                              "
                             >
                               <User
                                 size={15}
                                 className="
-                                    text-violet-600
-                                    mt-0.5
-                                    shrink-0
-                                  "
+                                  text-violet-600
+                                  mt-0.5
+                                  shrink-0
+                                "
                               />
 
                               <span>{plant.plant_manager}</span>
@@ -1341,17 +1207,17 @@ export default function VehicleRouteMap({ selectedDate }) {
                           {plant.capacity_ton_per_day !== undefined && (
                             <div
                               className="
-                                  flex
-                                  items-center
-                                  gap-2
-                                "
+                                flex
+                                items-center
+                                gap-2
+                              "
                             >
                               <Factory
                                 size={15}
                                 className="
-                                    text-violet-600
-                                    shrink-0
-                                  "
+                                  text-violet-600
+                                  shrink-0
+                                "
                               />
 
                               <span>{plant.capacity_ton_per_day} Ton/Day</span>
@@ -1361,17 +1227,17 @@ export default function VehicleRouteMap({ selectedDate }) {
                           {plant.vehicles_enrolled !== undefined && (
                             <div
                               className="
-                                  flex
-                                  items-center
-                                  gap-2
-                                "
+                                flex
+                                items-center
+                                gap-2
+                              "
                             >
                               <Truck
                                 size={15}
                                 className="
-                                    text-violet-600
-                                    shrink-0
-                                  "
+                                  text-violet-600
+                                  shrink-0
+                                "
                               />
 
                               <span>{plant.vehicles_enrolled} Vehicles</span>
@@ -1380,18 +1246,18 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                           <div
                             className="
-                                flex
-                                items-start
-                                gap-2
-                              "
+                              flex
+                              items-start
+                              gap-2
+                            "
                           >
                             <MapPinned
                               size={15}
                               className="
-                                  text-violet-600
-                                  mt-0.5
-                                  shrink-0
-                                "
+                                text-violet-600
+                                mt-0.5
+                                shrink-0
+                              "
                             />
 
                             <span>
@@ -1402,13 +1268,13 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                         <div
                           className="
-                              mt-4
-                              pt-3
-                              border-t
-                              border-gray-200
-                              text-xs
-                              text-gray-400
-                            "
+                            mt-4
+                            pt-3
+                            border-t
+                            border-gray-200
+                            text-xs
+                            text-gray-400
+                          "
                         >
                           Plant location
                         </div>
@@ -1474,17 +1340,13 @@ export default function VehicleRouteMap({ selectedDate }) {
                       }}
                     >
                       <Popup>
-                        <div
-                          className="
-                              min-w-[200px]
-                            "
-                        >
+                        <div className="min-w-[200px]">
                           <div
                             className="
-                                font-semibold
-                                text-sm
-                                mb-2
-                              "
+                              font-semibold
+                              text-sm
+                              mb-2
+                            "
                           >
                             Route Start
                           </div>
@@ -1495,31 +1357,27 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                           <div
                             className="
-                                mt-2
-                                flex
-                                items-center
-                                gap-2
-                              "
+                              mt-2
+                              flex
+                              items-center
+                              gap-2
+                            "
                           >
                             <span
                               style={{
                                 display: "inline-block",
-
                                 width: "30px",
-
                                 height: "5px",
-
                                 borderRadius: "999px",
-
                                 backgroundColor: routeColor,
                               }}
                             />
 
                             <span
                               className="
-                                  text-xs
-                                  text-gray-500
-                                "
+                                text-xs
+                                text-gray-500
+                              "
                             >
                               Vehicle route
                             </span>
@@ -1537,17 +1395,17 @@ export default function VehicleRouteMap({ selectedDate }) {
                       <Popup maxWidth={280}>
                         <div
                           className="
-                              min-w-[220px]
-                              text-sm
-                            "
+                            min-w-[220px]
+                            text-sm
+                          "
                         >
                           <div
                             className="
-                                text-base
-                                font-semibold
-                                text-[#16295A]
-                                mb-3
-                              "
+                              text-base
+                              font-semibold
+                              text-[#16295A]
+                              mb-3
+                            "
                           >
                             Vehicle Details
                           </div>
@@ -1607,14 +1465,14 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                           <div
                             className="
-                                mt-3
-                                pt-2
-                                border-t
-                                border-gray-200
-                                flex
-                                items-center
-                                gap-2
-                              "
+                              mt-3
+                              pt-2
+                              border-t
+                              border-gray-200
+                              flex
+                              items-center
+                              gap-2
+                            "
                           >
                             <span
                               style={{
@@ -1632,9 +1490,9 @@ export default function VehicleRouteMap({ selectedDate }) {
 
                             <span
                               className="
-                                  text-xs
-                                  text-gray-500
-                                "
+                                text-xs
+                                text-gray-500
+                              "
                             >
                               Vehicle route
                             </span>
@@ -1665,13 +1523,7 @@ export default function VehicleRouteMap({ selectedDate }) {
                   z-[1000]
                 "
               >
-                <Loader2
-                  size={34}
-                  className="
-                    animate-spin
-                    text-[#6C2BFF]
-                  "
-                />
+                <Loader2 size={34} className="animate-spin text-[#6C2BFF]" />
 
                 <h3
                   className="
@@ -1703,40 +1555,104 @@ export default function VehicleRouteMap({ selectedDate }) {
             {!loading && error && (
               <div
                 className="
-                    absolute
-                    inset-0
-                    bg-white/90
-                    flex
-                    items-center
-                    justify-center
-                    z-[1000]
-                    px-5
-                  "
+                  absolute
+                  inset-0
+                  bg-white/90
+                  flex
+                  items-center
+                  justify-center
+                  z-[1000]
+                  px-5
+                "
               >
                 <div
                   className="
-                      text-center
-                      max-w-md
-                    "
+                    text-center
+                    max-w-md
+                  "
                 >
                   <h3
                     className="
-                        text-lg
-                        font-semibold
-                        text-red-600
-                      "
+                      text-lg
+                      font-semibold
+                      text-red-600
+                    "
                   >
                     Failed to Load Vehicle Routes
                   </h3>
 
                   <p
                     className="
-                        text-sm
-                        text-gray-500
-                        mt-2
-                      "
+                      text-sm
+                      text-gray-500
+                      mt-2
+                    "
                   >
                     {error}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* =================================================
+                NO ROUTE DATA
+
+                IMPORTANT:
+                This overlay is INSIDE the map content container.
+                It is therefore centered only over the Vehicle
+                Route Map and cannot appear over Average Weight
+                Generated or any other Vehicles section.
+            ================================================= */}
+
+            {!loading && !error && preparedRoutes.length === 0 && (
+              <div
+                className="
+                  absolute
+                  inset-0
+                  z-[998]
+                  flex
+                  items-center
+                  justify-center
+                  pointer-events-none
+                  px-4
+                "
+              >
+                <div
+                  className="
+                    w-full
+                    max-w-[520px]
+                    rounded-[18px]
+                    bg-white/95
+                    backdrop-blur-sm
+                    border
+                    border-[#E5E7EB]
+                    shadow-[0_10px_35px_rgba(0,0,0,0.10)]
+                    px-6
+                    py-5
+                    text-center
+                  "
+                >
+                  <h3
+                    className="
+                      text-[16px]
+                      sm:text-[17px]
+                      font-semibold
+                      text-[#34475B]
+                    "
+                  >
+                    No vehicle route data available
+                  </h3>
+
+                  <p
+                    className="
+                      mt-2
+                      text-[13px]
+                      sm:text-[14px]
+                      text-[#8AA1BB]
+                    "
+                  >
+                    No heartbeat GPS points were found for the selected date and
+                    filters.
                   </p>
                 </div>
               </div>
@@ -1914,60 +1830,13 @@ export default function VehicleRouteMap({ selectedDate }) {
                     text-[#60758B]
                   "
                 >
-                  Date:{" "}
-                  <span
-                    className="
-                      text-[#34475B]
-                    "
-                  >
-                    {selectedDate}
-                  </span>
+                  Date: <span className="text-[#34475B]">{selectedDate}</span>
                 </span>
               </div>
             )}
           </>
         )}
       </div>
-
-      {/* =====================================================
-          ROUTE EMPTY STATE
-          
-          Only shown in Route Map mode.
-      ===================================================== */}
-
-      {mapMode === "route" &&
-        !loading &&
-        !error &&
-        preparedRoutes.length === 0 && (
-          <div
-            className="
-              px-6
-              py-10
-              text-center
-            "
-          >
-            <div
-              className="
-                text-base
-                font-semibold
-                text-[#34475B]
-              "
-            >
-              No vehicle route data available
-            </div>
-
-            <div
-              className="
-                mt-1
-                text-sm
-                text-[#8AA1BB]
-              "
-            >
-              No vehicle GPS route data was found for the selected date and
-              filters.
-            </div>
-          </div>
-        )}
     </section>
   );
 }
