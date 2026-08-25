@@ -597,20 +597,27 @@ const getLatestVehiclePositions = async (vehicleTables) => {
 
         const rows = await telemetryDb.$queryRawUnsafe(
           `
-              SELECT
-                id,
-                latitude,
-                longitude,
-                iottimestamp
-              FROM ${table}
-              WHERE latitude IS NOT NULL
-                AND longitude IS NOT NULL
-              ORDER BY
-                iottimestamp DESC NULLS LAST,
-                id DESC
-              LIMIT 1
-            `,
+        SELECT
+          id,
+          latitude,
+          longitude,
+          vehicleNumber,
+          iottimestamp,
+          driverName,
+          unitNumber
+        FROM ${table}
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+        ORDER BY
+          iottimestamp DESC NULLS LAST,
+          id DESC
+        LIMIT 1
+      `,
         );
+
+        console.log("🚛 LIVE TELEMETRY TABLE:", vehicleTableName);
+
+        console.log("🚛 LIVE TELEMETRY ROW:", rows[0] ?? null);
 
         if (!rows || rows.length === 0) {
           continue;
