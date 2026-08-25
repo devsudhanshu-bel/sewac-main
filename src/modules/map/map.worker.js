@@ -1,182 +1,88 @@
-import mapService from "./map.service.js";
-import mapRedis from "./map.redis.js";
-
+/*
+|--------------------------------------------------------------------------
+| CITIZEN MAP WORKER
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| The Citizen backend does NOT own telemetry.
+|
+| Live telemetry synchronization is handled by the
+| Admin backend.
+|
+| Therefore this worker is intentionally disabled.
+|
+| The previous worker attempted:
+|
+| mapService.syncLiveLocations()
+|
+| every 2 seconds.
+|
+| That caused:
+|
+| TypeError: mapService.syncLiveLocations is not a function
+|
+| and was also unnecessary because the Citizen backend
+| obtains live locations from the Admin backend.
+|--------------------------------------------------------------------------
+*/
 
 class MapWorker {
-
-
-  constructor(){
-
+  constructor() {
     this.interval = null;
 
     this.isRunning = false;
-
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | START
+  |--------------------------------------------------------------------------
+  */
 
+  start() {
+    /*
+     * Do NOT start a telemetry polling loop
+     * inside the Citizen backend.
+     */
 
-
-
-  start(){
-
-
-    if(this.interval){
-
-
-      console.log(
-        "⚠️ Map Worker is already running."
-      );
-
+    if (this.interval) {
+      console.log("⚠️ Citizen Map Worker is already running.");
 
       return;
-
     }
 
-
-
-
-
+    console.log("ℹ️ Citizen Map Worker disabled.");
 
     console.log(
-      "🚛 Map Worker Started"
+      "ℹ️ Live telemetry synchronization is handled by the Admin backend.",
     );
 
-
-    console.log(
-      "⏱️ Syncing vehicle telemetry every 2 seconds..."
-    );
-
-
-
-
-
-
-
-    this.interval = setInterval(
-      async ()=>{
-
-
-        if(this.isRunning){
-
-          return;
-
-        }
-
-
-
-        this.isRunning = true;
-
-
-
-
-        try{
-
-
-
-          // Sync latest telemetry
-          await mapService.syncLiveLocations();
-
-
-
-
-          // Remove offline trucks from Redis
-          await mapRedis.removeOfflineTrucks();
-
-
-
-
-        }
-
-        catch(error){
-
-
-          console.error(
-            "❌ Map Worker Error:"
-          );
-
-
-          console.error(
-            error
-          );
-
-
-        }
-
-        finally{
-
-
-          this.isRunning = false;
-
-
-        }
-
-
-
-
-      },
-
-      2000
-
-    );
-
-
-
-  }
-
-
-
-
-
-
-
-
-  stop(){
-
-
-
-    if(!this.interval){
-
-
-      console.log(
-        "⚠️ Map Worker is not running."
-      );
-
-
-      return;
-
-    }
-
-
-
-
-
-    clearInterval(
-      this.interval
-    );
-
-
-
+    /*
+     * Keep interval null intentionally.
+     */
     this.interval = null;
 
+    this.isRunning = false;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | STOP
+  |--------------------------------------------------------------------------
+  */
+
+  stop() {
+    if (this.interval) {
+      clearInterval(this.interval);
+
+      this.interval = null;
+    }
 
     this.isRunning = false;
 
-
-
-
-    console.log(
-      "🛑 Map Worker Stopped"
-    );
-
-
-
+    console.log("🛑 Citizen Map Worker stopped.");
   }
-
-
-
-
-
 }
-
 
 export default new MapWorker();
