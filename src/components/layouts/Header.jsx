@@ -28,12 +28,14 @@ import SewacLogo from "../../assets/sewac_logo.svg";
    LANGUAGE OPTIONS
 
    IMPORTANT:
+
    Language names are intentionally NOT translated.
 
-   English  -> English
-   Kannada  -> ಕನ್ನಡ
-   Hindi    -> हिंदी
-   Telugu   -> తెలుగు
+   English   -> English
+   Kannada   -> ಕನ್ನಡ
+   Hindi     -> हिंदी
+   Telugu    -> తెలుగు
+   Tamil     -> தமிழ்
    Malayalam -> മലയാളം
 
    These labels always remain in their own language,
@@ -211,6 +213,21 @@ function Dropdown({
 
   /* =======================================================
      OPTION HELPERS
+
+     IMPORTANT:
+     Support both API formats:
+
+     snake_case:
+       city_name
+       zone_name
+       division_name
+       ward_name
+
+     camelCase:
+       cityName
+       zoneName
+       divisionName
+       wardName
   ======================================================= */
 
   const getOptionLabel = (
@@ -222,9 +239,24 @@ function Dropdown({
 
     return (
       item?.city_name ||
+      item?.cityName ||
       item?.zone_name ||
+      item?.zoneName ||
       item?.division_name ||
+      item?.divisionName ||
       item?.ward_name ||
+      item?.wardName ||
+      item?.name ||
+      (
+        item?.ward_no !== undefined
+          ? `Ward ${item.ward_no}`
+          : ""
+      ) ||
+      (
+        item?.wardNo !== undefined
+          ? `Ward ${item.wardNo}`
+          : ""
+      ) ||
       String(item ?? "")
     );
   };
@@ -239,9 +271,16 @@ function Dropdown({
 
     return (
       item?.city_id ||
+      item?.cityId ||
       item?.zone_id ||
+      item?.zoneId ||
       item?.division_id ||
+      item?.divisionId ||
       item?.ward_id ||
+      item?.wardId ||
+      item?.id ||
+      item?.ward_no ||
+      item?.wardNo ||
       `${item}-${index}`
     );
   };
@@ -907,23 +946,24 @@ export default function Header({
      KN -> ಕನ್ನಡ
      HI -> हिंदी
      TE -> తెలుగు
+     TA -> தமிழ்
      MA -> മലയാളം
   ========================================================= */
 
-const currentLanguageCode =
-  language === "en"
-    ? "EN"
-    : language === "kn"
-    ? "KN"
-    : language === "hi"
-    ? "HI"
-    : language === "te"
-    ? "TE"
-    : language === "ta"
-    ? "TA"
-    : language === "ma"
-    ? "MA"
-    : "EN";
+  const currentLanguageCode =
+    language === "en"
+      ? "EN"
+      : language === "kn"
+      ? "KN"
+      : language === "hi"
+      ? "HI"
+      : language === "te"
+      ? "TE"
+      : language === "ta"
+      ? "TA"
+      : language === "ma"
+      ? "MA"
+      : "EN";
 
   /* =========================================================
      DYNAMIC LOCATION FILTERS
@@ -943,6 +983,8 @@ const currentLanguageCode =
         "
         value={
           selectedCity?.city_name ||
+          selectedCity?.cityName ||
+          selectedCity?.name ||
           t(
             "filters.city",
             "Select City"
@@ -956,10 +998,14 @@ const currentLanguageCode =
         )}
         getLabel={(city) =>
           city?.city_name ||
+          city?.cityName ||
+          city?.name ||
           ""
         }
         getKey={(city) =>
-          city?.city_id
+          city?.city_id ||
+          city?.cityId ||
+          city?.id
         }
       />
 
@@ -975,6 +1021,8 @@ const currentLanguageCode =
         "
         value={
           selectedZone?.zone_name ||
+          selectedZone?.zoneName ||
+          selectedZone?.name ||
           t(
             "filters.zone",
             "Select Zone"
@@ -988,10 +1036,14 @@ const currentLanguageCode =
         )}
         getLabel={(zone) =>
           zone?.zone_name ||
+          zone?.zoneName ||
+          zone?.name ||
           ""
         }
         getKey={(zone) =>
-          zone?.zone_id
+          zone?.zone_id ||
+          zone?.zoneId ||
+          zone?.id
         }
       />
 
@@ -1006,8 +1058,9 @@ const currentLanguageCode =
           2xl:w-[138px]
         "
         value={
-          selectedDivision
-            ?.division_name ||
+          selectedDivision?.division_name ||
+          selectedDivision?.divisionName ||
+          selectedDivision?.name ||
           t(
             "filters.division",
             "Select Division"
@@ -1021,17 +1074,16 @@ const currentLanguageCode =
           "filters.division",
           "Select Division"
         )}
-        getLabel={(
-          division
-        ) =>
-          division
-            ?.division_name ||
+        getLabel={(division) =>
+          division?.division_name ||
+          division?.divisionName ||
+          division?.name ||
           ""
         }
-        getKey={(
-          division
-        ) =>
-          division?.division_id
+        getKey={(division) =>
+          division?.division_id ||
+          division?.divisionId ||
+          division?.id
         }
       />
 
@@ -1047,12 +1099,21 @@ const currentLanguageCode =
         "
         value={
           selectedWard
-            ? `${selectedWard.ward_name}${
+            ? (
+                selectedWard.ward_name ||
+                selectedWard.wardName ||
+                selectedWard.name ||
+                ""
+              ) +
+              (
                 selectedWard.ward_no !==
                 undefined
                   ? ` (${selectedWard.ward_no})`
+                  : selectedWard.wardNo !==
+                    undefined
+                  ? ` (${selectedWard.wardNo})`
                   : ""
-              }`
+              )
             : t(
                 "filters.ward",
                 "Select Ward"
@@ -1068,16 +1129,29 @@ const currentLanguageCode =
         )}
         getLabel={(ward) =>
           ward
-            ? `${ward.ward_name}${
+            ? (
+                ward.ward_name ||
+                ward.wardName ||
+                ward.name ||
+                ""
+              ) +
+              (
                 ward.ward_no !==
                 undefined
                   ? ` (${ward.ward_no})`
+                  : ward.wardNo !==
+                    undefined
+                  ? ` (${ward.wardNo})`
                   : ""
-              }`
+              )
             : ""
         }
         getKey={(ward) =>
-          ward?.ward_id
+          ward?.ward_id ||
+          ward?.wardId ||
+          ward?.id ||
+          ward?.ward_no ||
+          ward?.wardNo
         }
       />
     </>
