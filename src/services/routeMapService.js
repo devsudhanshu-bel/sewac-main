@@ -544,9 +544,10 @@ const getLatestVehiclePositions = async (vehicleTables) => {
   const now = new Date();
 
   /*
-   * <= 30 minutes = ACTIVE
-   * > 30 minutes = INACTIVE
-   */
+  |--------------------------------------------------------------------------
+  | VEHICLE IS ACTIVE IF TELEMETRY IS WITHIN LAST 30 MINUTES
+  |--------------------------------------------------------------------------
+  */
 
   const inactivityLimit = new Date(now.getTime() - 30 * 60 * 1000);
 
@@ -556,6 +557,12 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     if (!vehicle.vehicleNumber) {
       continue;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CURRENT + FALLBACK TELEMETRY TABLES
+    |--------------------------------------------------------------------------
+    */
 
     const tableNames = [
       vehicle.vehicleTableName,
@@ -568,47 +575,58 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     let latest = null;
 
     /*
-     * Find newest GPS packet.
-     */
+    |--------------------------------------------------------------------------
+    | FIND LATEST GPS PACKET
+    |--------------------------------------------------------------------------
+    */
 
     for (const vehicleTableName of tableNames) {
       const table = quoteIdentifier(vehicleTableName);
 
       try {
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORTANT:
+        |
+        | Telemetry repository confirms that the telemetry
+        | timestamp column is `iottimestamp`.
+        |
+        | DO NOT use receivedTimestamp here.
+        |--------------------------------------------------------------------------
+        */
+
         const rows = await telemetryDb.$queryRawUnsafe(
           `
-                SELECT
-                  id,
-                  latitude,
-                  longitude,
-                  vehicleNumber,
-                  receivedTimestamp,
-                  iotTimestamp,
-                  driverName,
-                  unitNumber
-                FROM ${table}
-                WHERE latitude IS NOT NULL
-                  AND longitude IS NOT NULL
-                ORDER BY
-                  receivedTimestamp DESC NULLS LAST,
-                  id DESC
-                LIMIT 1
-              `,
+              SELECT
+                id,
+                latitude,
+                longitude,
+                iottimestamp
+              FROM ${table}
+              WHERE latitude IS NOT NULL
+                AND longitude IS NOT NULL
+              ORDER BY
+                iottimestamp DESC NULLS LAST,
+                id DESC
+              LIMIT 1
+            `,
         );
 
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
           continue;
         }
 
         const row = rows[0];
 
+        /*
+        |--------------------------------------------------------------------------
+        | GPS
+        |--------------------------------------------------------------------------
+        */
+
         const latitude = Number(row.latitude);
 
         const longitude = Number(row.longitude);
-
-        /*
-         * Ignore invalid GPS.
-         */
 
         if (
           !Number.isFinite(latitude) ||
@@ -621,53 +639,91 @@ const getLatestVehiclePositions = async (vehicleTables) => {
           continue;
         }
 
-        const receivedTimestamp = row.receivedTimestamp
-          ? new Date(row.receivedTimestamp)
+        /*
+        |--------------------------------------------------------------------------
+        | TELEMETRY TIMESTAMP
+        |--------------------------------------------------------------------------
+        */
+
+        const telemetryTimestamp = row.iottimestamp
+          ? new Date(row.iottimestamp)
           : null;
 
-        if (!receivedTimestamp || Number.isNaN(receivedTimestamp.getTime())) {
+        /*
+        |--------------------------------------------------------------------------
+        | If timestamp is unavailable,
+        | still accept the GPS point.
+        |--------------------------------------------------------------------------
+        */
+
+        if (!telemetryTimestamp || Number.isNaN(telemetryTimestamp.getTime())) {
+          /*
+           * If we have valid coordinates but no
+           * usable timestamp, keep the point.
+           */
+
+          if (!latest) {
+            latest = {
+              latitude,
+              longitude,
+              timestamp: null,
+            };
+          }
+
           continue;
         }
 
         /*
-         * Keep newest record.
-         */
+        |--------------------------------------------------------------------------
+        | Keep newest telemetry point
+        |--------------------------------------------------------------------------
+        */
 
-        if (!latest || receivedTimestamp > latest.receivedTimestamp) {
+        if (
+          !latest ||
+          !latest.timestamp ||
+          telemetryTimestamp > latest.timestamp
+        ) {
           latest = {
             latitude,
-
             longitude,
-
-            receivedTimestamp,
-
-            iotTimestamp: row.iotTimestamp || null,
-
-            driverName: row.driverName || null,
-
-            unitNumber: row.unitNumber || null,
+            timestamp: telemetryTimestamp,
           };
         }
       } catch (error) {
         /*
-         * A missing telemetry table should
-         * not break the complete map.
-         */
+        |--------------------------------------------------------------------------
+        | Missing telemetry table
+        |--------------------------------------------------------------------------
+        */
 
         if (error?.code === "42P01") {
           continue;
         }
 
-        console.warn(
-          `Live route map: unable to inspect telemetry table ${vehicleTableName}:`,
-          error.message,
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORTANT:
+        |
+        | Log the REAL database error.
+        |
+        | Previously this was being hidden, which made
+        | debugging extremely difficult.
+        |--------------------------------------------------------------------------
+        */
+
+        console.error(
+          `Live map telemetry error for ${vehicleTableName}:`,
+          error,
         );
       }
     }
 
     /*
-     * No GPS.
-     */
+    |--------------------------------------------------------------------------
+    | NO GPS FOUND
+    |--------------------------------------------------------------------------
+    */
 
     if (!latest) {
       results.push({
@@ -696,11 +752,22 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     }
 
     /*
-     * Determine status.
-     */
+    |--------------------------------------------------------------------------
+    | DETERMINE LIVE STATUS
+    |--------------------------------------------------------------------------
+    */
 
-    const status =
-      latest.receivedTimestamp >= inactivityLimit ? "ACTIVE" : "INACTIVE";
+    let status = "ACTIVE";
+
+    if (latest.timestamp && latest.timestamp < inactivityLimit) {
+      status = "INACTIVE";
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN VEHICLE
+    |--------------------------------------------------------------------------
+    */
 
     results.push({
       vehicleId: vehicle.vehicleNumber,
@@ -715,7 +782,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
 
       status,
 
-      lastUpdated: latest.receivedTimestamp.toISOString(),
+      lastUpdated: latest.timestamp ? latest.timestamp.toISOString() : null,
 
       ...(vehicle.vehicleType
         ? {
