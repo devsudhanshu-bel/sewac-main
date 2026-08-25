@@ -100,10 +100,6 @@ const getDayTableName = (date) => {
 |--------------------------------------------------------------------------
 | CITY → ZONE → DIVISION → WARD
 |--------------------------------------------------------------------------
-|
-| Uses the existing Master Citizen hierarchy.
-|
-|--------------------------------------------------------------------------
 */
 
 const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
@@ -224,21 +220,14 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
    *
    * IMPORTANT:
    *
-   * The citizen application sends wardId = 216.
+   * Citizen sends wardId = 216.
    *
-   * In the Master Citizen hierarchy, the same
-   * ward can have:
+   * Depending on Master Citizen data:
    *
-   *   ward_id = 3
-   *   ward_no = 216
+   * ward_id may be an internal ID
+   * ward_no may be the actual ward number.
    *
-   * vehicle_master uses ward_no / ward = 216.
-   *
-   * Therefore we accept either the internal ward_id
-   * OR the ward_no.
-   *
-   * Priority is given to ward_id if both happen
-   * to match.
+   * We therefore accept either.
    */
 
   const wards = await masterCitizenPrisma.$queryRawUnsafe(
@@ -294,29 +283,13 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
 
     divisionName: division.division_name,
 
-    /*
-     * Keep the ID supplied by the caller.
-     *
-     * If caller sent 216, response contains 216.
-     */
-
     wardId: selectedWardId,
-
-    /*
-     * This is the actual ward number used
-     * for vehicle_master matching.
-     */
 
     wardNo,
 
     wardName: ward.ward_name,
 
     wardTableName: ward.ward_table_name,
-
-    /*
-     * Keep the internal hierarchy ID available
-     * internally without changing the API contract.
-     */
 
     masterWardId: Number(ward.ward_id),
   };
@@ -327,21 +300,27 @@ const getSelectedWard = async ({ cityId, zoneId, divisionId, wardId }) => {
 | VEHICLES FOR SELECTED WARD
 |--------------------------------------------------------------------------
 |
-| vehicle_master is the source of registered vehicles.
+| IMPORTANT FIX:
 |
-| day_DDMMYYYY is used only to resolve the existing
-| vehicle-specific telemetry table.
+| vehicle_master is matched using ward_no.
+|
+| We do NOT additionally require city/zone/division/ward
+| names to match because those textual values can differ
+| from the Master Citizen hierarchy.
 |
 |--------------------------------------------------------------------------
 */
 
 const getVehicleTablesForWard = async (date, ward) => {
   /*
-   * Get registered vehicles from vehicle_master.
+   * Get vehicles registered for this ward.
    *
-   * The geographic hierarchy has already been validated
-   * above, so the selected ward is now matched against
-   * the existing vehicle_master fields.
+   * IMPORTANT:
+   *
+   * Your vehicle_master contains ward_no = 216.
+   *
+   * Therefore ward_no is the authoritative
+   * vehicle-to-ward mapping here.
    */
 
   const vehicleResult = await mainDb.query(
@@ -356,19 +335,9 @@ const getVehicleTablesForWard = async (date, ward) => {
           ward_no
         FROM vehicle_master
         WHERE ward_no = $1
-          AND city = $2
-          AND zone = $3
-          AND division = $4
-          AND ward = $5
         ORDER BY vehicle_id ASC
       `,
-    [
-      ward.wardNo,
-      ward.cityName,
-      ward.zoneName,
-      ward.divisionName,
-      ward.wardName,
-    ],
+    [ward.wardNo],
   );
 
   const registeredVehicles = vehicleResult.rows.map((row) => ({
@@ -388,7 +357,7 @@ const getVehicleTablesForWard = async (date, ward) => {
   }));
 
   /*
-   * No registered vehicles.
+   * No vehicles registered.
    */
 
   if (registeredVehicles.length === 0) {
@@ -438,8 +407,8 @@ const getVehicleTablesForWard = async (date, ward) => {
     }
   } catch (error) {
     /*
-     * Missing day table simply means there is no
-     * telemetry mapping for today.
+     * No day table means no telemetry
+     * mapping for today.
      */
 
     if (error?.code !== "42P01") {
@@ -450,11 +419,8 @@ const getVehicleTablesForWard = async (date, ward) => {
   /*
    * Keep ALL registered vehicles.
    *
-   * Vehicles without telemetry are returned as:
-   *
-   * latitude: null
-   * longitude: null
-   * status: INACTIVE
+   * Vehicles without telemetry are returned
+   * with null GPS and INACTIVE status.
    */
 
   return registeredVehicles.map((vehicle) => ({
@@ -467,11 +433,6 @@ const getVehicleTablesForWard = async (date, ward) => {
 /*
 |--------------------------------------------------------------------------
 | ADD YESTERDAY'S TELEMETRY TABLE REFERENCES
-|--------------------------------------------------------------------------
-|
-| This allows the 30-minute status calculation to work
-| correctly around midnight.
-|
 |--------------------------------------------------------------------------
 */
 
@@ -583,8 +544,6 @@ const getLatestVehiclePositions = async (vehicleTables) => {
   const now = new Date();
 
   /*
-   * Existing SEWAC live-status rule:
-   *
    * <= 30 minutes = ACTIVE
    * > 30 minutes = INACTIVE
    */
@@ -600,7 +559,6 @@ const getLatestVehiclePositions = async (vehicleTables) => {
 
     const tableNames = [
       vehicle.vehicleTableName,
-
       vehicle.additionalVehicleTableName,
     ].filter(
       (name, index, array) =>
@@ -610,9 +568,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     let latest = null;
 
     /*
-     * Look through the existing dynamic
-     * telemetry tables and keep only the
-     * newest valid GPS packet.
+     * Find newest GPS packet.
      */
 
     for (const vehicleTableName of tableNames) {
@@ -651,7 +607,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
         const longitude = Number(row.longitude);
 
         /*
-         * Ignore malformed GPS.
+         * Ignore invalid GPS.
          */
 
         if (
@@ -674,7 +630,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
         }
 
         /*
-         * Keep only newest packet.
+         * Keep newest record.
          */
 
         if (!latest || receivedTimestamp > latest.receivedTimestamp) {
@@ -694,8 +650,8 @@ const getLatestVehiclePositions = async (vehicleTables) => {
         }
       } catch (error) {
         /*
-         * One bad telemetry table must
-         * never crash the complete map.
+         * A missing telemetry table should
+         * not break the complete map.
          */
 
         if (error?.code === "42P01") {
@@ -710,7 +666,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     }
 
     /*
-     * No valid telemetry.
+     * No GPS.
      */
 
     if (!latest) {
@@ -740,7 +696,7 @@ const getLatestVehiclePositions = async (vehicleTables) => {
     }
 
     /*
-     * Determine live status.
+     * Determine status.
      */
 
     const status =
@@ -795,7 +751,7 @@ const getLiveRouteMap = async ({
   const personLongitude = parseCoordinate(longitude, "longitude", -180, 180);
 
   /*
-   * 2. VALIDATE CITY → ZONE → DIVISION → WARD
+   * 2. VALIDATE HIERARCHY
    */
 
   const ward = await getSelectedWard({
@@ -806,16 +762,13 @@ const getLiveRouteMap = async ({
   });
 
   /*
-   * 3. REGISTERED VEHICLES
+   * 3. GET REGISTERED VEHICLES
    */
 
   let vehicleTables = await getVehicleTablesForWard(new Date(), ward);
 
   /*
-   * 4. CHECK YESTERDAY TOO
-   *
-   * Needed around midnight for the 30-minute
-   * ACTIVE/INACTIVE calculation.
+   * 4. ALSO CHECK YESTERDAY
    */
 
   vehicleTables = await addYesterdayTelemetryMappings(
@@ -824,18 +777,18 @@ const getLiveRouteMap = async ({
   );
 
   /*
-   * 5. LATEST GPS
+   * 5. GET LATEST GPS
    */
 
   let vehicles = await getLatestVehiclePositions(vehicleTables);
 
   /*
-   * 6. DISTANCE
+   * 6. CALCULATE DISTANCE
    */
 
   vehicles = vehicles.map((vehicle) => {
     /*
-     * Vehicle has no valid GPS.
+     * No GPS.
      */
 
     if (vehicle.latitude === null || vehicle.longitude === null) {
@@ -873,9 +826,7 @@ const getLiveRouteMap = async ({
   });
 
   /*
-   * 7. NEAREST → FARTHEST
-   *
-   * Vehicles without GPS go last.
+   * 7. SORT NEAREST FIRST
    */
 
   vehicles.sort((a, b) => {
@@ -891,7 +842,7 @@ const getLiveRouteMap = async ({
   });
 
   /*
-   * 8. FLUTTER-FRIENDLY RESPONSE
+   * 8. FLUTTER RESPONSE
    */
 
   return {
