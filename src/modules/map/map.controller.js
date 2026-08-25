@@ -1,4 +1,4 @@
-const mapService = require("../services/mapService");
+const mapService = require("./map.service");
 
 /*
 |--------------------------------------------------------------------------
@@ -8,35 +8,24 @@ const mapService = require("../services/mapService");
 
 const getNearestVehicle = async (req, res) => {
   try {
-    const {
+    const { latitude, longitude } = req.query;
+
+    const data = await mapService.getNearestVehicle({
       latitude,
       longitude,
-    } = req.query;
-
-    const data =
-      await mapService.getNearestVehicle({
-        latitude,
-        longitude,
-      });
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Nearest vehicle fetched successfully.",
+      message: "Nearest vehicle fetched successfully.",
       data,
     });
   } catch (error) {
-    console.error(
-      "GET /api/citizen/map/nearest error:",
-      error,
-    );
+    console.error("GET /api/citizen/map/nearest error:", error);
 
-    const statusCode =
-      Number.isInteger(
-        error?.statusCode,
-      )
-        ? error.statusCode
-        : 500;
+    const statusCode = Number.isInteger(error?.statusCode)
+      ? error.statusCode
+      : 500;
 
     return res.status(statusCode).json({
       success: false,
@@ -55,32 +44,21 @@ const getNearestVehicle = async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-const getLiveVehicles = async (
-  req,
-  res,
-) => {
+const getLiveVehicles = async (req, res) => {
   try {
-    const data =
-      await mapService.getLiveVehicles();
+    const data = await mapService.getLiveVehicles();
 
     return res.status(200).json({
       success: true,
-      message:
-        "Live vehicles fetched successfully.",
+      message: "Live vehicles fetched successfully.",
       data,
     });
   } catch (error) {
-    console.error(
-      "GET /api/citizen/map/live error:",
-      error,
-    );
+    console.error("GET /api/citizen/map/live error:", error);
 
-    const statusCode =
-      Number.isInteger(
-        error?.statusCode,
-      )
-        ? error.statusCode
-        : 500;
+    const statusCode = Number.isInteger(error?.statusCode)
+      ? error.statusCode
+      : 500;
 
     return res.status(statusCode).json({
       success: false,
@@ -99,45 +77,28 @@ const getLiveVehicles = async (
 |--------------------------------------------------------------------------
 */
 
-const getVehicle = async (
-  req,
-  res,
-) => {
+const getVehicle = async (req, res) => {
   try {
-    const {
-      vehicleId,
-    } = req.params;
+    const { vehicleId } = req.params;
 
-    const data =
-      await mapService.getVehicle(
-        vehicleId,
-      );
+    const data = await mapService.getVehicle(vehicleId);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Vehicle fetched successfully.",
+      message: "Vehicle fetched successfully.",
       data,
     });
   } catch (error) {
-    console.error(
-      "GET /api/citizen/map/live/:vehicleId error:",
-      error,
-    );
+    console.error("GET /api/citizen/map/live/:vehicleId error:", error);
 
-    const statusCode =
-      Number.isInteger(
-        error?.statusCode,
-      )
-        ? error.statusCode
-        : 500;
+    const statusCode = Number.isInteger(error?.statusCode)
+      ? error.statusCode
+      : 500;
 
     return res.status(statusCode).json({
       success: false,
       message:
-        error?.publicMessage ||
-        error?.message ||
-        "Unable to fetch vehicle.",
+        error?.publicMessage || error?.message || "Unable to fetch vehicle.",
       data: null,
     });
   }
@@ -148,90 +109,120 @@ const getVehicle = async (
 | GET LIVE VEHICLE LOCATIONS
 |--------------------------------------------------------------------------
 |
-| Citizen Flutter calls:
+| Flutter
+|   ↓
+| Citizen Backend
+|   ↓
+| Admin Backend
 |
-| GET /api/route-map/live
-|
-| Citizen backend forwards the existing
-| Authorization header to Admin backend.
-|
+| IMPORTANT:
+| The Authorization header received from Flutter
+| is forwarded to mapService.
 |--------------------------------------------------------------------------
 */
 
-const getLiveVehicleLocations =
-  async (req, res) => {
-    try {
-      const {
-        latitude,
-        longitude,
-        cityId,
-        zoneId,
-        divisionId,
-        wardId,
-      } = req.query;
+const getLiveVehicleLocations = async (req, res) => {
+  try {
+    const { latitude, longitude, cityId, zoneId, divisionId, wardId } =
+      req.query;
 
-      /*
-       * Forward the existing Citizen JWT.
-       *
-       * Example:
-       *
-       * Authorization: Bearer eyJ...
-       */
+    /*
+     * Get the JWT sent by Flutter.
+     *
+     * Example:
+     *
+     * Authorization: Bearer eyJhbGciOi...
+     */
 
-      const authorization =
-        req.headers.authorization ||
-        null;
+    const authorization = req.headers.authorization || null;
 
-      const data =
-        await mapService.getLiveVehicleLocations({
-          latitude,
-          longitude,
-          cityId,
-          zoneId,
-          divisionId,
-          wardId,
-          authorization,
-        });
+    console.log("==================================");
 
-      const hasVehicles =
-        Array.isArray(
-          data?.vehicles,
-        ) &&
-        data.vehicles.length > 0;
+    console.log("GET LIVE VEHICLE LOCATIONS");
 
-      return res.status(200).json({
-        success: true,
+    console.log("PARAMS:", {
+      latitude,
+      longitude,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+    });
 
-        message: hasVehicles
-          ? "Live vehicle locations fetched successfully."
-          : "No vehicles found for the selected ward.",
+    console.log(
+      "AUTHORIZATION:",
+      authorization ? "TOKEN PRESENT" : "TOKEN MISSING",
+    );
 
-        data,
-      });
-    } catch (error) {
-      console.error(
-        "GET /api/route-map/live error:",
-        error,
-      );
+    console.log("==================================");
 
-      const statusCode =
-        Number.isInteger(
-          error?.statusCode,
-        )
-          ? error.statusCode
-          : 500;
+    /*
+     * Call the Citizen map service.
+     *
+     * IMPORTANT:
+     * authorization is passed here.
+     */
 
-      return res.status(statusCode).json({
-        success: false,
+    const data = await mapService.getLiveVehicleLocations({
+      latitude,
+      longitude,
+      cityId,
+      zoneId,
+      divisionId,
+      wardId,
+      authorization,
+    });
 
-        message:
-          error?.publicMessage ||
-          "Unable to fetch live vehicle locations.",
+    /*
+     * Determine whether Admin returned
+     * any vehicles.
+     */
 
-        data: null,
-      });
-    }
-  };
+    const hasVehicles =
+      Array.isArray(data?.vehicles) && data.vehicles.length > 0;
+
+    return res.status(200).json({
+      success: true,
+
+      message: hasVehicles
+        ? "Live vehicle locations fetched successfully."
+        : "No vehicles found for the selected ward.",
+
+      data,
+    });
+  } catch (error) {
+    console.error("==================================");
+
+    console.error("Live vehicle route error:", error);
+
+    console.error("==================================");
+
+    const statusCode = Number.isInteger(error?.statusCode)
+      ? error.statusCode
+      : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+
+      message:
+        error?.publicMessage ||
+        error?.message ||
+        "Unable to fetch live vehicle locations.",
+
+      data: null,
+    });
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| EXPORT
+|--------------------------------------------------------------------------
+|
+| Citizen backend is using CommonJS.
+|
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
   getNearestVehicle,

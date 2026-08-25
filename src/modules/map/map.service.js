@@ -4,14 +4,15 @@ const axios = require("axios");
 |--------------------------------------------------------------------------
 | GET NEAREST VEHICLE
 |--------------------------------------------------------------------------
-|
-| Existing Citizen nearest-vehicle functionality.
-|
-|--------------------------------------------------------------------------
 */
 
 const getNearestVehicle = async ({ latitude, longitude }) => {
-  if (latitude === undefined || longitude === undefined) {
+  if (
+    latitude === undefined ||
+    latitude === null ||
+    longitude === undefined ||
+    longitude === null
+  ) {
     const error = new Error("Latitude and longitude are required.");
 
     error.statusCode = 400;
@@ -39,12 +40,8 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
   }
 
   /*
-   * Keep your existing nearest implementation
-   * here if this endpoint is already backed by
-   * a different Citizen-side service.
-   *
-   * This new live-map implementation does NOT
-   * modify that existing functionality.
+   * Keep your existing nearest-vehicle
+   * implementation here if you already have one.
    */
 
   const error = new Error(
@@ -60,46 +57,12 @@ const getNearestVehicle = async ({ latitude, longitude }) => {
 |--------------------------------------------------------------------------
 | GET ALL LIVE VEHICLES
 |--------------------------------------------------------------------------
-|
-| Existing endpoint.
-|
-| Keep your current implementation if this endpoint
-| is already being used elsewhere.
-|
-|--------------------------------------------------------------------------
 */
 
 const getLiveVehicles = async () => {
   /*
-   * IMPORTANT:
-   *
-   * Do not use this new ward-filtered endpoint
-   * to replace existing /citizen/map/live behavior.
-   *
-   * If your current project already has an implementation
-   * for this function, retain that implementation.
-   */
-
-  const adminBackendUrl = process.env.ADMIN_BACKEND_URL;
-
-  if (!adminBackendUrl) {
-    const error = new Error("ADMIN_BACKEND_URL is not configured.");
-
-    error.statusCode = 500;
-
-    throw error;
-  }
-
-  const cleanAdminUrl = adminBackendUrl.replace(/\/+$/, "");
-
-  const url = `${cleanAdminUrl}/api/route-map/live`;
-
-  /*
-   * This existing endpoint does not have
-   * hierarchy parameters.
-   *
-   * Therefore don't silently change its
-   * behavior.
+   * Keep your existing implementation here
+   * if this endpoint is already being used elsewhere.
    */
 
   const error = new Error(
@@ -127,11 +90,8 @@ const getVehicle = async (vehicleId) => {
   }
 
   /*
-   * Preserve the existing implementation
-   * of this endpoint in your project.
-   *
-   * The new live ward-filtered endpoint
-   * does not require changing it.
+   * Keep your existing implementation here
+   * if this endpoint is already being used elsewhere.
    */
 
   const error = new Error(
@@ -145,16 +105,16 @@ const getVehicle = async (vehicleId) => {
 
 /*
 |--------------------------------------------------------------------------
-| NEW LIVE VEHICLE LOCATIONS
+| GET LIVE VEHICLE LOCATIONS
 |--------------------------------------------------------------------------
 |
-| Citizen Flutter
-|       ↓
-| Citizen backend
-|       ↓
-| Admin backend
-|       ↓
-| Existing Admin telemetry architecture
+| Flutter
+|   ↓
+| Citizen Backend
+|   ↓
+| Admin Backend
+|   ↓
+| Existing Admin telemetry/database
 |
 |--------------------------------------------------------------------------
 */
@@ -170,7 +130,7 @@ const getLiveVehicleLocations = async ({
 }) => {
   /*
    * ----------------------------------------------------------
-   * VALIDATE ADMIN BACKEND URL
+   * ADMIN BACKEND URL
    * ----------------------------------------------------------
    */
 
@@ -188,8 +148,16 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * VALIDATE AUTHORIZATION
+   * AUTHORIZATION
    * ----------------------------------------------------------
+   *
+   * The Citizen controller passes:
+   *
+   * req.headers.authorization
+   *
+   * Example:
+   *
+   * Bearer eyJhbGci...
    */
 
   if (!authorization || typeof authorization !== "string") {
@@ -204,7 +172,7 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * VALIDATE COORDINATES
+   * COORDINATES
    * ----------------------------------------------------------
    */
 
@@ -231,7 +199,7 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * VALIDATE HIERARCHY IDS
+   * HIERARCHY IDS
    * ----------------------------------------------------------
    */
 
@@ -264,7 +232,7 @@ const getLiveVehicleLocations = async ({
 
   /*
    * ----------------------------------------------------------
-   * ADMIN URL
+   * ADMIN ENDPOINT
    * ----------------------------------------------------------
    */
 
@@ -304,11 +272,12 @@ const getLiveVehicleLocations = async ({
    * CALL ADMIN BACKEND
    * ----------------------------------------------------------
    *
-   * THIS IS THE FIX:
+   * IMPORTANT FIX:
    *
-   * Forward the existing JWT.
+   * Forward the Citizen JWT.
    *
-   * Admin route uses authMiddleware.
+   * The Admin route has authentication middleware,
+   * so it requires the Authorization header.
    *
    * ----------------------------------------------------------
    */
@@ -340,6 +309,12 @@ const getLiveVehicleLocations = async ({
 
     console.log("ADMIN BODY:", response.data);
 
+    /*
+     * --------------------------------------------------------
+     * ADMIN RESPONSE
+     * --------------------------------------------------------
+     */
+
     const adminResponse = response.data;
 
     if (!adminResponse || adminResponse.success !== true) {
@@ -363,7 +338,7 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * NORMALIZE RESPONSE FOR FLUTTER
+     * NORMALIZE VEHICLES
      * --------------------------------------------------------
      */
 
@@ -387,6 +362,10 @@ const getLiveVehicleLocations = async ({
         rawDistance === null || rawDistance === undefined
           ? null
           : Number(Number(rawDistance).toFixed(2));
+
+      /*
+       * Normalize status.
+       */
 
       let status = vehicle.status;
 
@@ -444,7 +423,7 @@ const getLiveVehicleLocations = async ({
 
     /*
      * --------------------------------------------------------
-     * RETURN FLUTTER-FRIENDLY RESPONSE
+     * RETURN CITIZEN RESPONSE
      * --------------------------------------------------------
      */
 
@@ -481,7 +460,9 @@ const getLiveVehicleLocations = async ({
     console.error("==================================");
 
     /*
-     * Preserve Admin authentication errors.
+     * --------------------------------------------------------
+     * ADMIN 401
+     * --------------------------------------------------------
      */
 
     if (error.response?.status === 401) {
@@ -498,7 +479,9 @@ const getLiveVehicleLocations = async ({
     }
 
     /*
-     * Preserve other expected client errors.
+     * --------------------------------------------------------
+     * ADMIN 4XX
+     * --------------------------------------------------------
      */
 
     if (
@@ -521,7 +504,9 @@ const getLiveVehicleLocations = async ({
     }
 
     /*
-     * Generic server/network error.
+     * --------------------------------------------------------
+     * NETWORK / SERVER ERROR
+     * --------------------------------------------------------
      */
 
     const serviceError = new Error("Unable to fetch live vehicle locations.");
