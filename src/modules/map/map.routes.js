@@ -1,27 +1,53 @@
-import { Router } from "express";
+import express from "express";
 
 import mapController from "./map.controller.js";
 
-import authMiddleware from "../../middlewares/auth.middleware.js";
+const router = express.Router();
 
-const router = Router();
+/*
+|--------------------------------------------------------------------------
+| GET NEAREST VEHICLE
+|--------------------------------------------------------------------------
+|
+| GET /api/route-map/nearest
+|
+*/
 
-// ==========================================================
-// EXISTING NEAREST VEHICLE
-// ==========================================================
+router.get("/nearest", mapController.getNearestVehicle);
 
-router.get("/nearest", authMiddleware, mapController.getNearestTruck);
+/*
+|--------------------------------------------------------------------------
+| GET LIVE VEHICLE LOCATIONS
+|--------------------------------------------------------------------------
+|
+| GET /api/route-map/live
+|
+| This is the endpoint your Flutter app is calling.
+|
+*/
 
-// ==========================================================
-// EXISTING SPECIFIC VEHICLE
-// ==========================================================
+router.get("/live", mapController.getLiveVehicleLocations);
 
-router.get("/truck/:vehicleId", authMiddleware, mapController.getTruck);
+/*
+|--------------------------------------------------------------------------
+| GET ALL LIVE VEHICLES
+|--------------------------------------------------------------------------
+|
+| GET /api/route-map/vehicles
+|
+*/
 
-// ==========================================================
-// NEW LIVE VEHICLE LOCATIONS
-// ==========================================================
+router.get("/vehicles", mapController.getLiveVehicles);
 
-router.get("/live", authMiddleware, mapController.getLiveVehicleLocations);
+/*
+|--------------------------------------------------------------------------
+| GET SINGLE VEHICLE
+|--------------------------------------------------------------------------
+|
+| GET /api/route-map/vehicle/:vehicleId
+|
+*/
+
+router.get("/vehicle/:vehicleId", mapController.getVehicle);
 
 export default router;
