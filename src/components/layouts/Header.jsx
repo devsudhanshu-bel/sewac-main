@@ -16,8 +16,6 @@ import {
   useState,
 } from "react";
 
-import { createPortal } from "react-dom";
-
 import { gsap } from "gsap";
 
 import Calendar from "../Calendar/Calendar";
@@ -156,13 +154,6 @@ function Dropdown({
   const menuRef =
     useRef(null);
 
-  const [menuPosition, setMenuPosition] =
-    useState({
-      top: 0,
-      left: 0,
-      width: 0,
-    });
-
   /* =======================================================
      CLOSE OUTSIDE
   ======================================================= */
@@ -171,9 +162,6 @@ function Dropdown({
     function close(event) {
       if (
         !wrapperRef.current?.contains(
-          event.target
-        ) &&
-        !menuRef.current?.contains(
           event.target
         )
       ) {
@@ -193,73 +181,6 @@ function Dropdown({
       );
     };
   }, []);
-
-  /* =======================================================
-     CALCULATE PORTAL POSITION
-
-     The menu is rendered outside the responsive
-     filter container so it cannot be clipped by
-     overflow-x-auto.
-  ======================================================= */
-
-  const updateMenuPosition = () => {
-    if (!wrapperRef.current) {
-      return;
-    }
-
-    const rect =
-      wrapperRef.current.getBoundingClientRect();
-
-    setMenuPosition({
-      top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
-    });
-  };
-
-  /* =======================================================
-     UPDATE POSITION WHEN OPEN
-  ======================================================= */
-
-  useLayoutEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    updateMenuPosition();
-
-    const handleResize = () => {
-      updateMenuPosition();
-    };
-
-    const handleScroll = () => {
-      updateMenuPosition();
-    };
-
-    window.addEventListener(
-      "resize",
-      handleResize
-    );
-
-    window.addEventListener(
-      "scroll",
-      handleScroll,
-      true
-    );
-
-    return () => {
-      window.removeEventListener(
-        "resize",
-        handleResize
-      );
-
-      window.removeEventListener(
-        "scroll",
-        handleScroll,
-        true
-      );
-    };
-  }, [open]);
 
   /* =======================================================
      DROPDOWN ANIMATION
@@ -304,8 +225,6 @@ function Dropdown({
       item?.zone_name ||
       item?.division_name ||
       item?.ward_name ||
-      item?.name ||
-      item?.label ||
       String(item ?? "")
     );
   };
@@ -323,122 +242,9 @@ function Dropdown({
       item?.zone_id ||
       item?.division_id ||
       item?.ward_id ||
-      item?.id ||
       `${item}-${index}`
     );
   };
-
-  /* =======================================================
-     DROPDOWN MENU
-
-     Render through document.body so it is NOT affected
-     by the filter row's overflow-x-auto.
-  ======================================================= */
-
-  const dropdownMenu =
-    open &&
-    typeof document !== "undefined"
-      ? createPortal(
-          <div
-            ref={menuRef}
-            className="
-              fixed
-              max-h-[315px]
-              overflow-x-auto
-              overflow-y-auto
-              rounded-2xl
-              bg-white
-              border
-              border-gray-100
-              shadow-[0_15px_40px_rgba(0,0,0,0.08)]
-              z-[999999]
-              scrollbar-thin
-              scrollbar-thumb-violet-300
-              scrollbar-track-transparent
-            "
-            style={{
-              top: `${menuPosition.top}px`,
-              left: `${menuPosition.left}px`,
-              width: `${menuPosition.width}px`,
-            }}
-          >
-            {options.length === 0 ? (
-              <div
-                className="
-                  px-4
-                  py-2.5
-                  text-[12px]
-                  text-gray-400
-                "
-              >
-                No options available
-              </div>
-            ) : (
-              options.map(
-                (
-                  item,
-                  index
-                ) => {
-                  const label =
-                    getOptionLabel(
-                      item
-                    );
-
-                  const key =
-                    getOptionKey(
-                      item,
-                      index
-                    );
-
-                  const isSelected =
-                    label === value;
-
-                  return (
-                    <button
-                      type="button"
-                      key={key}
-                      onClick={() => {
-                        onChange(item);
-                        setOpen(false);
-                      }}
-                      className="
-                        w-full
-                        min-w-max
-                        px-4
-                        py-2.5
-                        flex
-                        items-center
-                        justify-between
-                        gap-6
-                        text-left
-                        text-[12px]
-                        text-[#16295A]
-                        hover:bg-violet-50
-                        transition
-                      "
-                    >
-                      <span className="whitespace-nowrap min-w-max">
-                        {label}
-                      </span>
-
-                      {isSelected && (
-                        <Check
-                          size={14}
-                          className="
-                            shrink-0
-                            text-violet-600
-                          "
-                        />
-                      )}
-                    </button>
-                  );
-                }
-              )
-            )}
-          </div>,
-          document.body
-        )
-      : null;
 
   return (
     <div
@@ -447,13 +253,9 @@ function Dropdown({
     >
       <button
         type="button"
-        onClick={() => {
-          if (!open) {
-            updateMenuPosition();
-          }
-
-          setOpen(!open);
-        }}
+        onClick={() =>
+          setOpen(!open)
+        }
         className="
           w-full
           h-9
@@ -492,7 +294,103 @@ function Dropdown({
         />
       </button>
 
-      {dropdownMenu}
+      {open && (
+        <div
+          ref={menuRef}
+          className="
+            absolute
+            top-11
+            left-0
+            w-full
+            max-h-[315px]
+            overflow-x-auto
+            overflow-y-auto
+            rounded-2xl
+            bg-white
+            border
+            border-gray-100
+            shadow-[0_15px_40px_rgba(0,0,0,0.08)]
+            z-[10000]
+            scrollbar-thin
+            scrollbar-thumb-violet-300
+            scrollbar-track-transparent
+          "
+        >
+          {options.length === 0 ? (
+            <div
+              className="
+                px-4
+                py-2.5
+                text-[12px]
+                text-gray-400
+              "
+            >
+              No options available
+            </div>
+          ) : (
+            options.map(
+              (
+                item,
+                index
+              ) => {
+                const label =
+                  getOptionLabel(
+                    item
+                  );
+
+                const key =
+                  getOptionKey(
+                    item,
+                    index
+                  );
+
+                const isSelected =
+                  label === value;
+
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => {
+                      onChange(item);
+                      setOpen(false);
+                    }}
+                    className="
+                      w-full
+                      min-w-max
+                      px-4
+                      py-2.5
+                      flex
+                      items-center
+                      justify-between
+                      gap-6
+                      text-left
+                      text-[12px]
+                      text-[#16295A]
+                      hover:bg-violet-50
+                      transition
+                    "
+                  >
+                    <span className="whitespace-nowrap min-w-max">
+                      {label}
+                    </span>
+
+                    {isSelected && (
+                      <Check
+                        size={14}
+                        className="
+                          shrink-0
+                          text-violet-600
+                        "
+                      />
+                    )}
+                  </button>
+                );
+              }
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -581,6 +479,13 @@ export default function Header({
   /* =======================================================
      LOCAL UI STATE
   ======================================================= */
+
+  /*
+   * IMPORTANT:
+   * DO NOT create selectedDate state here.
+   *
+   * The date belongs to the parent page.
+   */
 
   const [dayType, setDayType] =
     useState("wet");
@@ -1002,24 +907,23 @@ export default function Header({
      KN -> ಕನ್ನಡ
      HI -> हिंदी
      TE -> తెలుగు
-     TA -> தமிழ்
      MA -> മലയാളം
   ========================================================= */
 
-  const currentLanguageCode =
-    language === "en"
-      ? "EN"
-      : language === "kn"
-      ? "KN"
-      : language === "hi"
-      ? "HI"
-      : language === "te"
-      ? "TE"
-      : language === "ta"
-      ? "TA"
-      : language === "ma"
-      ? "MA"
-      : "EN";
+const currentLanguageCode =
+  language === "en"
+    ? "EN"
+    : language === "kn"
+    ? "KN"
+    : language === "hi"
+    ? "HI"
+    : language === "te"
+    ? "TE"
+    : language === "ta"
+    ? "TA"
+    : language === "ma"
+    ? "MA"
+    : "EN";
 
   /* =========================================================
      DYNAMIC LOCATION FILTERS
