@@ -24,7 +24,7 @@ const en = {
     english: "English",
     kannada: "ಕನ್ನಡ",
     hindi: "हिंदी",
-    Telugu: "తెలుగు",
+    Telugu
   },
 
   header: {
