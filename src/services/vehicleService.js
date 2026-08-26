@@ -118,6 +118,90 @@ const getVehicleTablesForDate = async (date) => {
 
 /*
 |--------------------------------------------------------------------------
+| GET VEHICLES THAT HAVE WORKED TODAY
+|--------------------------------------------------------------------------
+|
+| A vehicle is considered to have worked today when at least one
+| telemetry record for today's date contains a positive weight in
+| any of:
+|
+| - wetweight
+| - dryweight
+| - otherweight
+|
+|--------------------------------------------------------------------------
+*/
+
+const getVehiclesWorkedToday = async (todayVehicleTables, selectedDate) => {
+  const workedTodayByVehicle = new Map();
+
+  for (const vehicle of todayVehicleTables) {
+    if (!vehicle?.vehicleNumber || !vehicle?.vehicleTableName) {
+      continue;
+    }
+
+    const vehicleNumber = String(vehicle.vehicleNumber).trim();
+
+    if (!vehicleNumber) {
+      continue;
+    }
+
+    const table = quoteIdentifier(vehicle.vehicleTableName);
+
+    try {
+      const result = await telemetryDb.$queryRawUnsafe(
+        `
+          SELECT EXISTS (
+            SELECT 1
+            FROM ${table}
+            WHERE
+              iottimestamp >= $1::date
+              AND iottimestamp < (
+                $1::date + INTERVAL '1 day'
+              )
+              AND (
+                COALESCE(wetweight, 0) > 0
+                OR COALESCE(dryweight, 0) > 0
+                OR COALESCE(otherweight, 0) > 0
+              )
+          ) AS "workedToday"
+        `,
+        selectedDate,
+      );
+
+      const workedToday = Boolean(result?.[0]?.workedToday);
+
+      workedTodayByVehicle.set(vehicleNumber, workedToday);
+    } catch (error) {
+      /*
+       * A missing telemetry table simply means
+       * the vehicle has not worked today.
+       */
+
+      if (error?.code === "42P01") {
+        console.warn(
+          `Worked Today: telemetry table ${vehicle.vehicleTableName} does not exist.`,
+        );
+
+        workedTodayByVehicle.set(vehicleNumber, false);
+
+        continue;
+      }
+
+      console.warn(
+        `Worked Today: unable to inspect ${vehicle.vehicleTableName}:`,
+        error.message,
+      );
+
+      workedTodayByVehicle.set(vehicleNumber, false);
+    }
+  }
+
+  return workedTodayByVehicle;
+};
+
+/*
+|--------------------------------------------------------------------------
 | ALL VEHICLES
 |--------------------------------------------------------------------------
 */
@@ -247,6 +331,8 @@ const getAllVehicles = async (query) => {
       ...vehicle,
 
       status: liveStatus?.status || "INACTIVE",
+
+      workedToday: liveStatus?.workedToday || false,
     };
   });
 
@@ -510,6 +596,34 @@ const getVehicleSummary = async () => {
 
   /*
    * =========================================================
+   * 3A. DETERMINE WHICH VEHICLES WORKED TODAY
+   * =========================================================
+   */
+
+  const todayYear = today.getFullYear();
+
+  const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+
+  const todayDay = String(today.getDate()).padStart(2, "0");
+
+  const todayDateString = `${todayYear}-${todayMonth}-${todayDay}`;
+
+  let workedTodayByVehicle = new Map();
+
+  try {
+    workedTodayByVehicle = await getVehiclesWorkedToday(
+      todayVehicleTables,
+      todayDateString,
+    );
+  } catch (error) {
+    console.warn(
+      "Vehicle summary: unable to determine today's worked vehicles:",
+      error.message,
+    );
+  }
+
+  /*
+   * =========================================================
    * 4. YESTERDAY'S TELEMETRY TABLES
    * =========================================================
    *
@@ -682,6 +796,8 @@ const getVehicleSummary = async () => {
         vehicleId: vehicle.vehicleId,
 
         status: "INACTIVE",
+
+        workedToday: workedTodayByVehicle.get(vehicle.vehicleId) || false,
 
         lastReceivedTimestamp: null,
       });
