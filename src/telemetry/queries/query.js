@@ -567,11 +567,11 @@ AND (
 
     FROM master_telemetry
 
-) >= 2000;
+) >= 2000;  // Only cleanup if there are at least 2000 records in the table
 `;
 
 // ==========================================================
-// EXPORTS
+// EXPORTS 
 // ==========================================================
 
 module.exports = {
